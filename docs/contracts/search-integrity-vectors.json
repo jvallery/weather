@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "status": "declarative_implementation_obligations_not_executed",
+  "requirements": [
+    "14.1",
+    "14.2",
+    "14.3",
+    "14.4",
+    "14.5",
+    "12.7",
+    "13.7"
+  ],
+  "cases": [
+    {
+      "id": "SI-01",
+      "name": "profile-same-dimension",
+      "given": "A cached vector has the same dimension but a different tokenizer/model/profile fingerprint",
+      "expected": "Reject cache reuse; current-profile embedding or labeled lexical fallback"
+    },
+    {
+      "id": "SI-02",
+      "name": "query-transform",
+      "given": "A query begins with a space or contains composed/decomposed Unicode",
+      "expected": "Preserve exact nonempty input bytes after the qualified prefix; do not silently normalize"
+    },
+    {
+      "id": "SI-03",
+      "name": "empty-query",
+      "given": "Empty or whitespace-only text with camera/date and optional numeric predicates",
+      "expected": "No embedding request; current eligible browsing/numeric results"
+    },
+    {
+      "id": "SI-04",
+      "name": "invalid-vector",
+      "given": "Wrong output count, dimension, nonfinite component, zero norm or failed normalization tolerance",
+      "expected": "Reject vector storage/eligibility; bounded job failure"
+    },
+    {
+      "id": "SI-05",
+      "name": "late-human-edit",
+      "given": "Embedding job starts before a human correction and returns afterward",
+      "expected": "CAS rejects current eligibility of old text; history may retain result"
+    },
+    {
+      "id": "SI-06",
+      "name": "evidence-revision",
+      "given": "Late telemetry changes measured evidence but unchanged visual-only evidence remains valid",
+      "expected": "Withdraw dependent synthesis docs; retain only independently valid visual docs"
+    },
+    {
+      "id": "SI-07",
+      "name": "outbox-crash",
+      "given": "Crash after metadata transaction but before queue acknowledgement",
+      "expected": "Replay idempotently; no old searchable revision is restored"
+    },
+    {
+      "id": "SI-08",
+      "name": "private-leak",
+      "given": "Favorite/note/operator/private-original fields exist in stored editorial state",
+      "expected": "Canonical document, public snippets and vectors never derive from private fields"
+    },
+    {
+      "id": "SI-09",
+      "name": "zero-rain-missing",
+      "given": "Predicate rain equals zero over missing or below-minimum-coverage measurements",
+      "expected": "No match; no implicit conversion of unknown to zero"
+    },
+    {
+      "id": "SI-10",
+      "name": "unit-equivalence",
+      "given": "Equivalent qualified thresholds expressed in mm/in or degC/degF",
+      "expected": "Same eligible set under canonical conversion and specified statistic"
+    },
+    {
+      "id": "SI-11",
+      "name": "clip-and-whole-segment",
+      "given": "A semantic clip hit has matching whole-video numeric aggregate",
+      "expected": "Show the whole-video measurement interval and clip precision separately"
+    },
+    {
+      "id": "SI-12",
+      "name": "fusion-and-collapse",
+      "given": "One video has many matched windows and another has one",
+      "expected": "Fuse deterministic branch ranks; max document per video, not sum of window scores"
+    },
+    {
+      "id": "SI-13",
+      "name": "inference-outage",
+      "given": "No compatible cached query vector and embedding unavailable",
+      "expected": "Labeled lexical fallback preserves all publication/revision/numeric/date/camera filters"
+    },
+    {
+      "id": "SI-14",
+      "name": "ann-underfill",
+      "given": "Strict predicates leave fewer than top_k candidates",
+      "expected": "Bounded scan/exact fallback or fewer hits; never remove filters"
+    },
+    {
+      "id": "SI-15",
+      "name": "shadow-correction-race",
+      "given": "Document correction lands during shadow generation backfill/activation",
+      "expected": "Catch up to watermark and serialize final activation; old text remains withdrawn"
+    },
+    {
+      "id": "SI-16",
+      "name": "rollback-withdrawal",
+      "given": "Prior retained generation contains a now-invalid document",
+      "expected": "Rollback never restores eligibility; use current lexical fallback where vectors are absent"
+    },
+    {
+      "id": "SI-17",
+      "name": "restore-without-model",
+      "given": "Restore metadata/profiles/full vectors while inference route is blocked",
+      "expected": "Stored-vector exact fixture search and lexical/typed queries work without re-embedding"
+    },
+    {
+      "id": "SI-18",
+      "name": "query-timeout",
+      "given": "Exact filtered scan exhausts its admitted statement/work budget",
+      "expected": "Explicit unavailable response, not empty-success or unbounded retry"
+    }
+  ]
+}

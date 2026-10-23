@@ -1,0 +1,53 @@
+# D12 — Evidence-current hybrid search and embedding profiles
+
+Status: retrieval/revision protocol selected; live embedding profile and resource/relevance qualification remain open. Implements requirements §§12.7, 13.7 and 14.1–14.5; consumers WX-23/24/25/42/43 and recovery WX-32. OWN-MODELS qualifies the route; D06/OWN-DB qualify storage. This is a design, not an embedding request or database implementation.
+
+## Source and live evidence boundaries
+
+The current inspected compute-owner source contains a proposed query/document transform and a consumer profile explicitly marked not release-qualified. It specifies `embed.main`, the expected Qwen3-Embedding-4B revision, 2,560 dimensions, last-token pooling including prompt, L2 normalization and cosine distance. The query prefix ends in `Query:` and concatenates directly with unchanged input; document prefix and separator are empty. The owner files state that live weight/image correlation and product qualification remain necessary. An existing consumer's identity is not Weather's credential and is not borrowed here.
+
+E05 verifies available pgvector 0.8.6 packaging on existing PostgreSQL primaries; it does not prove Weather extension installation or performance. The [pgvector documentation](https://github.com/pgvector/pgvector), checked 2026-10-23, supports full-precision storage but limits conventional vector ANN indexes to 2,000 dimensions and halfvec indexes to 4,000. It also documents filtered ANN underfill. Select full-precision exact filtered search initially; no vector truncation, unqualified ANN or image-vector comparison is allowed.
+
+The [official model example](https://huggingface.co/Qwen/Qwen3-Embedding-4B) distinguishes instructed queries from unprefixed documents. The local qualified profile remains authoritative; upstream examples alone do not identify the installed route's behavior. Record the private source revision/descriptor hashes in OWN-MODELS and obtain a fresh scoped capability receipt before declaring semantic search ready.
+
+## Immutable profile and text identities
+
+A profile fingerprint binds model/weight revision, tokenizer/template, actual serving image/backend and adapter behavior, dimension, pooling, prompt inclusion, normalization/tolerance, similarity, exact query/document transforms and truncation policy. Hash the versioned profile's canonical bytes; bind the independently retained capability receipt separately. Endpoint alias or equal dimension alone is never compatibility. A changed profile creates new work and generation; no in-place reinterpretation of stored vectors.
+
+Initial query transformation preserves the validated UTF-8 query exactly: no hidden trim, case folding or Unicode normalization. Reject invalid Unicode/control input under the API policy. Empty or whitespace-only input uses browsing/numeric mode without embedding; this classification does not modify a nonempty query's transformed bytes. Cache query vectors by the complete transformed byte hash and profile fingerprint, with bounded TTL/size and no private input logging. Query and document transforms are intentionally different parts of one profile.
+
+Canonical documents use the deterministic public fields in §14.2, including current effective editorial text and explicit measurement provenance where included. Bind text hash, document identity, media/hash, automated/evidence/editorial revisions, profile and generation. Never embed private favorites, notes, operator identity or private-original metadata. Reject or explicitly split an over-limit document under a versioned recipe; do not silently truncate a correction or omit its qualification text. Final token/batch/request and queue budgets require actual owner limits.
+
+Validate exactly one output per requested input, positional identity, dimension, finite components, nonzero norm and qualified normalization tolerance before storing. The historical consumer tolerance is a candidate, not a Weather measurement. Invalid outputs fail the job and cannot become zero vectors. Persist full vectors and profile inventories for inference-independent recovery.
+
+## Revision and job protocol
+
+Store immutable document revisions separately from active eligibility and embedding rows. Publication/correction commits current pointers, invalidates dependent old documents and emits outbox work in the same transaction. Eligible current public text can supply lexical search before its vector exists; metadata browsing never waits for AI. Evidence-specific invalidation preserves independent unchanged visual documents without treating affected synthesis as current.
+
+Embedding jobs deduplicate on `(document_id, text_hash, profile_id)` while recording each requesting generation and source revision. CAS must compare all current media, measured, automated and editorial bindings before making a vector eligible. Sharing identical computation does not waive per-generation eligibility checks. A late job may remain historical but cannot resurrect withdrawn text. Retry/deadline expiration creates visible pending/degraded state; it never reactivates an old successful revision.
+
+Queries pin one active profile/generation and a coherent visibility/revision snapshot. Final result hydration checks current asset and document eligibility before response construction; if a correction committed before that check, discard the old hit. Cache reuse requires current revision/visibility validation, not TTL alone. A response already delivered before a correction cannot be recalled; UI refresh and withdrawal semantics must not claim retroactive erasure. No stale cached snippet is used merely because its vector remains stored.
+
+## Deterministic retrieval
+
+Apply publication, active media/evidence/editorial revision, camera, segment, half-open UTC overlap and all measured predicates to each candidate relation. Empty camera/segment arrays mean no narrowing within the supported public set; duplicate values are normalized as a set, never additional weight. Unknown/insufficiently covered measurements fail ordinary comparisons, including zero. Convert to canonical units without changing the selected statistic or whole-video measurement scope. Return the matched aggregate interval/coverage/revision alongside a clip hit so station conditions are not misrepresented as clip-time events.
+
+Use exact cosine ordering and lexical ordering independently over eligible rows, with document ID as a stable tie-breaker. Selected initial fusion is equal-weight reciprocal rank: `1/(60 + semantic_rank) + 1/(60 + lexical_rank)`, where ranks are one-based and an absent branch contributes zero. Use at most 200 eligible candidates per branch as a commissioning ceiling, then fuse the union and collapse by video using its highest-ranked eligible document. Break equal fused scores by video ID then document ID. Return that document's validated interval/seek, not an uncited composite. Do not sum many windows to boost a video unfairly. Limit results to requested `top_k <= 20`; fewer results are honest. Candidate ceiling and relevance need measured acceptance before release.
+
+Select an explicitly versioned lexical text-search configuration and tokenizer, matching indexed documents and query parsing; do not depend on the database session default. Use parameterized plain-text query parsing, never raw tsquery/SQL supplied by the visitor. The exact language configuration remains part of D12 qualification against the English weather corpus and supported query behavior.
+
+Nonempty text with a valid query vector uses `hybrid_exact`. If embedding is unavailable and no exact-profile cached vector exists, use `lexical` with an explicit degraded reason, preserving every filter. Empty text uses the API's `numeric` mode for numeric/date/camera browsing even with no numeric predicates, ordered by source start descending then video ID; clarify that mode label in the UI. No model request is needed. A database timeout is an unavailable query, not evidence that zero matches exist. Bound SQL duration, scanned work, connections and model concurrency under D16; the 200-result pool does not bound an exact scan's CPU cost.
+
+## Generation change, optional ANN and rollback
+
+Build a shadow profile/generation from current eligible document revisions using resumable keyset work and durable outbox catch-up. Before activation, prove profile homogeneity, complete eligible work through a catalog watermark, representative retrieval/filter quality and admitted query cost. Serialize the final delta/activation transaction with document invalidation so changes during backfill cannot reopen withdrawn claims. Atomically switch the active pointer; new documents may be explicitly pending, never silently represented by stale vectors.
+
+Retain the prior generation only for an admitted bounded rollback period and recovery references. Rollback switches ranking/profile selection, not visibility or document revision history: current evidence/withdrawal checks still apply to old stored vectors. A previous generation lacking current vectors degrades to current lexical/browsing results. Garbage collection cannot remove vectors/profile records required by retained recovery checkpoints.
+
+If exact search exceeds an admitted budget, qualify halfvec expression HNSW with full-precision reranking in a separately versioned change. Isolate profiles/generations physically or with proven index predicates and preserve all filters. Test strict filters and underfill against exact search; bounded iterative scanning/fallback may return fewer results rather than weaken predicates. No ANN DDL or index build is authorized during planning.
+
+## Acceptance and remaining closure
+
+[Search integrity vectors](../contracts/search-integrity-vectors.json) specify adversarial expected outcomes; they are not executed tests. WX-23 qualifies the fresh route, transforms, output properties and budgets. WX-24 tests outbox/CAS/shadow activation under correction races. WX-25/42 test deterministic fusion, filter invariants, unit/coverage equivalence, fallback, time boundaries and truthful seeks. WX-32 restores full vectors/profiles with inference blocked and verifies exact and lexical/typed paths.
+
+Remaining material decisions: current weight/backend/capability receipt, scoped Weather access, final lexical configuration and canonical document token policy, measured resource/deadline/cache budgets and representative relevance/latency thresholds. D12 stays open until those are resolved. Source descriptors, available extension packaging and declarative vectors do not establish operational semantic search.
