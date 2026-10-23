@@ -2,13 +2,13 @@
 
 Requirements and implementation planning for **[weather.vallery.net](https://weather.vallery.net)**: a public weather history and timelapse service using three security cameras, direct Tempest UDP telemetry, CNPG, Garage, and local inference.
 
-**Status:** planning audit in progress under [WX-00 / issue #1](https://github.com/jvallery/weather/issues/1). See the [adversarial audit](docs/research/adversarial-audit.md) for findings and completion conditions. The application, cluster resources and CI/CD pipeline have not been built; the candidate implementation backlog is not yet a verified filed graph.
+**Status:** planning audit in progress under [WX-00 / issue #1](https://github.com/jvallery/weather/issues/1). All 46 implementation/follow-on issues are [filed](docs/implementation/backlog.md), and their 101 native prerequisite relationships (including the planning gate) have been read back and matched. See the [adversarial audit](docs/research/adversarial-audit.md), [decision register](docs/decisions/implementation-register.md) and [traceability](docs/implementation/traceability.md). Material research and contract work remain; application implementation, cluster resources and CI/CD have not been built.
 
 ## Start here
 
 1. Read [the v4.0 requirements and design research brief](docs/requirements.md) and the [accepted product decisions](docs/decisions/2026-10-23-product-scope.md).
 2. Follow [Codex's first assignment](docs/codex-first-task.md): investigate the live estate, resolve the decisions, complete repository configuration, then file the implementation issues and their dependency graph.
-3. Use [the candidate issue graph](docs/implementation/backlog-candidate.json) as a seed. Its **46 stable keys** are candidates, **not GitHub issue numbers**: 42 required initial-release items, two conditional GPU/CDN items, an accepted composite-video follow-on and a reserved visual-index investigation. Revise them after research and replace the seed with a read-back-verified filed graph.
+3. Use the [filed backlog](docs/implementation/backlog.md) and [machine-readable graph](docs/implementation/backlog.json). The [candidate graph](docs/implementation/backlog-candidate.json) is retained as the historical seed. Stable WX keys are distinct from GitHub issue numbers: 42 required initial-release items, two conditional GPU/CDN items, an accepted composite-video follow-on and a reserved visual-index investigation.
 
 ## Open-source comparison and product choices
 
@@ -39,4 +39,4 @@ The requirements distinguish fixed choices from decisions that need cluster inve
 
 This public repository contains fleet-focused code with documented customization and sanitized examples. Secrets, private topology, precise location, device identities and raw operational receipts belong in the existing private deployment/evidence system. Do not copy private reference repositories wholesale.
 
-Codex's first pass must propose a concrete project license/reuse policy for the owner's final choice before upstream code imports, and configure contribution/security and repository policies. Until then, do not assume a license that has not been added. The selected hourly five-year default and preview retention still require explicit operational lifecycle/recovery configuration before deletion jobs are enabled.
+Jason selected [MIT](LICENSE) with [permissive selective reuse](docs/decisions/license-and-reuse.md) on 2026-10-23. Contribution/security guidance is recorded; CI and deployment remain implementation work. The selected hourly five-year default and preview retention still require explicit operational lifecycle/recovery configuration before deletion jobs are enabled.

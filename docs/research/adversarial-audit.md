@@ -33,7 +33,7 @@ Private raw receipts and owner-source excerpts must stay outside this public rep
 | A15 | Independent backup success is weaker than joint recoverability. | Bind a transactional catalog generation to a recoverable database target and verify its complete offsite object closure. Include private originals, keograms, editorial state and stored vectors. Test B2-only recovery without local storage or inference. | R23; D15; WX-29/30/32 |
 | A16 | Main-site historical framework/theme assumptions may be stale. | Inspect the live main-site theme and source ownership. The current owner documentation describes WordPress as serving and Astro as rollback; embed work must target the serving site through its owner. Do not edit the dormant site and claim delivery. | R12, R37; D13; WX-20/44 |
 | A17 | Fleet standards have exceptions and owner-specific delivery paths. | Map applicable standards explicitly. Public read-only Weather is an intentional publishing contract; privileged writes/private data still require authentication. Use delivered static monitoring configuration rather than inert monitoring CRs. Honor pinned/manual Argo delivery and verify actual revisions/digests. | R02, R24, R26–R28; WX-01/02/31/33 |
-| A18 | License choice remains reserved to the owner. | MIT with permissive selective reuse is proposed; final choice was requested. Continue independent planning, but do not import upstream code or assert a selected license before the answer. | R02, R24, R27; D01 |
+| A18 | License choice was reserved to the owner. | Resolved: Jason accepted MIT with permissive selective reuse on 2026-10-23. The license and reuse policy are recorded; dependency-specific notices and review remain required. | R02, R24, R27; D01 |
 
 ## Completion conditions
 
@@ -45,4 +45,6 @@ Private raw receipts and owner-source excerpts must stay outside this public rep
 - Planning configuration, public/private evidence separation, schemas/OpenAPI, migration contracts, runbooks, readable graph, critical path and first ready work are published and read back.
 - No application implementation begins during this pass.
 
-The initial graph checks pass. The overall audit remains incomplete until these conditions are verified against the final artifacts and GitHub state.
+The initial graph checks pass. The revised filed graph now contains 46 implementation/follow-on issues plus WX-00, 99 implementation edges and two root planning edges. All 101 native relationships were read back using actual issue IDs and matched on 2026-10-23. All required initial work remains in the rollout closure and both deferred tasks remain outside it. MIT with permissive reuse is accepted; contribution/security guidance, issue template, milestones and readiness labels are present. GitHub private vulnerability reporting and vulnerability alerts are enabled; secret scanning and push protection report enabled. There are no enforced branch rules or application CI yet; their qualified setup remains tracked work.
+
+The overall audit remains incomplete: individual completed ADRs, cross-owner prerequisite filing, primary-source/capability qualification, final schemas/OpenAPI, full detailed acceptance verification and durable private evidence custody still require work. Do not close the planning issue from the graph checks alone.
