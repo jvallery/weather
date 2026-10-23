@@ -16,6 +16,7 @@ Requirements and implementation planning for **[weather.vallery.net](https://wea
 - [Database constraints, revision boundaries and migration sequence](docs/implementation/database-migration-contract.md).
 - [Owner prerequisites and admission boundaries](docs/implementation/owner-prerequisites.md).
 - [Estate standards applicability and evidence](docs/implementation/standards-mapping.md), with a [machine-readable matrix](docs/implementation/standards-mapping.json).
+- [D03 staging and writer fencing](docs/decisions/D03-staging-and-writer-fencing.md), with current NFS policy evidence and explicit replacement/recovery transitions.
 - [D04 direct Tempest attachment design](docs/decisions/D04-tempest-network.md), based on bounded live packet evidence.
 - [D02 camera sources and source time](docs/decisions/D02-camera-sources-and-time.md), with three decoded native-endpoint samples and explicit cadence/privacy limits.
 - [D05 receipt durability, canonical measurements and coverage](docs/decisions/D05-telemetry-integrity.md), with [adversarial telemetry vectors](docs/contracts/telemetry-vectors.json).

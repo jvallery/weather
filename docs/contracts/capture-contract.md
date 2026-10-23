@@ -2,6 +2,8 @@
 
 Status: selected record design; NFS locking, fencing, durability and camera timing remain D02/D03 qualification gates. Implements requirements §§5.4, 6.2–6.9 and 17. Consumers: WX-08/09/10/14/18/36/37/38. [capture.schema.json](capture.schema.json) defines four private record types. No application collector or infrastructure is created by these contracts.
 
+[D03](../decisions/D03-staging-and-writer-fencing.md) defines coordinator admission, stop/fence receipts, uncertain-I/O quarantine and replacement transitions. Existing generic NFS classes are not an admitted lock/durability contract.
+
 ## Files and identities
 
 Each immutable sealed chunk directory contains exactly `frames.tar`, `attempts.jsonl` and `binding.json`. The binding hashes the exact TAR and JSONL bytes; its own hash is stored in the segment's chunk reference, never inside its hashed content. The active directory has a unique chunk ID and admitted writer epoch. Flush all files and required directory metadata before the single directory rename into the sealed namespace, under the qualified NFS protocol. Readers must ignore active directories and never infer completeness from the TAR filename alone.

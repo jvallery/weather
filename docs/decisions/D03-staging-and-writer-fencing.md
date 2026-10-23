@@ -1,0 +1,50 @@
+# D03 — Snapshot staging, writer authority and failure recovery
+
+Status: ownership/recovery protocol selected; exact NFS grant, durability and fencing integration remain material owner qualification. Requirements §§6.2–6.9, 17 and 18.2; R06/R07/R08/R19/R26/R28/R30. Consumers WX-03/08/10/18/36/37/38; OWN-NFS is the storage prerequisite, with OWN-CAM supplying sustained source characteristics. No staging share, workload or mount policy is created here.
+
+## Observed platform and capacity
+
+E08 (2026-10-23) reads the two existing NFS StorageClasses and finds soft timeout policy on both; the NFSv3 class additionally specifies `nolock`. Both have Retain reclaim policy. No PV is bound to the Weather namespace. These are live Kubernetes configuration observations, not an observation of a Weather node mount, server stable storage, or successful lock recovery. Exact private source revision and metadata are retained in OWN-NFS.
+
+The storage owner's current source applies a fail-fast mount policy with explicit exceptions and preserves shared NAS concurrency/watchdog limits. Weather is not granted an exception or admitted to a throughput lane by this ADR. Do not copy an unrelated monitoring export or assume a class name grants storage. The [Linux NFS manual](https://man7.org/linux/man-pages/man5/nfs.5.html), checked 2026-10-23, explains that `nolock` gives only client-local exclusion and that soft timeout behavior can compromise data integrity. A successful local lock acquisition is not cross-node exclusion. Actual client/export behavior must be qualified for this workload.
+
+E06's three single JPEG samples imply about 602.3 decimal GB/day if repeated at 1 Hz. This is an illustration, not p95 sizing or a grant. OWN-NFS must budget dense backlog, active/sealed overlap, extraction scratch, compact pending promotions, preview buffers, quarantine and deletion lag, using measured camera sizes and the requirements' margin. Admit per-camera and shared limits so one failed renderer cannot consume every camera's reserve. Preserve owner NAS pressure rules; do not perform an unadmitted full-share scan or throughput trial.
+
+## Selected authority protocol
+
+Use one collector per camera, with non-overlapping rollout/replacement. The coordinator owns the authoritative camera writer row in CNPG and serializes transitions using transactions and row locks. Each admission binds a unique nonreusable writer epoch, exact workload/pod identity, camera identity, storage grant revision and policy revision. Collectors receive only their admitted configuration and filesystem view; they do not query CNPG, call Kubernetes, elect themselves or choose a newer epoch.
+
+A stable, owner-created per-camera lock inode supplements the coordinator authority. It must use qualified cross-client locking, remain held for the writer lifetime and never be unlinked/replaced to force takeover. Mounting a class with `nolock` or client-local locking cannot qualify this protocol. The exact file projection, permissions, NFS version/options and lock/reclaim behavior are OWN-NFS decisions; no existing generic class is accepted by this document. A hard-mount exception is not silently introduced to satisfy it.
+
+Give a collector write access only to its admitted epoch's active area and the qualified lock surface. The collector cannot mutate another epoch, the coordinator's authority records, sealed input already accepted by downstream jobs, or cleanup state. The coordinator/ingestor validates epoch authority before admitting a sealed binding. Filesystem paths alone do not authorize acceptance. The private deployment must qualify how these permissions are enforced; shared UID plus a writable parent directory is insufficient isolation.
+
+Writer states and transition evidence:
+
+| State / transition | Required action and evidence |
+|---|---|
+| Stopped → admitted | Coordinator transaction records a new epoch only after absence of a prior writer or a retained stop/fence receipt. Allocate exact scoped paths and immutable bootstrap identity. |
+| Admitted → capturing | Exact admitted collector acquires the qualified lifetime lock and confirms its grant/epoch; coordinator records readiness. No alternate collector may capture while this is unresolved. |
+| Capturing → quiescing | Stop scheduling, settle bounded in-flight capture, flush/seal what can be safely committed, then exit. Missing slots remain explicit. |
+| Quiescing → stopped | Confirm actual old process/container termination on a reachable node, or receive an authoritative owner fence receipt. A deleted Pod object, absent heartbeat or expired lease is insufficient. |
+| Any live state → uncertain | Storage/lock loss, node partition, unknown termination or authority ambiguity closes admission. Stop accepted commits from the uncertain epoch. Pause that camera; do not launch an ambiguous replacement. |
+| Uncertain → fenced → admitted | Existing host/storage owner proves the old writer cannot execute/write through the recovery boundary. Bind receipt to old pod/node/epoch and observed result before a new generation is admitted. No new host privilege or automatic VM reset is authorized here. |
+
+A restart on the same node still uses a new epoch after verified termination. Kubernetes replica counts or rollout settings supplement this protocol; they are not fencing. Coordinator failure freezes new admissions, while already admitted behavior follows its bounded policy; competing coordinators must not create independent authoritative rows. If CNPG cannot establish current authority, no new sealed binding is accepted and no cleanup proceeds. Qualification must cover coordinator failover and transaction acknowledgement loss.
+
+## Sealing, uncertain I/O and recovery
+
+The [capture contract](../contracts/capture-contract.md) defines TAR/index/binding and selection identities. Use exclusive active paths, qualified flush ordering and one bundle rename; verify exact bytes/hash before admission. Atomic namespace visibility is distinct from server durability. Errors or uncertain flush/rename acknowledgements produce an uncertain/quarantined attempt, never a successful seal solely because a filename exists. Re-read the exact binding and contents under admitted bounds after recovery before idempotently accepting it.
+
+On soft timeout, stop appending to the uncertain chunk; preserve the original expected hashes/attempt ledger and reconcile partial data explicitly. A later successful checksum cannot prove that all intended captures arrived or that NAS power loss is covered. On an admitted hard mount, an application timeout may leave kernel I/O blocked. The owner watchdog must report and isolate the stuck writer; it must not start a second one on the assumption that task cancellation stopped the first. No unapproved NVMe spill or unbounded memory queue is allowed. Reconstruct skipped slots from the last durable checkpoint without inventing successful JPEGs.
+
+Recovery runs only after exclusive repair authority is established. Validate sealed bundles unchanged; repair an active tail into a new verified bundle/revision, retaining the original evidence and loss disposition. Reject stale-epoch direct commits. Salvaging valid old bytes is an explicit coordinator recovery operation with provenance, not renewed old-writer authority. Cross-segment and hourly obligations retain their source pins throughout reconciliation.
+
+Cleanup uses a separate fenced role and current pin/retention checks. It cannot infer deletion permission from a lease timeout, old epoch or failed job. Transfer compact hourly/keogram inputs with verified bytes and durable new pins before releasing dense-source pins; no crash may leave neither copy protected. ReclaimPolicy Retain is not application-level protection from a cleanup process.
+
+## Acceptance and unresolved admission
+
+OWN-NFS must provide the exact isolated grant/mount/UID policy, stable lock behavior, flush/rename semantics and bounded recovery path. Resolve host-fence ownership and its existing supported receipt interface before marking D03 closed. If that interface is unavailable, the safe selected behavior is a paused camera requiring owner recovery; automatic replacement must not be advertised as qualified HA.
+
+WX-03/10 must test two clients, node partition, NFS reconnect/reboot, lock reclaim, stale process return, crash at each append/flush/rename boundary, lost acknowledgement and coordinator failover. Demonstrate only one accepted generation, deterministic salvage or explicit loss, bounded resource consumption and no cross-epoch deletion. WX-18/36/37 test compact transfer and cross-twilight pins. Verify admission against actual node/export configuration and retain exact image/mount/source revisions with results. These are future admitted cluster tests, not permission to interrupt production storage.
+
+Rollback stops new admission, preserves all epochs/bindings/pins and restores only compatible coordinator/workload revisions. It never resets epochs, removes lock files to force progress, deletes uncertain source evidence or remounts unrelated workloads. D03 remains open until mount, enforcement, fencing, capacity and durability choices have owner-backed evidence; E08 identifies why existing generic defaults are insufficient.
