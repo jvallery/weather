@@ -146,3 +146,7 @@ The source-bound [§§12.1–12.5 audit](../implementation/web-clause-audit.md) 
 ## Analysis requirements and window ownership
 
 The [section 13 audit](../implementation/analysis-clause-audit.md) preserves every prompt, qualification step, schema example and rational selection formula. Prompt assets match exactly. Seven bounded synthetic cases compare formula-based clip bounds against independent frame-center enumeration, including exact-hour ties and zero-frame windows. Empty windows must retain unavailable visual coverage rather than borrow adjacent frames. Shape validation cannot establish evidence membership, precipitation/visibility assessment, actual decoded positions, grounding or backend termination; those remain explicit producer acceptance. No inference workload or application implementation was created.
+
+## Search evidence precision and full section 14 coverage
+
+The [search audit](../implementation/search-clause-audit.md) preserves all source blocks and assigns 25 grouped obligations. It found that `SearchHit` exposed required precision only through nullable `seek`. The draft now requires independent `evidence_precision`, preserving temporal scope even without playable media; semantic agreement with any seek and separate whole-video numeric scope remain mandatory. Five new fixtures plus the existing suite pass (57 total) with explicit calendar/UTC checking. This does not validate retrieval or model behavior. Live profile/resource qualification and representative relevance evidence remain open.

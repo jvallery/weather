@@ -145,3 +145,7 @@ The [§§12.1–12.5 audit](web-clause-audit.md) preserves 14 source blocks and 
 ## Automated analysis acceptance
 
 The [section 13 audit](analysis-clause-audit.md) preserves 35 source blocks with 34 grouped obligations. Both stored prompt assets exactly match the source templates. Seven synthetic rational-window cases verify frame ownership against independently enumerated centers; no decoder or inference behavior is inferred. Native video, backend termination, current model provenance and semantic grounding remain required.
+
+## Search requirements and precision
+
+The [section 14 audit](search-clause-audit.md) preserves all 24 source blocks and 25 grouped obligations, including transform/document/SQL examples. It found and corrected missing standalone evidence precision on nonplayable search hits; 57 API fixtures now match expected shape outcomes. Retrieval, profile and restore qualification remain unproven.

@@ -1180,6 +1180,138 @@
         "rule_revision": "synthetic-rule",
         "video_links": []
       }
+    },
+    {
+      "name": "search unplayable hit retains clip precision",
+      "schema": "SearchHit",
+      "valid": true,
+      "value": {
+        "video_id": "video_demo",
+        "camera": "skycam_east",
+        "media_revision": 1,
+        "metadata_revision": 1,
+        "source_interval": {
+          "start": "2026-01-01T00:00:00Z",
+          "end": "2026-01-01T01:00:00Z"
+        },
+        "snippet": "Clouds visible in the reviewed window.",
+        "analysis_mode": "native_video",
+        "quality": "partial",
+        "poster": null,
+        "seek": null,
+        "matched_measurements": [],
+        "evidence_ids": [
+          "clip_demo"
+        ],
+        "evidence_precision": "clip"
+      }
+    },
+    {
+      "name": "search missing evidence precision rejected",
+      "schema": "SearchHit",
+      "valid": false,
+      "value": {
+        "video_id": "video_demo",
+        "camera": "skycam_east",
+        "media_revision": 1,
+        "metadata_revision": 1,
+        "source_interval": {
+          "start": "2026-01-01T00:00:00Z",
+          "end": "2026-01-01T01:00:00Z"
+        },
+        "snippet": "Clouds visible in the reviewed window.",
+        "analysis_mode": "native_video",
+        "quality": "partial",
+        "poster": null,
+        "seek": null,
+        "matched_measurements": [],
+        "evidence_ids": [
+          "clip_demo"
+        ]
+      }
+    },
+    {
+      "name": "search invented precision rejected",
+      "schema": "SearchHit",
+      "valid": false,
+      "value": {
+        "video_id": "video_demo",
+        "camera": "skycam_east",
+        "media_revision": 1,
+        "metadata_revision": 1,
+        "source_interval": {
+          "start": "2026-01-01T00:00:00Z",
+          "end": "2026-01-01T01:00:00Z"
+        },
+        "snippet": "Clouds visible in the reviewed window.",
+        "analysis_mode": "native_video",
+        "quality": "partial",
+        "poster": null,
+        "seek": null,
+        "matched_measurements": [],
+        "evidence_ids": [
+          "clip_demo"
+        ],
+        "evidence_precision": "exact_second"
+      }
+    },
+    {
+      "name": "search measured-only segment precision",
+      "schema": "SearchHit",
+      "valid": true,
+      "value": {
+        "video_id": "video_demo",
+        "camera": "skycam_east",
+        "media_revision": 1,
+        "metadata_revision": 1,
+        "source_interval": {
+          "start": "2026-01-01T00:00:00Z",
+          "end": "2026-01-01T01:00:00Z"
+        },
+        "snippet": "Measured-only segment match.",
+        "analysis_mode": "none",
+        "quality": "partial",
+        "poster": null,
+        "seek": null,
+        "matched_measurements": [],
+        "evidence_ids": [
+          "clip_demo"
+        ],
+        "evidence_precision": "segment"
+      }
+    },
+    {
+      "name": "search playable clip precision",
+      "schema": "SearchHit",
+      "valid": true,
+      "value": {
+        "video_id": "video_demo",
+        "camera": "skycam_east",
+        "media_revision": 1,
+        "metadata_revision": 1,
+        "source_interval": {
+          "start": "2026-01-01T00:00:00Z",
+          "end": "2026-01-01T01:00:00Z"
+        },
+        "snippet": "Clouds visible in the reviewed window.",
+        "analysis_mode": "native_video",
+        "quality": "partial",
+        "poster": null,
+        "seek": {
+          "start_seconds": 0,
+          "end_seconds": 5,
+          "precision": "clip",
+          "source_interval": {
+            "start": "2026-01-01T00:00:00Z",
+            "end": "2026-01-01T01:00:00Z"
+          }
+        },
+        "matched_measurements": [],
+        "evidence_ids": [
+          "clip_demo"
+        ],
+        "evidence_precision": "clip"
+      }
     }
   ]
 }

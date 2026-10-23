@@ -117,3 +117,9 @@ Almanac wind_rose_bin products require structured category/speed bounds/duration
 ## Event identity and provenance
 
 The [event contract](weather-event-contract.md) defines initial onset/gust/lightning rules, stable logical identity and revision/withdrawal behavior. Public events require unique nonempty calendar membership; measured/visual/synthesis events additionally require unique nonempty evidence IDs. Private manual audit remains mandatory even when a standalone manual annotation has no prior instrument evidence. Schema presence is not proof of evidence validity or membership.
+
+## Search evidence precision independent of playback
+
+Every `SearchHit` carries required `evidence_precision` (`frame`, `interval`, `clip`, or `segment`) alongside its evidence-supported `source_interval`, even when `seek` is null because playback is unavailable. Precision describes the evidence, not the resolution of a numeric timestamp. Do not infer frame-level evidence merely because the player can seek to a frame. When a seek exists, its precision and source interval must agree with the hit’s cited evidence; enforce that cross-field relation semantically. Whole-video measured predicates retain their own aggregate interval/revision in `matched_measurements`, which may be broader than the visual hit. The client must label both scopes without presenting a whole-segment gust as a clip-time event.
+
+The draft v1 shape was corrected before implementation; consumers and generated types must include this required field. Prior validation receipts remain historical for their recorded schema hashes.

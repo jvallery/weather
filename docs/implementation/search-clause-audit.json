@@ -1,0 +1,388 @@
+{
+  "scope": "All section 14 source blocks including transform, canonical text and SQL examples; grouped acceptance, not retrieval qualification",
+  "requirements_sha256": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+  "section_sha256": "82a96fc6613823324085dbc515e622e389e907a093a59d0e16c667d414844467",
+  "source_blocks": [
+    {
+      "id": "Q14.1.01",
+      "section": "14.1",
+      "source_text": "Index video metadata, including camera, timestamps and the validated AI description, so a visitor can search for observations such as \u201clow clouds clearing after sunrise\u201d or \u201csnow visible in the front yard.\u201d Combine semantic ranking with exact camera/date/segment/availability filters and lexical search. The index describes the recorded evidence; it is not a separate model answering weather questions or generating SQL.",
+      "sha256": "acde2bdc517f7390c2e7414bb762fb92dbd490d984608c605cc61c458a8fc205",
+      "producers": [
+        "WX-23",
+        "WX-25"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.1.02",
+      "section": "14.1",
+      "source_text": "The recorded local candidate is **`embed.main`**, using `POST /v1/embeddings` with `Qwen/Qwen3-Embedding-4B`, 2,560 dimensions, last-token pooling, L2 normalization and cosine similarity. Its recorded consumer profile includes the prompt and ignores the API's `input_type`. These are expected source contracts to requalify, not current live guarantees. D12 must obtain fresh route/model/weight/serving provenance, dimensions, format, normalization, limits and latency/error evidence, using a new scoped weather credential.",
+      "sha256": "c12de85f8e5bb41cfe8441712696b43f36e1003b427c8dafa88caa9473542b55",
+      "producers": [
+        "WX-23",
+        "WX-25"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.1.03",
+      "section": "14.1",
+      "source_text": "The recorded query transformation is this prefix followed **directly** by the user's query, without an extra separator after the colon:",
+      "sha256": "ebbde395ac08ef3f57c447fd0073e3f296af097af997a6e60e14038c6cea34e9",
+      "producers": [
+        "WX-23",
+        "WX-25"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.1.04",
+      "section": "14.1",
+      "source_text": "```text\nInstruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:\n```",
+      "sha256": "5dbc75bacd095d96e0773a63b0233e57296b06deb6a37cd0f0e56b5dc15a7788",
+      "producers": [
+        "WX-23",
+        "WX-25"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.1.05",
+      "section": "14.1",
+      "source_text": "Documents use no instruction prefix. This matches the official model's instruction/query formatter; the locally served profile remains authoritative once verified. Store the exact UTF-8 transformation, model revision, dimensions, pooling, normalization, similarity and serving provenance in a versioned profile fingerprint. A later weather-specific instruction is a new profile requiring evaluation. Do not silently switch to a different route/model with the same dimensions. [S31]",
+      "sha256": "4380bde5c3f2d4da71525a8c0c79c60264d2f5150e891e4b9b14a5789331920d",
+      "producers": [
+        "WX-23",
+        "WX-25"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.1.06",
+      "section": "14.1",
+      "source_text": "Validate output count, dimensions, finite values, nonzero norms and qualified normalization tolerance. Equal dimensions do not mean compatible embedding spaces. Query and document transformations must be intentional parts of the same profile, not assumed identical strings.",
+      "sha256": "7decb4c4942e0c40dd2784a1d805f406d3ea9458de6a7b0149614ac083f6dd46",
+      "producers": [
+        "WX-23",
+        "WX-25"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.2.01",
+      "section": "14.2",
+      "source_text": "Create a whole-video document and, where useful, documents for validated analysis windows/events with precise evidence-supported intervals. Do not embed every synthetic frame. Canonical text is deterministic, bounded, public and ordered, for example:",
+      "sha256": "5c947b77a2ed7dfe8c641efccc03284b256ad316fbf21c0867bf82a2439437e1",
+      "producers": [
+        "WX-24",
+        "WX-32",
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.2.02",
+      "section": "14.2",
+      "source_text": "```text\nCamera: <public camera label>\nInterval: <UTC start> to <UTC end>\nSegment: <daytime or overnight>\nAnalysis mode: <qualified video or sampled-frame analysis>\nObserved conditions: <validated description>\nEvidence quality: <coverage and relevant limitations>\n```",
+      "sha256": "28e2f000789d5cd6cc189035fcf74be4d57b0356dc8ce007178e20ebe3ae33d4",
+      "producers": [
+        "WX-24",
+        "WX-32",
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.2.03",
+      "section": "14.2",
+      "source_text": "If station measurements are included, label their instrument provenance and units separately. Exact date/camera comparisons belong in typed SQL fields; embedding timestamp text is not a date index. Include `video_id`, media revision/hash, metadata/analysis revision, public camera ID, source interval, output seek interval, evidence IDs, analysis mode/quality, canonical-text hash and profile/generation ID.",
+      "sha256": "0f9caefa5c3086291ba9e3eedc9a3889ff79a096e3f000fa979eae3794caa35c",
+      "producers": [
+        "WX-24",
+        "WX-32",
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.2.04",
+      "section": "14.2",
+      "source_text": "Embedding work is a durable outbox-driven job with idempotence on `(document_id, text_hash, profile_id)`, bounded attempts/deadline and compare-and-set on the current media/analysis revision. Media publication and weather ingestion do not wait for it. Do not keep an old withdrawn/incorrect description searchable as if current while its replacement is pending. Record explicit indexing status; pending videos remain discoverable through date/camera metadata browsing. A weather-evidence correction also invalidates dependent synthesis documents immediately under \u00a713.7; independent visual-only documents may remain valid if their exact media/evidence revision is unchanged.",
+      "sha256": "a51e13bc04aacd39656e459579b808f73a4b32308de2a21a8d86dc76988eefb9",
+      "producers": [
+        "WX-24",
+        "WX-32",
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.2.05",
+      "section": "14.2",
+      "source_text": "Canonical public text includes the effective editorial revision from \u00a712.7, with provenance that distinguishes automated and human-edited content. Bind documents to automated, measured-evidence and editorial revisions so an older embedding job cannot restore corrected text. Private favorites, private notes, operator identity and original-object metadata are excluded. Initial indexing remains text-only; the reserved WX-46 visual-index investigation must use a separate future model/profile/representation and eligibility evaluation, not compare image vectors directly with the current text space or require wholesale raw-frame retention.",
+      "sha256": "cec6634717300fa1964c548886c3043c10b1ffe9df575e42e97c50c92958a86a",
+      "producers": [
+        "WX-24",
+        "WX-32",
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.2.06",
+      "section": "14.2",
+      "source_text": "For a model/profile change, build a shadow generation, validate representative retrieval and filters, atomically switch the active generation, and retain the previous generation for bounded rollback. Store original vectors in backups; re-embedding is not a recovery strategy. Do not mix vectors from incompatible profiles in one ranking operation.",
+      "sha256": "05b029673e3042c4fbd4e35730b11662a2b5d73aecc96e66a1baf16975da6c23",
+      "producers": [
+        "WX-24",
+        "WX-32",
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.3.01",
+      "section": "14.3",
+      "source_text": "Use pgvector in the selected CNPG image. A `vector(2560)` column can store the expected full-precision vector and perform exact distance search. **A conventional pgvector `vector` HNSW/IVFFlat index cannot index 2,560 dimensions:** the documented vector ANN limit is 2,000, while `halfvec` supports up to 4,000. Do not silently truncate the vector or declare an invalid index. [S30]",
+      "sha256": "c851ad396a7665358e75f1e2096a394007e5cf520e415f2916a69781179d37a4",
+      "producers": [
+        "WX-23",
+        "WX-25"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.3.02",
+      "section": "14.3",
+      "source_text": "Start with exact filtered search as the correctness baseline; six videos/day is only about 2,190 video records/year before window/event documents. Determine actual document count and latency before adding ANN. If justified, retain full-precision storage and use a qualified half-precision expression HNSW index, retrieving bounded candidates and reranking with the original vectors:",
+      "sha256": "7d46af2d340ff2ad084126a86c152d0c7f796d529b533cacaa27dd34e680d596",
+      "producers": [
+        "WX-23",
+        "WX-25"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.3.03",
+      "section": "14.3",
+      "source_text": "```sql\n-- Proposal for a verified 2560-dimensional profile and compatible pgvector.\nCREATE INDEX weather_embeddings_hnsw\nON weather_search_embeddings\nUSING hnsw ((embedding::halfvec(2560)) halfvec_cosine_ops);\n\n-- The ANN ordering expression must match the indexed cast.\n-- Add publication/profile/camera/time predicates in the actual query.\nSELECT document_id, embedding\nFROM weather_search_embeddings\nORDER BY embedding::halfvec(2560) <=> $1::halfvec(2560)\nLIMIT $2;\n```",
+      "sha256": "4589701b2c9c74b7287a5e0143062af0f4d21d26646193fc89a1aadb35b0499d",
+      "producers": [
+        "WX-23",
+        "WX-25"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.3.04",
+      "section": "14.3",
+      "source_text": "This is an index-shape illustration, not a complete authorized public query. D12 must define generation filtering/partitioning, candidate count, exact reranking, index build memory and measured filtered recall. pgvector filtering can underfill ANN results; supported iterative scans and a bounded exact fallback may help. Never remove required filters simply to return `top_k` results. A similarity score is not a probability or model confidence. [S30]",
+      "sha256": "655db77aa57a6aa6083bda87ef4c1abede4a52038668579d9ef65898c059651a",
+      "producers": [
+        "WX-23",
+        "WX-25"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.4.01",
+      "section": "14.4",
+      "source_text": "Accept bounded query text plus typed camera/time/segment filters. Proposed initial limits are 512 query characters, `top_k <= 20`, a bounded candidate count and explicit/default archive range; finalize with load/recall evidence. Parameterize SQL and restrict active generation, published visibility and exact metadata revisions inside the candidate query. For half-open source intervals, overlap means `source_end > requested_start AND source_start < requested_end`.",
+      "sha256": "2e3d7cff5a12c525aaba59fe63515edb5a46a1cee95054818196707cacc9ad20",
+      "producers": [
+        "WX-25",
+        "WX-26",
+        "WX-32"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.4.02",
+      "section": "14.4",
+      "source_text": "Return description/snippet, camera, source interval and precision, analysis mode/quality, media revision, poster URL, validated seek offset and ranking mode. Collapse multiple hits from one video sensibly while preserving optional matched windows. Use lexical and semantic ranking with a deterministic fusion strategy selected in D12; do not pass arbitrary user queries to an LLM that generates database operations.",
+      "sha256": "81e6fa3422e76df54d5171d0c08b3e50afe5854f33e7bac18aa8a04f272b24e2",
+      "producers": [
+        "WX-25",
+        "WX-26",
+        "WX-32"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.4.03",
+      "section": "14.4",
+      "source_text": "Rate-limit public embedding calls separately from SQL queries, cap concurrent model work, and cache query vectors by normalized query transformation **and profile fingerprint** with bounded TTL/size. An embedding outage leaves camera/date browsing and lexical search available. Explicitly label a lexical fallback; use a cached semantic query only when its full profile matches. No external model fallback or silent model substitution.",
+      "sha256": "0f52be4e9405c7cf6c5aa9f1bd3b8c0685af01992b47e5a008c18f617371f7da",
+      "producers": [
+        "WX-25",
+        "WX-26",
+        "WX-32"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.4.04",
+      "section": "14.4",
+      "source_text": "Evaluate representative clear/cloudy/rain/snow/night/obstructed/partial queries, negative cases, multiple cameras and strict date filters. Compare ANN against exact results, document qualitative relevance and false matches, and verify every seek result lies inside the cited media interval. Restore tests must recover metadata/vectors with inference deliberately unavailable, then verify stored-vector exact search and typed/lexical queries.",
+      "sha256": "5c8e701d6c26a6194718df40619fb615817ad7b6b3a35e26f04f85e8f08fe199",
+      "producers": [
+        "WX-25",
+        "WX-26",
+        "WX-32"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.5.01",
+      "section": "14.5",
+      "source_text": "Add a small versioned typed filter schema for measured precipitation, gust, temperature and other qualified metrics. Each predicate defines metric, statistic (for example observed accumulation, maximum gust or duration-weighted mean temperature), comparison operator, value/unit, time scope and minimum coverage. Convert units deterministically and parameterize SQL. The UI must explain the selected statistic/window rather than expose an ambiguous temperature field. Never infer numeric measurements from an AI description or accept arbitrary user SQL/formulas.",
+      "sha256": "f194a64039fc141c907deeb6190cead7abbb31104da24135ae091ea1aff73f76",
+      "producers": [
+        "WX-13",
+        "WX-25",
+        "WX-26",
+        "WX-42"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.5.02",
+      "section": "14.5",
+      "source_text": "The initial default scope is the complete video's exact source segment, using its deterministic aggregate revision. A matched analysis-window result must state that a numeric condition applies to the whole video; do not imply the gust occurred at that exact semantic hit. Offer a narrower window only when its own measured aggregate/support and precision are qualified. Calendar-day filters and solar-cycle labels remain distinct. Return matched measurement, units, interval, coverage and evidence revision alongside the result.",
+      "sha256": "fd1192f5eb81fa6fa760528bd89d0f58ba4431d6ae7ab6dbad56556042075276",
+      "producers": [
+        "WX-13",
+        "WX-25",
+        "WX-26",
+        "WX-42"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.5.03",
+      "section": "14.5",
+      "source_text": "Unknown or insufficiently covered values do not satisfy `= 0`, `no rain` or any ordinary numeric comparison. Support explicit unknown/coverage filters if useful. Apply authorization, publication, camera/time and numeric predicates inside candidate selection, before semantic ranking, and preserve them through ANN/exact/lexical fallback. An empty textual query may perform numeric/date/camera filtering without a model request; measured-only filtering and browsing work while AI or embeddings are unavailable. Include the complete filter schema and aggregate revision in relevant cache identities and revalidate corrected evidence.",
+      "sha256": "e797a653654da07d63ad8ba01d811fb93a1abe7a34e25a4df5fc69c1025258cf",
+      "producers": [
+        "WX-13",
+        "WX-25",
+        "WX-26",
+        "WX-42"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "Q14.5.04",
+      "section": "14.5",
+      "source_text": "Acceptance covers unit equivalence, empty/zero/incomplete rain, sparse gusts, late telemetry, camera-independent station data, DST/overnight windows, boundary overlaps, ANN underfill and inference outages. Numeric truth and coverage never relax merely to fill `top_k` results.",
+      "sha256": "0dbdd81f6fe4734026435f8dad1d815b1e1e10761470f71ddfa03db0051d8ce7",
+      "producers": [
+        "WX-13",
+        "WX-25",
+        "WX-26",
+        "WX-42"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    }
+  ],
+  "acceptance": {
+    "14.1": {
+      "producers": [
+        "WX-23",
+        "WX-25"
+      ],
+      "obligations": [
+        "Combine recorded video metadata/validated descriptions with semantic, lexical and exact typed filters; search does not answer new weather questions or generate SQL.",
+        "Requalify embed.main route/model/weights/serving, expected 2560 dimensions, pooling, normalization, limits and latency/errors with scoped Weather access; historical candidate metadata is not live acceptance.",
+        "Bind exact UTF-8 query prefix concatenation and unprefixed documents in one immutable profile fingerprint, including model, pooling, similarity, normalization and serving provenance. Same dimensions never authorize model substitution.",
+        "Validate output count, dimensions, finite components, nonzero norms and qualified tolerance; profile changes require evaluation rather than silently changing transforms."
+      ]
+    },
+    "14.2": {
+      "producers": [
+        "WX-24",
+        "WX-32",
+        "WX-43"
+      ],
+      "obligations": [
+        "Build bounded deterministic public whole-video and useful evidence-window/event documents, never every synthetic frame; retain all example text fields and separate instrument provenance/units.",
+        "Bind video/media/analysis/editorial/measured revisions, camera, source/seek/evidence/mode/quality, text hash and profile/generation; typed SQL fields handle dates/camera rather than embedded timestamps.",
+        "Use durable outbox idempotence on document/text/profile with finite retry/deadline and current-revision CAS; ingestion/publication proceed without embeddings and pending videos remain browsable.",
+        "Withdraw incorrect text immediately while replacement is pending, including late-weather dependent synthesis; unchanged independently valid visual text may remain.",
+        "Index effective public human revisions with attribution, excluding favorites/notes/operator identity/private-original metadata. Future visual research stays separate from text profile and does not require wholesale raw retention.",
+        "Shadow-build and evaluate changed profiles, atomically activate and retain bounded rollback; back up original vectors/profiles for inference-independent restore and never rank incompatible spaces together."
+      ]
+    },
+    "14.3": {
+      "producers": [
+        "WX-23",
+        "WX-25"
+      ],
+      "obligations": [
+        "Store expected full-precision vector(2560) on qualified pgvector; conventional vector ANN limit prevents a direct 2560-dimensional HNSW/IVFFlat index. Never truncate dimensions.",
+        "Start exact filtered search; measure actual window/event document count and query cost before adding ANN. Six daily videos alone understates corpus size.",
+        "Optional halfvec expression HNSW requires compatible installed version, matching query cast, profile/generation isolation, bounded candidate count and full-precision reranking.",
+        "Treat SQL example as index-shape illustration, not complete public query. Qualify memory, filtered recall and underfill; bounded fallback never removes required predicates and similarity is not probability."
+      ]
+    },
+    "14.4": {
+      "producers": [
+        "WX-25",
+        "WX-26",
+        "WX-32"
+      ],
+      "obligations": [
+        "Enforce bounded 512-character text, top_k<=20, explicit/default bounded archive interval and admitted candidates; parameterize SQL and enforce active generation/public/revision eligibility inside candidates.",
+        "Use strict half-open overlap source_end>request_start AND source_start<request_end, including exact-touch negative cases.",
+        "Return snippet/camera/source interval/evidence precision/mode/quality/media revision/poster/validated seek/ranking mode; collapse videos deterministically while retaining optional supported windows. No user-generated database operations.",
+        "Rate-limit embedding separately from SQL and cap concurrency; bounded query cache binds exact transformed bytes and full profile. Outage preserves labeled lexical/browsing and exact-profile cached semantics only, without external/model substitution.",
+        "Evaluate clear/cloud/rain/snow/night/obstructed/partial and negative queries across cameras/date filters; compare optional ANN to exact, measure relevance/false matches and validate every seek.",
+        "Restore metadata and full vectors/profiles with inference blocked; verify stored-vector exact plus typed/lexical operation. Existing vectors alone do not imply arbitrary fresh query embedding is available."
+      ]
+    },
+    "14.5": {
+      "producers": [
+        "WX-13",
+        "WX-25",
+        "WX-26",
+        "WX-42"
+      ],
+      "obligations": [
+        "Version numeric metric/statistic/operator/value/unit/scope/minimum-coverage schema, convert units deterministically and parameterize SQL; UI names the statistic/window. No AI-derived numeric truth or arbitrary formulas.",
+        "Default numeric scope is exact whole-video source segment aggregate revision; clip matches label the broader measured condition, with narrower scope only after qualified support/precision. Civil days and solar cycles stay distinct.",
+        "Return matched values/units/interval/coverage/revision. Unknown or low coverage never satisfies zero/no-rain or ordinary comparisons.",
+        "Apply visibility/camera/time/numeric predicates before ranking and through ANN/exact/lexical fallback; empty text enables model-free measured/date/camera browsing.",
+        "Cache identities include complete filter schema and aggregate revision; corrected evidence invalidates results. Test unit equivalence, zero/empty/incomplete rain, sparse gusts, late data, shared station, DST/overnight, overlap, underfill and outages without relaxing truth to fill top_k."
+      ]
+    }
+  },
+  "verification": {
+    "all_nonblank_nonheading_source_lines_preserved": true,
+    "runtime_acceptance": false
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "observed_at": "2026-10-23T22:22:43.998737+00:00",
+  "fixture_count": 57,
+  "all_shape_expectations_matched": true,
+  "scope": "API metaschema and complete fixture collection with explicit date and UTC assertions; search evidence precision is independent of nullable seek",
+  "input_sha256": {
+    "api.schema.json": "ebf6d4626d0b8a3bcff401ab285df92ac9cb1b4beecef31bae5715f2f42ac421",
+    "schema-fixtures.json": "f64177f564ec1844b3470d9b7f62369cf0d818d3183bcedff5b9eff859b6ea7f",
+    "api-contract.md": "d04c7e28d39a030d0412f212779f7a3d350c0d122cbe174a632f41ba9278ced0"
+  },
+  "limits": [
+    "No retrieval runtime, evidence membership, temporal grounding or seek equality test",
+    "Prior receipts apply only to recorded input hashes"
+  ]
+}

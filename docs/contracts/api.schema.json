@@ -2495,6 +2495,14 @@
             "$ref": "#/$defs/Id"
           },
           "maxItems": 100
+        },
+        "evidence_precision": {
+          "enum": [
+            "frame",
+            "interval",
+            "clip",
+            "segment"
+          ]
         }
       },
       "required": [
@@ -2509,7 +2517,8 @@
         "poster",
         "seek",
         "matched_measurements",
-        "evidence_ids"
+        "evidence_ids",
+        "evidence_precision"
       ]
     },
     "SearchResponse": {
