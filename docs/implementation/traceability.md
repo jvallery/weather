@@ -141,3 +141,7 @@ The [section 11 audit](storage-clause-audit.md) preserves 24 source blocks and m
 ## Website and delivery acceptance
 
 The [§§12.1–12.5 audit](web-clause-audit.md) preserves 14 source blocks and all 19 route rows with explicit producer ownership and 30 grouped acceptance obligations. Together with the existing §§12.6–12.8 sentence audit, section 12 now has source-bound coverage. This does not qualify framework pins, rendered wireframes, actual browser behavior, permitted transport or cache withdrawal.
+
+## Automated analysis acceptance
+
+The [section 13 audit](analysis-clause-audit.md) preserves 35 source blocks with 34 grouped obligations. Both stored prompt assets exactly match the source templates. Seven synthetic rational-window cases verify frame ownership against independently enumerated centers; no decoder or inference behavior is inferred. Native video, backend termination, current model provenance and semantic grounding remain required.

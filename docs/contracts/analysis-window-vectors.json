@@ -1,0 +1,478 @@
+{
+  "schema_version": 1,
+  "status": "synthetic_exact_arithmetic_verified_not_decoder_or_model_qualification",
+  "requirements_sha256": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+  "method": "Python Fraction implements the required ceiling formula; independent enumeration compares each rational frame center to half-open source windows. Concatenated assignments equal range(N).",
+  "empty_window_policy": "Zero selected frames means no media input for that source window; retain explicit unavailable visual coverage, never duplicate an adjacent frame or invent evidence. Ordinary duration/rate cases are separate from adversarial low-frame-count arithmetic cases.",
+  "cases": [
+    {
+      "id": "ordinary-day",
+      "source_duration_seconds": 50400,
+      "output_frames": 4200,
+      "source_step_rational": "12",
+      "windows": [
+        {
+          "source_start_seconds": 0,
+          "source_end_seconds": 3600,
+          "first_frame": 0,
+          "end_frame_exclusive": 300,
+          "original_pts_start": "0",
+          "original_pts_end": "5",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 3600,
+          "source_end_seconds": 7200,
+          "first_frame": 300,
+          "end_frame_exclusive": 600,
+          "original_pts_start": "5",
+          "original_pts_end": "10",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 7200,
+          "source_end_seconds": 10800,
+          "first_frame": 600,
+          "end_frame_exclusive": 900,
+          "original_pts_start": "10",
+          "original_pts_end": "15",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 10800,
+          "source_end_seconds": 14400,
+          "first_frame": 900,
+          "end_frame_exclusive": 1200,
+          "original_pts_start": "15",
+          "original_pts_end": "20",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 14400,
+          "source_end_seconds": 18000,
+          "first_frame": 1200,
+          "end_frame_exclusive": 1500,
+          "original_pts_start": "20",
+          "original_pts_end": "25",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 18000,
+          "source_end_seconds": 21600,
+          "first_frame": 1500,
+          "end_frame_exclusive": 1800,
+          "original_pts_start": "25",
+          "original_pts_end": "30",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 21600,
+          "source_end_seconds": 25200,
+          "first_frame": 1800,
+          "end_frame_exclusive": 2100,
+          "original_pts_start": "30",
+          "original_pts_end": "35",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 25200,
+          "source_end_seconds": 28800,
+          "first_frame": 2100,
+          "end_frame_exclusive": 2400,
+          "original_pts_start": "35",
+          "original_pts_end": "40",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 28800,
+          "source_end_seconds": 32400,
+          "first_frame": 2400,
+          "end_frame_exclusive": 2700,
+          "original_pts_start": "40",
+          "original_pts_end": "45",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 32400,
+          "source_end_seconds": 36000,
+          "first_frame": 2700,
+          "end_frame_exclusive": 3000,
+          "original_pts_start": "45",
+          "original_pts_end": "50",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 36000,
+          "source_end_seconds": 39600,
+          "first_frame": 3000,
+          "end_frame_exclusive": 3300,
+          "original_pts_start": "50",
+          "original_pts_end": "55",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 39600,
+          "source_end_seconds": 43200,
+          "first_frame": 3300,
+          "end_frame_exclusive": 3600,
+          "original_pts_start": "55",
+          "original_pts_end": "60",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 43200,
+          "source_end_seconds": 46800,
+          "first_frame": 3600,
+          "end_frame_exclusive": 3900,
+          "original_pts_start": "60",
+          "original_pts_end": "65",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 46800,
+          "source_end_seconds": 50400,
+          "first_frame": 3900,
+          "end_frame_exclusive": 4200,
+          "original_pts_start": "65",
+          "original_pts_end": "70",
+          "selected_frame_count": 300
+        }
+      ]
+    },
+    {
+      "id": "ordinary-night",
+      "source_duration_seconds": 36000,
+      "output_frames": 3000,
+      "source_step_rational": "12",
+      "windows": [
+        {
+          "source_start_seconds": 0,
+          "source_end_seconds": 3600,
+          "first_frame": 0,
+          "end_frame_exclusive": 300,
+          "original_pts_start": "0",
+          "original_pts_end": "5",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 3600,
+          "source_end_seconds": 7200,
+          "first_frame": 300,
+          "end_frame_exclusive": 600,
+          "original_pts_start": "5",
+          "original_pts_end": "10",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 7200,
+          "source_end_seconds": 10800,
+          "first_frame": 600,
+          "end_frame_exclusive": 900,
+          "original_pts_start": "10",
+          "original_pts_end": "15",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 10800,
+          "source_end_seconds": 14400,
+          "first_frame": 900,
+          "end_frame_exclusive": 1200,
+          "original_pts_start": "15",
+          "original_pts_end": "20",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 14400,
+          "source_end_seconds": 18000,
+          "first_frame": 1200,
+          "end_frame_exclusive": 1500,
+          "original_pts_start": "20",
+          "original_pts_end": "25",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 18000,
+          "source_end_seconds": 21600,
+          "first_frame": 1500,
+          "end_frame_exclusive": 1800,
+          "original_pts_start": "25",
+          "original_pts_end": "30",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 21600,
+          "source_end_seconds": 25200,
+          "first_frame": 1800,
+          "end_frame_exclusive": 2100,
+          "original_pts_start": "30",
+          "original_pts_end": "35",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 25200,
+          "source_end_seconds": 28800,
+          "first_frame": 2100,
+          "end_frame_exclusive": 2400,
+          "original_pts_start": "35",
+          "original_pts_end": "40",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 28800,
+          "source_end_seconds": 32400,
+          "first_frame": 2400,
+          "end_frame_exclusive": 2700,
+          "original_pts_start": "40",
+          "original_pts_end": "45",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 32400,
+          "source_end_seconds": 36000,
+          "first_frame": 2700,
+          "end_frame_exclusive": 3000,
+          "original_pts_start": "45",
+          "original_pts_end": "50",
+          "selected_frame_count": 300
+        }
+      ]
+    },
+    {
+      "id": "fractional-solar-day",
+      "source_duration_seconds": 43201,
+      "output_frames": 3600,
+      "source_step_rational": "43201/3600",
+      "windows": [
+        {
+          "source_start_seconds": 0,
+          "source_end_seconds": 3600,
+          "first_frame": 0,
+          "end_frame_exclusive": 300,
+          "original_pts_start": "0",
+          "original_pts_end": "5",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 3600,
+          "source_end_seconds": 7200,
+          "first_frame": 300,
+          "end_frame_exclusive": 600,
+          "original_pts_start": "5",
+          "original_pts_end": "10",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 7200,
+          "source_end_seconds": 10800,
+          "first_frame": 600,
+          "end_frame_exclusive": 900,
+          "original_pts_start": "10",
+          "original_pts_end": "15",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 10800,
+          "source_end_seconds": 14400,
+          "first_frame": 900,
+          "end_frame_exclusive": 1200,
+          "original_pts_start": "15",
+          "original_pts_end": "20",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 14400,
+          "source_end_seconds": 18000,
+          "first_frame": 1200,
+          "end_frame_exclusive": 1500,
+          "original_pts_start": "20",
+          "original_pts_end": "25",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 18000,
+          "source_end_seconds": 21600,
+          "first_frame": 1500,
+          "end_frame_exclusive": 1800,
+          "original_pts_start": "25",
+          "original_pts_end": "30",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 21600,
+          "source_end_seconds": 25200,
+          "first_frame": 1800,
+          "end_frame_exclusive": 2100,
+          "original_pts_start": "30",
+          "original_pts_end": "35",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 25200,
+          "source_end_seconds": 28800,
+          "first_frame": 2100,
+          "end_frame_exclusive": 2400,
+          "original_pts_start": "35",
+          "original_pts_end": "40",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 28800,
+          "source_end_seconds": 32400,
+          "first_frame": 2400,
+          "end_frame_exclusive": 2700,
+          "original_pts_start": "40",
+          "original_pts_end": "45",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 32400,
+          "source_end_seconds": 36000,
+          "first_frame": 2700,
+          "end_frame_exclusive": 3000,
+          "original_pts_start": "45",
+          "original_pts_end": "50",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 36000,
+          "source_end_seconds": 39600,
+          "first_frame": 3000,
+          "end_frame_exclusive": 3300,
+          "original_pts_start": "50",
+          "original_pts_end": "55",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 39600,
+          "source_end_seconds": 43200,
+          "first_frame": 3300,
+          "end_frame_exclusive": 3600,
+          "original_pts_start": "55",
+          "original_pts_end": "60",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 43200,
+          "source_end_seconds": 43201,
+          "first_frame": 3600,
+          "end_frame_exclusive": 3600,
+          "original_pts_start": "60",
+          "original_pts_end": "60",
+          "selected_frame_count": 0
+        }
+      ]
+    },
+    {
+      "id": "short-final-window",
+      "source_duration_seconds": 3601,
+      "output_frames": 300,
+      "source_step_rational": "3601/300",
+      "windows": [
+        {
+          "source_start_seconds": 0,
+          "source_end_seconds": 3600,
+          "first_frame": 0,
+          "end_frame_exclusive": 300,
+          "original_pts_start": "0",
+          "original_pts_end": "5",
+          "selected_frame_count": 300
+        },
+        {
+          "source_start_seconds": 3600,
+          "source_end_seconds": 3601,
+          "first_frame": 300,
+          "end_frame_exclusive": 300,
+          "original_pts_start": "5",
+          "original_pts_end": "5",
+          "selected_frame_count": 0
+        }
+      ]
+    },
+    {
+      "id": "exact-center-on-hour",
+      "source_duration_seconds": 7200,
+      "output_frames": 3,
+      "source_step_rational": "2400",
+      "windows": [
+        {
+          "source_start_seconds": 0,
+          "source_end_seconds": 3600,
+          "first_frame": 0,
+          "end_frame_exclusive": 1,
+          "original_pts_start": "0",
+          "original_pts_end": "1/60",
+          "selected_frame_count": 1
+        },
+        {
+          "source_start_seconds": 3600,
+          "source_end_seconds": 7200,
+          "first_frame": 1,
+          "end_frame_exclusive": 3,
+          "original_pts_start": "1/60",
+          "original_pts_end": "1/20",
+          "selected_frame_count": 2
+        }
+      ]
+    },
+    {
+      "id": "empty-source-windows",
+      "source_duration_seconds": 10800,
+      "output_frames": 1,
+      "source_step_rational": "10800",
+      "windows": [
+        {
+          "source_start_seconds": 0,
+          "source_end_seconds": 3600,
+          "first_frame": 0,
+          "end_frame_exclusive": 0,
+          "original_pts_start": "0",
+          "original_pts_end": "0",
+          "selected_frame_count": 0
+        },
+        {
+          "source_start_seconds": 3600,
+          "source_end_seconds": 7200,
+          "first_frame": 0,
+          "end_frame_exclusive": 1,
+          "original_pts_start": "0",
+          "original_pts_end": "1/60",
+          "selected_frame_count": 1
+        },
+        {
+          "source_start_seconds": 7200,
+          "source_end_seconds": 10800,
+          "first_frame": 1,
+          "end_frame_exclusive": 1,
+          "original_pts_start": "1/60",
+          "original_pts_end": "1/60",
+          "selected_frame_count": 0
+        }
+      ]
+    },
+    {
+      "id": "subhour-segment",
+      "source_duration_seconds": 1800,
+      "output_frames": 150,
+      "source_step_rational": "12",
+      "windows": [
+        {
+          "source_start_seconds": 0,
+          "source_end_seconds": 1800,
+          "first_frame": 0,
+          "end_frame_exclusive": 150,
+          "original_pts_start": "0",
+          "original_pts_end": "5/2",
+          "selected_frame_count": 150
+        }
+      ]
+    }
+  ],
+  "checks": {
+    "case_count": 7,
+    "window_count": 45,
+    "formula_equals_independent_enumeration": true,
+    "all_frames_owned_exactly_once": true,
+    "real_decode_executed": false,
+    "inference_executed": false
+  }
+}
