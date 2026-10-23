@@ -1,0 +1,557 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weather.vallery.net/contracts/recovery-v1.schema.json",
+  "title": "Private candidate and independently verified recovery receipts",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Candidate"
+    },
+    {
+      "$ref": "#/$defs/ObjectVerification"
+    },
+    {
+      "$ref": "#/$defs/VerifiedCheckpoint"
+    },
+    {
+      "$ref": "#/$defs/IncompleteCheckpoint"
+    }
+  ],
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "Hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "UTC": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$"
+    },
+    "SourceObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "object_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "class": {
+          "enum": [
+            "video",
+            "poster",
+            "keogram",
+            "original",
+            "public_still",
+            "metadata",
+            "keogram_map",
+            "recovery_manifest",
+            "database_base",
+            "database_wal",
+            "database_history",
+            "recovery_config"
+          ]
+        },
+        "private_source_locator_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "sha256": {
+          "$ref": "#/$defs/Hash"
+        }
+      },
+      "required": [
+        "object_id",
+        "class",
+        "private_source_locator_id",
+        "bytes",
+        "sha256"
+      ]
+    },
+    "OffsiteVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "destination_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "key_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "version_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "sha256": {
+          "$ref": "#/$defs/Hash"
+        }
+      },
+      "required": [
+        "destination_id",
+        "key_id",
+        "version_id",
+        "bytes",
+        "sha256"
+      ]
+    },
+    "ClosureShard": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "shard_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "row_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "sha256": {
+          "$ref": "#/$defs/Hash"
+        },
+        "private_locator_id": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "shard_id",
+        "row_count",
+        "bytes",
+        "sha256",
+        "private_locator_id"
+      ]
+    },
+    "DatabaseTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cluster_incarnation": {
+          "$ref": "#/$defs/Id"
+        },
+        "system_identifier": {
+          "type": "string",
+          "pattern": "^[0-9]{1,20}$"
+        },
+        "timeline": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "base_backup_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "base_manifest_sha256": {
+          "$ref": "#/$defs/Hash"
+        },
+        "restore_point_name": {
+          "$ref": "#/$defs/Id"
+        },
+        "restore_lsn": {
+          "type": "string",
+          "pattern": "^[0-9A-F]{1,8}/[0-9A-F]{1,8}$"
+        },
+        "target_inclusive": {
+          "const": true
+        },
+        "archive_identity": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "cluster_incarnation",
+        "system_identifier",
+        "timeline",
+        "base_backup_id",
+        "base_manifest_sha256",
+        "restore_point_name",
+        "restore_lsn",
+        "target_inclusive",
+        "archive_identity"
+      ]
+    },
+    "VersionIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "application_image_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "schema_revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "postgres_image_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "postgres_major": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "extension_inventory_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "embedding_profile_inventory_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "active_search_generation": {
+          "$ref": "#/$defs/Id"
+        },
+        "configuration_inventory_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "secret_recovery_inventory_id": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "application_image_digest",
+        "schema_revision",
+        "postgres_image_digest",
+        "postgres_major",
+        "extension_inventory_id",
+        "embedding_profile_inventory_id",
+        "active_search_generation",
+        "configuration_inventory_id",
+        "secret_recovery_inventory_id"
+      ]
+    },
+    "Candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "record_type": {
+          "const": "checkpoint_candidate"
+        },
+        "checkpoint_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "created_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "catalog_generation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "catalog_closure_digest": {
+          "$ref": "#/$defs/Hash"
+        },
+        "database": {
+          "$ref": "#/$defs/DatabaseTarget"
+        },
+        "versions": {
+          "$ref": "#/$defs/VersionIdentity"
+        },
+        "closure_shards": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ClosureShard"
+          },
+          "maxItems": 10000
+        },
+        "closure_object_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "closure_total_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "closure_policy_revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "binding_protocol_revision": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "schema_version",
+        "record_type",
+        "checkpoint_id",
+        "created_at",
+        "catalog_generation",
+        "catalog_closure_digest",
+        "database",
+        "versions",
+        "closure_shards",
+        "closure_object_count",
+        "closure_total_bytes",
+        "closure_policy_revision",
+        "binding_protocol_revision"
+      ]
+    },
+    "ObjectVerification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "record_type": {
+          "const": "object_verification"
+        },
+        "checkpoint_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceObject"
+        },
+        "destination": {
+          "$ref": "#/$defs/OffsiteVersion"
+        },
+        "verified_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "verifier_identity": {
+          "$ref": "#/$defs/Id"
+        },
+        "verifier_build_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "verification_method": {
+          "enum": [
+            "full_content_sha256",
+            "reused_exact_version_receipt"
+          ]
+        },
+        "prior_receipt_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retention_policy_revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "protection_evidence_id": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "schema_version",
+        "record_type",
+        "checkpoint_id",
+        "source",
+        "destination",
+        "verified_at",
+        "verifier_identity",
+        "verifier_build_digest",
+        "verification_method",
+        "prior_receipt_id",
+        "retention_policy_revision",
+        "protection_evidence_id"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "verification_method": {
+                "const": "reused_exact_version_receipt"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "prior_receipt_id": {
+                "$ref": "#/$defs/Id"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "VerifiedShard": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "candidate_shard_sha256": {
+          "$ref": "#/$defs/Hash"
+        },
+        "verified_row_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "verification_ledger": {
+          "$ref": "#/$defs/OffsiteVersion"
+        }
+      },
+      "required": [
+        "candidate_shard_sha256",
+        "verified_row_count",
+        "verification_ledger"
+      ]
+    },
+    "VerifiedCheckpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "record_type": {
+          "const": "verified_checkpoint"
+        },
+        "checkpoint_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "candidate_manifest": {
+          "$ref": "#/$defs/OffsiteVersion"
+        },
+        "catalog_generation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "catalog_closure_digest": {
+          "$ref": "#/$defs/Hash"
+        },
+        "database_target_sha256": {
+          "$ref": "#/$defs/Hash"
+        },
+        "verified_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "verifier_identity": {
+          "$ref": "#/$defs/Id"
+        },
+        "verifier_build_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "verified_closure_object_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "verified_closure_total_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "verified_shards": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VerifiedShard"
+          },
+          "maxItems": 10000
+        },
+        "base_wal_chain_ledger": {
+          "$ref": "#/$defs/OffsiteVersion"
+        },
+        "bootstrap_inventory_ledger": {
+          "$ref": "#/$defs/OffsiteVersion"
+        },
+        "verification_policy_revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "missing_item_count": {
+          "const": 0
+        },
+        "mismatch_count": {
+          "const": 0
+        }
+      },
+      "required": [
+        "schema_version",
+        "record_type",
+        "checkpoint_id",
+        "candidate_manifest",
+        "catalog_generation",
+        "catalog_closure_digest",
+        "database_target_sha256",
+        "verified_at",
+        "verifier_identity",
+        "verifier_build_digest",
+        "verified_closure_object_count",
+        "verified_closure_total_bytes",
+        "verified_shards",
+        "base_wal_chain_ledger",
+        "bootstrap_inventory_ledger",
+        "verification_policy_revision",
+        "missing_item_count",
+        "mismatch_count"
+      ]
+    },
+    "IncompleteCheckpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "record_type": {
+          "const": "incomplete_checkpoint"
+        },
+        "checkpoint_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "observed_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "candidate_sha256": {
+          "$ref": "#/$defs/Hash"
+        },
+        "reason_codes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/Id"
+          }
+        },
+        "missing_item_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "mismatch_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "diagnostic_ledger_id": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "schema_version",
+        "record_type",
+        "checkpoint_id",
+        "observed_at",
+        "candidate_sha256",
+        "reason_codes",
+        "missing_item_count",
+        "mismatch_count",
+        "diagnostic_ledger_id"
+      ]
+    }
+  }
+}

@@ -1,0 +1,397 @@
+{
+  "description": "Synthetic shape-only acceptance; no bytes, chain, provenance, protection or restore is verified.",
+  "cases": [
+    {
+      "name": "success envelope with empty media closure requires semantic ledgers",
+      "valid": true,
+      "value": {
+        "schema_version": 1,
+        "record_type": "verified_checkpoint",
+        "checkpoint_id": "synthetic-checkpoint",
+        "candidate_manifest": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "catalog_generation": 3,
+        "catalog_closure_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "database_target_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "verified_at": "2026-10-23T00:00:00Z",
+        "verifier_identity": "synthetic-verifier",
+        "verifier_build_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "verified_closure_object_count": 0,
+        "verified_closure_total_bytes": 0,
+        "verified_shards": [],
+        "base_wal_chain_ledger": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "bootstrap_inventory_ledger": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "verification_policy_revision": "synthetic-policy",
+        "missing_item_count": 0,
+        "mismatch_count": 0
+      }
+    },
+    {
+      "name": "success cannot include missing object",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "verified_checkpoint",
+        "checkpoint_id": "synthetic-checkpoint",
+        "candidate_manifest": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "catalog_generation": 3,
+        "catalog_closure_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "database_target_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "verified_at": "2026-10-23T00:00:00Z",
+        "verifier_identity": "synthetic-verifier",
+        "verifier_build_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "verified_closure_object_count": 0,
+        "verified_closure_total_bytes": 0,
+        "verified_shards": [],
+        "base_wal_chain_ledger": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "bootstrap_inventory_ledger": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "verification_policy_revision": "synthetic-policy",
+        "missing_item_count": 1,
+        "mismatch_count": 0
+      }
+    },
+    {
+      "name": "success cannot include mismatch",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "verified_checkpoint",
+        "checkpoint_id": "synthetic-checkpoint",
+        "candidate_manifest": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "catalog_generation": 3,
+        "catalog_closure_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "database_target_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "verified_at": "2026-10-23T00:00:00Z",
+        "verifier_identity": "synthetic-verifier",
+        "verifier_build_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "verified_closure_object_count": 0,
+        "verified_closure_total_bytes": 0,
+        "verified_shards": [],
+        "base_wal_chain_ledger": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "bootstrap_inventory_ledger": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "verification_policy_revision": "synthetic-policy",
+        "missing_item_count": 0,
+        "mismatch_count": 1
+      }
+    },
+    {
+      "name": "success needs database chain ledger",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "verified_checkpoint",
+        "checkpoint_id": "synthetic-checkpoint",
+        "candidate_manifest": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "catalog_generation": 3,
+        "catalog_closure_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "database_target_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "verified_at": "2026-10-23T00:00:00Z",
+        "verifier_identity": "synthetic-verifier",
+        "verifier_build_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "verified_closure_object_count": 0,
+        "verified_closure_total_bytes": 0,
+        "verified_shards": [],
+        "bootstrap_inventory_ledger": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "verification_policy_revision": "synthetic-policy",
+        "missing_item_count": 0,
+        "mismatch_count": 0
+      }
+    },
+    {
+      "name": "manifest requires exact offsite version",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "verified_checkpoint",
+        "checkpoint_id": "synthetic-checkpoint",
+        "candidate_manifest": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "catalog_generation": 3,
+        "catalog_closure_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "database_target_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "verified_at": "2026-10-23T00:00:00Z",
+        "verifier_identity": "synthetic-verifier",
+        "verifier_build_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "verified_closure_object_count": 0,
+        "verified_closure_total_bytes": 0,
+        "verified_shards": [],
+        "base_wal_chain_ledger": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "bootstrap_inventory_ledger": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "verification_policy_revision": "synthetic-policy",
+        "missing_item_count": 0,
+        "mismatch_count": 0
+      }
+    },
+    {
+      "name": "credential field not permitted",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "verified_checkpoint",
+        "checkpoint_id": "synthetic-checkpoint",
+        "candidate_manifest": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "catalog_generation": 3,
+        "catalog_closure_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "database_target_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "verified_at": "2026-10-23T00:00:00Z",
+        "verifier_identity": "synthetic-verifier",
+        "verifier_build_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "verified_closure_object_count": 0,
+        "verified_closure_total_bytes": 0,
+        "verified_shards": [],
+        "base_wal_chain_ledger": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "bootstrap_inventory_ledger": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "verification_policy_revision": "synthetic-policy",
+        "missing_item_count": 0,
+        "mismatch_count": 0,
+        "credential": "not-a-real-secret"
+      }
+    },
+    {
+      "name": "impossible verification date",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "verified_checkpoint",
+        "checkpoint_id": "synthetic-checkpoint",
+        "candidate_manifest": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "catalog_generation": 3,
+        "catalog_closure_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "database_target_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "verified_at": "2026-02-30T00:00:00Z",
+        "verifier_identity": "synthetic-verifier",
+        "verifier_build_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "verified_closure_object_count": 0,
+        "verified_closure_total_bytes": 0,
+        "verified_shards": [],
+        "base_wal_chain_ledger": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "bootstrap_inventory_ledger": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "verification_policy_revision": "synthetic-policy",
+        "missing_item_count": 0,
+        "mismatch_count": 0
+      }
+    },
+    {
+      "name": "incomplete has distinct record type",
+      "valid": true,
+      "value": {
+        "schema_version": 1,
+        "record_type": "incomplete_checkpoint",
+        "checkpoint_id": "synthetic-checkpoint",
+        "observed_at": "2026-10-23T00:00:00Z",
+        "candidate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reason_codes": [
+          "missing_wal"
+        ],
+        "missing_item_count": 1,
+        "mismatch_count": 0,
+        "diagnostic_ledger_id": "synthetic-diagnostics"
+      }
+    },
+    {
+      "name": "full content receipt envelope",
+      "valid": true,
+      "value": {
+        "schema_version": 1,
+        "record_type": "object_verification",
+        "checkpoint_id": "synthetic-checkpoint",
+        "source": {
+          "object_id": "synthetic-original",
+          "class": "original",
+          "private_source_locator_id": "synthetic-locator",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "destination": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "verified_at": "2026-10-23T00:00:00Z",
+        "verifier_identity": "synthetic-reader",
+        "verifier_build_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "verification_method": "full_content_sha256",
+        "prior_receipt_id": null,
+        "retention_policy_revision": "synthetic-retention",
+        "protection_evidence_id": "synthetic-protection"
+      }
+    },
+    {
+      "name": "reuse without predecessor rejected",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "object_verification",
+        "checkpoint_id": "synthetic-checkpoint",
+        "source": {
+          "object_id": "synthetic-original",
+          "class": "original",
+          "private_source_locator_id": "synthetic-locator",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "destination": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "verified_at": "2026-10-23T00:00:00Z",
+        "verifier_identity": "synthetic-reader",
+        "verifier_build_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "verification_method": "reused_exact_version_receipt",
+        "prior_receipt_id": null,
+        "retention_policy_revision": "synthetic-retention",
+        "protection_evidence_id": "synthetic-protection"
+      }
+    },
+    {
+      "name": "reuse requires external semantic predecessor validation",
+      "valid": true,
+      "value": {
+        "schema_version": 1,
+        "record_type": "object_verification",
+        "checkpoint_id": "synthetic-checkpoint",
+        "source": {
+          "object_id": "synthetic-original",
+          "class": "original",
+          "private_source_locator_id": "synthetic-locator",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "destination": {
+          "destination_id": "synthetic-destination",
+          "key_id": "synthetic-key",
+          "version_id": "synthetic-version",
+          "bytes": 123,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "verified_at": "2026-10-23T00:00:00Z",
+        "verifier_identity": "synthetic-reader",
+        "verifier_build_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "verification_method": "reused_exact_version_receipt",
+        "prior_receipt_id": "synthetic-prior",
+        "retention_policy_revision": "synthetic-retention",
+        "protection_evidence_id": "synthetic-protection"
+      }
+    }
+  ]
+}

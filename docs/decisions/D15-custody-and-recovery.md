@@ -10,6 +10,8 @@ Use the existing central B2 destination with its live-verified private, provider
 
 Bind application catalog state to a named WAL marker using the [publication/recovery protocol](../implementation/publication-recovery-contract.md). The checkpoint's full immutable object closure, base/WAL chain and manifest must be independently verified offsite before marking joint recovery successful. Maintain database-only, media and joint ages separately.
 
+The [private recovery contract and schema](../contracts/recovery-contract.md) separate candidates, per-object exact-version verification, incomplete attempts and verified checkpoints. Success requires complete set equality and qualified base/WAL/bootstrap ledgers, not merely matching counts or schema-valid fields. The central-owner ledger formats, receipt provenance/discovery and admission remain unresolved integration obligations.
+
 ## Why these choices
 
 - Existing central custody supplies a supported owner, schedule, paced NAS access, independent observer and scoped offsite identities. Reusing this integration avoids an unowned second uploader.
