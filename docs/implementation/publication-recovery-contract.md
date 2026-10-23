@@ -25,6 +25,8 @@ Metadata updates use new immutable sidecars. A failed sidecar upload cannot adva
 
 ## Source pins and compact transfer
 
+The [private promotion receipt and crash protocol](../contracts/promotion-contract.md) binds the transfer record, inventory, obligations and authoritative commit; schema shape alone cannot release a pin.
+
 Pins have explicit owners, immutable input identity, purpose and completion state. A job's deadline is not a pin's deletion deadline. Cleanup may remove a sealed chunk only after all required video validations, local durability, publication commit and origin readback succeed and every pin/obligation has been discharged or safely transferred.
 
 A compact transfer copies exact selected originals or qualified keogram extraction inputs into the bounded promotion area of the same approved NFS grant. Flush and verify the destination under the admitted filesystem protocol. Commit a transfer receipt binding source and destination hashes and acquire destination ownership before releasing the source pin. During a crash both copies may remain pinned; neither may become unprotected. Reconcile by receipt and hash, never file age alone.

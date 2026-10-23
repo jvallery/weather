@@ -1,0 +1,556 @@
+{
+  "description": "Synthetic shape cases; receipt IDs are not real durability or transaction proof",
+  "cases": [
+    {
+      "name": "hourly original committed shape only",
+      "valid": true,
+      "value": {
+        "schema_version": 1,
+        "record_type": "compact_transfer_commit",
+        "transfer_id": "transfer-fixture",
+        "idempotency_key": "operation-fixture",
+        "kind": "hourly_original",
+        "camera": "skycam_east",
+        "work_id": "work-fixture",
+        "work_generation": 1,
+        "expected_entity_revision": 1,
+        "source_selection_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "source_pins": [
+          "source-pin"
+        ],
+        "sources": [
+          {
+            "attempt_id": "attempt-fixture",
+            "chunk_id": "chunk-fixture",
+            "chunk_binding_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "member_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+            "member_bytes": 123
+          }
+        ],
+        "destination_grant_id": "grant-fixture",
+        "destination_bundle_id": "bundle-fixture",
+        "destination_manifest_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+        "destination_files": [
+          {
+            "file_id": "original",
+            "bytes": 123,
+            "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+          }
+        ],
+        "destination_pin_id": "destination-pin",
+        "obligation_ids": [
+          "hour-slot-selection"
+        ],
+        "recipe_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "durability_receipt_id": "durability-fixture",
+        "database_commit_receipt_id": "transaction-fixture",
+        "committed_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "name": "keogram extraction has transformed bytes",
+      "valid": true,
+      "value": {
+        "schema_version": 1,
+        "record_type": "compact_transfer_commit",
+        "transfer_id": "transfer-fixture",
+        "idempotency_key": "operation-fixture",
+        "kind": "keogram_inputs",
+        "camera": "skycam_east",
+        "work_id": "work-fixture",
+        "work_generation": 1,
+        "expected_entity_revision": 1,
+        "source_selection_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "source_pins": [
+          "source-pin"
+        ],
+        "sources": [
+          {
+            "attempt_id": "attempt-fixture",
+            "chunk_id": "chunk-fixture",
+            "chunk_binding_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "member_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+            "member_bytes": 123
+          }
+        ],
+        "destination_grant_id": "grant-fixture",
+        "destination_bundle_id": "bundle-fixture",
+        "destination_manifest_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+        "destination_files": [
+          {
+            "file_id": "original",
+            "bytes": 20,
+            "sha256": "6666666666666666666666666666666666666666666666666666666666666666"
+          }
+        ],
+        "destination_pin_id": "destination-pin",
+        "obligation_ids": [
+          "hour-slot-selection"
+        ],
+        "recipe_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "durability_receipt_id": "durability-fixture",
+        "database_commit_receipt_id": "transaction-fixture",
+        "committed_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "name": "no source ownership",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "compact_transfer_commit",
+        "transfer_id": "transfer-fixture",
+        "idempotency_key": "operation-fixture",
+        "kind": "hourly_original",
+        "camera": "skycam_east",
+        "work_id": "work-fixture",
+        "work_generation": 1,
+        "expected_entity_revision": 1,
+        "source_selection_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "source_pins": [],
+        "sources": [
+          {
+            "attempt_id": "attempt-fixture",
+            "chunk_id": "chunk-fixture",
+            "chunk_binding_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "member_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+            "member_bytes": 123
+          }
+        ],
+        "destination_grant_id": "grant-fixture",
+        "destination_bundle_id": "bundle-fixture",
+        "destination_manifest_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+        "destination_files": [
+          {
+            "file_id": "original",
+            "bytes": 123,
+            "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+          }
+        ],
+        "destination_pin_id": "destination-pin",
+        "obligation_ids": [
+          "hour-slot-selection"
+        ],
+        "recipe_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "durability_receipt_id": "durability-fixture",
+        "database_commit_receipt_id": "transaction-fixture",
+        "committed_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "name": "no destination ownership",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "compact_transfer_commit",
+        "transfer_id": "transfer-fixture",
+        "idempotency_key": "operation-fixture",
+        "kind": "hourly_original",
+        "camera": "skycam_east",
+        "work_id": "work-fixture",
+        "work_generation": 1,
+        "expected_entity_revision": 1,
+        "source_selection_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "source_pins": [
+          "source-pin"
+        ],
+        "sources": [
+          {
+            "attempt_id": "attempt-fixture",
+            "chunk_id": "chunk-fixture",
+            "chunk_binding_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "member_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+            "member_bytes": 123
+          }
+        ],
+        "destination_grant_id": "grant-fixture",
+        "destination_bundle_id": "bundle-fixture",
+        "destination_manifest_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+        "destination_files": [
+          {
+            "file_id": "original",
+            "bytes": 123,
+            "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+          }
+        ],
+        "destination_pin_id": null,
+        "obligation_ids": [
+          "hour-slot-selection"
+        ],
+        "recipe_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "durability_receipt_id": "durability-fixture",
+        "database_commit_receipt_id": "transaction-fixture",
+        "committed_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "name": "dropped obligations",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "compact_transfer_commit",
+        "transfer_id": "transfer-fixture",
+        "idempotency_key": "operation-fixture",
+        "kind": "hourly_original",
+        "camera": "skycam_east",
+        "work_id": "work-fixture",
+        "work_generation": 1,
+        "expected_entity_revision": 1,
+        "source_selection_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "source_pins": [
+          "source-pin"
+        ],
+        "sources": [
+          {
+            "attempt_id": "attempt-fixture",
+            "chunk_id": "chunk-fixture",
+            "chunk_binding_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "member_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+            "member_bytes": 123
+          }
+        ],
+        "destination_grant_id": "grant-fixture",
+        "destination_bundle_id": "bundle-fixture",
+        "destination_manifest_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+        "destination_files": [
+          {
+            "file_id": "original",
+            "bytes": 123,
+            "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+          }
+        ],
+        "destination_pin_id": "destination-pin",
+        "obligation_ids": [],
+        "recipe_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "durability_receipt_id": "durability-fixture",
+        "database_commit_receipt_id": "transaction-fixture",
+        "committed_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "name": "invalid writer generation",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "compact_transfer_commit",
+        "transfer_id": "transfer-fixture",
+        "idempotency_key": "operation-fixture",
+        "kind": "hourly_original",
+        "camera": "skycam_east",
+        "work_id": "work-fixture",
+        "work_generation": 0,
+        "expected_entity_revision": 1,
+        "source_selection_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "source_pins": [
+          "source-pin"
+        ],
+        "sources": [
+          {
+            "attempt_id": "attempt-fixture",
+            "chunk_id": "chunk-fixture",
+            "chunk_binding_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "member_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+            "member_bytes": 123
+          }
+        ],
+        "destination_grant_id": "grant-fixture",
+        "destination_bundle_id": "bundle-fixture",
+        "destination_manifest_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+        "destination_files": [
+          {
+            "file_id": "original",
+            "bytes": 123,
+            "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+          }
+        ],
+        "destination_pin_id": "destination-pin",
+        "obligation_ids": [
+          "hour-slot-selection"
+        ],
+        "recipe_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "durability_receipt_id": "durability-fixture",
+        "database_commit_receipt_id": "transaction-fixture",
+        "committed_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "name": "copy alone is not a commit",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "copy_complete",
+        "transfer_id": "transfer-fixture",
+        "idempotency_key": "operation-fixture",
+        "kind": "hourly_original",
+        "camera": "skycam_east",
+        "work_id": "work-fixture",
+        "work_generation": 1,
+        "expected_entity_revision": 1,
+        "source_selection_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "source_pins": [
+          "source-pin"
+        ],
+        "sources": [
+          {
+            "attempt_id": "attempt-fixture",
+            "chunk_id": "chunk-fixture",
+            "chunk_binding_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "member_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+            "member_bytes": 123
+          }
+        ],
+        "destination_grant_id": "grant-fixture",
+        "destination_bundle_id": "bundle-fixture",
+        "destination_manifest_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+        "destination_files": [
+          {
+            "file_id": "original",
+            "bytes": 123,
+            "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+          }
+        ],
+        "destination_pin_id": "destination-pin",
+        "obligation_ids": [
+          "hour-slot-selection"
+        ],
+        "recipe_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "durability_receipt_id": "durability-fixture",
+        "database_commit_receipt_id": "transaction-fixture",
+        "committed_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "name": "missing durability_receipt_id",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "compact_transfer_commit",
+        "transfer_id": "transfer-fixture",
+        "idempotency_key": "operation-fixture",
+        "kind": "hourly_original",
+        "camera": "skycam_east",
+        "work_id": "work-fixture",
+        "work_generation": 1,
+        "expected_entity_revision": 1,
+        "source_selection_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "source_pins": [
+          "source-pin"
+        ],
+        "sources": [
+          {
+            "attempt_id": "attempt-fixture",
+            "chunk_id": "chunk-fixture",
+            "chunk_binding_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "member_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+            "member_bytes": 123
+          }
+        ],
+        "destination_grant_id": "grant-fixture",
+        "destination_bundle_id": "bundle-fixture",
+        "destination_manifest_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+        "destination_files": [
+          {
+            "file_id": "original",
+            "bytes": 123,
+            "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+          }
+        ],
+        "destination_pin_id": "destination-pin",
+        "obligation_ids": [
+          "hour-slot-selection"
+        ],
+        "recipe_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "database_commit_receipt_id": "transaction-fixture",
+        "committed_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "name": "missing database_commit_receipt_id",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "compact_transfer_commit",
+        "transfer_id": "transfer-fixture",
+        "idempotency_key": "operation-fixture",
+        "kind": "hourly_original",
+        "camera": "skycam_east",
+        "work_id": "work-fixture",
+        "work_generation": 1,
+        "expected_entity_revision": 1,
+        "source_selection_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "source_pins": [
+          "source-pin"
+        ],
+        "sources": [
+          {
+            "attempt_id": "attempt-fixture",
+            "chunk_id": "chunk-fixture",
+            "chunk_binding_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "member_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+            "member_bytes": 123
+          }
+        ],
+        "destination_grant_id": "grant-fixture",
+        "destination_bundle_id": "bundle-fixture",
+        "destination_manifest_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+        "destination_files": [
+          {
+            "file_id": "original",
+            "bytes": 123,
+            "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+          }
+        ],
+        "destination_pin_id": "destination-pin",
+        "obligation_ids": [
+          "hour-slot-selection"
+        ],
+        "recipe_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "durability_receipt_id": "durability-fixture",
+        "committed_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "name": "missing source_selection_sha256",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "compact_transfer_commit",
+        "transfer_id": "transfer-fixture",
+        "idempotency_key": "operation-fixture",
+        "kind": "hourly_original",
+        "camera": "skycam_east",
+        "work_id": "work-fixture",
+        "work_generation": 1,
+        "expected_entity_revision": 1,
+        "source_pins": [
+          "source-pin"
+        ],
+        "sources": [
+          {
+            "attempt_id": "attempt-fixture",
+            "chunk_id": "chunk-fixture",
+            "chunk_binding_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "member_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+            "member_bytes": 123
+          }
+        ],
+        "destination_grant_id": "grant-fixture",
+        "destination_bundle_id": "bundle-fixture",
+        "destination_manifest_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+        "destination_files": [
+          {
+            "file_id": "original",
+            "bytes": 123,
+            "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+          }
+        ],
+        "destination_pin_id": "destination-pin",
+        "obligation_ids": [
+          "hour-slot-selection"
+        ],
+        "recipe_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "durability_receipt_id": "durability-fixture",
+        "database_commit_receipt_id": "transaction-fixture",
+        "committed_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "name": "hourly original has exactly one file",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "compact_transfer_commit",
+        "transfer_id": "transfer-fixture",
+        "idempotency_key": "operation-fixture",
+        "kind": "hourly_original",
+        "camera": "skycam_east",
+        "work_id": "work-fixture",
+        "work_generation": 1,
+        "expected_entity_revision": 1,
+        "source_selection_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "source_pins": [
+          "source-pin"
+        ],
+        "sources": [
+          {
+            "attempt_id": "attempt-fixture",
+            "chunk_id": "chunk-fixture",
+            "chunk_binding_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "member_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+            "member_bytes": 123
+          }
+        ],
+        "destination_grant_id": "grant-fixture",
+        "destination_bundle_id": "bundle-fixture",
+        "destination_manifest_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+        "destination_files": [
+          {
+            "file_id": "original",
+            "bytes": 123,
+            "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+          },
+          {
+            "file_id": "other",
+            "bytes": 123,
+            "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+          }
+        ],
+        "destination_pin_id": "destination-pin",
+        "obligation_ids": [
+          "hour-slot-selection"
+        ],
+        "recipe_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "durability_receipt_id": "durability-fixture",
+        "database_commit_receipt_id": "transaction-fixture",
+        "committed_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "name": "duplicate source pin",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "compact_transfer_commit",
+        "transfer_id": "transfer-fixture",
+        "idempotency_key": "operation-fixture",
+        "kind": "hourly_original",
+        "camera": "skycam_east",
+        "work_id": "work-fixture",
+        "work_generation": 1,
+        "expected_entity_revision": 1,
+        "source_selection_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "source_pins": [
+          "source-pin",
+          "source-pin"
+        ],
+        "sources": [
+          {
+            "attempt_id": "attempt-fixture",
+            "chunk_id": "chunk-fixture",
+            "chunk_binding_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "member_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+            "member_bytes": 123
+          }
+        ],
+        "destination_grant_id": "grant-fixture",
+        "destination_bundle_id": "bundle-fixture",
+        "destination_manifest_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+        "destination_files": [
+          {
+            "file_id": "original",
+            "bytes": 123,
+            "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+          }
+        ],
+        "destination_pin_id": "destination-pin",
+        "obligation_ids": [
+          "hour-slot-selection"
+        ],
+        "recipe_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "durability_receipt_id": "durability-fixture",
+        "database_commit_receipt_id": "transaction-fixture",
+        "committed_at": "2026-01-01T00:00:00Z"
+      }
+    }
+  ]
+}

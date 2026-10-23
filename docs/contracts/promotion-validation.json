@@ -1,0 +1,14 @@
+{
+  "observed_at": "2026-10-23T22:01:37.439230+00:00",
+  "fixture_count": 12,
+  "all_shape_expectations_matched": true,
+  "input_sha256": {
+    "promotion.schema.json": "d0a5421635a14c825401ad4fff5fc15147ee0886777a2262f61d34361dbf6733",
+    "promotion-fixtures.json": "057827f5b5aa097b22e463c97fc8b75535cd1e35689f0444479071779d42d706",
+    "promotion-contract.md": "4075020e3138e37efa2ee06159e3673fd9133be8d750942fef8a41c579ba7e19"
+  },
+  "limits": [
+    "No authoritative receipt resolution, database atomicity, filesystem durability or crash test",
+    "Cross-record identity, hash equality and exhaustive obligation coverage are semantic obligations"
+  ]
+}

@@ -19,6 +19,7 @@ The [planning closure inventory](docs/implementation/planning-closure.md) separa
 - [D01 repository and delivery trust](docs/decisions/D01-repository-and-delivery-trust.md), with current GitHub/fleet admission evidence and unresolved isolated contribution execution.
 
 - [Publication, source pins, origin eligibility and joint recovery](docs/implementation/publication-recovery-contract.md).
+- [Compact promotion receipt and crash transitions](docs/contracts/promotion-contract.md), separating durable transfer from archived-original success.
 - [Database constraints, revision boundaries and migration sequence](docs/implementation/database-migration-contract.md).
 - [Owner prerequisites and admission boundaries](docs/implementation/owner-prerequisites.md).
 - [Estate standards applicability and evidence](docs/implementation/standards-mapping.md), with a [machine-readable matrix](docs/implementation/standards-mapping.json).
