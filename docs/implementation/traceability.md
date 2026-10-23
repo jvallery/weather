@@ -137,3 +137,7 @@ The [sections 9–10 audit](history-clause-audit.md) preserves 39 source blocks 
 ## Storage/publication/retention audit
 
 The [section 11 audit](storage-clause-audit.md) preserves 24 source blocks and maps 29 grouped obligations, including every bucket class and authorization-table row. Gateway immutability, actual local durability, Barman compatibility and recovery/withdrawal mechanisms remain unqualified.
+
+## Website and delivery acceptance
+
+The [§§12.1–12.5 audit](web-clause-audit.md) preserves 14 source blocks and all 19 route rows with explicit producer ownership and 30 grouped acceptance obligations. Together with the existing §§12.6–12.8 sentence audit, section 12 now has source-bound coverage. This does not qualify framework pins, rendered wireframes, actual browser behavior, permitted transport or cache withdrawal.

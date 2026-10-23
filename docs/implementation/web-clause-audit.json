@@ -1,0 +1,501 @@
+{
+  "scope": "All source blocks of sections 12.1-12.5 plus individual route ownership; grouped acceptance, not runtime qualification",
+  "requirements_sha256": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+  "section_sha256": "cf91e42a30b82b88f2452c9fea75540c9d4a0cd9828ed722930c718b0a2b42a0",
+  "source_blocks": [
+    {
+      "id": "W12.1.01",
+      "section": "12.1",
+      "source_text": "D13 must select a maintainable framework based on real requirements: current telemetry, historical charts, date archive, semantic search, metadata revisions, SEO/accessibility and local deployment. **Astro with static/server-rendered pages plus a small same-origin API remains viable**; so does an integrated application. Avoid a per-observation full-site rebuild or rebuilding the entire archive after every new video. Static assets and immutable media are cacheable independently of dynamic data. Astro supports distinct static and server rendering deployment choices. [S44]",
+      "sha256": "b339192f87eda238f6883a974a815b4fb56527861be27b8118f91896556c0f99",
+      "producers": [
+        "WX-20",
+        "WX-26"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "W12.1.02",
+      "section": "12.1",
+      "source_text": "Match the current <https://vallery.net> theme after verifying the live/source visual system. Prior inspected tokens are useful candidates: text `#112231`, muted `#626b76`, white background, subtle field `#f4f7f4`, border `#dcede7`, forest `#0e5a43`, secondary green `#2e7d5c`, mint `#7de2b8`, focus gold `#d6a93b`, error `#b3261e`; local IBM Plex Sans Variable and IBM Plex Mono; restrained borders/radii and an approximately 80-rem content shell. These require D13 confirmation, contrast testing and licensed local assets. Reuse selected design tokens/wordmark assets with provenance, not unrelated private content or a complete main-site repository.",
+      "sha256": "a6cc40d6e7273c7b41efe26a6f72b17430ed5f84df96aa91354ac8a09b030109",
+      "producers": [
+        "WX-20",
+        "WX-26"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "W12.1.03",
+      "section": "12.1",
+      "source_text": "Use a compact Weather identity, link back to `vallery.net`, and focused navigation: **Today, Archive, Weather history, Search, About**. At wide widths show current conditions and a three-camera grid; mobile stacks cards with reachable date and day/overnight controls. Preserve the panoramic aspect ratio. Prefer posters and lazy metadata over loading six media files immediately.",
+      "sha256": "d7868a068108502a7d743c46a4ffc7236267420307a445b06a9c2988580c33bb",
+      "producers": [
+        "WX-20",
+        "WX-26"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "W12.2.01",
+      "section": "12.2",
+      "source_text": "| Route/purpose | Required behavior |\n|---|---|\n| `/` | Approximately 15-second current conditions with per-metric age, all-three-camera delayed previews, latest videos/posters/keograms, current cycle status and recent weather events. |\n| `/archive/` and month views | Calendar/date search, camera/daytime/overnight/availability filters, useful empty states and shareable URLs. |\n| `/day/YYYY-MM-DD/` | All three cameras and both segments for the solar cycle, keograms, event strip, twilight boundaries, measured summaries and coverage. Link separately labeled calendar-day hourly stills/observations. |\n| `/timelapses/<camera>/<date>/<segment>/` | Dedicated player linked to weather plots and keogram/events, exact source interval, evidence/narrative, poster, native download, sidecar and adjacent dates. |\n| `/stills/` and camera/date views | Sanitized hourly images, calendar-day/hour/offset navigation, selected-date comparison, missing/expired states and source provenance; no private-original URLs. |\n| `/weather/history/` | Interactive historical charts/aggregates with units, time range/resolution, coverage and export links. |\n| `/weather/almanac/` | Records within observed history, precipitation calendar, wind rose, local sun/moon context and period comparisons with coverage. |\n| `/events/` | Paginated local in-site event feed, measured/visual/manual provenance and valid camera/video links. |\n| `/search/` | Natural-language weather search plus typed camera/date/segment and measured-weather filters; honest semantic/degraded state and seekable results. |\n| `/embed/weather/` | Small responsive self-hosted current-weather card for approved `vallery.net` framing, explicit timestamps/stale state and link to Weather. |\n| `/about/` | Cameras/orientations, civil-twilight date convention, processed/accelerated imagery, station-versus-AI distinction, freshness and limitations. |\n| `/api/v1/weather/current` | Sanitized, timestamped, cached current measurement projection. |\n| `/api/v1/weather/observations`, `/aggregates` | Bounded historical queries/cursor exports; explicit metric, units and coverage. |\n| `/api/v1/timelapses` and per-video metadata | Bounded catalog/history and versioned publication sidecars; no private object keys. |\n| `/api/v1/stills`, `/api/v1/cameras/<camera>/preview`, `/api/v1/keograms` | Bounded published image/slot metadata, exact time/day identities, status and same-origin derivative URLs. |\n| `/api/v1/events`, `/api/v1/weather/almanac` | Bounded annotations and deterministic history products, evidence/coverage and revision identities. |\n| `/api/v1/search` | Bounded hybrid/semantic search with structured filters and result provenance. |\n| `/media/<asset-id>` and `/downloads/<video-id>/native` | Allowlisted streaming and download routes, with immutable revision identity and correct HTTP semantics. |\n| Private editorial UI/API | Authenticated operator-only corrections/tags/favorites/poster choices, audited revision-aware writes; never anonymous public mutations. |",
+      "sha256": "5d3abd944f79ee23a748b6af7d9c7038f45662bdaaa54f794a3ff423f052c9c7",
+      "producers": [
+        "WX-19",
+        "WX-20",
+        "WX-26",
+        "WX-39",
+        "WX-40",
+        "WX-41",
+        "WX-43",
+        "WX-44"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "W12.2.02",
+      "section": "12.2",
+      "source_text": "API paths are proposed contracts to finalize in Phase 1; required behavior is fixed. Use one consistent versioned naming scheme. Preserve URL filters/back-forward navigation and make basic archive/video links usable without JavaScript. A cycle's overnight is visibly labeled with both dates. Distinguish capturing, queued, processing, published, partial, unavailable and expired; do not display a blank card as if it were still loading indefinitely.",
+      "sha256": "e04252dba854e3b305a107dc85350262b22b4ed2dc0ebc9e7447894f79e563f6",
+      "producers": [
+        "WX-19",
+        "WX-20",
+        "WX-26",
+        "WX-39",
+        "WX-40",
+        "WX-41",
+        "WX-43",
+        "WX-44"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "W12.3.01",
+      "section": "12.3",
+      "source_text": "Use native video controls, `playsinline`, `preload=\"metadata\"`, a poster, and no autoplay by default. Pause sibling players when one plays. Offer Auto, Web, Mobile and Native quality plus an explicit native-resolution download with dimensions/file size. Retain playhead position when switching renditions where possible. `MediaCapabilities.decodingInfo` is advisory, using actual codec/geometry/rate; smaller renditions remain necessary for devices that cannot decode the full panorama smoothly. [S46]",
+      "sha256": "555d932e47deb8723bcc6abfb007378f795b0134fc744d24ab3495f0d59729fa",
+      "producers": [
+        "WX-19",
+        "WX-20",
+        "WX-39",
+        "WX-33"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "W12.3.02",
+      "section": "12.3",
+      "source_text": "Display source-time position from the time map. Event/search links seek to the validated output interval and show its real source-time precision; a clip-level finding is not an exact-second event. Text summaries and measured values remain accessible without playing video.",
+      "sha256": "4792352a508f390e29a7776a924057d7de9c1d4cf66b3374f0f0eedf7de1af10",
+      "producers": [
+        "WX-19",
+        "WX-20",
+        "WX-39",
+        "WX-33"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "W12.3.03",
+      "section": "12.3",
+      "source_text": "The media origin must stream bounded bytes without buffering an entire native file in application memory. Support GET/HEAD, single byte ranges, `206`, valid `Content-Range`/`Content-Length`, strong validators, conditional requests and `416` for unsatisfiable ranges. Reject or deliberately handle multi-range amplification; do not pretend unsupported ranges succeeded. Downloads serve the same native bytes with a safe `Content-Disposition: attachment` filename. Never redirect browsers to Garage or reveal a presigned provider URL. [S11], [S12]",
+      "sha256": "a564ed6c13b4b06c6a71e0d7a6d164ed7c3ffae0d0e55ec34c82532797887d40",
+      "producers": [
+        "WX-19",
+        "WX-20",
+        "WX-39",
+        "WX-33"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "W12.3.04",
+      "section": "12.3",
+      "source_text": "Test current Safari/iOS, Chrome/Android, desktop Safari/Chrome/Firefox, seek near the end, interrupted/resumed downloads, quality changes and reduced-data preferences. A codec string matching a browser capability is not proof of smooth playback. Keep complete playback within the weather domain.",
+      "sha256": "72e742a32d266f705905f8d5a1dcda159eb45894fc55bc727e455bbd67ea9274",
+      "producers": [
+        "WX-19",
+        "WX-20",
+        "WX-39",
+        "WX-33"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "W12.4.01",
+      "section": "12.4",
+      "source_text": "Use long immutable caching for hashed public media/posters and short explicit caching/ETags for catalog, current weather and search as appropriate. Private backup/raw/admin routes are never CDN content. A media cache hit must not authorize access to an object that was never published. Use bounded caches and controlled withdrawal/purge semantics.",
+      "sha256": "5ebc3c678cce66c51b4a0260fbb5137b4bc4f3bb8da0e6c192cbccda51b57346",
+      "producers": [
+        "WX-19",
+        "WX-27",
+        "WX-30",
+        "WX-33"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "W12.4.02",
+      "section": "12.4",
+      "source_text": "Cloudflare is optional. D14 must verify the actual plan, video-delivery terms, ingress/tunnel arrangement and acceptable product before routing production video through it. Ordinary CDN proxying is not automatically an approved video-delivery service, and disabling cache is not automatically a workaround for video traffic restrictions. The core application must retain a viable weather-domain delivery route without optional CDN caching; do not add R2/Stream as the canonical store or buy a product by assumption. [S36], [S40]",
+      "sha256": "66228cda6b8d4ebea4f3a1fc2bd094d95e2c760c4bbf89c509abb88ce4c2993b",
+      "producers": [
+        "WX-19",
+        "WX-27",
+        "WX-30",
+        "WX-33"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "W12.4.03",
+      "section": "12.4",
+      "source_text": "Current documented default cacheable object limits are 512 MB on Free/Pro/Business and 5 GB on Enterprise, subject to account configuration. Test actual rendition sizes and range behavior: a small byte-range request does not make an over-limit full object cacheable. Preserve validators/lengths and follow Safari/iOS MP4 guidance. Cache TTL is freshness policy, not a promise that the object remains resident until expiry. [S38], [S39], [S41], [S49]",
+      "sha256": "c4162c1d6e10ad7b8494cf4882b75ed200043789b6ee759d18758355ce404fcf",
+      "producers": [
+        "WX-19",
+        "WX-27",
+        "WX-30",
+        "WX-33"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "W12.5.01",
+      "section": "12.5",
+      "source_text": "Support keyboard navigation, visible focus, labels, readable contrast, reduced-motion preferences and touch targets around 44 px. Test 320/390/768-pixel and desktop widths, long summaries and unavailable data. Announce useful state changes without reading every polling update to screen readers. Charts need text/summary equivalents and clear missing-data gaps.",
+      "sha256": "6caaa84dd0a2b9d0e1225ad00c0d833f331a10a965b669af0fd5df3a40f7f415",
+      "producers": [
+        "WX-20",
+        "WX-26",
+        "WX-33",
+        "WX-39",
+        "WX-43",
+        "WX-44"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "W12.5.02",
+      "section": "12.5",
+      "source_text": "Self-host fonts, icons, scripts and player assets. Use a restrictive CSP compatible with the chosen build, sanitize all description/AI text, and avoid external analytics/weather widgets. Do not emit credentials, internal endpoints, source payloads or private infrastructure in frontend bundles, public source maps or error pages.",
+      "sha256": "ee6871fd47914a3b63c005f9308cbfe6d9fb83e0ced36df8c8c3ad2d4eea7031",
+      "producers": [
+        "WX-20",
+        "WX-26",
+        "WX-33",
+        "WX-39",
+        "WX-43",
+        "WX-44"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    }
+  ],
+  "routes": [
+    {
+      "id": "R12.2.01",
+      "route": "`/`",
+      "required_behavior": "Approximately 15-second current conditions with per-metric age, all-three-camera delayed previews, latest videos/posters/keograms, current cycle status and recent weather events.",
+      "producers": [
+        "WX-20"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.02",
+      "route": "`/archive/` and month views",
+      "required_behavior": "Calendar/date search, camera/daytime/overnight/availability filters, useful empty states and shareable URLs.",
+      "producers": [
+        "WX-20"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.03",
+      "route": "`/day/YYYY-MM-DD/`",
+      "required_behavior": "All three cameras and both segments for the solar cycle, keograms, event strip, twilight boundaries, measured summaries and coverage. Link separately labeled calendar-day hourly stills/observations.",
+      "producers": [
+        "WX-20",
+        "WX-39",
+        "WX-40"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.04",
+      "route": "`/timelapses/<camera>/<date>/<segment>/`",
+      "required_behavior": "Dedicated player linked to weather plots and keogram/events, exact source interval, evidence/narrative, poster, native download, sidecar and adjacent dates.",
+      "producers": [
+        "WX-20",
+        "WX-39"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.05",
+      "route": "`/stills/` and camera/date views",
+      "required_behavior": "Sanitized hourly images, calendar-day/hour/offset navigation, selected-date comparison, missing/expired states and source provenance; no private-original URLs.",
+      "producers": [
+        "WX-37"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.06",
+      "route": "`/weather/history/`",
+      "required_behavior": "Interactive historical charts/aggregates with units, time range/resolution, coverage and export links.",
+      "producers": [
+        "WX-20",
+        "WX-41"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.07",
+      "route": "`/weather/almanac/`",
+      "required_behavior": "Records within observed history, precipitation calendar, wind rose, local sun/moon context and period comparisons with coverage.",
+      "producers": [
+        "WX-41"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.08",
+      "route": "`/events/`",
+      "required_behavior": "Paginated local in-site event feed, measured/visual/manual provenance and valid camera/video links.",
+      "producers": [
+        "WX-40"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.09",
+      "route": "`/search/`",
+      "required_behavior": "Natural-language weather search plus typed camera/date/segment and measured-weather filters; honest semantic/degraded state and seekable results.",
+      "producers": [
+        "WX-26",
+        "WX-42"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.10",
+      "route": "`/embed/weather/`",
+      "required_behavior": "Small responsive self-hosted current-weather card for approved `vallery.net` framing, explicit timestamps/stale state and link to Weather.",
+      "producers": [
+        "WX-44"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.11",
+      "route": "`/about/`",
+      "required_behavior": "Cameras/orientations, civil-twilight date convention, processed/accelerated imagery, station-versus-AI distinction, freshness and limitations.",
+      "producers": [
+        "WX-20"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.12",
+      "route": "`/api/v1/weather/current`",
+      "required_behavior": "Sanitized, timestamped, cached current measurement projection.",
+      "producers": [
+        "WX-13"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.13",
+      "route": "`/api/v1/weather/observations`, `/aggregates`",
+      "required_behavior": "Bounded historical queries/cursor exports; explicit metric, units and coverage.",
+      "producers": [
+        "WX-13",
+        "WX-41"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.14",
+      "route": "`/api/v1/timelapses` and per-video metadata",
+      "required_behavior": "Bounded catalog/history and versioned publication sidecars; no private object keys.",
+      "producers": [
+        "WX-17"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.15",
+      "route": "`/api/v1/stills`, `/api/v1/cameras/<camera>/preview`, `/api/v1/keograms`",
+      "required_behavior": "Bounded published image/slot metadata, exact time/day identities, status and same-origin derivative URLs.",
+      "producers": [
+        "WX-37",
+        "WX-38",
+        "WX-36"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.16",
+      "route": "`/api/v1/events`, `/api/v1/weather/almanac`",
+      "required_behavior": "Bounded annotations and deterministic history products, evidence/coverage and revision identities.",
+      "producers": [
+        "WX-40",
+        "WX-41"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.17",
+      "route": "`/api/v1/search`",
+      "required_behavior": "Bounded hybrid/semantic search with structured filters and result provenance.",
+      "producers": [
+        "WX-25",
+        "WX-42"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.18",
+      "route": "`/media/<asset-id>` and `/downloads/<video-id>/native`",
+      "required_behavior": "Allowlisted streaming and download routes, with immutable revision identity and correct HTTP semantics.",
+      "producers": [
+        "WX-19"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    },
+    {
+      "id": "R12.2.19",
+      "route": "Private editorial UI/API",
+      "required_behavior": "Authenticated operator-only corrections/tags/favorites/poster choices, audited revision-aware writes; never anonymous public mutations.",
+      "producers": [
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "runtime_unproven"
+    }
+  ],
+  "acceptance": {
+    "12.1": {
+      "producers": [
+        "WX-20",
+        "WX-26"
+      ],
+      "obligations": [
+        "Use the selected Astro server-rendered shells and bounded islands with same-origin Python projections; prove observations and a new video do not rebuild the complete site/archive.",
+        "Cache immutable assets independently from dynamic projections; framework/runtime and adapter compatibility require exact admitted build pins.",
+        "Match the source-verified theme and preserve font provenance/notices; use the contrast-qualified focus role rather than copying low-contrast gold blindly. Do not import unrelated main-site content.",
+        "Provide compact Weather identity, main-site link and all five navigation entries; wide three-camera grid becomes a mobile stack with reachable date/segment controls.",
+        "Preserve panoramic aspect ratio; instrument initial load to prove posters/lazy metadata avoid eager fetching of six videos."
+      ]
+    },
+    "12.2": {
+      "producers": [
+        "WX-19",
+        "WX-20",
+        "WX-26",
+        "WX-39",
+        "WX-40",
+        "WX-41",
+        "WX-43",
+        "WX-44"
+      ],
+      "obligations": [
+        "Implement every route row below and its full source behavior; a schema or placeholder route alone does not satisfy the experience.",
+        "Use one versioned API namespace; proposed shorthand /aggregates resolves to /api/v1/weather/aggregates, and per-video metadata resolves to /api/v1/timelapses/{video_id}.",
+        "Preserve typed filters and selection in shareable URLs and browser back/forward; basic archive and video links work with JavaScript disabled.",
+        "Label overnight with both dates; solar-cycle pages and calendar-day observations/stills remain distinct even across DST.",
+        "Render capturing, queued, processing, published, partial, unavailable and expired deliberately, including empty archive months; no indefinite blank loading card.",
+        "Private editor has authenticated reads/writes and no anonymous mutations; public output never includes private originals or provider keys."
+      ]
+    },
+    "12.3": {
+      "producers": [
+        "WX-19",
+        "WX-20",
+        "WX-39",
+        "WX-33"
+      ],
+      "obligations": [
+        "Use native controls, playsinline, metadata preload, poster and no default autoplay; playing one camera pauses siblings.",
+        "Offer Auto/Web/Mobile/Native and explicit native download dimensions/size; preserve playhead on supported switches and visibly handle unavailable rendition without claiming success.",
+        "Capability advice uses actual codec, geometry and frame rate; retain smaller renditions and prove smooth playback on target devices rather than accepting codec support alone.",
+        "Player source-time display and event/search seek use validated intervals and precision; clip-level evidence must not become exact-second claims. Summaries and measured values are readable without playback.",
+        "Stream bounded bytes and measure memory independently of file size; GET/HEAD, single ranges, 206, lengths, Content-Range, strong validators, conditionals and unsatisfiable 416 all require wire-level acceptance.",
+        "Reject or explicitly implement multi-range requests without amplification; attachment uses safe filename and identical native bytes, with no Garage/presigned redirects.",
+        "Test Safari/iOS, Chrome/Android and desktop Safari/Chrome/Firefox; seek near EOF, interrupted/resumed downloads, quality changes and reduced-data preferences on the actual weather-domain route."
+      ]
+    },
+    "12.4": {
+      "producers": [
+        "WX-19",
+        "WX-27",
+        "WX-30",
+        "WX-33"
+      ],
+      "obligations": [
+        "Use immutable media/poster cache policy and explicit bounded catalog/current/search freshness and validators; private backup/raw/admin content never enters shared/CDN caches.",
+        "Cache lookup cannot publish an unlisted asset; withdrawal must cover origin and existing caches with bounded purge behavior, not only DB tombstones.",
+        "Keep viable weather-domain delivery without optional CDN; qualify actual plan, video terms and ingress. Disabling cache does not resolve unapproved tunnel/video transport.",
+        "Do not replace canonical Garage with R2/Stream or purchase products implicitly; optional CDN work remains conditional while required playback remains required.",
+        "Revalidate actual account object-size limits and measured rendition sizes; range size is not full-object cache eligibility. Preserve validators/lengths and prove Safari MP4 behavior.",
+        "TTL is freshness, not residency. Exercise miss/eviction/origin outage and withdrawal rather than assuming a long TTL supplies availability."
+      ]
+    },
+    "12.5": {
+      "producers": [
+        "WX-20",
+        "WX-26",
+        "WX-33",
+        "WX-39",
+        "WX-43",
+        "WX-44"
+      ],
+      "obligations": [
+        "Test keyboard order, visible focus, labels, readable contrast, reduced motion and approximately 44 px touch targets across all public/private/embed controls.",
+        "Render at 320/390/768 px and desktop with long summaries, no data and expired/unavailable assets; panorama and controls remain usable without horizontal page overflow.",
+        "Announce meaningful state transitions without rereading every 15-second poll; charts provide text/summary alternatives and explicit missing-data gaps.",
+        "Self-host all fonts/icons/scripts/player assets and preserve distribution notices; no external analytics/weather widgets or accidental third-party network dependencies.",
+        "Qualify restrictive CSP with the actual built assets; escape description/model/editor text and exercise malicious input without granting broad script exceptions.",
+        "Inspect generated bundles, hydration, public source maps and error pages for credentials, internal endpoints, raw source payloads and private infrastructure."
+      ]
+    }
+  },
+  "verification": {
+    "all_nonblank_nonheading_source_lines_preserved": true,
+    "runtime_acceptance": false
+  }
+}
