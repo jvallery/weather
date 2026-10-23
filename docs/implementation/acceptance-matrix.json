@@ -1,0 +1,583 @@
+{
+  "schema_version": 1,
+  "scope": "Every row of requirements section 18.2; not a claim of clause coverage for the whole document.",
+  "requirements_sha256": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+  "production_acceptance": false,
+  "gates": [
+    {
+      "id": "PA-01",
+      "area": "Time",
+      "source_section": "18.2",
+      "required_proof_verbatim": "DST transitions, seasonal boundaries, exact rational 7,200-frame combined allocation, both MP4 timescales, no double-owned source samples or cross-segment temporal context.",
+      "producer_issues": [
+        "WX-09",
+        "WX-16"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-02",
+      "area": "Capture",
+      "source_section": "18.2",
+      "required_proof_verbatim": "Real native JPEGs at admitted cadence, request total deadline, stale/cached response detection, clock discontinuity handling and no catch-up storms.",
+      "producer_issues": [
+        "WX-10"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-03",
+      "area": "NFS",
+      "source_section": "18.2",
+      "required_proof_verbatim": "Atomic TAR/index bundle, writer fencing across failure/reconnect, quota/backpressure, visible outage gaps and idempotent cleanup.",
+      "producer_issues": [
+        "WX-03",
+        "WX-10",
+        "WX-18"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-04",
+      "area": "Render",
+      "source_section": "18.2",
+      "required_proof_verbatim": "Full decode and exact geometry/fps/duration; jitter-aware reconstruction; linear-light exposure; gap/coverage handling; real twilight/cloud/foliage/seam/night comparison; CPU deadline.",
+      "producer_issues": [
+        "WX-14",
+        "WX-16"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-05",
+      "area": "GPU",
+      "source_section": "18.2",
+      "required_proof_verbatim": "Actual admitted sharing, resident-service SLO preservation, peak VRAM/host budget, abort/rollback and CPU fallback.",
+      "producer_issues": [
+        "WX-15"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "conditional_gpu",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-06",
+      "area": "UDP/history",
+      "source_section": "18.2",
+      "required_proof_verbatim": "Every supported family/row/unknown field preserved, exact bytes, dedup/event counts, out-of-order/replay freshness, bounded spool/recovery, all retained history queryable.",
+      "producer_issues": [
+        "WX-11",
+        "WX-12",
+        "WX-13"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-07",
+      "area": "HA/CNPG",
+      "source_section": "18.2",
+      "required_proof_verbatim": "Qualified placement/failover, extension availability, storage policy, migration rollback and WAL outage budget.",
+      "producer_issues": [
+        "WX-05",
+        "WX-08",
+        "WX-28"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-08",
+      "area": "Shared bucket",
+      "source_section": "18.2",
+      "required_proof_verbatim": "No anonymous read; real broker authorization; negative prefix/action/multipart tests; real Barman backup/archive/restore/retention through the boundary.",
+      "producer_issues": [
+        "WX-06",
+        "WX-07",
+        "WX-28"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-09",
+      "area": "Publication",
+      "source_section": "18.2",
+      "required_proof_verbatim": "Crash between upload/commit, no broken visible references, SHA-256 integrity, revision CAS, independent cameras, poster and sidecar completeness.",
+      "producer_issues": [
+        "WX-08",
+        "WX-17"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-10",
+      "area": "Web/API",
+      "source_section": "18.2",
+      "required_proof_verbatim": "Mobile/accessibility/date navigation, freshness, bounded history/search, all weather-domain playback/download/range semantics and supported-browser matrix.",
+      "producer_issues": [
+        "WX-19",
+        "WX-20",
+        "WX-26"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-11",
+      "area": "Hourly archive",
+      "source_section": "18.2",
+      "required_proof_verbatim": "All three cameras; native-byte/hash fidelity, enforced day/hour/camera FKs; 23/24/25-hour days and repeated offsets; dawn/dusk pin race; upload/commit restart; missing-slot truth; video expiry does not remove five-year originals.",
+      "producer_issues": [
+        "WX-37"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-12",
+      "area": "Keograms",
+      "source_section": "18.2",
+      "required_proof_verbatim": "Six products for a complete cycle; versioned camera regions including frontyard; UTC bins/gaps and source-only lineage; keyboard/click seek; durable extraction before raw cleanup.",
+      "producer_issues": [
+        "WX-36"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-13",
+      "area": "Delayed previews",
+      "source_section": "18.2",
+      "required_proof_verbatim": "All three cameras; trusted upper time bound plus 600 seconds at origin; guessed URL/HEAD/range/alias/cache tests; same embargo for newly archived still derivatives; stale/clock/error behavior and bounded/coalesced work.",
+      "producer_issues": [
+        "WX-19",
+        "WX-37",
+        "WX-38"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-14",
+      "area": "Linked exploration/events",
+      "source_section": "18.2",
+      "required_proof_verbatim": "Bidirectional plot/video/keogram/event UTC navigation; overnight/DST/gaps and evidence precision; one active mobile player; measured event feed works with AI offline and makes no outbound product notifications.",
+      "producer_issues": [
+        "WX-39",
+        "WX-40"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-15",
+      "area": "Almanac/filters",
+      "source_section": "18.2",
+      "required_proof_verbatim": "Coverage-aware records/rain, duration-weighted wind rose, local astronomy, period comparisons/exports; null versus zero, equivalent units, late-data revision and exact measured predicates during model outage.",
+      "producer_issues": [
+        "WX-13",
+        "WX-41",
+        "WX-42"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-16",
+      "area": "Editorial/embed",
+      "source_section": "18.2",
+      "required_proof_verbatim": "Authenticated CAS/audit, human-override precedence, private favorites/notes exclusion, correction-aware sidecars/indexing and eligible poster sources; allowed/denied framing, self-hosted assets and 15-second weather freshness.",
+      "producer_issues": [
+        "WX-43",
+        "WX-44"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-17",
+      "area": "Analysis",
+      "source_section": "18.2",
+      "required_proof_verbatim": "Fresh temporal-order controls, complete schema/evidence validation, exact clip mapping, numerical grounding, stale revision rejection and honest degraded modes.",
+      "producer_issues": [
+        "WX-21",
+        "WX-22"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-18",
+      "area": "Search",
+      "source_section": "18.2",
+      "required_proof_verbatim": "Verified profile/dimensions, correct pgvector representation, typed filters, exact baseline/ANN recall, bounded queries, update/withdrawal/reindex and outage behavior.",
+      "producer_issues": [
+        "WX-23",
+        "WX-24",
+        "WX-25"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-19",
+      "area": "DR",
+      "source_section": "18.2",
+      "required_proof_verbatim": "Full plus exact WAL enrollment; missing-object/WAL mismatch rejection; inference-independent B2-only restore; new archive identity; retained historical recovery references.",
+      "producer_issues": [
+        "WX-28",
+        "WX-29",
+        "WX-30",
+        "WX-32"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    },
+    {
+      "id": "PA-20",
+      "area": "Public supply chain",
+      "source_section": "18.2",
+      "required_proof_verbatim": "Sanitized repository/history/artifacts, isolated untrusted CI, pinned local images, scoped secrets/roles and no public runtime dependency.",
+      "producer_issues": [
+        "WX-01",
+        "WX-02",
+        "WX-34"
+      ],
+      "integration_issue": "WX-33",
+      "release_issue": "WX-35",
+      "phase": "initial_required",
+      "acceptance_state": "not_implemented",
+      "evidence": [],
+      "required_receipt_fields": [
+        "source_revision",
+        "image_digest",
+        "contract_versions",
+        "environment_and_admission",
+        "observed_at",
+        "inputs_or_fixture_ids",
+        "expected_result",
+        "actual_result",
+        "negative_cases",
+        "private_evidence_reference",
+        "limitations"
+      ]
+    }
+  ],
+  "rules": [
+    "Every sentence and qualifier in required_proof_verbatim must have evidence; an area cannot pass on one smoke test.",
+    "Synthetic tests cannot establish live device, storage durability, browser, model capability or recovery behavior.",
+    "GPU acceleration is conditional; the phase-1 nine-GPU inventory and CPU fallback design remain mandatory.",
+    "WX-33 and WX-35 integrate evidence and cannot substitute for producer proof.",
+    "Disruptive tests use admitted isolated infrastructure; planning does not authorize production disruption.",
+    "An evidence receipt with a limitation that defeats required proof leaves the gate open."
+  ]
+}

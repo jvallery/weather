@@ -1,0 +1,372 @@
+{
+  "description": "Synthetic schema-shape fixtures; evidence membership and grounding require semantic validation.",
+  "cases": [
+    {
+      "name": "bounded candidate",
+      "valid": true,
+      "value": {
+        "schema_version": 1,
+        "evidence_ids": [
+          "synthetic-clip-a"
+        ],
+        "observations": [
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          }
+        ],
+        "limitations": [
+          "Synthetic fixture; no model was called."
+        ]
+      }
+    },
+    {
+      "name": "unknown category",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "evidence_ids": [
+          "synthetic-clip-a"
+        ],
+        "observations": [
+          {
+            "observation_id": "candidate-1",
+            "category": "forecast",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          }
+        ],
+        "limitations": [
+          "Synthetic fixture; no model was called."
+        ]
+      }
+    },
+    {
+      "name": "oversized description",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "evidence_ids": [
+          "synthetic-clip-a"
+        ],
+        "observations": [
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          }
+        ],
+        "limitations": [
+          "Synthetic fixture; no model was called."
+        ]
+      }
+    },
+    {
+      "name": "too many observations",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "evidence_ids": [
+          "synthetic-clip-a"
+        ],
+        "observations": [
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          },
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          },
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          },
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          },
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          },
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          },
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          },
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          },
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          },
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          },
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          },
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          },
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          },
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          },
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          },
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          },
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          }
+        ],
+        "limitations": [
+          "Synthetic fixture; no model was called."
+        ]
+      }
+    },
+    {
+      "name": "empty evidence",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "evidence_ids": [],
+        "observations": [
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          }
+        ],
+        "limitations": [
+          "Synthetic fixture; no model was called."
+        ]
+      }
+    },
+    {
+      "name": "unknown field",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "evidence_ids": [
+          "synthetic-clip-a"
+        ],
+        "observations": [
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          }
+        ],
+        "limitations": [
+          "Synthetic fixture; no model was called."
+        ],
+        "raw_secret": "synthetic"
+      }
+    },
+    {
+      "name": "numeric confidence",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "evidence_ids": [
+          "synthetic-clip-a"
+        ],
+        "observations": [
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": 0.99,
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          }
+        ],
+        "limitations": [
+          "Synthetic fixture; no model was called."
+        ]
+      }
+    },
+    {
+      "name": "too many limitations",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "evidence_ids": [
+          "synthetic-clip-a"
+        ],
+        "observations": [
+          {
+            "observation_id": "candidate-1",
+            "category": "rain",
+            "assessment": "not_assessable",
+            "description": "Darkness prevents a reliable visual assessment.",
+            "confidence": "low",
+            "evidence_ids": [
+              "synthetic-clip-a"
+            ]
+          }
+        ],
+        "limitations": [
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x",
+          "x"
+        ]
+      }
+    }
+  ]
+}

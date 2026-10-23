@@ -4,7 +4,21 @@ Status: machine-readable design draft for Phase 1; not deployed and not yet a co
 
 Use [OpenAPI 3.1.1](https://spec.openapis.org/oas/v3.1.1.html) and [JSON Schema 2020-12](https://json-schema.org/draft/2020-12/json-schema-core), reviewed 2026-10-23. Validation must enable date/time format assertion and resolve references locally; production must not fetch schema URLs on requests. Schema URLs identify versions, not required runtime network dependencies.
 
-Consumers: WX-08/13/17/19/20/24/25/26/36/37/38/39/40/41/42/43/44. Internal capture/index, deployment configuration, visual-model output and private recovery-manifest schemas remain separate outstanding Phase-1 artifacts.
+Consumers: WX-08/13/17/19/20/24/25/26/36/37/38/39/40/41/42/43/44. Internal capture/index, deployment configuration and private recovery-manifest schemas remain separate outstanding Phase-1 artifacts. The private candidate [visual-model schema](visual-analysis.schema.json) now implements §13.5's shape; its semantic checks are specified below.
+
+## Effective editorial content and analysis coverage
+
+`EditorialPublic.description` is the effective, currently eligible description, whether generated or human-edited; null means no eligible description. It is separate from immutable automated claims. `human_edited` and the effective revision label its provenance. An invalidated evidence binding cannot remain visible merely because this string still validates. Public sidecars, UI and lexical/semantic indexing must consume the same effective revision. Private notes and favorites remain excluded. The 8,000-character interface bound is a protective ceiling, not permission to bypass grounding.
+
+`Analysis.coverage` separately describes supported reviewed source duration, with gaps and algorithm identity. Capture coverage does not establish analysis coverage. Union reviewed, valid source windows; do not count repeated/overlapping clips twice. Pending/unavailable work has zero supported duration, while actual unassessable media remains explicitly limited; do not claim full visual evidence solely because the request included the entire video. The coverage algorithm must define its assessability policy and preserve per-claim limitations.
+
+## Private visual-model candidate boundary
+
+[visual-analysis.schema.json](visual-analysis.schema.json) enforces the exact category/assessment/confidence vocabulary, at most 16 observations, eight limitations and 240 characters per description/limitation. Evidence lists are nonempty, unique and bounded at 256 opaque IDs. This last ceiling is a selected interface protection; D11 must keep actual per-request evidence below it.
+
+Schema-valid model text is still untrusted. Check all evidence IDs against the request's supplied set, each observation's IDs against the result's declared set, and the supplied IDs against the current media/evidence revision. Rebind candidate observation IDs to deterministic application IDs. Require explicit precipitation and visibility assessments when assessable, and an honest not-assessable result when night/obstruction prevents assessment. Reject invented IDs, unsupported claims, prompt-injected instructions, truncation and stale jobs before publishing. No numeric confidence percentage replaces the categorical field. The schema is private candidate input; it is not the public Analysis representation and must never be returned raw to browsers.
+
+The [visual fixtures](visual-analysis-fixtures.json) exercise shape limits only. Semantic fixtures must include a schema-valid invented evidence ID, omitted assessable precipitation/visibility, repeated generated IDs across clips, scene prompt injection, stale revision and forward/reverse temporal controls. Passing the shape suite does not close native-video qualification or grounding acceptance.
 
 ## Routes and compatibility
 

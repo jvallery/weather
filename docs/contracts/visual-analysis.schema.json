@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weather.vallery.net/contracts/visual-analysis-v1.schema.json",
+  "title": "Private candidate visual analysis before application validation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "evidence_ids", "observations", "limitations"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "evidence_ids": {"$ref": "#/$defs/EvidenceIds"},
+    "observations": {
+      "type": "array", "maxItems": 16,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["observation_id", "category", "assessment", "description", "confidence", "evidence_ids"],
+        "properties": {
+          "observation_id": {"$ref": "#/$defs/Id"},
+          "category": {"enum": ["cloud_cover", "cloud_motion", "sunlight", "rain", "snowfall", "ground_snow", "surface_wetness", "fog_visibility", "lightning", "lens_condition", "camera_artifact"]},
+          "assessment": {"enum": ["visible", "possible", "not_observed", "not_assessable"]},
+          "description": {"type": "string", "minLength": 1, "maxLength": 240},
+          "confidence": {"enum": ["low", "medium", "high"]},
+          "evidence_ids": {"$ref": "#/$defs/EvidenceIds"}
+        }
+      }
+    },
+    "limitations": {"type": "array", "maxItems": 8, "items": {"type": "string", "minLength": 1, "maxLength": 240}}
+  },
+  "$defs": {
+    "Id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"},
+    "EvidenceIds": {"type": "array", "minItems": 1, "maxItems": 256, "uniqueItems": true, "items": {"$ref": "#/$defs/Id"}}
+  }
+}

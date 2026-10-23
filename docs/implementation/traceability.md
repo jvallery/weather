@@ -108,4 +108,4 @@ The [owner decision table](../decisions/2026-10-23-product-scope.md) binds Q01โ€
 
 For each requirement, record its producing revision, relevant contract/schema version, specific fixture or live probe, observed result, evidence identity and remaining limitation. Synthetic proof covers logic, not camera cadence, physical storage durability or model capability. A running pod covers process health, not timely completed products. Independent recovery needs B2-only semantic readback, not backup metadata. Missing or indirect evidence remains pending.
 
-Cross-owner standards mapping, final OpenAPI/JSON Schemas and complete clause-by-clause verification are outstanding; this index must not be presented as the finished adversarial audit.
+The [standards mapping](standards-mapping.md) is published. The [production evidence matrix](acceptance-matrix.md) preserves all 20 ยง18.2 acceptance areas and assigns concrete producers; its machine-readable form binds the requirements hash and leaves every production gate unaccepted. Final OpenAPI/JSON Schemas and complete clause-by-clause verification remain outstanding; neither matrix is the finished adversarial audit.

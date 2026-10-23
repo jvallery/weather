@@ -1095,6 +1095,9 @@
               "type": "null"
             }
           ]
+        },
+        "coverage": {
+          "$ref": "#/$defs/Coverage"
         }
       },
       "required": [
@@ -1105,7 +1108,8 @@
         "prompt_revision",
         "schema_revision",
         "capability_revision",
-        "evidence_revision"
+        "evidence_revision",
+        "coverage"
       ]
     },
     "EditorialPublic": {
@@ -1130,13 +1134,26 @@
             "maxLength": 64
           },
           "maxItems": 32
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
         "effective_revision",
         "human_edited",
         "updated_at",
-        "public_tags"
+        "public_tags",
+        "description"
       ]
     },
     "SearchState": {

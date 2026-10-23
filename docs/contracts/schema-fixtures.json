@@ -445,6 +445,42 @@
         "reason": null,
         "station_serial": "synthetic"
       }
+    },
+    {
+      "name": "effective human description has public representation",
+      "schema": "EditorialPublic",
+      "valid": true,
+      "value": {
+        "effective_revision": 1,
+        "human_edited": true,
+        "updated_at": "2026-01-01T00:00:00Z",
+        "public_tags": [],
+        "description": "Clouds thinned after dusk."
+      }
+    },
+    {
+      "name": "effective description excludes private note",
+      "schema": "EditorialPublic",
+      "valid": false,
+      "value": {
+        "effective_revision": 1,
+        "human_edited": true,
+        "updated_at": "2026-01-01T00:00:00Z",
+        "public_tags": [],
+        "description": "Clouds thinned after dusk.",
+        "private_note": "operator only"
+      }
+    },
+    {
+      "name": "effective description must be explicit including null",
+      "schema": "EditorialPublic",
+      "valid": false,
+      "value": {
+        "effective_revision": 1,
+        "human_edited": true,
+        "updated_at": "2026-01-01T00:00:00Z",
+        "public_tags": []
+      }
     }
   ]
 }
