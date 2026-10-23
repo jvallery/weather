@@ -1,0 +1,83 @@
+{
+  "observed_at": "2026-10-23T21:39:45.907132+00:00",
+  "source_repository": "VerdifyConsultancy/wordpress",
+  "source_revision": "7d7e5c4b0588f1a323221111dba5df14646aec98",
+  "assets": [
+    {
+      "url": "https://vallery.net/wp-content/themes/vallery/style.css",
+      "bytes": 21282,
+      "live_sha256": "a802b3f233cfdb6985189b1ebd180c399f55d67a45b3715e08118c7338b2ab30",
+      "source_sha256": "a802b3f233cfdb6985189b1ebd180c399f55d67a45b3715e08118c7338b2ab30",
+      "exact_match": true
+    },
+    {
+      "url": "https://vallery.net/wp-content/themes/vallery/fonts/ibm-plex-sans-latin-wght-normal.woff2",
+      "bytes": 45712,
+      "live_sha256": "e2291e842cf5af167122a22881a740c7f2dda7716f1e8cd76680264f4a859470",
+      "source_sha256": "e2291e842cf5af167122a22881a740c7f2dda7716f1e8cd76680264f4a859470",
+      "exact_match": true
+    },
+    {
+      "url": "https://vallery.net/wp-content/themes/vallery/fonts/ibm-plex-mono-latin-400-normal.woff2",
+      "bytes": 14708,
+      "live_sha256": "08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7",
+      "source_sha256": "08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7",
+      "exact_match": true
+    }
+  ],
+  "contrast": [
+    {
+      "name": "ink",
+      "foreground": "#112231",
+      "background": "#ffffff",
+      "ratio": 16.191
+    },
+    {
+      "name": "muted",
+      "foreground": "#626b76",
+      "background": "#ffffff",
+      "ratio": 5.407
+    },
+    {
+      "name": "forest",
+      "foreground": "#0e5a43",
+      "background": "#ffffff",
+      "ratio": 8.196
+    },
+    {
+      "name": "leaf",
+      "foreground": "#2e7d5c",
+      "background": "#ffffff",
+      "ratio": 4.995
+    },
+    {
+      "name": "gold",
+      "foreground": "#d6a93b",
+      "background": "#ffffff",
+      "ratio": 2.188
+    },
+    {
+      "name": "mint",
+      "foreground": "#7de2b8",
+      "background": "#ffffff",
+      "ratio": 1.562
+    },
+    {
+      "name": "error",
+      "foreground": "#b3261e",
+      "background": "#ffffff",
+      "ratio": 6.536
+    },
+    {
+      "name": "ink-on-mint",
+      "foreground": "#112231",
+      "background": "#7de2b8",
+      "ratio": 10.364
+    }
+  ],
+  "limits": [
+    "Byte equality is not rendered visual QA.",
+    "Font files are observed but their exact upstream license/package provenance remains unresolved.",
+    "Contrast ratios cover listed solid color pairs only, not all states or images."
+  ]
+}
