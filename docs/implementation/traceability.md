@@ -165,3 +165,7 @@ The §17.2 contract comparison found a missing standalone aggregate algorithm re
 ## Complete section 17 source mapping
 
 The [contract audit](contracts-clause-audit.md) preserves all 11 source blocks, including the full YAML example and ten sidecar field groups, with 23 grouped obligations. This completes source mapping, not private-policy design: final deployment/clock/resource/retention formats and hourly Garage archival/FK receipt remain required. The earlier computation-provenance correction is included.
+
+## Live producer-assignment propagation
+
+The [issue-body verification](issue-body-verification.json) checks every producer assignment from the current source-bound audits, including time, UI clauses and route rows, against live GitHub bodies. Seventeen missing links were repaired across 13 issues; all 46 implementation/follow-on bodies now carry required sections, mapped R-IDs and assigned audit links. This is structural coverage, not complete requirement semantics or runtime proof.

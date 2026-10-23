@@ -166,3 +166,7 @@ Section 17.2 requires weather aggregate algorithm/revision provenance. The draft
 ## Complete configuration and transport requirement mapping
 
 The [section 17 audit](../implementation/contracts-clause-audit.md) preserves the introduction, complete YAML and every sidecar group. Public configuration categories and transport shapes exist, with explicit gaps retained for private resolved policy and the final hourly Garage archive/FK receipt. Compact staging promotion cannot stand in for final archival success. Related product/recipe IDs require coherent revision-aware resolution, and sidecar/API canonical equality remains runtime acceptance. No application implementation or production configuration was added.
+
+## Live issue-body propagation reconciliation
+
+A full GitHub inventory returned exactly 47 Weather issues: the planning root plus 46 implementation/follow-on identities. Comparing every source-audit producer assignment (including time, sentence-level UI and route rows) to live bodies found 17 missing audit links across 13 producers. Those links were added with current-body concurrency checks and exact readback. A fresh [issue-body receipt](../implementation/issue-body-verification.json) records identity/body hashes, labels, required section/requirement-ID presence and assigned links for all 46 bodies. Native edges were not changed or re-read in this body-only pass. Presence checks are structural: final semantic review and consolidation of long issue bodies remain necessary.

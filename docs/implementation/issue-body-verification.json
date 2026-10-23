@@ -1,0 +1,1034 @@
+{
+  "observed_at": "2026-10-23T22:32:32.095035+00:00",
+  "scope": "Complete live issue inventory and implementation-body structural audit against committed backlog and source-audit producer assignments",
+  "backlog_sha256": "f7dd991ef779408565eb5c0d8d0786b8f0a40f1f1ead7c079ae8d2f90a5911bb",
+  "audit_sha256": {
+    "analysis-clause-audit.json": "904b73d6a493732d0aade15d75e58b0d455030af56c929762b0460bc79b6b7bf",
+    "capture-clause-audit.json": "574dec5b57aa6b77ff857ebc0d9cc2da274bd6cb9b4dd3a375d440ccc6f099bd",
+    "contracts-clause-audit.json": "d442582bb790300d35ec78bec0e2e3bb08c4356783dee28c91791061f0f65170",
+    "delivery-clause-audit.json": "b4309743eed8d8b7f245173211f8552bd2bc04490c215420d16c9f44184ce463",
+    "history-clause-audit.json": "77713f44256224c492c317884c86e7043dda09b08fb50d95fc6d0d8232eb5924",
+    "media-clause-audit.json": "8e8eb3f5fb7985140075655649ae589939a79559e4d3682bca8099a3fece0c15",
+    "recovery-clause-audit.json": "a5a97a274fd847d9b44f3bdadfea26efdf5889862a0362919eb60dbfb70c29e1",
+    "search-clause-audit.json": "c56fb5d08af01987e8d58317cb950a4b17fbc3eff8016a6a72c37f910a62dc12",
+    "storage-clause-audit.json": "1bd22b05eb2e681c60074b8baca83cc3a9d3acb0bf596f4e844090967b18ef64",
+    "time-clause-audit.json": "ac26d53307967574e0897be4861b985b55a755c47faf34271f688b65b0dd08eb",
+    "ui-clause-audit.json": "99d1fc848af1bc623550ab0b6bdfe5d13b9d5e3135088044b3001990dced09b4",
+    "web-clause-audit.json": "34e57283f780b474f684fcb50d6f3fa1fdb188825e0ec99a54131ab6058a9ce9"
+  },
+  "weather_inventory_count": 47,
+  "implementation_and_follow_on_bodies_verified": 46,
+  "reconciled_issue_count": 13,
+  "reconciled_audit_link_count": 17,
+  "updates": [
+    {
+      "key": "WX-08",
+      "number": 9,
+      "added_audits": [
+        "capture-clause-audit.md"
+      ]
+    },
+    {
+      "key": "WX-09",
+      "number": 10,
+      "added_audits": [
+        "capture-clause-audit.md"
+      ]
+    },
+    {
+      "key": "WX-16",
+      "number": 17,
+      "added_audits": [
+        "storage-clause-audit.md"
+      ]
+    },
+    {
+      "key": "WX-17",
+      "number": 18,
+      "added_audits": [
+        "time-clause-audit.md"
+      ]
+    },
+    {
+      "key": "WX-19",
+      "number": 20,
+      "added_audits": [
+        "capture-clause-audit.md",
+        "media-clause-audit.md"
+      ]
+    },
+    {
+      "key": "WX-20",
+      "number": 21,
+      "added_audits": [
+        "capture-clause-audit.md"
+      ]
+    },
+    {
+      "key": "WX-29",
+      "number": 30,
+      "added_audits": [
+        "storage-clause-audit.md"
+      ]
+    },
+    {
+      "key": "WX-31",
+      "number": 32,
+      "added_audits": [
+        "capture-clause-audit.md",
+        "history-clause-audit.md",
+        "media-clause-audit.md"
+      ]
+    },
+    {
+      "key": "WX-32",
+      "number": 33,
+      "added_audits": [
+        "storage-clause-audit.md"
+      ]
+    },
+    {
+      "key": "WX-37",
+      "number": 38,
+      "added_audits": [
+        "storage-clause-audit.md"
+      ]
+    },
+    {
+      "key": "WX-38",
+      "number": 39,
+      "added_audits": [
+        "storage-clause-audit.md"
+      ]
+    },
+    {
+      "key": "WX-40",
+      "number": 41,
+      "added_audits": [
+        "capture-clause-audit.md"
+      ]
+    },
+    {
+      "key": "WX-43",
+      "number": 44,
+      "added_audits": [
+        "history-clause-audit.md",
+        "storage-clause-audit.md"
+      ]
+    }
+  ],
+  "issues": [
+    {
+      "key": "WX-01",
+      "number": 2,
+      "issue_id": 6004107646,
+      "state": "open",
+      "updated_at": "2026-10-23T22:30:22Z",
+      "body_sha256": "7ebee1a0a08a34a36b6ba2bd406bc4cecc5b6b602e30ddf7e994fbdf0bf6a86e",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "contracts-clause-audit.md",
+        "delivery-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-02",
+      "number": 3,
+      "issue_id": 6004107982,
+      "state": "open",
+      "updated_at": "2026-10-23T22:27:21Z",
+      "body_sha256": "b667e13f8fdaf668417f62cc12172b0ecf4ea05c663393d434373b8a78fcb069",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "delivery-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-03",
+      "number": 4,
+      "issue_id": 6004108232,
+      "state": "open",
+      "updated_at": "2026-10-23T22:30:24Z",
+      "body_sha256": "007ed72a9016e5d2446115860dd12ea6078aa187ec7895a96a99c333275f3a35",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "capture-clause-audit.md",
+        "contracts-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-04",
+      "number": 5,
+      "issue_id": 6004108510,
+      "state": "open",
+      "updated_at": "2026-10-23T22:11:30Z",
+      "body_sha256": "e5c44cf9fd19b4b4043c37afa117eababc0508dc244ec4f96f8026323206f18a",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "history-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-05",
+      "number": 6,
+      "issue_id": 6004108787,
+      "state": "open",
+      "updated_at": "2026-10-23T22:11:32Z",
+      "body_sha256": "0132e028328772e47fa6d5b53ff2507219e97a4f345d064b0e274b22877480a9",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "history-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-06",
+      "number": 7,
+      "issue_id": 6004109064,
+      "state": "open",
+      "updated_at": "2026-10-23T22:13:24Z",
+      "body_sha256": "02562529812a40d162b1b6e41655101f2d351c76f25533c3244c250a84d3bea4",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "storage-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-07",
+      "number": 8,
+      "issue_id": 6004109365,
+      "state": "open",
+      "updated_at": "2026-10-23T22:13:26Z",
+      "body_sha256": "a068b2280295cbe3b3a30dcb073b93a4e966f63dd236161424b7ff2e8a1f91dc",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "storage-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-08",
+      "number": 9,
+      "issue_id": 6004109686,
+      "state": "open",
+      "updated_at": "2026-10-23T22:32:00Z",
+      "body_sha256": "9bde4721ff3b4d4600f0f79849dd8227e8083fc795dbf23701486ee3dcb50e3c",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "capture-clause-audit.md",
+        "contracts-clause-audit.md",
+        "history-clause-audit.md",
+        "time-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-09",
+      "number": 10,
+      "issue_id": 6004110036,
+      "state": "open",
+      "updated_at": "2026-10-23T22:32:02Z",
+      "body_sha256": "721630beb696ea22568370c5327ad6ec4528fe51739b5d4d18e88f3f05859be6",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "capture-clause-audit.md",
+        "contracts-clause-audit.md",
+        "time-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-10",
+      "number": 11,
+      "issue_id": 6004110337,
+      "state": "open",
+      "updated_at": "2026-10-23T22:30:29Z",
+      "body_sha256": "f2875586499f316017c654b8f4030d2c3b5d1cf53c67be021f5849b9c2f520b7",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "capture-clause-audit.md",
+        "contracts-clause-audit.md",
+        "time-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-11",
+      "number": 12,
+      "issue_id": 6004110708,
+      "state": "open",
+      "updated_at": "2026-10-23T22:11:36Z",
+      "body_sha256": "9c4b270e9221942cc33bc5b41f467069d5d8c40ca50f6c9e6f146d017cd348c0",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "history-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-12",
+      "number": 13,
+      "issue_id": 6004111021,
+      "state": "open",
+      "updated_at": "2026-10-23T22:11:37Z",
+      "body_sha256": "35cfd781eb816414d0b86645003e86c9957a1ce184289ac2b3a27872d4f6882c",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "history-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-13",
+      "number": 14,
+      "issue_id": 6004111386,
+      "state": "open",
+      "updated_at": "2026-10-23T22:30:31Z",
+      "body_sha256": "3f5a5d916fa12b46a071414603ebeb41af73ab6bc145bea9a140e9d219ffc096",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "analysis-clause-audit.md",
+        "contracts-clause-audit.md",
+        "history-clause-audit.md",
+        "search-clause-audit.md",
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-14",
+      "number": 15,
+      "issue_id": 6004111681,
+      "state": "open",
+      "updated_at": "2026-10-23T22:27:23Z",
+      "body_sha256": "c62b752f5817163987e3c37544eb948af941058ae07d6a0b431e4ce683d8b314",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "delivery-clause-audit.md",
+        "media-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-15",
+      "number": 16,
+      "issue_id": 6004111989,
+      "state": "open",
+      "updated_at": "2026-10-23T22:27:25Z",
+      "body_sha256": "1343e7485f15781626d1fdc11079436d43746dfbea89028eaec18f540c90ff62",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "delivery-clause-audit.md",
+        "media-clause-audit.md"
+      ],
+      "labels": [
+        "gate:conditional",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-16",
+      "number": 17,
+      "issue_id": 6004112251,
+      "state": "open",
+      "updated_at": "2026-10-23T22:32:04Z",
+      "body_sha256": "f5093d0f4483ac3bf4ef86a00b91b45e825e098a73b0ac4a3a43a66efe59d511",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "contracts-clause-audit.md",
+        "media-clause-audit.md",
+        "storage-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-17",
+      "number": 18,
+      "issue_id": 6004112558,
+      "state": "open",
+      "updated_at": "2026-10-23T22:32:06Z",
+      "body_sha256": "d524200016f58ef5b739e11bb32b1964664c027c4389cafebac82052590f7617",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "contracts-clause-audit.md",
+        "storage-clause-audit.md",
+        "time-clause-audit.md",
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-18",
+      "number": 19,
+      "issue_id": 6004112962,
+      "state": "open",
+      "updated_at": "2026-10-23T22:30:36Z",
+      "body_sha256": "c0eb6348d56d02ca4ff724c0c6b7363f4b9dacbba9adf931c9e0f2d9c38d9cb1",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "capture-clause-audit.md",
+        "contracts-clause-audit.md",
+        "delivery-clause-audit.md",
+        "storage-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-19",
+      "number": 20,
+      "issue_id": 6004113388,
+      "state": "open",
+      "updated_at": "2026-10-23T22:32:08Z",
+      "body_sha256": "d53d1b02099ac420051689ad3b22316dc16b78155d190df66b6521f7933e889b",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "capture-clause-audit.md",
+        "media-clause-audit.md",
+        "storage-clause-audit.md",
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-20",
+      "number": 21,
+      "issue_id": 6004113726,
+      "state": "open",
+      "updated_at": "2026-10-23T22:32:10Z",
+      "body_sha256": "f72166325248a7300ddf73b9b70af325cb57cf626747202f71f053994d2b6c9c",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "capture-clause-audit.md",
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-21",
+      "number": 22,
+      "issue_id": 6004114041,
+      "state": "open",
+      "updated_at": "2026-10-23T22:27:29Z",
+      "body_sha256": "6759ec6bc377457941945dd5dd821960237125ed782239bee351f700de3ae478",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "analysis-clause-audit.md",
+        "delivery-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-22",
+      "number": 23,
+      "issue_id": 6004114415,
+      "state": "open",
+      "updated_at": "2026-10-23T22:30:38Z",
+      "body_sha256": "a624671c3226d6da7b6a743b4b2dd6b21879ee5b97362b83a090dfaa1ec3794d",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "analysis-clause-audit.md",
+        "contracts-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-23",
+      "number": 24,
+      "issue_id": 6004114750,
+      "state": "open",
+      "updated_at": "2026-10-23T22:23:58Z",
+      "body_sha256": "45732e7c237c40e4cda2afe4f5c663b408b2fb7062e09b356edde7d2661ca636",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "search-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-24",
+      "number": 25,
+      "issue_id": 6004115070,
+      "state": "open",
+      "updated_at": "2026-10-23T22:30:40Z",
+      "body_sha256": "024eb0d374672e6362c5ee4c817ac2bb552226ceebd5c865909810f545e1b48c",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "analysis-clause-audit.md",
+        "contracts-clause-audit.md",
+        "search-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-25",
+      "number": 26,
+      "issue_id": 6004115426,
+      "state": "open",
+      "updated_at": "2026-10-23T22:30:42Z",
+      "body_sha256": "19d55b79d72657b426dfaa0d868737263c7085cffbed8410e6221895c430ed8a",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "contracts-clause-audit.md",
+        "search-clause-audit.md",
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-26",
+      "number": 27,
+      "issue_id": 6004115716,
+      "state": "open",
+      "updated_at": "2026-10-23T22:30:44Z",
+      "body_sha256": "b07f90473222e58b53dfb5146ce0c90c15a8827aa7eae5858d8db44ff47f1535",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "contracts-clause-audit.md",
+        "search-clause-audit.md",
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-27",
+      "number": 28,
+      "issue_id": 6004116063,
+      "state": "open",
+      "updated_at": "2026-10-23T22:19:08Z",
+      "body_sha256": "7db11a59d9c4b6c62037a52b3c3f0bc861dc694b71192337128c7a411383b99b",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:conditional",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-28",
+      "number": 29,
+      "issue_id": 6004116426,
+      "state": "open",
+      "updated_at": "2026-10-23T22:25:38Z",
+      "body_sha256": "46146235062a322eeeb346054a0731171802857a0bbbf6f6059520cb4b427c43",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "recovery-clause-audit.md",
+        "storage-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-29",
+      "number": 30,
+      "issue_id": 6004116838,
+      "state": "open",
+      "updated_at": "2026-10-23T22:32:12Z",
+      "body_sha256": "934c03f837e2f4d64059caa5542cad2ea4b54dde1101ffef7b64268f2e44c1e2",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "delivery-clause-audit.md",
+        "recovery-clause-audit.md",
+        "storage-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-30",
+      "number": 31,
+      "issue_id": 6004117151,
+      "state": "open",
+      "updated_at": "2026-10-23T22:25:42Z",
+      "body_sha256": "73e31df2893d0e8a7302aaacec2849d35587a2501271238b691fc008eb01886a",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "analysis-clause-audit.md",
+        "recovery-clause-audit.md",
+        "storage-clause-audit.md",
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-31",
+      "number": 32,
+      "issue_id": 6004117502,
+      "state": "open",
+      "updated_at": "2026-10-23T22:32:14Z",
+      "body_sha256": "528e5852aca855415c764e8cefed74445cf63acaccb9a029b9984afe154aceae",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "capture-clause-audit.md",
+        "delivery-clause-audit.md",
+        "history-clause-audit.md",
+        "media-clause-audit.md",
+        "recovery-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-32",
+      "number": 33,
+      "issue_id": 6004117853,
+      "state": "open",
+      "updated_at": "2026-10-23T22:32:15Z",
+      "body_sha256": "d6d8206c0b7001e9bcdad743e93e1b69faf1a0410275484b44a8a7ccb8fe778b",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "recovery-clause-audit.md",
+        "search-clause-audit.md",
+        "storage-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-33",
+      "number": 34,
+      "issue_id": 6004118399,
+      "state": "open",
+      "updated_at": "2026-10-23T22:30:46Z",
+      "body_sha256": "16f11138da0e7994ebccd9ee20eb998a04ffde1e159e27cad8e83e814e4b57e5",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "analysis-clause-audit.md",
+        "capture-clause-audit.md",
+        "contracts-clause-audit.md",
+        "delivery-clause-audit.md",
+        "history-clause-audit.md",
+        "media-clause-audit.md",
+        "recovery-clause-audit.md",
+        "search-clause-audit.md",
+        "storage-clause-audit.md",
+        "time-clause-audit.md",
+        "ui-clause-audit.md",
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-34",
+      "number": 35,
+      "issue_id": 6004119045,
+      "state": "open",
+      "updated_at": "2026-10-23T22:30:48Z",
+      "body_sha256": "bd160e7349cd14cd59684582d800ac30b82406564ed0e00ab905e57ca3b162ef",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "contracts-clause-audit.md",
+        "delivery-clause-audit.md",
+        "recovery-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-35",
+      "number": 36,
+      "issue_id": 6004119544,
+      "state": "open",
+      "updated_at": "2026-10-23T21:44:40Z",
+      "body_sha256": "d9c12c1ca39695bb62423d3f3cffd3a26b1f02afa8ffc0b75d68c29ba7afa52c",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-36",
+      "number": 37,
+      "issue_id": 6004120098,
+      "state": "open",
+      "updated_at": "2026-10-23T22:30:51Z",
+      "body_sha256": "c0134298a086a65e2c117cc7297381753ee5efb35ac5780696ec52a0cc974bbe",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "capture-clause-audit.md",
+        "contracts-clause-audit.md",
+        "media-clause-audit.md",
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-37",
+      "number": 38,
+      "issue_id": 6004120439,
+      "state": "open",
+      "updated_at": "2026-10-23T22:32:17Z",
+      "body_sha256": "2b36a1ebc3cdea8ec4abc239248773c2578a4e79cafdc733a4d2f5a8cfe9ed6e",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "capture-clause-audit.md",
+        "contracts-clause-audit.md",
+        "storage-clause-audit.md",
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-38",
+      "number": 39,
+      "issue_id": 6004120779,
+      "state": "open",
+      "updated_at": "2026-10-23T22:32:20Z",
+      "body_sha256": "7380372df0e5dfa6954fd4ecd7a2f7691ca1997009b3117149e38e909ac48d36",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "capture-clause-audit.md",
+        "contracts-clause-audit.md",
+        "storage-clause-audit.md",
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-39",
+      "number": 40,
+      "issue_id": 6004121109,
+      "state": "open",
+      "updated_at": "2026-10-23T22:19:20Z",
+      "body_sha256": "69b014b6d390994a3af8384016c5af95508d572c64de338c5cfc7e6f95ace601",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "ui-clause-audit.md",
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-40",
+      "number": 41,
+      "issue_id": 6004121462,
+      "state": "open",
+      "updated_at": "2026-10-23T22:32:21Z",
+      "body_sha256": "814d027b9753d66e36a8f14dff0a437b331fdeceefc637514c6c91c28020b171",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "analysis-clause-audit.md",
+        "capture-clause-audit.md",
+        "contracts-clause-audit.md",
+        "history-clause-audit.md",
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-41",
+      "number": 42,
+      "issue_id": 6004121752,
+      "state": "open",
+      "updated_at": "2026-10-23T22:30:58Z",
+      "body_sha256": "cb61040a402b2489b04e9c2839c74a830cee3067f9e2b350e76faaab25446349",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "contracts-clause-audit.md",
+        "history-clause-audit.md",
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-42",
+      "number": 43,
+      "issue_id": 6004122087,
+      "state": "open",
+      "updated_at": "2026-10-23T22:31:01Z",
+      "body_sha256": "90090d5a446daea9f23e589c3e2aa2f4393c5264dc43bf7475f400a209c9ae8b",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "contracts-clause-audit.md",
+        "search-clause-audit.md",
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-43",
+      "number": 44,
+      "issue_id": 6004122458,
+      "state": "open",
+      "updated_at": "2026-10-23T22:32:24Z",
+      "body_sha256": "db4b5db9c710aed8b09d099565f9d15bce19de24e51bf445ed8a0c02cde049c6",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "contracts-clause-audit.md",
+        "history-clause-audit.md",
+        "search-clause-audit.md",
+        "storage-clause-audit.md",
+        "ui-clause-audit.md",
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-44",
+      "number": 45,
+      "issue_id": 6004122801,
+      "state": "open",
+      "updated_at": "2026-10-23T22:19:30Z",
+      "body_sha256": "2595d6ac323ddae7a3a55d951802ea709e459f3d4a7c92e10fb21ff23a3513a3",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "ui-clause-audit.md",
+        "web-clause-audit.md"
+      ],
+      "labels": [
+        "gate:required",
+        "phase:initial",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-45",
+      "number": 46,
+      "issue_id": 6004123126,
+      "state": "open",
+      "updated_at": "2026-10-23T22:09:43Z",
+      "body_sha256": "5a7ac0249f5898ef4a43d961614070e03014ae6924a9db36d808ca2b7c61ee5f",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [
+        "media-clause-audit.md"
+      ],
+      "labels": [
+        "phase:follow-on",
+        "readiness:research-pending"
+      ]
+    },
+    {
+      "key": "WX-46",
+      "number": 47,
+      "issue_id": 6004123485,
+      "state": "open",
+      "updated_at": "2026-10-23T19:46:32Z",
+      "body_sha256": "9f58543f52be6c20ab5ddc1219ce1d75a1569e58d4c1daf3f8cfbd7fbcd594e3",
+      "required_sections_present": true,
+      "mapped_requirement_ids_present": true,
+      "assigned_audit_links": [],
+      "labels": [
+        "phase:deferred-research",
+        "readiness:research-pending"
+      ]
+    }
+  ],
+  "limits": [
+    "Required section/requirement/link presence is structural evidence, not semantic adequacy or resolved design",
+    "Native dependency endpoints were not re-read in this body-only pass; graph-verification.json retains its separate observation scope",
+    "Full section 1-4 and 19-20 source audit and final operative-body consolidation remain unfinished",
+    "No application implementation, rollout or recovery acceptance"
+  ]
+}
