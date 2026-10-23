@@ -97,3 +97,7 @@ The subsequent [hash-bound validation receipt](validation-receipt.json) records 
 ## Synthesis attribution
 
 [WeatherNarrative](weather-narrative-contract.md) is a private untrusted candidate, not a public API payload. Public Claim/Event require evidence `basis` (visual/instrument/inference) separately from `origin`; inferred automated records use origin `synthesis`. Measured/visual origins require matching instrument/visual basis. Human/manual origins retain explicit evidence basis and attribution. Application-assigned interval/precision and seeks come from validated evidence, never model timestamps. Every consumer, sidecar and search projection must preserve that distinction.
+
+## Analysis execution versus available data
+
+[D11](../decisions/D11-analysis-execution-and-failure.md) separates `Analysis.execution_state` and sanitized `reason` from data `state`, mode and coverage. Failed/unsupported execution with no usable evidence has unavailable data; partial validated evidence can survive a failed run. Invalidated claims never become current merely because their producing run completed. Sampled-frame fallback remains degraded and cannot satisfy native-video commissioning. Cross-field validity and remote termination require semantic/runtime checks.

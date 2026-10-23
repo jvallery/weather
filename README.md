@@ -23,6 +23,7 @@ Requirements and implementation planning for **[weather.vallery.net](https://wea
 - [D06 dedicated PostgreSQL and storage admission](docs/decisions/D06-database-and-storage.md), with live extension/replication evidence and explicit storage prerequisites.
 - [D09 CPU baseline and GPU admission](docs/decisions/D09-gpu-and-cpu-admission.md), with a verified nine-device census and explicit sharing limitations.
 - [D08 role-scoped object gateway](docs/decisions/D08-object-access-boundary.md), including the action matrix and independent archive/recovery boundary.
+- [D11 analysis execution and failure states](docs/decisions/D11-analysis-execution-and-failure.md), including persistent remote-call occupancy and bounded reanalysis; [latest API shape validation](docs/contracts/analysis-execution-validation.json).
 - [D12 embedding and search consistency](docs/decisions/D12-search-and-profile-consistency.md), with versioned profile/withdrawal rules and declarative integrity vectors.
 - [D14 public media transport](docs/decisions/D14-public-media-transport.md), with live zone/tunnel evidence and an explicit unresolved external-route decision.
 - [D15 custody/recovery design and open decisions](docs/decisions/D15-custody-and-recovery.md), grounded in [live central custody evidence](docs/research/custody-evidence.md).

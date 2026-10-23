@@ -1,0 +1,17 @@
+{
+  "observed_at": "2026-10-23T21:24:15.820952+00:00",
+  "scope": "API metaschema and all 38 shape fixtures including 5 analysis execution cases",
+  "all_fixture_expectations_matched": true,
+  "fixture_count": 38,
+  "input_sha256": {
+    "api.schema.json": "3393086bf49da8b185f9d50c9a1ea17dab740ba6515920cf0eed29718237fb9f",
+    "schema-fixtures.json": "7b5730ba4b0ef2de112ce5cc2a0717703906e4cb09ab1abb1d8cce5fd0a13708",
+    "api-contract.md": "6eba689d81debfc980155a1884fc7deedcb8c65ec7af5d626358647a4c259fb1",
+    "analysis-execution-vectors.json": "209119914c92e351078ff86b0cfd97dcd77cb12e976251a6684844dba3e3719e"
+  },
+  "limitations": [
+    "Fourteen execution scenarios are declarations, not passing runtime tests",
+    "No backend cancellation, scheduling, publication or browser test",
+    "Prior receipts remain historical hash-bound observations"
+  ]
+}

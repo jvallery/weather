@@ -1166,6 +1166,19 @@
         },
         "coverage": {
           "$ref": "#/$defs/Coverage"
+        },
+        "execution_state": {
+          "enum": [
+            "pending",
+            "running",
+            "complete",
+            "degraded",
+            "failed",
+            "unsupported"
+          ]
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
         }
       },
       "required": [
@@ -1177,7 +1190,9 @@
         "schema_revision",
         "capability_revision",
         "evidence_revision",
-        "coverage"
+        "coverage",
+        "execution_state",
+        "reason"
       ]
     },
     "EditorialPublic": {

@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "status": "declarative_not_executed",
+  "cases": [
+    {
+      "id": "AE-01",
+      "name": "lost-dispatch-ack",
+      "given": "Dispatch may have reached provider but worker loses response",
+      "expected": "Retain uncertain slot; no automatic resend"
+    },
+    {
+      "id": "AE-02",
+      "name": "client-timeout",
+      "given": "120-second client timer expires",
+      "expected": "Open circuit and retain slot until qualified termination"
+    },
+    {
+      "id": "AE-03",
+      "name": "cancel-sent",
+      "given": "Cancellation request sent without backend completion evidence",
+      "expected": "Do not release slot"
+    },
+    {
+      "id": "AE-04",
+      "name": "coordinator-failover",
+      "given": "New coordinator finds occupied old-epoch call",
+      "expected": "Reconcile exact call; no duplicate dispatch"
+    },
+    {
+      "id": "AE-05",
+      "name": "window-budget",
+      "given": "Retries/backoff/repair approach window deadline",
+      "expected": "At most four actual calls; all consume original ten-minute/run bounds"
+    },
+    {
+      "id": "AE-06",
+      "name": "queue-overflow",
+      "given": "More than 256 pending windows",
+      "expected": "Explicit overflow/degraded status without unbounded queue"
+    },
+    {
+      "id": "AE-07",
+      "name": "fairness",
+      "given": "One camera has repeated failures/backoff",
+      "expected": "Eligible other cameras progress round-robin without evading shared occupied slot"
+    },
+    {
+      "id": "AE-08",
+      "name": "unsupported-media",
+      "given": "Native media rejected by qualified route",
+      "expected": "Stop automatic retry until capability change; fallback remains degraded"
+    },
+    {
+      "id": "AE-09",
+      "name": "reanalysis-race",
+      "given": "Two schedulers create automatic run within rolling 24h",
+      "expected": "At most one admitted new run; original run never reopened"
+    },
+    {
+      "id": "AE-10",
+      "name": "seventh-day-edge",
+      "given": "Reanalysis starts near publication plus seven days",
+      "expected": "Deadline capped at seven days; no extension"
+    },
+    {
+      "id": "AE-11",
+      "name": "refresh-storm",
+      "given": "Continuous evidence revisions arrive",
+      "expected": "One pending refresh; bounded debounce with max wait; stale CAS cannot publish"
+    },
+    {
+      "id": "AE-12",
+      "name": "partial-run-failure",
+      "given": "Some validated windows succeeded before exhaustion",
+      "expected": "Retain partial evidence and failed/degraded execution reason; no full coverage claim"
+    },
+    {
+      "id": "AE-13",
+      "name": "restore-remote-call",
+      "given": "Restored DB predates remote call completion",
+      "expected": "No new dispatch until uncertain provider execution reconciled"
+    },
+    {
+      "id": "AE-14",
+      "name": "late-human-edit",
+      "given": "Human edit commits while synthesis runs",
+      "expected": "CAS preserves current editorial revision and invalidates obsolete output"
+    }
+  ]
+}

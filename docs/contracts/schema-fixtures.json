@@ -642,6 +642,159 @@
         "rule_revision": "synthetic-rule",
         "video_links": []
       }
+    },
+    {
+      "name": "unsupported analysis preserves execution outcome",
+      "schema": "Analysis",
+      "valid": true,
+      "value": {
+        "state": "unavailable",
+        "execution_state": "unsupported",
+        "reason": "native_video_unsupported",
+        "mode": "none",
+        "claims": [],
+        "limitations": [
+          "Native video capability is not qualified."
+        ],
+        "prompt_revision": null,
+        "schema_revision": "synthetic-v1",
+        "capability_revision": null,
+        "evidence_revision": null,
+        "coverage": {
+          "fraction": 0,
+          "support_seconds": 0,
+          "expected_seconds": 3600,
+          "algorithm_revision": "synthetic-coverage",
+          "gaps": [
+            {
+              "start": "2026-10-23T00:00:00Z",
+              "end": "2026-10-23T01:00:00Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "failed analysis preserves execution outcome",
+      "schema": "Analysis",
+      "valid": true,
+      "value": {
+        "state": "unavailable",
+        "execution_state": "failed",
+        "reason": "deadline_exhausted",
+        "mode": "none",
+        "claims": [],
+        "limitations": [
+          "Native video capability is not qualified."
+        ],
+        "prompt_revision": null,
+        "schema_revision": "synthetic-v1",
+        "capability_revision": null,
+        "evidence_revision": null,
+        "coverage": {
+          "fraction": 0,
+          "support_seconds": 0,
+          "expected_seconds": 3600,
+          "algorithm_revision": "synthetic-coverage",
+          "gaps": [
+            {
+              "start": "2026-10-23T00:00:00Z",
+              "end": "2026-10-23T01:00:00Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "missing execution state rejected",
+      "schema": "Analysis",
+      "valid": false,
+      "value": {
+        "state": "unavailable",
+        "reason": "native_video_unsupported",
+        "mode": "none",
+        "claims": [],
+        "limitations": [
+          "Native video capability is not qualified."
+        ],
+        "prompt_revision": null,
+        "schema_revision": "synthetic-v1",
+        "capability_revision": null,
+        "evidence_revision": null,
+        "coverage": {
+          "fraction": 0,
+          "support_seconds": 0,
+          "expected_seconds": 3600,
+          "algorithm_revision": "synthetic-coverage",
+          "gaps": [
+            {
+              "start": "2026-10-23T00:00:00Z",
+              "end": "2026-10-23T01:00:00Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "missing analysis reason field rejected",
+      "schema": "Analysis",
+      "valid": false,
+      "value": {
+        "state": "unavailable",
+        "execution_state": "unsupported",
+        "mode": "none",
+        "claims": [],
+        "limitations": [
+          "Native video capability is not qualified."
+        ],
+        "prompt_revision": null,
+        "schema_revision": "synthetic-v1",
+        "capability_revision": null,
+        "evidence_revision": null,
+        "coverage": {
+          "fraction": 0,
+          "support_seconds": 0,
+          "expected_seconds": 3600,
+          "algorithm_revision": "synthetic-coverage",
+          "gaps": [
+            {
+              "start": "2026-10-23T00:00:00Z",
+              "end": "2026-10-23T01:00:00Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unknown execution state rejected",
+      "schema": "Analysis",
+      "valid": false,
+      "value": {
+        "state": "unavailable",
+        "execution_state": "successish",
+        "reason": "native_video_unsupported",
+        "mode": "none",
+        "claims": [],
+        "limitations": [
+          "Native video capability is not qualified."
+        ],
+        "prompt_revision": null,
+        "schema_revision": "synthetic-v1",
+        "capability_revision": null,
+        "evidence_revision": null,
+        "coverage": {
+          "fraction": 0,
+          "support_seconds": 0,
+          "expected_seconds": 3600,
+          "algorithm_revision": "synthetic-coverage",
+          "gaps": [
+            {
+              "start": "2026-10-23T00:00:00Z",
+              "end": "2026-10-23T01:00:00Z"
+            }
+          ]
+        }
+      }
     }
   ]
 }
