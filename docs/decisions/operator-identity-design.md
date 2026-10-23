@@ -1,0 +1,37 @@
+# Operator identity — D13 protocol selection
+
+Status: select server-side OIDC authorization code with PKCE S256 and opaque Weather sessions. Actual Weather provider enrollment, client-library pin, claim mapping and provider-session revocation remain unqualified. Requirements §12.7 and R36; implementation WX-01/43, security acceptance WX-33. Fleet identity belongs to agents; no provider, credential, role or access rule was created.
+
+## Source and live evidence
+
+On 2026-10-23, read-only Kubernetes metadata showed two ready Authentik server replicas and two ready worker replicas, using server version 2026.8.2 at digest `sha256:ff8489a5af4f4fe415ffd180a8e3c10b120bc2592d13d79dac050d977f7b9ecd`. This is deployment readiness/image evidence, not a Weather login or proof of provider settings. No Secret or user record was read.
+
+At agents revision `9f17433e4b0887b3ca99398de9b2e5260a7ecb56`, the existing identity route is owner-managed. At options-tracker revision `e2a6e4979e37e5e8723d800c44c942bda736aa2d`, `server/index.js` demonstrates an existing estate OIDC client: discovery, state/nonce, PKCE S256, single-use DB login state, opaque host cookie and server sessions. It ignores forwarded identity headers. This source was inspected, not copied or runtime-tested. Its twelve-hour session policy and application authorization are not inherited by Weather.
+
+The WordPress source uses a different trusted-forward-auth integration for its own admin surface. Weather is not WordPress and cannot inherit those sessions or safely trust arbitrary identity headers. Prefer explicit OIDC validation to a second header-trust dependency. Current [Authentik provider documentation](https://docs.goauthentik.io/add-secure-apps/providers/oauth2/) describes code/PKCE and issuer behavior; [logout documentation](https://docs.goauthentik.io/add-secure-apps/providers/oauth2/frontchannel_and_backchannel_logout/) describes logout notifications. Documentation availability is not a receipt proving those settings on this deployment.
+
+## Application contract
+
+Use an owner-enrolled confidential Weather client with an exact callback allowlist, explicit issuer and HTTPS discovery/JWKS/token endpoints. Bind callback and post-login destinations to configured same-origin routes, never arbitrary request Host/return URLs. No dynamic client registration, public client secret, implicit flow, resource-owner password flow or browser token storage. Use the maintained chosen Python OIDC client after its version/security support is verified; do not hand-roll token cryptography.
+
+Create a one-time login record with random browser binding, state, nonce and S256 verifier, maximum ten-minute lifetime. Consume it atomically before accepting a callback. Validate issuer, signature/allowed algorithm, audience and azp where required, expiration, nonce, state, redirect URI and PKCE using the library's verified flow. Reject missing/ambiguous subject and untrusted metadata redirects. Key rotation permits only the configured issuer's validated key set. Transport failures produce a closed login error, not fallback to headers or another provider.
+
+Identity is `(issuer, sub)`, not mutable email/display name. Weather's server-side operator authorization is an explicit private allowlist of those identities, separately revisioned and checked on every private read and mutation. Authenticated nonoperators have no editor access. Initial scope is the owner-designated operator only; no public registration or self-service role promotion. Enrollment must establish the actual subject through a verified login and controlled private configuration; it must not guess it from an email address.
+
+Issue a fresh opaque random session identifier; persist only its hash plus issuer/subject, provider session identity where supported, authorization revision and expiration. Rotate at login, invalidate the old session, and use a Secure/HttpOnly/SameSite=Lax host-only cookie with no Domain attribute. Selected initial absolute session lifetime is 15 minutes, no silent lifetime extension or long-lived refresh token. An expired session requires another verified authorization round trip. This bounds stale local authentication but does not prove immediate IdP revocation. Keep provider tokens out of browsers/logs; preserve only the minimum server-side state necessary for a qualified logout protocol.
+
+Each private action checks the unexpired local session and current operator allowlist in addition to record authorization and CAS. Revoke local sessions/allowlist entries immediately on operator removal; no process-local positive authorization cache may conceal that change. Session DB/auth-policy unavailability fails private operations closed while public weather/media continue. Restore invalidates all restored login/session records before enabling the editor: backups must not resurrect an old authenticated session. Audit records retain stable actor identity without depending on session survival.
+
+Mutations require same-origin validation and a session-bound CSRF token; SameSite alone is insufficient. Authenticate private GETs too. Responses are no-store; logout invalidates local state before contacting the provider. A failed provider logout must not leave the local editor authenticated. Keep unsaved text visible for deliberate recovery after login, but never submit it automatically with a fresh revision or new identity.
+
+## Revocation qualification and owner prerequisite
+
+Local logout, authorization removal, expiration and restore invalidation are deterministic application obligations. Provider-side user/session revocation is a separate integration: select and qualify Authentik back-channel logout with signature/issuer/audience/event/sid-or-sub validation and replay protection, or record an explicitly bounded alternative before editor readiness. Do not imply that a signed ID token or periodic browser polling observes revocation. A lost logout notification must be covered by the admitted session bound and owner policy. The proposed 15-minute bound needs acceptance against current fleet identity policy; it is not a live guarantee.
+
+Track owner enrollment/configuration through the existing agents OWN-CI namespace/identity prerequisite (#5366), with this exact identity scope added to its planning work. WX-01 must retain private provider/client/subject and secret-distribution receipts; WX-43 consumes them transitively through the existing initial platform dependencies. This uses the existing owner prerequisite and adds no graph edge or duplicate provider. If the owner splits its work later, reconcile the graph by exact issue ID.
+
+Before closing the identity planning gap, inspect the actual owner-supported enrollment path and current provider discovery/claims/revocation controls, select the compatible Python client, and bind the exact session/authorization policy. No new credentials or provider changes are authorized merely by this research decision.
+
+## Required negative evidence
+
+Test forged identity headers, missing session, authenticated nonoperator, wrong issuer/audience/nonce/state, replayed login code, altered return URL, key rotation, expired session, removed allowlist identity, CSRF, failed provider round trip, logout replay, stale CAS and DB restore. Check private reads as well as writes. A ready identity pod or options-tracker source does not satisfy any of these Weather tests. Real enrollment/login/revocation and end-to-end browser acceptance remain open.
