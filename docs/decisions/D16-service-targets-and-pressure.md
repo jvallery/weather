@@ -26,6 +26,8 @@ The following values are commissioning targets or selected policies, **not measu
 
 Report each daily boundary burst and rolling seven-day counts, worst age and p50/p95/p99 where population supports them; always expose sample count. A tiny sample is not a reliable tail estimate. No error budget excuses any premature public image, unauthorized original, invalid source deletion or false recovery-success claim: a single observed violation fails that acceptance invariant. Latency/availability error-budget percentages and public API/media response SLOs remain material commissioning decisions, not invented numbers.
 
+Public search adopts [D12's protective request/SQL/model-wait/queue/cache ceilings](D12-search-and-profile-consistency.md#selected-lexical-policy-and-public-request-ceilings). These bound failure handling; they are not latency/availability SLOs or grants of connections, model concurrency or memory. Deployment-wide admission and measured relevance/throughput remain required.
+
 ## Preview retention and source-age policy v1
 
 Use the existing committed sealed-chunk path; do not add mutable-tail reads or a second collector writer for freshness. With five-minute sealing plus a one-minute publisher cycle, healthy source age can approach 16 minutes before scheduling/transport overhead. This is an expected bound under those assumptions, not a measured p99 or a promise of exactly ten-minute-old imagery.

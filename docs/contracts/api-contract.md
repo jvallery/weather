@@ -67,6 +67,8 @@ Cursors are opaque, bounded, authenticated against tampering, and bind query fil
 
 Almanac comparison requests require comparison_start and comparison_end as well as the primary interval; both must form a valid half-open interval. Other products reject those extra bounds. Comparisons retain each interval's actual coverage and duration rather than silently normalizing unequal periods.
 
+Search uses [D12's selected lexical and request policy](../decisions/D12-search-and-profile-consistency.md#selected-lexical-policy-and-public-request-ceilings): explicit English plain-text matching, no-terms handling, finite request/SQL/model-wait budgets and bounded query-vector caching. Search responses/errors use no-store initially. Nonempty no-terms text never silently becomes numeric browsing; without semantic availability return lexical mode with reason `lexical_no_terms`. SQL timeout or failed current-revision hydration is unavailable (503), admission/rate rejection is 429, and invalid input is 400. Owner resource admission and actual enforcement remain required.
+
 ## HTTP transport and caches
 
 GET/HEAD authorize before ETag evaluation. HEAD has the corresponding authorized representation headers but no body; ignore Range on HEAD. GET supports one closed, open-ended or suffix byte range and correct 206/Content-Range/length. Unsatisfiable ranges return 416 with total representation length. Deliberately reject multiple ranges with bounded 400 handling. If-Range mismatch yields the full authorized representation. Strong ETags bind exact immutable bytes.

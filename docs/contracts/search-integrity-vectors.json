@@ -118,6 +118,42 @@
       "name": "query-timeout",
       "given": "Exact filtered scan exhausts its admitted statement/work budget",
       "expected": "Explicit unavailable response, not empty-success or unbounded retry"
+    },
+    {
+      "id": "SI-19",
+      "name": "lexical-literal-operators",
+      "given": "Query contains punctuation, OR, negation or tsquery-style operators",
+      "expected": "Apply parameterized English plain-query semantics; never execute SQL/operators or claim semantic negation in lexical fallback"
+    },
+    {
+      "id": "SI-20",
+      "name": "lexical-no-terms",
+      "given": "Nonempty punctuation-only or all-stop-word query produces no lexical terms",
+      "expected": "With compatible semantic vector rank semantic branch only; otherwise empty lexical response with lexical_no_terms explanation, never numeric browse-all"
+    },
+    {
+      "id": "SI-21",
+      "name": "lexical-policy-revision",
+      "given": "Database image or dictionary changes lexical output",
+      "expected": "Retain old policy inventory; qualify and rebuild under new lexical revision before activation, with current-eligibility checks"
+    },
+    {
+      "id": "SI-22",
+      "name": "cumulative-query-budget",
+      "given": "Individually short SQL statements collectively exhaust the request SQL allowance",
+      "expected": "Cancel/rollback, return unavailable, verify connection terminal state before reuse; never reset budget per statement"
+    },
+    {
+      "id": "SI-23",
+      "name": "query-cache-pressure",
+      "given": "Cache exceeds entry/byte cap or reaches absolute expiry while requests remain frequent",
+      "expected": "Enforce deployment-wide 256-entry/8-MiB bound and 15-minute non-sliding TTL; reuse only exact transformed hash/profile and rerun current filters"
+    },
+    {
+      "id": "SI-24",
+      "name": "replica-and-timeout-occupancy",
+      "given": "Replica rollout or caller timeout occurs with queued SQL and remote embedding still running",
+      "expected": "Do not multiply deployment limits or release uncertain backend occupancy; preserve separate SQL/model admission and bounded degraded fallback"
     }
   ]
 }
