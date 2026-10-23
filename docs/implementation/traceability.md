@@ -153,3 +153,7 @@ The [section 14 audit](search-clause-audit.md) preserves all 24 source blocks an
 ## Recovery requirements coverage
 
 The [section 15 audit](recovery-clause-audit.md) preserves 20 source blocks, all eight failure-domain rows and 27 grouped obligations. It distinguishes obsolete preview exclusion from mandatory durable image/media closure and assigns independent bootstrap, complete verification and isolated restore acceptance without claiming current recovery capability.
+
+## Delivery and operational target coverage
+
+The [section 16 and §18.1 audit](delivery-clause-audit.md) preserves 13 source blocks and maps 20 grouped obligations, including all runbook topics and operational signals. Synthetic development follows the estate placement policy; source-side pipeline descriptions do not prove fork isolation, enrollment, deployment or product acceptance.

@@ -154,3 +154,7 @@ The [search audit](../implementation/search-clause-audit.md) preserves all sourc
 ## Recovery requirements and complete failure coverage
 
 The [section 15 audit](../implementation/recovery-clause-audit.md) retains the complete checkpoint inventory and eight failure scenarios. The selected preview policy clears transient pointers on restore while protecting durable hourly/keogram assets. A complete recovery claim still needs trusted base/WAL/bootstrap discovery, independently recoverable access/config/images, exact-version complete verification, admitted capacity and measured objectives. A generic mirror receipt, available WAL or schema-valid manifest does not establish those facts. No backup/provider workload or policy changed.
+
+## Delivery, synthetic execution and operational coverage
+
+The [section 16 and §18.1 audit](../implementation/delivery-clause-audit.md) preserves complete CI trust boundaries, runbook topics and operational-signal lists. Local development wording does not authorize intensive Mac workloads: synthetic database/object/model tests use the owner-admitted cluster path. Credentials/runbook rotation instructions are future operational procedures, not authorization to rotate during this audit. Actual fork isolation, Weather enrollment, private overlay placement and achievable SLO budgets remain unresolved.

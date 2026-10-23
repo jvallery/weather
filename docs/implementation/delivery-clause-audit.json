@@ -1,0 +1,263 @@
+{
+  "scope": "All source blocks of section 16 and section 18.1, including complete runbook and operational-signal lists",
+  "requirements_sha256": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+  "scoped_source_sha256": "8955ac1a725ff532f044abf9a3874c3904ade5394c6436a46be90e8c20f71d39",
+  "source_blocks": [
+    {
+      "id": "D16.1.01",
+      "section": "16.1",
+      "source_text": "Use the owner-supplied **public `jvallery/weather`** repository. The requirements and first-task handoff are its initial source of truth; Phase 1 completes repository configuration and the issue backlog. Select an explicit open-source license before presenting code as licensed open source. Verify attribution and compatible terms for copied assets/code, FFmpeg build features, fonts, models and optional extensions. FFmpeg's license obligations depend on build configuration and linked components. [S50]",
+      "sha256": "5d14b220cc91f3776721293038686f2d2c4889771a5b06713e480d1818afd8bd",
+      "producers": [
+        "WX-01",
+        "WX-02",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "D16.1.02",
+      "section": "16.1",
+      "source_text": "Keep portable application source, schemas, prompts, migrations, container recipes, charts/manifests/templates, synthetic fixtures, CI definitions and public runbooks in `weather`. Keep actual deployment secrets, private addresses, precise coordinates, device IDs, private evidence and environment overlays in the established private owner-managed location. Public examples use unmistakable placeholders and cannot accidentally deploy against production.",
+      "sha256": "25fa9973a0d6cf8c958f958620903b2645e6f110865c68b2b259fc3f732de381",
+      "producers": [
+        "WX-01",
+        "WX-02",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "D16.1.03",
+      "section": "16.1",
+      "source_text": "The namespace is `weather`; use independent service accounts, RBAC, resource quotas, secrets, image names, CI identity and deployment ownership. The app may consume existing CNPG/Garage/inference/ingress/operator infrastructure through approved interfaces. Infrastructure resources that belong to storage, network, database or compute owners remain in those owner workflows, with linked prerequisite issues/changes. Do not duplicate shared providers or inherit Sentinel credentials to make the namespace deploy.",
+      "sha256": "336606c05b8b19d0cdea41495e3ce37a723b1e329d37169f49a61610a1b55254",
+      "producers": [
+        "WX-01",
+        "WX-02",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "D16.2.01",
+      "section": "16.2",
+      "source_text": "Implement the local CI/CD pattern discovered in D01, with reproducible pinned dependencies, immutable image digests, dependency/license/SBOM and secret scanning, test artifacts, migration validation, image publication, staged promotion, deployment health gates and rollback. Existing fleet controllers/operators may be reused; project-owned application/FFmpeg images are locally built and stored in the approved registry. Configure registry resolution so runtime pulls cannot silently fall back to public registries; K3s mirror/default-endpoint behavior must be considered. [S45]",
+      "sha256": "8f6a497fac6f074f026562a2f4ca2712f7bd9327498c00e64310e834be8df94c",
+      "producers": [
+        "WX-02",
+        "WX-33",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "D16.2.02",
+      "section": "16.2",
+      "source_text": "Core runtime must not need Docker Hub/GHCR availability, public package install, remote font/script/CDN bundles, external model downloads, Tempest cloud or a public weather API. Build-time retrieval of pinned licensed upstream source follows the fleet's supply-chain policy. Optional Cloudflare remains a separately qualified delivery choice, not a hidden source of weather data or application state.",
+      "sha256": "1be899c0de281858d4bc3c3f29938eb48894f88376285318bc3b7a545f0fcce9",
+      "producers": [
+        "WX-02",
+        "WX-33",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "D16.2.03",
+      "section": "16.2",
+      "source_text": "Public/fork PR code must execute only in an isolated untrusted build path with synthetic fixtures and no production secrets or network reachability to cameras, database, storage, inference or cluster control. A self-hosted runner on the home network is not safely isolated merely because the repository has branch protection. Trusted integration/promotions run through a separate, narrowly scoped approved path. Do not execute a fork checkout in a privileged `pull_request_target` context.",
+      "sha256": "a5bb83b7fc2a7dcc3164ff79f643cb4cd3957284f8da12f5bee38755e82af85c",
+      "producers": [
+        "WX-02",
+        "WX-33",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "D16.2.04",
+      "section": "16.2",
+      "source_text": "Use expand/contract migrations compatible with rollout/rollback; do not automatically down-migrate away retained observations. Pin application/schema/FFmpeg/prompt/profile provenance in each release. The first pass files pipeline implementation issues; it must not claim the pipeline exists merely because a sample workflow is committed.",
+      "sha256": "8a74bebc103dc5770da73dd1f924759da8794daca1e21728490699055a0427e5",
+      "producers": [
+        "WX-02",
+        "WX-33",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "D16.3.01",
+      "section": "16.3",
+      "source_text": "Optimize installation, IaC and operations for this fleet, with documented configuration/customization points and a separate private estate overlay. Keep public examples generic and secrets out of source; no general installer, multi-site/tenant platform or broad camera-adapter ecosystem is required. Include a development environment with synthetic JPEGs, synthetic Tempest datagrams, mock inference, disposable local PostgreSQL and an S3-compatible test boundary. It must exercise the same contracts without real camera/station credentials.",
+      "sha256": "3c2d2cd9ac083c1723ce4a8666622050dd39d9c7de0d6e04848d5fcdd2b20b1c",
+      "producers": [
+        "WX-02",
+        "WX-31",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "D16.3.02",
+      "section": "16.3",
+      "source_text": "Operational runbooks cover camera credential rotation, time/cadence recalibration, NFS interruption and fencing, database failover/archive backlog, Garage access/key rotation, render/GPU fallback, model capability changes, embedding reindex, media withdrawal, custody mismatch and full restore. Provide retention/capacity dashboards and make loss/partial states diagnosable without publishing private data.",
+      "sha256": "0345b822660215bc696372af3ee4f77190fb4afffd0d544bfaa539db1cabb1f8",
+      "producers": [
+        "WX-02",
+        "WX-31",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "D18.1.01",
+      "section": "18.1",
+      "source_text": "Initial commissioning targets are publication within two hours of a segment boundary on the admitted CPU fallback, cleanup within one hour of qualified publication, current-condition API response/cache behavior that reflects station cadence, bounded four-hour analysis runs, and public API/media responsiveness measured on the real origin. D10/D11/D15/D16 must replace provisional numbers with achievable SLOs and explicit workload/resource assumptions. Native-video analysis, GPU acceleration and high-flow default enablement each have their own capability/quality gate.",
+      "sha256": "67d294b679bc6918f4961c033bbb94ff0a925131e7fe80dca9c1697bc074dca2",
+      "producers": [
+        "WX-14",
+        "WX-15",
+        "WX-18",
+        "WX-21",
+        "WX-29",
+        "WX-31",
+        "WX-33",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "D18.1.02",
+      "section": "18.1",
+      "source_text": "Track camera success/freshness/latency; slot and exposure coverage; NFS capacity/IO stalls; active writer generation; queue/deadline age; CPU/GPU memory and render rate; output validation failures; publication/cleanup lag; Tempest receive/spool/commit/project gaps; per-metric freshness; DB replication/archive/WAL space; Garage actual GET/PUT; AI tokens/errors/deadlines; embedding generation/backlog/query latency/recall; and database/media/joint custody age.",
+      "sha256": "f2b939485b312b36c0b53a4b9fc3af5da04c9110553dfa2d0bdf837cd17e43d8",
+      "producers": [
+        "WX-14",
+        "WX-15",
+        "WX-18",
+        "WX-21",
+        "WX-29",
+        "WX-31",
+        "WX-33",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "D18.1.03",
+      "section": "18.1",
+      "source_text": "Add hourly expected/selected/archived/missing counts, day/FK reconciliation failures, oldest pending selection pin, keogram completeness/gaps, preview publication-age violations and capture age, preview queue/retention growth, editorial outbox/index lag and almanac evidence-revision freshness. Initial product targets are all eligible hourly originals archived, six healthy keograms per complete cycle, approximately minute-level delayed previews for three cameras, and 15-second current-condition refresh. D16 defines measured deadlines/error budgets and explicit degraded-product behavior without weakening the ten-minute minimum eligibility rule or retaining dense snapshots indefinitely.",
+      "sha256": "c43ba24e462df49086fbfc7487321e14107f2ee20c1c32eb8fe59a2f2d74f837",
+      "producers": [
+        "WX-14",
+        "WX-15",
+        "WX-18",
+        "WX-21",
+        "WX-29",
+        "WX-31",
+        "WX-33",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "D18.1.04",
+      "section": "18.1",
+      "source_text": "Separate health of process, dependency, data freshness and completed business work. A running pod or 200 health endpoint is not proof of fresh frames, valid UDP reception, readable Garage blocks, schema-valid model output or a restorable backup. Use existing alert delivery integrations only after configured through the owner workflow; this document does not authorize sending messages to arbitrary recipients.",
+      "sha256": "4d86dd9abd3e101196b2a1cbb0a77756d1e896e2de3dd138cf58d6fc6f0e941a",
+      "producers": [
+        "WX-14",
+        "WX-15",
+        "WX-18",
+        "WX-21",
+        "WX-29",
+        "WX-31",
+        "WX-33",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    }
+  ],
+  "acceptance": {
+    "16.1": {
+      "producers": [
+        "WX-01",
+        "WX-02",
+        "WX-34"
+      ],
+      "obligations": [
+        "Use public jvallery/weather and accepted MIT/compatible permissive reuse policy; verify all imported code/assets, fonts/models/extensions and exact FFmpeg build license obligations with notices.",
+        "Keep portable code/contracts/prompts/migrations/container recipes/templates/synthetic fixtures/CI/runbooks public; retain actual credentials/private addresses/coordinates/device IDs/evidence/overlays under private owner custody.",
+        "Examples are unmistakably nonproduction and cannot deploy accidentally. Weather uses independent namespace/accounts/RBAC/quota/secrets/image names/CI/deployment authority without inherited Sentinel privileges.",
+        "Shared provider resources stay with their owners and linked prerequisites; consume approved interfaces without duplicating CNPG/storage/network/compute providers."
+      ]
+    },
+    "16.2": {
+      "producers": [
+        "WX-02",
+        "WX-33",
+        "WX-34"
+      ],
+      "obligations": [
+        "Use D01 supported fleet delivery with pinned dependencies/digests, dependency/license/SBOM/secret checks, retained artifacts, migrations, staged promotion/health and rollback. Application and FFmpeg builds run in admitted cluster builders into approved registry.",
+        "Qualify runtime registry resolution, including mirror/default-endpoint behavior, so failed local pulls cannot silently fall back to public registries.",
+        "Core runtime works without Docker Hub/GHCR, public package installation, external fonts/scripts/CDN bundles/models, Tempest cloud or public weather API. Pinned licensed build-time retrieval is separate from runtime dependencies.",
+        "Untrusted public/fork PR code runs only in admitted isolated synthetic execution without production secrets or reachability to cameras/DB/storage/inference/control plane; branch protection or an ordinary LAN runner does not prove isolation.",
+        "Trusted integration/promotion has a separate narrowly scoped path. Never run fork checkout with privileged pull_request_target; verify denied network and identity authority rather than assuming labels confer isolation.",
+        "Expand/contract migrations preserve data and rollback; no automatic destructive observation down-migration. Releases bind app/schema/FFmpeg/prompts/profiles; sample workflow presence does not establish a working pipeline."
+      ]
+    },
+    "16.3": {
+      "producers": [
+        "WX-02",
+        "WX-31",
+        "WX-34"
+      ],
+      "obligations": [
+        "Provide fleet-first configuration/customization and private overlay, without expanding into a generic installer/multitenant/camera-adapter platform.",
+        "Synthetic development includes JPEGs, Tempest datagrams, mock inference, disposable PostgreSQL and S3-compatible boundary using the same contracts without real credentials. Local means estate-contained workflow; CPU/memory-intensive checks and containers run through admitted k3s, not Mac container VMs.",
+        "Runbooks cover camera rotation, clock/cadence recalibration, NFS interruption/fencing, DB failover/archive backlog, Garage access/key rotation, render/GPU fallback, model change, reindex, withdrawal, custody mismatch and full restore.",
+        "Provide retention/capacity dashboards and diagnosable loss/partial states with private details excluded; monitoring definitions and notification configuration follow their owner workflow."
+      ]
+    },
+    "18.1": {
+      "producers": [
+        "WX-14",
+        "WX-15",
+        "WX-18",
+        "WX-21",
+        "WX-29",
+        "WX-31",
+        "WX-33",
+        "WX-34"
+      ],
+      "obligations": [
+        "Finalize achievable publication/cleanup/analysis/API/media SLOs from admitted workload/resources: two-hour boundary-to-publication and one-hour qualified-publication cleanup are commissioning targets, not measured promises.",
+        "Keep native-video capability, GPU sharing and high-flow quality gates distinct; CPU fallback must meet admitted deadline without claiming GPU or inference qualification.",
+        "Measure every listed capture/render/NFS/fencing/queue/resource/output/publication/UDP projection/DB archive/Garage GET-PUT/inference/embedding/custody signal. A process heartbeat is not data freshness or completed work.",
+        "Include hourly expected/selected/archived/missing counts, FK reconciliation, oldest pin, keogram completeness/gaps, preview age violations/capture age/queue/retention, editorial outbox/index lag and almanac revision freshness.",
+        "Complete-cycle targets retain all eligible hourly originals, six healthy keograms, three approximately minute-refresh delayed previews and 15-second conditions; degradation never weakens the 600-second embargo or extends dense retention indefinitely.",
+        "Separate process, dependency, source freshness and business completion; use owner-configured existing alert delivery only. Requirements do not authorize messages to arbitrary recipients."
+      ]
+    }
+  },
+  "verification": {
+    "all_nonblank_nonheading_source_lines_preserved": true,
+    "runtime_acceptance": false
+  }
+}
