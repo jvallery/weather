@@ -15,6 +15,7 @@ Requirements and implementation planning for **[weather.vallery.net](https://wea
 - [Publication, source pins, origin eligibility and joint recovery](docs/implementation/publication-recovery-contract.md).
 - [Database constraints, revision boundaries and migration sequence](docs/implementation/database-migration-contract.md).
 - [Owner prerequisites and admission boundaries](docs/implementation/owner-prerequisites.md).
+- [Estate standards applicability and evidence](docs/implementation/standards-mapping.md), with a [machine-readable matrix](docs/implementation/standards-mapping.json).
 - [HTTP/API semantic contract](docs/contracts/api-contract.md), [OpenAPI](docs/contracts/openapi.json), [JSON Schema](docs/contracts/api.schema.json), and [synthetic schema fixtures](docs/contracts/schema-fixtures.json).
 
 These are design contracts with mandatory implementation tests, not completed runtime qualification. The API/schema draft is published; remaining internal schemas, full contract coverage and design qualification are still in progress.

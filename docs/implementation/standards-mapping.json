@@ -1,0 +1,705 @@
+{
+  "schema_version": 1,
+  "status": "planned_not_compliance_proof",
+  "observed_at": "2026-10-23",
+  "source": {
+    "repository": "jvallery/agents",
+    "revision": "9bbc5f1e4a6349c05dde311234da22aa82d67f0b",
+    "path": "docs/estate/STANDARDS.md"
+  },
+  "rules": {
+    "direct": "Weather implementation obligation",
+    "shared": "Weather acceptance needs a scoped owner integration or evidence",
+    "inherited": "Platform-owned dependency; verify relevance and disclose missing proof without widening Weather implementation"
+  },
+  "standards": [
+    {
+      "id": "STD-HA-01",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-05",
+        "WX-32",
+        "WX-35"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI"
+      ],
+      "required_evidence": "Prove admitted DB/API placement across physical host failure domains and isolated single-host loss behavior; record NAS capture/media outage dependency and service tier.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-HA-02",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-03",
+        "WX-05",
+        "WX-06",
+        "WX-32"
+      ],
+      "owner_prerequisites": [
+        "OWN-NFS",
+        "OWN-OBJECT"
+      ],
+      "required_evidence": "Map actual durable copies and independent failure domains; no unsupported node pinning. RF1 archive blocks and NFS staging do not become HA because database replicas exist.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-HA-03",
+      "applicability": "inherited",
+      "weather_issues": [
+        "WX-01",
+        "WX-32",
+        "WX-34"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI",
+        "OWN-OBS"
+      ],
+      "required_evidence": "Record dependency recovery for GitOps, DNS and monitoring; consume owner proof or report its absence. Weather does not redeploy shared controllers.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-HA-04",
+      "applicability": "direct",
+      "weather_issues": [
+        "WX-01",
+        "WX-05",
+        "WX-33"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI"
+      ],
+      "required_evidence": "Validate single-replica drain policy and operator-supported database PDB behavior; capture writer replacement still requires fencing.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-HA-05",
+      "applicability": "inherited",
+      "weather_issues": [
+        "WX-03",
+        "WX-06",
+        "WX-32",
+        "WX-34"
+      ],
+      "owner_prerequisites": [
+        "OWN-NFS",
+        "OWN-OBJECT"
+      ],
+      "required_evidence": "Reference owner power-order/flush evidence; document outage/restart dependencies. No live household power drill in this planning pass.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-DR-01",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-29",
+        "WX-30",
+        "WX-32"
+      ],
+      "owner_prerequisites": [
+        "OWN-CUSTODY"
+      ],
+      "required_evidence": "Enumerate every retained data class, three independent copies, two media, offsite immutable/offline custody and full verification. Separate ephemeral dense capture/preview exceptions from durable history.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-DR-02",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-07",
+        "WX-28",
+        "WX-29",
+        "WX-32"
+      ],
+      "owner_prerequisites": [
+        "OWN-GATEWAY",
+        "OWN-CUSTODY"
+      ],
+      "required_evidence": "Read back actual offsite key capabilities, scope and Object Lock/retention; test denied destructive actions through approved qualification. Never distribute management keys to application pods.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-DR-03",
+      "applicability": "direct",
+      "weather_issues": [
+        "WX-28",
+        "WX-29",
+        "WX-31"
+      ],
+      "owner_prerequisites": [
+        "OWN-GATEWAY",
+        "OWN-CUSTODY"
+      ],
+      "required_evidence": "Weather-owned Barman plugin base/WAL objects, fresh successful base and contiguous recoverable WAL; logical exports alone are insufficient.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-DR-04",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-30",
+        "WX-32",
+        "WX-34"
+      ],
+      "owner_prerequisites": [
+        "OWN-CUSTODY"
+      ],
+      "required_evidence": "Scheduled isolated semantic restore with achieved RPO/RTO, checkpoint closure/hash proof and stale-drill alerts. Recovery runs without original storage or inference.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-DR-05",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-29",
+        "WX-32",
+        "WX-34"
+      ],
+      "owner_prerequisites": [
+        "OWN-CUSTODY",
+        "OWN-CI"
+      ],
+      "required_evidence": "Resolve recovery configuration, identities and decryption keys without original Mac/NAS/DB; verify independent escrow and cold readback, not merely a file on this Mac.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-OBS-01",
+      "applicability": "direct",
+      "weather_issues": [
+        "WX-31",
+        "WX-33"
+      ],
+      "owner_prerequisites": [
+        "OWN-OBS"
+      ],
+      "required_evidence": "Delivered rules cover pods/jobs/replicas, PVC/node pressure, clock/freshness and missing series; rule tests plus live nonempty evaluation.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-OBS-02",
+      "applicability": "direct",
+      "weather_issues": [
+        "WX-29",
+        "WX-31",
+        "WX-32"
+      ],
+      "owner_prerequisites": [
+        "OWN-OBS",
+        "OWN-CUSTODY"
+      ],
+      "required_evidence": "Separate base/WAL/media/joint ages and failures, missing receipts and expired silences; each producer maps to owner/runbook.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-OBS-03",
+      "applicability": "direct",
+      "weather_issues": [
+        "WX-13",
+        "WX-19",
+        "WX-25",
+        "WX-31"
+      ],
+      "owner_prerequisites": [
+        "OWN-OBS"
+      ],
+      "required_evidence": "Define denominators, error budgets and multiwindow request SLO burn; separately measure completed capture/publication work and stale data.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-OBS-04",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-19",
+        "WX-31",
+        "WX-35"
+      ],
+      "owner_prerequisites": [
+        "OWN-EDGE",
+        "OWN-OBS"
+      ],
+      "required_evidence": "Probe the actual public origin and representative eligible media; distinguish route, dependency and data freshness failures.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-OBS-05",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-31",
+        "WX-34"
+      ],
+      "owner_prerequisites": [
+        "OWN-OBS"
+      ],
+      "required_evidence": "Resolvable runbooks and impact-based severity; verify existing receiver routing through owner workflow. No outbound product notification feature is added.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-OBS-06",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-01",
+        "WX-31",
+        "WX-34"
+      ],
+      "owner_prerequisites": [
+        "OWN-OBS"
+      ],
+      "required_evidence": "Verify sanitized Weather logs reach retained central logging with bounded volume; no raw packet, credential, private note or model-response logging by default.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-K8S-01",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-01",
+        "WX-33"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI"
+      ],
+      "required_evidence": "Restricted namespace/default seccomp and workload security checks; audit logging is inherited owner evidence, not a new Weather cluster-admin permission.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-K8S-02",
+      "applicability": "direct",
+      "weather_issues": [
+        "WX-01",
+        "WX-07",
+        "WX-33"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI",
+        "OWN-GATEWAY"
+      ],
+      "required_evidence": "Least-privilege roles and no automatic API token where unnecessary; negative can-i/access tests, no broad Secret listing or long-lived service-account tokens.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-K8S-03",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-01",
+        "WX-04",
+        "WX-15",
+        "WX-33"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI",
+        "OWN-UDP",
+        "OWN-GPU"
+      ],
+      "required_evidence": "Nonroot/unprivileged pods; any UDP/GPU host attachment requires exact supported owner exception and isolation qualification, not blanket hostNetwork.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-K8S-04",
+      "applicability": "direct",
+      "weather_issues": [
+        "WX-01",
+        "WX-04",
+        "WX-10",
+        "WX-33"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI",
+        "OWN-UDP"
+      ],
+      "required_evidence": "Default-deny ingress and explicit bounded egress; collector can contact only assigned camera. Node-managed NFS is separately documented and tested.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-K8S-05",
+      "applicability": "direct",
+      "weather_issues": [
+        "WX-02",
+        "WX-05",
+        "WX-35"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI"
+      ],
+      "required_evidence": "All running containers/init containers use admitted local registry digests; verify actual image IDs, mirror coverage and offline core startup.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-K8S-06",
+      "applicability": "inherited",
+      "weather_issues": [
+        "WX-01",
+        "WX-34"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI"
+      ],
+      "required_evidence": "Reference owning platform's at-rest key cadence and recovery evidence; do not rotate or revoke credentials as an incidental Weather action.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-EXP-01",
+      "applicability": "direct",
+      "weather_issues": [
+        "WX-19",
+        "WX-20",
+        "WX-25",
+        "WX-33",
+        "WX-43",
+        "WX-44"
+      ],
+      "owner_prerequisites": [
+        "OWN-EDGE",
+        "OWN-CI"
+      ],
+      "required_evidence": "Record exact public read-only route disposition including read-only search POST; private operator/diagnostic routes require authenticated authorized access with MFA-backed identity and negative tests.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-EXP-02",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-07",
+        "WX-19",
+        "WX-33"
+      ],
+      "owner_prerequisites": [
+        "OWN-GATEWAY",
+        "OWN-EDGE"
+      ],
+      "required_evidence": "No public provider/catalog/archive/raw/diagnostic bypass; bound request sizes/rates and sanitize errors. Public requests never trigger camera capture.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-EXP-03",
+      "applicability": "inherited",
+      "weather_issues": [
+        "WX-01",
+        "WX-04",
+        "WX-33"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI",
+        "OWN-UDP"
+      ],
+      "required_evidence": "Weather workload egress cannot reach unrelated management planes; inherited management MFA/SSH remediation stays with platform owners.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-EXP-04",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-02",
+        "WX-33",
+        "WX-34"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI"
+      ],
+      "required_evidence": "Verify repository secret scanning/push protection/vulnerability alerts and least-privilege app installation; review dependency updates without enabling untrusted access to fleet credentials.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-EXP-05",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-19",
+        "WX-33",
+        "WX-44"
+      ],
+      "owner_prerequisites": [
+        "OWN-EDGE"
+      ],
+      "required_evidence": "Actual origin TLS/HSTS and response-header readback; narrow framing exception only on embed route, with private routes denied framing.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-CI-01",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-02",
+        "WX-35"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI"
+      ],
+      "required_evidence": "Before deploying a branch, verify PR/required automatically triggered checks and no standing bypass against the fleet baseline; do not invent a required status with no producer.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-CI-02",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-02"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI"
+      ],
+      "required_evidence": "One check entrypoint on supported registry-driven fleet submission; reconcile baseline ARC wording with current native event path; foreign-fork exclusion is not safe untrusted CI.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-CI-03",
+      "applicability": "direct",
+      "weather_issues": [
+        "WX-02",
+        "WX-33"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI"
+      ],
+      "required_evidence": "Observe exact-SHA main checks, success/cancellation history and under-15-minute standard target; isolate slower qualified experiments from normal validation without skipping critical tests.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-CI-04",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-02",
+        "WX-33",
+        "WX-35"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI"
+      ],
+      "required_evidence": "Bind image SBOM/signature/provenance and full-SHA action pins to running digest; verify admission policy and failure on invalid provenance, not merely attach a build artifact.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-CI-05",
+      "applicability": "inherited",
+      "weather_issues": [
+        "WX-31",
+        "WX-34"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI",
+        "OWN-OBS"
+      ],
+      "required_evidence": "Reference scheduled platform conformance and stale-run signal; add Weather-specific scheduled drift/restore obligations through owners rather than duplicate cluster-wide jobs.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-IAC-01",
+      "applicability": "direct",
+      "weather_issues": [
+        "WX-01",
+        "WX-02",
+        "WX-35"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI"
+      ],
+      "required_evidence": "Desired state and named controller ownership come from Git; verify managed fields, with migrations/jobs using supported scoped operations rather than manual Argo overrides.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-IAC-02",
+      "applicability": "direct",
+      "weather_issues": [
+        "WX-35"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI"
+      ],
+      "required_evidence": "Weather application at intended revision is Synced/Healthy with correct digest and no unexplained prune/orphan state; then verify product behavior.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-IAC-03",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-01",
+        "WX-35"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI"
+      ],
+      "required_evidence": "Weather Application/AppProject is parented by existing agents roots; declaration, tracking identity and namespace boundaries match.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-IAC-04",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-03",
+        "WX-04",
+        "WX-06",
+        "WX-19",
+        "WX-34"
+      ],
+      "owner_prerequisites": [
+        "OWN-NFS",
+        "OWN-OBJECT",
+        "OWN-UDP",
+        "OWN-EDGE"
+      ],
+      "required_evidence": "Owner Git declares NAS/network/DNS grants; apply via supported idempotent paths and verify drift, not hand-created unmanaged infrastructure.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-OPS-01",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-02",
+        "WX-05",
+        "WX-14",
+        "WX-34"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI",
+        "OWN-GPU"
+      ],
+      "required_evidence": "Version support and vulnerability/patch policy cover shipped runtime, media codecs and DB/extensions; shared host/kernel work remains owner-managed.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-OPS-02",
+      "applicability": "direct",
+      "weather_issues": [
+        "WX-02",
+        "WX-34"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI"
+      ],
+      "required_evidence": "Version register/update detection records exact image/library/codec/extension/schema/model-profile identities and compatibility/qualification status.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-OPS-03",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-01",
+        "WX-19",
+        "WX-31",
+        "WX-34"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI",
+        "OWN-EDGE",
+        "OWN-OBS"
+      ],
+      "required_evidence": "Track certificate/domain/identity deadlines with adequate warning and owned renewal; expired identity must not trigger anonymous fallback.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-OPS-04",
+      "applicability": "inherited",
+      "weather_issues": [
+        "WX-31",
+        "WX-34"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI",
+        "OWN-OBS"
+      ],
+      "required_evidence": "Reference platform etcd maintenance and capacity evidence; Weather cannot administer etcd.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-OPS-05",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-03",
+        "WX-05",
+        "WX-06",
+        "WX-14",
+        "WX-15",
+        "WX-29",
+        "WX-31"
+      ],
+      "owner_prerequisites": [
+        "OWN-NFS",
+        "OWN-OBJECT",
+        "OWN-GPU",
+        "OWN-CUSTODY"
+      ],
+      "required_evidence": "Admit actual scheduler/storage/N-1 headroom, runway and bounded write growth; normal below-80% target is distinct from emergency stop watermarks. No intensive Mac fallback.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-ORG-01",
+      "applicability": "direct",
+      "weather_issues": [
+        "WX-01",
+        "WX-02",
+        "WX-14",
+        "WX-15",
+        "WX-31"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI",
+        "OWN-GPU"
+      ],
+      "required_evidence": "Every container/init/experiment declares bounded CPU/memory requests and memory limit, concurrency and deadline; prove workload fit against live admission.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-ORG-02",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-01"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI"
+      ],
+      "required_evidence": "Weather namespace ownership label, quota and LimitRange come from central ownership/admission contract and match readback.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-ORG-03",
+      "applicability": "direct",
+      "weather_issues": [
+        "WX-02",
+        "WX-18",
+        "WX-30",
+        "WX-34"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI"
+      ],
+      "required_evidence": "Disposable job/replica/CI state expires through supported lifecycle; retained logs/receipts/data and recovery references are preserved, not swept with job TTL.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-ARCH-01",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-01",
+        "WX-03",
+        "WX-04",
+        "WX-06",
+        "WX-19",
+        "WX-31",
+        "WX-34",
+        "WX-44"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI",
+        "OWN-NFS",
+        "OWN-OBJECT",
+        "OWN-UDP",
+        "OWN-EDGE",
+        "OWN-OBS",
+        "OWN-EMBED"
+      ],
+      "required_evidence": "One current owner per resource, one secret lane, central record plus owner inventory, scoped routes/certs and actual monitoring renderer; reconcile archived site owner before embed.",
+      "status": "unverified"
+    },
+    {
+      "id": "STD-ARCH-02",
+      "applicability": "shared",
+      "weather_issues": [
+        "WX-02",
+        "WX-05",
+        "WX-28",
+        "WX-31"
+      ],
+      "owner_prerequisites": [
+        "OWN-CI",
+        "OWN-CUSTODY"
+      ],
+      "required_evidence": "Reuse supported Barman plugin, registry mirrors and CNPG metrics; verify real installed compatibility rather than copying legacy syntax.",
+      "status": "unverified"
+    }
+  ]
+}
