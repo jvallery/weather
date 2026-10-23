@@ -1,17 +1,32 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "kind": "candidate_implementation_backlog",
   "repository": "jvallery/weather",
-  "requirements_version": "3.0",
+  "requirements_version": "4.0",
   "prepared_at": "2026-10-23",
   "status": "requires_phase_1_research_and_real_issue_filing",
-  "first_assignment": "Resolve D01-D16, configure the existing repository, file implementation issues, set native blocked-by relationships, and read back the final graph.",
+  "first_assignment": "Resolve D01-D16 using the accepted Q01-Q16 scope, configure the existing independent repository, file initial and deferred implementation issues, set native blocked-by relationships, and read back the phase-aware final graph.",
   "phase_1_requirement": "R01",
   "rules": {
     "edge_meaning": "issue depends_on prerequisite",
     "do_not_invent_issue_numbers": true,
     "resolve_optional_paths_before_filing_final_graph": true,
-    "require_private_owner_prerequisite_links": true
+    "require_private_owner_prerequisite_links": true,
+    "phase_values": [
+      "initial_release",
+      "follow_on",
+      "deferred_research"
+    ],
+    "release_gate_values": [
+      "required",
+      "conditional",
+      "none"
+    ],
+    "initial_rollout_key": "WX-35",
+    "all_required_initial_work_must_precede_rollout": true,
+    "deferred_work_must_not_block_initial_rollout": true,
+    "implementation_edges_do_not_imply_runtime_dependency": true,
+    "file_deferred_accepted_products_and_reserved_research": true
   },
   "issues": [
     {
@@ -31,7 +46,9 @@
       "requires_decisions": [
         "D01",
         "D16"
-      ]
+      ],
+      "phase": "initial_release",
+      "release_gate": "required"
     },
     {
       "key": "WX-02",
@@ -50,7 +67,9 @@
       "requires_decisions": [
         "D01",
         "D10"
-      ]
+      ],
+      "phase": "initial_release",
+      "release_gate": "required"
     },
     {
       "key": "WX-03",
@@ -69,7 +88,9 @@
       "optional": false,
       "requires_decisions": [
         "D03"
-      ]
+      ],
+      "phase": "initial_release",
+      "release_gate": "required"
     },
     {
       "key": "WX-04",
@@ -87,7 +108,9 @@
       "optional": false,
       "requires_decisions": [
         "D04"
-      ]
+      ],
+      "phase": "initial_release",
+      "release_gate": "required"
     },
     {
       "key": "WX-05",
@@ -106,7 +129,9 @@
       "optional": false,
       "requires_decisions": [
         "D06"
-      ]
+      ],
+      "phase": "initial_release",
+      "release_gate": "required"
     },
     {
       "key": "WX-06",
@@ -120,11 +145,19 @@
         "R17",
         "R23",
         "R26",
-        "R28"
+        "R28",
+        "R29",
+        "R30",
+        "R31"
       ],
       "optional": false,
       "requires_decisions": [
         "D07"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "Capacity and lifecycles distinguish video, keograms, five-year sparse originals/comparison derivatives, bounded preview churn and database archives."
       ]
     },
     {
@@ -139,16 +172,24 @@
         "R17",
         "R18",
         "R23",
-        "R27"
+        "R27",
+        "R30",
+        "R31"
       ],
       "optional": false,
       "requires_decisions": [
         "D08"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "Public origin and ordinary media identities cannot read private hourly originals or database backups; qualified image-worker access remains separate.",
+        "Public preview access enforces publication eligibility, including guessed URLs, HEAD/ranges, aliases and cache prewarming."
       ]
     },
     {
       "key": "WX-08",
-      "title": "Canonical schemas/migrations/contracts, job leases/outbox, media revisions and evidence identities.",
+      "title": "Canonical schemas, calendar-day/hour FKs, typed asset visibility, event/editorial revisions, job leases and outbox.",
       "status": "candidate_not_filed",
       "github_issue": null,
       "depends_on": [
@@ -159,7 +200,12 @@
         "R14",
         "R19",
         "R20",
-        "R22"
+        "R22",
+        "R29",
+        "R30",
+        "R31",
+        "R33",
+        "R36"
       ],
       "optional": false,
       "requires_decisions": [
@@ -168,11 +214,17 @@
         "D11",
         "D12",
         "D13"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "Enforced camera/day/hour/source relationships and one active hourly selection; no video-delete cascade into retained originals.",
+        "Preview not-before/expiry, private-original class, public derivatives, keogram axis lineage and effective editorial revision are canonical contracts."
       ]
     },
     {
       "key": "WX-09",
-      "title": "Solar schedule, cycle allocation, source-time mapping and DST/boundary fixtures.",
+      "title": "Solar schedule and calendar-day/hour identities, cycle allocation, source-time mapping and DST/boundary fixtures.",
       "status": "candidate_not_filed",
       "github_issue": null,
       "depends_on": [
@@ -181,11 +233,19 @@
       "requirements": [
         "R03",
         "R04",
-        "R05"
+        "R05",
+        "R30",
+        "R32",
+        "R34"
       ],
       "optional": false,
       "requires_decisions": [
         "D02"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "Calendar days and dawn-to-dawn cycles remain distinct; Denver 23/24/25-hour slots use UTC identities and offset-bearing labels."
       ]
     },
     {
@@ -207,6 +267,11 @@
       "requires_decisions": [
         "D02",
         "D03"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "Additional image products reuse sealed captured data; collector egress stays camera-only and no database/Garage/model credentials are added."
       ]
     },
     {
@@ -228,7 +293,9 @@
         "D04",
         "D05",
         "D06"
-      ]
+      ],
+      "phase": "initial_release",
+      "release_gate": "required"
     },
     {
       "key": "WX-12",
@@ -247,11 +314,13 @@
       "requires_decisions": [
         "D05",
         "D06"
-      ]
+      ],
+      "phase": "initial_release",
+      "release_gate": "required"
     },
     {
       "key": "WX-13",
-      "title": "Current/history/aggregate APIs with freshness, pagination, units, bounds and measured-summary evidence.",
+      "title": "Current/history/aggregate APIs with approximately 15-second UI freshness, exports, coverage and reusable interval evidence.",
       "status": "candidate_not_filed",
       "github_issue": null,
       "depends_on": [
@@ -261,13 +330,21 @@
         "R14",
         "R15",
         "R20",
-        "R26"
+        "R26",
+        "R34",
+        "R35"
       ],
       "optional": false,
       "requires_decisions": [
         "D05",
         "D06",
         "D13"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "All received telemetry is retained independently of display cadence; bounded historical exports remain required.",
+        "Measured interval statistics expose support, units, revisions and null/zero distinctions reusable by almanac, events and typed search."
       ]
     },
     {
@@ -287,7 +364,9 @@
       "requires_decisions": [
         "D02",
         "D10"
-      ]
+      ],
+      "phase": "initial_release",
+      "release_gate": "required"
     },
     {
       "key": "WX-15",
@@ -307,7 +386,9 @@
         "D09",
         "D10"
       ],
-      "enable_when": "GPU acceleration selected and admitted"
+      "enable_when": "GPU acceleration selected and admitted",
+      "phase": "initial_release",
+      "release_gate": "conditional"
     },
     {
       "key": "WX-16",
@@ -326,11 +407,13 @@
       "requires_decisions": [
         "D10",
         "D14"
-      ]
+      ],
+      "phase": "initial_release",
+      "release_gate": "required"
     },
     {
       "key": "WX-17",
-      "title": "Immutable uploads, DB publication transaction/outbox, sidecars and crash-safe reconciliation.",
+      "title": "Typed immutable artifact uploads, private-original catalog commits, publication transaction/outbox, sidecars and reconciliation.",
       "status": "candidate_not_filed",
       "github_issue": null,
       "depends_on": [
@@ -342,40 +425,61 @@
         "R03",
         "R17",
         "R19",
-        "R20"
+        "R20",
+        "R29",
+        "R30",
+        "R31",
+        "R36"
       ],
       "optional": false,
       "requires_decisions": [
         "D07",
         "D08",
         "D13"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "Generalized artifact publication does not require a playable video for an hourly still or current preview.",
+        "Public visibility and private archive commits remain separate; derivative and editorial updates use immutable revisions."
       ]
     },
     {
       "key": "WX-18",
-      "title": "Final same-origin readback, input pins, durable receipts, raw cleanup, staging backpressure and restart reconciliation.",
+      "title": "Qualified readback, source-product pins, durable hourly promotion, safe raw cleanup and staging backpressure.",
       "status": "candidate_not_filed",
       "github_issue": null,
       "depends_on": [
         "WX-10",
         "WX-17",
-        "WX-19"
+        "WX-19",
+        "WX-36",
+        "WX-37"
       ],
       "requirements": [
         "R07",
         "R19",
-        "R26"
+        "R26",
+        "R29",
+        "R30"
       ],
       "optional": false,
       "requires_decisions": [
         "D03",
         "D07",
         "D16"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "Register hourly selection obligations before segment cleanup, including hours straddling dawn/dusk; archive the winner or retain a bounded durable pinned copy.",
+        "Required keogram extraction/output survives raw deletion; failed source-dependent products remain visible with bounded backpressure.",
+        "AI, future composites and visual-index work cannot indefinitely retain dense snapshot input."
       ]
     },
     {
       "key": "WX-19",
-      "title": "Same-origin allowlisted media/poster/download origin, ranges, validators and backup-access denial.",
+      "title": "Same-origin typed media/image/download origin, range semantics, private-original denial and preview eligibility.",
       "status": "candidate_not_filed",
       "github_issue": null,
       "depends_on": [
@@ -386,17 +490,25 @@
         "R11",
         "R18",
         "R25",
-        "R27"
+        "R27",
+        "R29",
+        "R30",
+        "R31"
       ],
       "optional": false,
       "requires_decisions": [
         "D08",
         "D14"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "All routes allow only committed eligible public asset classes; originals and backups remain inaccessible through path/ID/transform/copy variants."
       ]
     },
     {
       "key": "WX-20",
-      "title": "Responsive themed Today/archive/day/video/history UI with accessible posters, filters and playback.",
+      "title": "Responsive themed Today/archive/day/video/history UI with 15-second conditions, camera products and accessible navigation.",
       "status": "candidate_not_filed",
       "github_issue": null,
       "depends_on": [
@@ -407,11 +519,20 @@
         "R11",
         "R12",
         "R15",
-        "R20"
+        "R20",
+        "R29",
+        "R30",
+        "R31",
+        "R32"
       ],
       "optional": false,
       "requires_decisions": [
         "D13"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "Calendar-day stills and solar-cycle videos are visibly distinct; one active player is the mobile default."
       ]
     },
     {
@@ -429,7 +550,9 @@
       "optional": false,
       "requires_decisions": [
         "D11"
-      ]
+      ],
+      "phase": "initial_release",
+      "release_gate": "required"
     },
     {
       "key": "WX-22",
@@ -449,11 +572,16 @@
       "requires_decisions": [
         "D05",
         "D11"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "Automatic labeled AI publication remains independent of editor availability; visual, measured and manual provenance remain distinct."
       ]
     },
     {
       "key": "WX-23",
-      "title": "Embedding profile/extension/storage and exact-search baseline; compatible ANN only if justified.",
+      "title": "Text-embedding profile/extension/storage and exact baseline; compatible ANN only if justified; reserve visual profile boundary.",
       "status": "candidate_not_filed",
       "github_issue": null,
       "depends_on": [
@@ -467,11 +595,16 @@
       "requires_decisions": [
         "D06",
         "D12"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "No image embedding model is required initially; distinct future embedding spaces must never be mixed."
       ]
     },
     {
       "key": "WX-24",
-      "title": "Canonical search documents, embedding outbox, revision checks, generation backfill/switch/rollback.",
+      "title": "Effective public search documents, editorial-aware outbox/revision checks and embedding generation lifecycle.",
       "status": "candidate_not_filed",
       "github_issue": null,
       "depends_on": [
@@ -481,36 +614,46 @@
       "requirements": [
         "R19",
         "R20",
-        "R22"
+        "R22",
+        "R36"
       ],
       "optional": false,
       "requires_decisions": [
         "D11",
         "D12"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "Human corrections invalidate outdated text immediately; late model/embedding jobs cannot overwrite active editorial state or leak private favorites/notes."
       ]
     },
     {
       "key": "WX-25",
-      "title": "Bounded hybrid semantic/lexical API, filters, query-vector cache, relevance/recall and outage behavior.",
+      "title": "Bounded hybrid semantic/lexical API with exact measured predicates, numeric-only mode, recall and outage behavior.",
       "status": "candidate_not_filed",
       "github_issue": null,
       "depends_on": [
-        "WX-24"
+        "WX-24",
+        "WX-42"
       ],
       "requirements": [
         "R22",
         "R26",
-        "R27"
+        "R27",
+        "R35"
       ],
       "optional": false,
       "requires_decisions": [
         "D12",
         "D13"
-      ]
+      ],
+      "phase": "initial_release",
+      "release_gate": "required"
     },
     {
       "key": "WX-26",
-      "title": "Search UI, filter URLs, result provenance and validated video seeks.",
+      "title": "Search UI, typed measured filter URLs, result evidence/coverage and validated video seeks.",
       "status": "candidate_not_filed",
       "github_issue": null,
       "depends_on": [
@@ -520,13 +663,16 @@
       "requirements": [
         "R12",
         "R20",
-        "R22"
+        "R22",
+        "R35"
       ],
       "optional": false,
       "requires_decisions": [
         "D12",
         "D13"
-      ]
+      ],
+      "phase": "initial_release",
+      "release_gate": "required"
     },
     {
       "key": "WX-27",
@@ -545,7 +691,9 @@
       "requires_decisions": [
         "D14"
       ],
-      "enable_when": "Cloudflare delivery selected and qualified"
+      "enable_when": "Cloudflare delivery selected and qualified",
+      "phase": "initial_release",
+      "release_gate": "conditional"
     },
     {
       "key": "WX-28",
@@ -566,7 +714,9 @@
         "D06",
         "D08",
         "D15"
-      ]
+      ],
+      "phase": "initial_release",
+      "release_gate": "required"
     },
     {
       "key": "WX-29",
@@ -579,32 +729,48 @@
       "requirements": [
         "R17",
         "R23",
-        "R28"
+        "R28",
+        "R29",
+        "R30"
       ],
       "optional": false,
       "requires_decisions": [
         "D07",
         "D15"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "Central custody budgets cover all durable image classes and preview churn; no separate weather-owned B2 pipeline is introduced."
       ]
     },
     {
       "key": "WX-30",
-      "title": "Joint checkpoint verifier, catalog/object hash closure and recovery-aware retention/GC.",
+      "title": "Joint checkpoint closure and recovery-aware GC including keograms, hourly originals/day FKs and public/private assets.",
       "status": "candidate_not_filed",
       "github_issue": null,
       "depends_on": [
         "WX-17",
-        "WX-29"
+        "WX-29",
+        "WX-36",
+        "WX-37"
       ],
       "requirements": [
         "R19",
         "R20",
-        "R23"
+        "R23",
+        "R29",
+        "R30"
       ],
       "optional": false,
       "requires_decisions": [
         "D07",
         "D15"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "Five-year stills survive shorter video retention; preview expiry/reconstructible state is explicit rather than a dangling recovery reference."
       ]
     },
     {
@@ -616,47 +782,68 @@
         "WX-13",
         "WX-18",
         "WX-25",
-        "WX-29"
+        "WX-29",
+        "WX-38"
       ],
       "requirements": [
         "R10",
         "R15",
         "R16",
-        "R26"
+        "R26",
+        "R29",
+        "R30",
+        "R31"
       ],
       "optional": false,
       "requires_decisions": [
         "D16"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "Track per-product completeness, pending source obligations, sparse-original durability, preview delay/age, derivative churn and editorial/index backlog."
       ]
     },
     {
       "key": "WX-32",
-      "title": "B2-only joint restore and HA/outage/replay tests, including missing-media/WAL and inference-offline recovery.",
+      "title": "B2-only joint restore and outage/replay tests including private originals, day FKs, editorial state and inference-offline search.",
       "status": "candidate_not_filed",
       "github_issue": null,
       "depends_on": [
         "WX-20",
         "WX-24",
         "WX-30",
-        "WX-31"
+        "WX-31",
+        "WX-43"
       ],
       "requirements": [
         "R14",
         "R16",
         "R22",
         "R23",
-        "R26"
+        "R26",
+        "R29",
+        "R30",
+        "R31",
+        "R33",
+        "R36"
       ],
       "optional": false,
       "requires_decisions": [
         "D06",
         "D15",
         "D16"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "Restore selected originals byte-for-byte with enforced relationships and denied public raw access; preserve human overrides and audit.",
+        "Current preview state restores only as eligible stale state or is cleared; historical recovery does not require obsolete minute previews."
       ]
     },
     {
       "key": "WX-33",
-      "title": "End-to-end security/browser/accessibility/quality acceptance with public/private boundary checks.",
+      "title": "Integrated security/browser/accessibility/quality acceptance for all selected initial features and privacy boundaries.",
       "status": "candidate_not_filed",
       "github_issue": null,
       "depends_on": [
@@ -665,7 +852,10 @@
         "WX-20",
         "WX-22",
         "WX-26",
-        "WX-31"
+        "WX-31",
+        "WX-41",
+        "WX-43",
+        "WX-44"
       ],
       "requirements": [
         "R03",
@@ -681,7 +871,16 @@
         "R21",
         "R24",
         "R27",
-        "R28"
+        "R28",
+        "R29",
+        "R30",
+        "R31",
+        "R32",
+        "R33",
+        "R34",
+        "R35",
+        "R36",
+        "R37"
       ],
       "optional": false,
       "requires_decisions": [
@@ -695,11 +894,13 @@
         "D13",
         "D14",
         "D16"
-      ]
+      ],
+      "phase": "initial_release",
+      "release_gate": "required"
     },
     {
       "key": "WX-34",
-      "title": "Portable install, upgrades, capacity, incident, withdrawal, reindex and recovery runbooks; provenance/licenses.",
+      "title": "Fleet deployment, customization, upgrades, capacity and recovery runbooks; selected upstream provenance and licenses.",
       "status": "candidate_not_filed",
       "github_issue": null,
       "depends_on": [
@@ -718,11 +919,17 @@
         "D01",
         "D15",
         "D16"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "additional_acceptance": [
+        "Document customization and synthetic local development without requiring a generic installer, broad camera platform or multi-tenancy.",
+        "Record the owner-selected license/reuse policy and exact notices for imported code/assets/models."
       ]
     },
     {
       "key": "WX-35",
-      "title": "Controlled production rollout with all required evidence, published service, operational handoff and rollback.",
+      "title": "Controlled initial production rollout with R01-R37 evidence, operational handoff and rollback; deferred products remain separate.",
       "status": "candidate_not_filed",
       "github_issue": null,
       "depends_on": [
@@ -758,7 +965,16 @@
         "R25",
         "R26",
         "R27",
-        "R28"
+        "R28",
+        "R29",
+        "R30",
+        "R31",
+        "R32",
+        "R33",
+        "R34",
+        "R35",
+        "R36",
+        "R37"
       ],
       "optional": false,
       "requires_decisions": [
@@ -788,6 +1004,358 @@
           "key": "WX-27",
           "when": "cloudflare_delivery_enabled"
         }
+      ],
+      "phase": "initial_release",
+      "release_gate": "required"
+    },
+    {
+      "key": "WX-36",
+      "title": "Observed UTC-axis keograms for all three cameras and both civil segments.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-19"
+      ],
+      "requirements": [
+        "R29",
+        "R04",
+        "R19",
+        "R20"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D02",
+        "D03",
+        "D10",
+        "D16"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "acceptance": [
+        "All three cameras, including frontyard_1, produce daytime and overnight keograms: six healthy products per cycle.",
+        "Versioned per-camera region, observed-capture lineage, fixed UTC bins, explicit gaps/coverage and correct video seeks.",
+        "Required source extraction/publication is durable before dense raw cleanup; independent product failure remains visible."
+      ]
+    },
+    {
+      "key": "WX-37",
+      "title": "Hourly private native originals in Garage, calendar-day FKs and sanitized still comparison archive.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-19"
+      ],
+      "requirements": [
+        "R30",
+        "R07",
+        "R17",
+        "R18",
+        "R19",
+        "R23"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D02",
+        "D03",
+        "D06",
+        "D07",
+        "D08",
+        "D15",
+        "D16"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "acceptance": [
+        "Deterministic one-active-selection per camera/hour; native original bytes/hash, actual time/uncertainty and enforced camera/day/slot/source FKs.",
+        "Use actual 23/24/25-hour days and distinct repeated-hour UTC identities; missing/ineligible slots remain explicit.",
+        "Private originals and sanitized public derivatives have separate identities/access; public images cannot bypass the ten-minute disclosure delay.",
+        "Five-year selected default has explicit capacity/recovery-aware lifecycle; shorter video expiry never cascades into retained stills.",
+        "Before-purge intent/pins, immutable upload verification, transactional catalog commit and interrupted-retry reconciliation are demonstrated.",
+        "Camera/date/hour browsing and comparison show actual timestamps and public derivatives only."
+      ]
+    },
+    {
+      "key": "WX-38",
+      "title": "Delayed current preview publication for all three cameras with bounded freshness work.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-19"
+      ],
+      "requirements": [
+        "R31",
+        "R08",
+        "R18",
+        "R19"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D02",
+        "D03",
+        "D08",
+        "D13",
+        "D14",
+        "D16"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "acceptance": [
+        "Approximately one-minute refresh reuses committed snapshots; no request to the public app calls a camera.",
+        "At least ten minutes after the latest plausible exposure time before any public origin/alias/cache response; clock uncertainty fails conservatively.",
+        "Actual capture time, stale/unavailable state, bounded queue/retention and eligible immutable pointer transitions survive restart.",
+        "Five-minute chunk visibility is qualified or an atomic smaller handoff is selected; mutable chunk tails are never read."
+      ]
+    },
+    {
+      "key": "WX-39",
+      "title": "Per-camera bidirectional video, keogram and measured-weather plot exploration.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-20",
+        "WX-36"
+      ],
+      "requirements": [
+        "R32",
+        "R12",
+        "R20"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D02",
+        "D13"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "acceptance": [
+        "Playback moves a source-UTC cursor; chart/keogram selection seeks through the authoritative source-time map.",
+        "Gaps, metric coverage, source uncertainty, repeated-hour offsets and overnight boundaries stay visible without time compression.",
+        "Accessible keyboard/shareable-link navigation and one-active-player mobile behavior; no initial synchronized multi-player requirement."
+      ]
+    },
+    {
+      "key": "WX-40",
+      "title": "Provenance-aware weather bookmarks, daily event strip and bounded in-site feed.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-22",
+        "WX-39"
+      ],
+      "requirements": [
+        "R33",
+        "R14",
+        "R20",
+        "R21"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D05",
+        "D06",
+        "D11",
+        "D13",
+        "D16"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "acceptance": [
+        "Measured, derived, visual and manual evidence retain stable event identity, source interval/precision and revision.",
+        "Cross-midnight/calendar and cross-segment links preserve measurement identity and valid seek bounds.",
+        "Measured events work without inference; no additional event renders, raw-input extensions or product notification integration.",
+        "Deduplication, late/corrected observations, paging and unavailable video links have explicit behavior."
+      ]
+    },
+    {
+      "key": "WX-41",
+      "title": "Local records, precipitation calendar, wind rose, sun/moon context and historical comparisons.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-20",
+        "WX-37"
+      ],
+      "requirements": [
+        "R34",
+        "R14",
+        "R15",
+        "R24"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D02",
+        "D05",
+        "D06",
+        "D13"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "acceptance": [
+        "Versioned deterministic formulas, units, calendar bounds and coverage; records labeled for actual observed history.",
+        "Duration-weighted wind sectors include calm/variable/missing states without overlapping-stream double counts.",
+        "Rain conservation, DST/leap dates, late-data revisions and period-comparison coverage are tested.",
+        "Astronomy is computed locally; required history exports remain available and no external forecast/radar/alert provider is introduced."
+      ]
+    },
+    {
+      "key": "WX-42",
+      "title": "Typed measured-weather search predicates and bounded source-interval evidence queries.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-13",
+        "WX-17"
+      ],
+      "requirements": [
+        "R35",
+        "R14",
+        "R20",
+        "R22"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D05",
+        "D06",
+        "D12",
+        "D13"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "acceptance": [
+        "Allowlisted metric/statistic/operator/unit/time-scope/coverage schema and parameterized bounded SQL.",
+        "Whole-video default scope is explicit when a semantic hit references a smaller interval.",
+        "Missing/insufficient coverage never satisfies zero/no-rain predicates; corrections invalidate evidence/cache revisions.",
+        "Numeric-only queries work without model calls; exact filters are preserved through hybrid/ANN/lexical fallback."
+      ]
+    },
+    {
+      "key": "WX-43",
+      "title": "Authenticated private corrections, tags, favorites and poster selection with audit and reindexing.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-24",
+        "WX-37",
+        "WX-40"
+      ],
+      "requirements": [
+        "R36",
+        "R19",
+        "R20",
+        "R21",
+        "R22",
+        "R27"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D01",
+        "D08",
+        "D11",
+        "D12",
+        "D13",
+        "D16"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "acceptance": [
+        "Qualified fleet operator authentication, authorization/CSRF protections and immutable private actor/action audit.",
+        "CAS edits preserve original automated output; later AI runs do not overwrite a human override.",
+        "Current public metadata/sidecar/cache and embedding outbox bind the effective revision; corrected old text cannot remain active.",
+        "Favorites/private notes stay out of public APIs/search; published tags and human-edited labels are intentional projections.",
+        "Poster choices use retained eligible observations or actual validated-video frames with provenance, masking and no direct original exposure.",
+        "Valid labeled AI publication remains automatic without an editorial approval queue."
+      ]
+    },
+    {
+      "key": "WX-44",
+      "title": "Responsive self-hosted weather card for the approved vallery.net embedding origin.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-20",
+        "WX-38"
+      ],
+      "requirements": [
+        "R37",
+        "R12",
+        "R15",
+        "R24",
+        "R27"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D01",
+        "D13",
+        "D14"
+      ],
+      "phase": "initial_release",
+      "release_gate": "required",
+      "acceptance": [
+        "Small responsive card uses the canonical local current-weather contract, approximately 15-second visible refresh and explicit stale state.",
+        "Narrow embed-route framing allowlist; no admin framing, privileged cookies, external scripts/fonts or arbitrary CORS.",
+        "Actual parent-site integration follows its owner repository workflow and is linked as a prerequisite; accessible fallback link remains.",
+        "Any included preview preserves all camera publication-delay rules."
+      ]
+    },
+    {
+      "key": "WX-45",
+      "title": "Follow-on: single composite skycam product containing east and west views.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-35"
+      ],
+      "requirements": [
+        "R38",
+        "R04",
+        "R05",
+        "R11",
+        "R19",
+        "R20",
+        "R23"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D02",
+        "D10",
+        "D13",
+        "D15"
+      ],
+      "phase": "follow_on",
+      "release_gate": "none",
+      "acceptance": [
+        "Select labeled composition layout, geometry/renditions and alignment from real fields of view; no assumed geometric stitching.",
+        "Derived product identity links both real cameras; original outputs remain independent and available.",
+        "Preserve actual shared UTC windows, civil segmentation and the established pair budget unless later owner approval changes it.",
+        "Gaps/uncertainty, compute/capacity, provenance, publication and restore are specified and qualified.",
+        "Prefer durable validated native inputs; never require already deleted dense snapshots or block initial publication."
+      ]
+    },
+    {
+      "key": "WX-46",
+      "title": "Deferred research: value and feasibility of a separate local visual-search index.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-35"
+      ],
+      "requirements": [
+        "R22",
+        "R10",
+        "R24",
+        "R27"
+      ],
+      "optional": true,
+      "requires_decisions": [
+        "D01",
+        "D09",
+        "D12"
+      ],
+      "phase": "deferred_research",
+      "release_gate": "none",
+      "acceptance": [
+        "Evaluate baseline misses and a separately licensed/model-profiled visual index over eligible retained images.",
+        "Record selection/privacy, distinct embedding space, GPU/CPU budget, relevance gain, versioning and restore implications.",
+        "Produce a go/no-go proposal and separate implementation scope; no model deployment is authorized by this research reservation."
       ]
     }
   ],
@@ -798,34 +1366,59 @@
     "WX-04",
     "WX-05",
     "WX-06",
-    "WX-07",
     "WX-08",
+    "WX-07",
     "WX-09",
-    "WX-10",
     "WX-11",
+    "WX-23",
+    "WX-28",
+    "WX-10",
     "WX-12",
-    "WX-13",
+    "WX-29",
     "WX-14",
+    "WX-13",
     "WX-15",
     "WX-16",
     "WX-17",
     "WX-19",
-    "WX-18",
-    "WX-20",
     "WX-21",
-    "WX-22",
-    "WX-23",
-    "WX-24",
-    "WX-25",
-    "WX-26",
+    "WX-42",
+    "WX-20",
     "WX-27",
-    "WX-28",
-    "WX-29",
+    "WX-36",
+    "WX-37",
+    "WX-38",
+    "WX-22",
+    "WX-39",
+    "WX-18",
     "WX-30",
+    "WX-41",
+    "WX-44",
+    "WX-24",
+    "WX-40",
+    "WX-25",
+    "WX-43",
+    "WX-26",
     "WX-31",
     "WX-32",
     "WX-33",
     "WX-34",
-    "WX-35"
-  ]
+    "WX-35",
+    "WX-45",
+    "WX-46"
+  ],
+  "accepted_product_decisions": "docs/decisions/2026-10-23-product-scope.md",
+  "summary": {
+    "candidate_count": 46,
+    "direct_edge_count": 90,
+    "conditional_edge_count": 2,
+    "required_initial_count": 42,
+    "conditional_initial_count": 2,
+    "follow_on_keys": [
+      "WX-45"
+    ],
+    "deferred_research_keys": [
+      "WX-46"
+    ]
+  }
 }

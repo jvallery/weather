@@ -1,6 +1,6 @@
 # Weather — requirements and implementation research brief
 
-**Version:** 3.0  
+**Version:** 4.0  
 **Updated:** 2026-10-23  
 **Owner:** jvallery  
 **Target repository:** `jvallery/weather` — new, public, open source  
@@ -37,6 +37,8 @@ This is the requirements document for an independent weather observation and tim
 
 The owner has now supplied the existing public repository at <https://github.com/jvallery/weather>. This handoff is published there. Reuse it; the earlier instruction to create a repository is satisfied. Repository policy, license, CI/CD and deployment configuration still need the first-pass decisions and subsequent implementation work below.
 
+The [accepted product decisions of 2026-10-23](decisions/2026-10-23-product-scope.md) resolve Q01–Q16 from the [open-source landscape review](research/open-source-landscape.md). This version incorporates those answers. Keep the application independent and fleet-first; use the reviewed solutions as implementation references under §20.1. No application fork or mandatory fork experiment is selected. The original R01–R28 identities remain stable; R29–R37 add initial-release features, and R38 is an explicitly deferred composite-video follow-on.
+
 This document specifies required outcomes and the contracts that implementations must preserve. It also supplies candidate designs, commissioning defaults, and decision criteria. A number described as an initial target is not a measured property of the cameras, cluster, or model service. Repository observations establish recorded source state, not present deployment state. Codex must reconcile them with the live environment and current primary documentation.
 
 **MUST** denotes a requirement. **SHOULD** denotes a recommended approach that may change with a recorded rationale. **MAY** denotes an optional capability. A decision marked **Phase 1** must be resolved, or explicitly recorded as blocked with an owner and evidence needed, before its dependent implementation issues are considered ready. Do useful unblocked work without waiting for unrelated decisions. Do not label Phase 1 complete while a material architecture decision remains unresolved.
@@ -55,6 +57,10 @@ This document specifies required outcomes and the contracts that implementations
 | Preview | Publish a real-frame poster/thumbnail alongside every playable video. |
 | Search | Store versioned embeddings of video metadata and validated descriptions in CNPG; expose bounded semantic search with structured camera/time filters. |
 | Framework | Decide between Astro with an API and a suitable full-stack design after reviewing history/search/live-data needs. Database use does not itself require server rendering for every page. |
+| Reuse and product scope | Independent, fleet-first Weather implementation with documented customization and specific upstream references. Codex proposes license/reuse policy in Phase 1; record the owner's final choice before upstream code imports. |
+| Camera-derived additions | Day/night keograms and delayed current previews for **all three cameras**. Archive one private native still per actual elapsed local hour in Garage with explicit database/day relationships and sanitized public comparison derivatives. |
+| Exploration and control | Per-camera linked weather/video plots, event bookmarks and in-site feed, local almanac, measured search filters, private editorial controls and a main-site weather card. |
+| Initial and later scope | Text embeddings first; reserve visual-index research. A combined east/west skycam video is a tracked follow-on, not an initial-release gate. No external weather context, product notifications, kiosk/PWA or multi-tenant requirement. |
 
 “Project” means the GitHub repository and its application. A GitHub Projects board is optional. The public domain and camera identifiers are intentional public product configuration; credentials, private topology, station serial numbers, precise coordinates, raw infrastructure receipts, and private repository contents are not.
 
@@ -65,12 +71,12 @@ Every requirement below must map to one or more implementation issues and accept
 | ID | Required outcome |
 |---|---|
 | R01 | Codex completes research, decision records, repository setup, filed issues, and an acyclic issue dependency graph as its first assignment. |
-| R02 | Public `jvallery/weather`, isolated `weather` namespace, independent local CI/CD and application ownership; no unrelated service migration. |
+| R02 | Public independent `jvallery/weather`, isolated `weather` namespace and local CI/CD; fleet-first implementation with documented customization and selective upstream references; no unrelated service migration. |
 | R03 | Automated timelapses for `skycam_east`, `skycam_west`, and `frontyard_1`, with honest per-camera availability. |
 | R04 | Per local cycle: daytime civil dawn–civil dusk and overnight civil dusk–next civil dawn, with half-open nonoverlapping source intervals. |
 | R05 | The daytime/overnight pair totals at most 120 seconds per camera; initial contract is exactly 7,200 frames at 60 fps, allocated by elapsed time. |
 | R06 | Timer-driven native-resolution snapshot acquisition; no continuous RTSP decode or retained full-day source video. |
-| R07 | Snapshot staging is an Obsidian-backed NFS PVC, bounded and automatically purged after qualified durable publication. |
+| R07 | Snapshot staging is an Obsidian-backed NFS PVC, bounded and automatically purged after qualified durable publication and completion of required source-dependent products; only the explicitly selected hourly originals are retained under R30. |
 | R08 | Capture pods initiate network traffic only to their assigned cameras; storage transport, scheduling, weather collection, inference, and publication are separated. |
 | R09 | High-interpolation rendering, synthetic exposure/motion blur, conservative exposure processing, exact source timing, and tested CPU fallback. |
 | R10 | Optional GPU acceleration with a phase-1 inventory of all nine GPUs and a measured, owner-supported co-tenancy proposal. |
@@ -78,24 +84,36 @@ Every requirement below must map to one or more implementation issues and accept
 | R12 | Responsive, accessible, mobile-friendly presentation consistent with <https://vallery.net>; date archive and clear day/overnight navigation. |
 | R13 | Local Tempest UDP listener and explicit k3s network path; Verdify reference investigated without copying its data omissions. |
 | R14 | Persist all received allowed-source Tempest payloads and normalized observations in CNPG; expose bounded historical queries and meaningful aggregates. |
-| R15 | Current conditions API/UI with per-measurement freshness, cached last-known values, and explicit missing/stale states. |
+| R15 | Current conditions API/UI refreshed approximately every 15 seconds, with per-measurement freshness, cached last-known values and explicit missing/stale states; all received telemetry remains retained independently. |
 | R16 | HA database and application service following qualified fleet patterns; documented failure domains, failover, storage, and capacity. |
-| R17 | One private weather Garage bucket for videos, posters, immutable metadata exports, database base backups/WAL, and recovery manifests; controlled credentials and lifecycle. |
+| R17 | One private weather Garage bucket for videos, posters, keograms, private selected originals and public image derivatives, immutable metadata exports, database base backups/WAL and recovery manifests; controlled credentials and lifecycle. |
 | R18 | No direct Garage browser delivery, anonymous bucket, arbitrary object proxy, or media identity able to read database backups. |
 | R19 | Crash-safe automatic publication and metadata updates, durable jobs/outbox, immutable artifacts, safe cleanup, and per-camera fault isolation. |
 | R20 | Per-video metadata includes exact window/time map, weather evidence and coverage, processing provenance, preview/media identities, and analysis state. |
 | R21 | Automated weather-focused analysis of completed video through the qualified local `llm.primary.longctx.mm` route, with evidence-grounded prompts and honest fallback labels. |
-| R22 | Versioned CNPG embeddings and bounded semantic/lexical search with camera/date/time filters, seekable results, and inference-outage isolation. |
+| R22 | Versioned CNPG text embeddings and bounded semantic/lexical search with camera/date/time filters, seekable results and inference-outage isolation; reserve a later visual-index extension without deploying an image embedding model initially. |
 | R23 | CNPG base backups and continuous WAL in Garage, central full/WAL custody to B2, coordinated media/database recovery checkpoints, and demonstrated restore. |
 | R24 | Local, reproducible, pinned build/deployment artifacts; no public runtime image/package/font/model dependency or external SaaS required for core operation. |
 | R25 | Optional Cloudflare caching only after plan, routing, limits, security, and video-delivery terms are validated; Garage remains primary media storage. |
 | R26 | Measured operational SLOs, resource limits, observability, failure tests, retention policy, and runbooks, including NAS and model outages. |
 | R27 | Public repository and public APIs are sanitized; narrowly scoped credentials and private deployment evidence remain outside public source/history. |
 | R28 | Preserve existing camera behavior, Sentinel/Frigate, Verdify, Home Assistant, GPUStack services, and infrastructure ownership boundaries. |
+| R29 | Daytime and overnight keograms for all three cameras, with a UTC-based axis, explicit gaps, calibrated camera regions and links to the corresponding video/time. |
+| R30 | One selected private native still per camera per actual local hourly slot in Garage, indexed with enforced camera/calendar-day foreign keys and source/cycle provenance; sanitized comparison derivatives; five-year selected retention default. |
+| R31 | Delayed current previews for all three cameras, approximately one-minute refresh and minimum ten-minute publication age, with honest capture-time freshness and no public-request camera access. |
+| R32 | Per-camera video linked bidirectionally to measured-weather plots through the authoritative source-time map, with accessible gap-aware navigation. |
+| R33 | Weather event bookmarks, daily event strip and in-site event feed, with measured/visual/manual provenance and bounded seek precision; no separate event-video or outbound notification pipeline initially. |
+| R34 | Local almanac: records, precipitation calendar, wind rose, sun/moon context and daily/monthly/yearly comparisons, with deterministic formulas and coverage; required history exports remain. |
+| R35 | Typed measured-weather filters in hybrid search, with explicit measurement window, units, coverage and missing-data semantics; no AI-generated measurements or SQL. |
+| R36 | Automatic labeled AI publication plus authenticated private corrections, tags, favorites and poster selection; immutable audit/provenance, revision concurrency, public update and reindex contracts. |
+| R37 | Responsive self-hosted weather card embeddable on `vallery.net`, using the same local observation/freshness contract and a narrowly permitted framing route. |
+| R38 | **Deferred follow-on:** a single composite skycam timelapse product containing east and west views, with researched layout/synchronization and explicit acceptance/dependencies; preserve initial per-camera products. |
 
 ### 1.3 Scope boundaries
 
 The service is an observational archive, not a forecasting or life-safety alerting product. It does not identify people or interpret household activity. Its analysis concerns weather, image visibility, and camera artifacts. Do not add an external cloud AI provider, public analytics dependency, message broker, dedicated vector service, or persistent RTSP subsystem without a demonstrated need and a recorded design decision.
+
+Only local observations and locally calculated astronomy are in scope. The product event feed stays inside the site; external radar, forecasts, alert feeds, webhooks, email/push subscriptions, general multi-tenancy, kiosk/offline/PWA modes and additional slower event clips are not selected. Preserve existing required weather-query/export behavior. Deferred composite and visual-index issues must be filed by Codex, but neither gates the first release. Fleet operational alerting under §18 is separate from a public weather-notification product.
 
 The first Codex pass may perform read-only inventory and approved bounded qualification using existing mechanisms. Creating the requested repository, its configuration, research documents, and issues is part of that pass. Production deployment, shared GPU admission changes, Garage provider changes, network changes, backup retention changes, and disruptive failover tests belong to the appropriate implementation issues and owner-controlled rollout. A research spike that would alter an existing service must use its established change process.
 
@@ -103,7 +121,7 @@ The first Codex pass may perform read-only inventory and approved bounded qualif
 
 ### 2.1 Required working sequence
 
-1. Read this document in full and the current ownership/agent instructions in each relevant repository. Inventory existing `jvallery/weather` repositories or similarly named work before creating anything; reconcile an existing repository rather than overwriting it.
+1. Read this document in full, the accepted product decision record, the source-pinned open-source review and the current ownership/agent instructions in each relevant repository. Inventory existing `jvallery/weather` work before creating anything; reconcile it rather than overwriting it. Treat Q01–Q16 as answered, not an outstanding questionnaire.
 2. Inspect and complete configuration of the supplied public repository, preserving this requirements handoff and any later work. Finalize the license decision, contribution/security guidance, issue templates, documentation structure, and repository settings. Keep the application independent of Sentinel. Initially commit requirements and research materials, not an unreviewed production deployment.
 3. Inspect current fleet configuration and live readbacks relevant to the decision register. Read Verdify's actual UDP implementation, the storage owner contracts, CNPG/operator/plugin patterns, GPUStack/Cortex capability declarations and admission state, local CI conventions, and main-site theme assets. Record source revision and observation time separately.
 4. Run non-disruptive capability checks and bounded experiments appropriate to each decision. Use synthetic fixtures where live data is unnecessary. State measurements, remaining uncertainty, and any test that still needs a controlled implementation environment.
@@ -117,7 +135,7 @@ Do not end this first assignment with only a plan to create issues. Do not mark 
 
 | ID | Investigation and required decision | Completion evidence / acceptance |
 |---|---|---|
-| D01 — Ownership and public repo | Confirm repo identity, license, private overlay location, namespace ownership, local CI/registry and deployment integration. | Repository settings and owner boundaries recorded; sanitized public/private artifact split; CI implementation issues defined. |
+| D01 — Ownership and public repo | Confirm independent fleet-first repo identity, propose license/reuse policy, private overlay location, namespace ownership, local CI/registry and deployment integration. | Owner's final license choice recorded before code imports; revision/file/dependency notices reviewed; repository settings and ownership recorded; sanitized public/private split and CI issues defined. |
 | D02 — Cameras and schedule | Verify all three snapshot endpoints, native JPEG geometry, fresh-frame cadence, authentication, clock uncertainty, location/timezone source, and civil-event calculation. | Per-camera probe and a day/twilight/night pilot plan; accepted initial cadence; frozen time-map specification. |
 | D03 — NFS staging | Establish the approved design and owner admission prerequisites for a dedicated Obsidian NFS grant/PVC; determine capacity, UID/GID/export policy, mount behavior, fsync/rename semantics, locking, writer fencing, and outage behavior. | Owner-approved grant specification or linked admission prerequisite, capacity calculation, bounded backlog policy, and an implementable collector fencing design; resource creation occurs in WX-03. |
 | D04 — Tempest network | Determine actual broadcast destination/VLAN, node L2 reachability, listener attachment, port use, source filtering, and one-active versus redundant receivers. | A current allowed-source packet reaches the proposed path, or an explicit infrastructure prerequisite proves how it will; no claim that ClusterIP receives LAN broadcast automatically. |
@@ -129,10 +147,10 @@ Do not end this first assignment with only a plan to create issues. Do not mark 
 | D10 — Media quality and FFmpeg | Select current stable FFmpeg build and optional qualified extras, cadence/shutter/interpolation/encoder profile, worker concurrency and resource budgets. | Capability probes plus representative quality/throughput comparison; exact-time/output contract preserved. |
 | D11 — Video analysis | Qualify `llm.primary.longctx.mm` end-to-end with temporal controls, request limits, model/backend identity, timeout/cancellation behavior, and fallback behavior. | Fresh video capability receipt or an explicit unsatisfied native-video gate; schema/evidence/time-map contract, server-termination/cancellation evidence and retry envelope. |
 | D12 — Embeddings/search | Requalify `embed.main`; choose exact vector search versus a compatible ANN representation, profile/versioning, filtered recall and rate limits. | Fresh model/formatter/dimension receipt; extension packaging decision; retrieval fixtures and index/query plan. |
-| D13 — API/UI framework | Choose Astro plus API or a suitable integrated framework; define public API, private operations, caching, archive queries, theme reuse and accessibility. | Recorded decision based on maintainability and data needs, route/schema contracts, responsive wireframes and theme tokens. |
+| D13 — API/UI framework | Choose Astro plus API or a suitable integrated framework; define linked charts, hourly archive, previews, events/almanac/search, authenticated editorial controls, embed, caching and theme/accessibility. | Recorded fleet-first framework decision; day/hour FK and route/schema contracts; private operator authorization/audit; responsive wireframes and theme tokens; no application fork required. |
 | D14 — Delivery/CDN | Validate weather-domain ingress, origin streaming/ranges, certificates, download path, optional Cloudflare plan/terms/object-size/cache behavior. | Same-origin media contract; origin path works independently of optional caching; no unsupported video proxy arrangement. |
 | D15 — Backup and restore | Select the Barman/plugin configuration, unique archive identities and central full/WAL enrollment design; define owner prerequisites, joint checkpoints, retention, RPO/RTO and restore tooling. | Owner-approved coverage/budgets and exact prefixes; activation prerequisites for WX-28/WX-29; test plan for B2-only restore and DB/media mismatch; current central receipts only where enrollment already exists. |
-| D16 — Operations and acceptance | Finalize publication deadlines, backlog/quota limits, privacy masks if needed, observability and commissioning gates. | Measurable SLOs and acceptance matrix; maintenance/incident procedures; no hidden dependency on AI, NAS availability, or a single coordinator. |
+| D16 — Operations and acceptance | Finalize publication deadlines, derived-product extraction/cleanup gates, hourly selection tolerance, keogram region/binning, preview time uncertainty/delay, retention/capacity, privacy masks if needed and observability. | Measurable SLOs and acceptance matrix for all selected initial features; maintenance/incident procedures; no hidden dependency on AI, NAS availability or a single coordinator. |
 
 If a capability cannot be tested without implementing a new component, Phase 1 must establish the feasibility evidence, choose the interface/design, and file a mandatory qualification issue that blocks rollout. It must not fabricate a passing test. A material unresolved architecture choice remains a Phase-1 blocker; a selected design with a specified implementation test is ready for implementation but not for production.
 
@@ -141,6 +159,8 @@ If a capability cannot be tested without implementing a new component, Phase 1 m
 Publish sanitized requirements, ADRs, contracts, `docs/implementation/backlog.md`, a machine-readable dependency graph, and a generated Mermaid dependency view in `weather`. Keep live IPs, GPU UUIDs, internal names, secret references that expose deployment structure, exact coordinates, private source excerpts and raw probe receipts in the existing private evidence/deployment system. Public ADRs should reference opaque evidence IDs and summarize findings without copying private content.
 
 Each decision record includes: requirements covered; examined public source URLs; private evidence IDs; source revision and observation timestamp; alternatives; chosen approach; cost/capacity/failure implications; verification performed; remaining implementation tests; responsible owner; and affected issue keys. Record “unknown” when a fact cannot be established.
+
+Resolve added feature details within these same D01–D16 records: D02/D10/D16 cover camera-derived products and later composite feasibility; D05/D06 cover day/hour identities, events and almanac calculations; D07/D08/D15 cover new Garage asset classes and retention/recovery; D12 covers measured filters and the reserved visual-index boundary; D13 covers linked plots, editorial controls and embed. Do not reopen the accepted owner choices as cluster decisions. A future visual index remains a deferred investigation, not an additional Phase-1 model-qualification gate.
 
 ### 2.4 Useful reference findings to revalidate
 
@@ -191,10 +211,12 @@ The diagrams show data dependencies, not a requirement for one pod per box. Cons
 | Collector, one active per camera | Timer, verified JPEGs, attempt ledger, segment-local sealed NFS chunks. | Only assigned camera API egress; mounted config/secrets; no CNPG, Garage, model, internet, or Kubernetes API access. |
 | Scheduler/reconciler | Solar schedules, sealed-input discovery, idempotent render jobs, recovery after downtime. | CNPG and approved control/storage paths; no need for camera credentials. |
 | Renderer | Sealed NFS input, bounded temporal processing, validated renditions/posters/provenance. | No camera access; resource-bounded CPU/GPU; scoped publishing interface. |
+| Image-product worker | Segment keograms, hourly-original selection/archive, sanitized comparison images and delayed previews; durable slot/product state and source pins. | Read only committed collector chunks; scoped CNPG/object operations; no camera credentials or collector-policy expansion. |
 | Publisher | Verify immutable artifacts, commit publication transaction/outbox, metadata revisions and cleanup eligibility. | CNPG plus authorized media operations through the object boundary. |
 | Tempest listener/ingestor | Receive allowed UDP, durable raw receipts, normalized projection and health. | Approved UDP attachment plus CNPG/spool path; no camera or public internet access. |
 | Analysis/embedding workers | Bounded model calls, validation, versioned descriptions/vectors. | Scoped local inference API and required artifact/DB access; no tools for model-directed writes. |
 | Public API/UI | Current/history, archive, published metadata, search and health-safe responses. | Least-privilege database views/roles and narrow media-origin interface. |
+| Private editorial API | Authenticated corrections, tags, favorites and poster choices; revision/audit and outbox state. | Explicit operator authorization; no anonymous writes, arbitrary object access or camera access. |
 | Media gateway | Stream published allowlisted assets, range/download semantics, immutable caching. | No browser-accessible S3 endpoint and no unrestricted upstream key in the web workload. |
 | Backup/recovery integration | Barman base/WAL and central full/WAL custody, checkpoint verification. | Private database subtree through a qualified boundary; central owner manages B2. |
 
@@ -209,6 +231,8 @@ Collectors cannot acquire database leases because of R08. Their single-writer gu
 ### 3.3 Reconciliation
 
 After restart, reconcile frozen schedules, sealed chunks, render receipts, uploaded objects, committed publications, outbox events, AI/search revisions, retention pins, and cleanup markers. Render/publish one camera independently of the others. Nightly reconciliation repairs state; it is not the only trigger for publication. Neither AI nor embeddings are on the media-publication or raw-cleanup critical path.
+
+Reconcile hourly slot selections/missing records, original-to-derivative relationships, keogram extraction/publication, preview pointers and editorial revisions as independent idempotent work. A valid video may publish while its keogram is explicitly processing or degraded. Before deleting raw inputs, required image products must have durable outputs or compact durable extraction inputs sufficient to finish them, according to §6.9. A stalled derivative must not hold an entire capture day indefinitely.
 
 ## 4. Network, security, and independent deployment
 
@@ -229,6 +253,8 @@ Use TLS and verified trust for supported internal APIs; do not use blanket certi
 ### 4.3 Public delivery boundary
 
 Only the weather domain exposes the intended UI, read API, media, posters, downloads and sanitized metadata. Administrative endpoints, raw frames, raw infrastructure diagnostics, database backups, broker controls and object listing remain private. Treat media object names and analysis text as untrusted input. Public request parameters never select an arbitrary upstream URL, filesystem path, SQL expression, S3 action or model ID.
+
+The same private boundary applies to the retained hourly native originals. Only specifically published sanitized comparison images, delayed previews and keograms are public. Their parent-original keys, exact private configuration and unrestricted raw bytes are never included in public serializers or redirects. An authenticated operator may select approved content for publication without granting the media origin access to the original archive. Apply the selected public masking policy to every image/video derivative and model input; embedded image metadata must not reveal private location or hardware data.
 
 Separate public and privileged API roles. Parameterize SQL, validate typed filters, cap response size/time/concurrency, use cursor pagination, and escape all rendered descriptions. CORS, hidden URLs, a `Referer` check, and an S3 key prefix are not substitutes for authorization. Privacy masks, if required by the owner for these public views, must be frozen in the media recipe and applied consistently to video, posters and AI derivatives; they must not silently crop the native field of view.
 
@@ -306,6 +332,16 @@ Every accepted snapshot is assigned by its best verified source-time estimate to
 All image-dependent temporal context is segment-local: interpolation, deflicker, denoising, stabilization estimation, and exposure integration cannot borrow images from the other segment. Edge extension may use only an in-segment observation, within a small configured allowance, and must be recorded as synthetic. There is no cross-boundary crossfade.
 
 This guarantees nonoverlapping **assigned source-time intervals**. A snapshot API without trustworthy exposure timestamps cannot guarantee subsecond physical exposure boundaries. Preserve timing uncertainty; a stricter mode may reject any boundary-adjacent image whose uncertainty interval crosses the boundary and record the resulting gap.
+
+### 5.5 Calendar days, hourly slots and cross-product time identity
+
+Add a durable local-calendar-day entity, `weather_day`, with a primary key, site/station reference, local date, timezone/configuration version and exact UTC midnight-to-midnight bounds. Enforce uniqueness for the logical site/date identity. This day is distinct from the existing `solar_cycle`, whose interval starts at civil dawn. Rain calendars, hourly archive browsing and daily station aggregates use calendar days; videos and keograms use solar cycles/segments. The UI must label that distinction.
+
+Generate `archive_hour_slot` rows for the actual elapsed local hours within each calendar day. In `America/Denver`, daylight-saving transition days have 23 or 25 such slots; ordinary days have 24. Key slots by UTC start, store UTC end and local label/offset/fold, and never deduplicate two repeated `01:00` labels. The hourly archive selects at most one observed original per camera/slot; retrying or changing a selection policy cannot create two active selections. Persist an explicit missing/ineligible state when no valid frame meets the tolerance. Do not fill a missing hour with another hour's image.
+
+Every selected still has enforced foreign keys to its camera, calendar day, hour slot, source capture identity and source segment/cycle. Its calendar-day identity comes from the selected image's verified source time, not upload time or `cycle_date`. Selection candidates must lie within the slot and its parent day. A same-day composite FK or equivalent constraint must prevent a still from pointing to a slot in a different day. Keep compact capture identities after raw deletion so these relationships remain valid. Video/keogram records retain their solar-cycle relationship; the API can join them through UTC overlap without pretending the overnight interval belongs to one calendar day.
+
+All linked visualizations and event navigation exchange UTC instants or half-open UTC intervals. Local labels always include enough date/offset information to distinguish repeated hours. Missing imagery/weather remains a visible gap; no index-based axis, removed frame or late database insert may compress elapsed time.
 
 ## 6. Snapshot acquisition
 
@@ -420,11 +456,43 @@ Proposed watermarks are warning at 70%, urgent at 85%, stop new JPEG writes at 9
 
 ### 6.9 Raw cleanup contract
 
-All mandatory renditions and posters must pass validation; immutable artifacts must meet the qualified Garage durability contract; the CNPG publication transaction and receipt must be committed; the same-origin publication must pass internal readback; and no active job may retain an input pin. Only then may the separate cleanup role remove sealed chunks.
+All mandatory renditions and posters must pass validation; immutable artifacts must meet the qualified Garage durability contract; the CNPG publication transaction and receipt must be committed; the same-origin publication must pass internal readback; and no active job may retain a pin on the chunk being removed. Hourly selected originals must additionally be durably archived with committed slot/day/camera relationships **or** have their exact bytes and pending selection obligations transferred into the bounded durable promotion working set described below. Keograms must have durable outputs or sufficient compact extracted inputs to complete without full raw JPEGs. A missing slot has an explicit completed missing-state decision, never an invented archival receipt. Only then may the separate cleanup role remove sealed chunks.
 
 Target cleanup within one hour of successful publication. Keep small immutable manifests, capture/processing quality summaries, hashes and deletion receipts. Retry cleanup idempotently and never remove an active chunk. AI and embedding jobs use durable completed media and do not delay cleanup. Central B2 custody is asynchronous and is not normally a raw-retention prerequisite; if the selected Garage durability cannot meet the accepted local-loss requirement, D07 must resolve that before enabling cleanup. Immediate PUT/HEAD visibility is insufficient evidence of power-loss durability.
 
 Capture scheduling and new-cycle collection continue independently while the previous segment renders. Backpressure and per-camera resource limits prevent one failed render or stalled cleanup from consuming the entire staging grant.
+
+Image-product jobs have bounded pins and extraction deadlines. D16 must define how selected stills and keogram slices are extracted promptly into their small durable working set, so a slow public derivative does not pin all full-resolution captures. If required extraction/archive fails, preserve the affected evidence within the admitted staging budget, surface the degraded product and apply the explicit incident/backpressure policy; do not fabricate success or silently discard its only inputs. Expiring a job lease is not proof its input is disposable. Routine cleanup should still meet the one-hour target once all required source-dependent work is safely independent of the raw chunks. Preview rolling-buffer retention is separately bounded and never becomes a continuous long-term archive.
+
+The promotion working set uses the approved Obsidian NFS staging grant with its qualified flush/rename/fencing contract and a separately bounded allocation. Validate copied source bytes/hash and persist the new owner/pin before releasing the source-chunk pin; crash reconciliation must never leave neither copy protected. Pending hour obligations transfer with their candidate identities. The copied original and its own pin remain until verified Garage archival and the CNPG selection/FK receipt commit; this transfer is not an `archived` success or permission to expire the last copy. Apply the same durability/ownership discipline to compact keogram extraction inputs. This reduces retained payload without introducing unapproved NVMe staging.
+
+### 6.10 Sparse hourly-original archive
+
+For each completed camera/hour slot, select one fresh, valid, natively captured JPEG using a deterministic versioned policy. The starting policy chooses the eligible image closest to the hour's midpoint, breaking equal distance by earlier source time and then stable capture ID. Prefer captures within a provisional 60 seconds of the anchor; otherwise allow the closest qualified image elsewhere in the same hour and flag the actual offset as off-target. D02/D16 finalize this quality/tolerance policy after observing capture timing. No eligible in-hour image produces an explicit missing slot. Selection is by source time/quality, not filename order, AI aesthetics or an HTTP retry's arrival time. Keep selection policy/version and rejection/missing reasons.
+
+Finalize only after the hour closes and its candidate interval is sealed or a defined late-input deadline expires. Register the pending selection obligation before segment cleanup can remove candidates. An hour can straddle civil dawn/dusk: preserve a small explicit candidate/promotion pin across that segment's cleanup, then bind the winner to its actual source segment and calendar hour. Do not retain the whole day's capture to resolve one hour, finalize against a mutable chunk or count that original as input to both video segments.
+
+Preserve exact selected JPEG bytes as an immutable **private** Garage original. Store size, SHA-256, geometry, source timestamp/uncertainty, source manifest/capture identity, camera/day/hour FKs and archive revision in CNPG. An object PUT alone does not fulfill R30: verify the qualified durability condition and commit the corresponding indexed relationship before releasing the original's pin. Retrying must converge on one active selection and must not overwrite a different hash. Corrections create a revision with an audit trail and tombstone/grace handling for replaced assets.
+
+Produce privacy-processed, metadata-sanitized public derivatives at useful screen/thumbnail sizes. Archive browsing supports camera/date/hour selection and comparisons of selected dates/hours with actual timestamps, offsets and missing states. Native originals do not become a public download merely because the related video has a native download. Public image IDs map only to approved derivative assets. Comparing the same clock hour across dates is permitted, but must not suggest the solar phase or scene lighting is identical.
+
+A late-hour fallback can still be less than ten minutes old when the hour closes. Apply the same ten-minute minimum public eligibility test in §6.11 to its comparison/poster/thumbnail derivatives so an alternate still route cannot bypass the current-preview policy. Private archival may complete immediately; the public derivative can wait without retaining dense raw input.
+
+The selected Q03=B default is **five years** for sparse originals and their required comparison derivatives, independently of video retention; the owner did not separately restate that horizon. D07/D15 must record the approved operational policy and recovery-aware deletion before enabling expiry. Keep day/slot metadata and tombstones as needed for retained references. Do not cascade-delete a five-year still because a shorter-lived video expires.
+
+At an illustrative 2 MB/JPEG, three cameras × 24 hours × 365 days equals 26,280 originals or **52.56 GB/year**, about **262.8 GB over five 365-day years**, before derivatives, replicas, backups and leap days. These are payload arithmetic, not measured storage allocation. Measure actual source sizes, account for 23/25-hour days and the separate preview/keogram budgets, and include all classes in Garage/B2 capacity. This sparse archive does not authorize retaining the full snapshot cadence.
+
+### 6.11 Delayed current camera previews
+
+Publish a current preview for each of the three cameras approximately once per minute, using already captured snapshots. **No frame may become public until at least ten minutes after its latest plausible exposure time.** Use `source_time_upper_bound <= publication_now - 600 seconds`; reject unknown, future or implausible clock states. The minimum delay is a privacy/publication invariant, not a target that freshness optimization may shorten. Actual capture time and uncertainty remain visible in the sanitized response.
+
+A separate image worker reads committed sealed input, selects the newest eligible frame, applies the approved public processing, publishes an immutable derivative and atomically advances its per-camera pointer. Public requests never fetch a camera, open RTSP or trigger capture. Existing five-minute chunk sealing can make an eligible frame older than ten minutes; D03/D16 must either qualify a safe small committed preview handoff or accept/document additional age. Do not read mutable TAR tails or weaken atomic chunk/fencing guarantees just to approach the minimum delay.
+
+Persist `public_not_before` and enforce it at the asset origin as well as the latest-preview listing. Guessed immutable URLs, thumbnails, HEAD/range responses, embed aliases and cache prewarming cannot bypass preview eligibility. Never release an unripe object into a public cache. Delay changes, withdrawals and corrected timestamps require projection/cache invalidation under the controlled policy.
+
+Expose captured time, first-publication time, generation, delay policy, source quality, current age and explicit stale/unavailable state. Refreshing a pointer or re-serving identical bytes must not make old imagery appear newly captured. Failures retain a clearly stale last-known preview or show unavailable. Define short, bounded pointer caching and a bounded retained derivative/rolling-input horizon; once the preview maximum age is exceeded, show a placeholder instead of serving it as current. Hourly archival and preview retention are separate policies. Same-origin authorization, withdrawal and backup rules cover published derivatives; private originals remain inaccessible.
+
+Preview jobs coalesce to the newest eligible capture. After an outage, resume current publication rather than replay every missed minute as a historical preview backlog. Historical continuity belongs to the hourly archive and completed videos; preview freshness work has its own bounded queue and expiry.
 
 ## 7. Rendering and browser media
 
@@ -524,6 +592,20 @@ HLS/DASH, HEVC, and AV1 are optional later optimizations. The initial two-minute
 Decode each rendition and verify no errors, exact intended frame count, exact 60/1 cadence, start PTS zero, rational duration `N/60` including terminal sample/movie timing (not equality of rounded decimal strings), native dimensions/aspect ratio, pixel format, codec/profile/level, declared color metadata, readable first/middle/last frames, and checksum. Verify all renditions map to the same source interval. A full decode is appropriate for six short daily outputs.
 
 Use deterministic synthetic fixtures to test time mapping, fractional shutter edges, weighting in linear light, dropped samples, segment boundaries, and chunk stitching. A real-camera quality pilot must separately assess judder, flicker, sky banding, foliage ghosts, and panoramic seam artifacts; passing frame-count tests is not a visual-quality result.
+
+### 7.8 Keograms for every camera and segment
+
+Generate a daytime and overnight keogram for **`skycam_east`, `skycam_west` and `frontyard_1`**: six products for a complete cycle, alongside the six videos. A keogram is a time-axis image assembled from a fixed spatial slice or narrow region of observed snapshots. D02/D10 must choose and version an appropriate region for each camera; a useful front-yard region is required rather than assuming it has the same sky geometry as the east/west views. Preserve orientation, crop/mask configuration and source-image lineage.
+
+Use fixed elapsed-UTC bins over the exact source segment. Pixel positions map to recorded time-bin intervals, not ordinal file positions. D10 selects bounded bin count/resolution and a deterministic per-bin sampling/composition policy. Record the selected observed capture IDs, coverage and recipe; mark unavailable bins visibly and in metadata. Do not stretch neighboring columns across a missing hour or derive a purported observation from AI/interpolated content. Honor half-open boundary ownership and use no adjacent-segment samples.
+
+Publish the image, thumbnail and axis/gap metadata as first-class versioned Garage assets. Clicking or keyboard-selecting a bin opens/seeks its camera's corresponding video via the source-time map; show bin precision and partial coverage. Compute/extract required slices while raw inputs exist, with bounded durable jobs and the cleanup barrier in §6.9. Keogram failure leaves the video available with an explicit product status. Required keograms must be completed or visibly accounted for under the accepted outage policy, rather than silently omitted from a successful cycle.
+
+### 7.9 Deferred combined east/west skycam product
+
+R38/WX-45 is a **filed follow-on backlog requirement**, not a prerequisite for the initial site. Its output is one encoded composite view containing both sky cameras for a chosen solar segment. Preserve the three original camera products; use a distinct product identity with source-camera relationships rather than reassigning a real camera's identity. Apply the same day/night partition and combined 120-second/7,200-frame cycle budget unless a subsequent owner decision changes it.
+
+Codex must research labeled side-by-side versus stacked composition, readable browser/mobile renditions, native composite dimensions, acquisition uncertainty, matched output timestamps, unequal camera gaps, missing-view presentation, compute/storage cost and privacy masks. Both views must correspond to the same source-time interval through their actual manifests/time maps. Never hide a missing view with a different time or stretch one camera's footage to fill it. Geometric stitching is only a candidate if calibrated overlap supports it; a blended panorama is not assumed. Initial per-camera linked charts do not require this renderer, synchronized multi-player playback or multiple native decoders on a phone.
 
 ## 8. GPU allocation and co-tenancy research
 
@@ -634,15 +716,23 @@ This is a logical contract, not final migration DDL. Use `timestamptz`/UTC insta
 | `weather_event`, `device_status` | Precipitation/lightning events and complete diagnostics, preserving packet-specific counting semantics. |
 | `metric_current` or equivalent projection | Latest valid value per metric, original source time, received time, expected cadence, quality and expiry. |
 | `weather_aggregate` | Metric/window/resolution, algorithm version, support coverage, values/counts, evidence revision/hash and watermark. |
+| `weather_day` | Stable site/local-date identity, timezone/config version and UTC calendar bounds; distinct from the dawn-to-dawn solar cycle. |
+| `archive_hour_slot` | Day FK, exact UTC bounds, local hour/offset/fold, expected camera selections and final/missing state; unique UTC slot per site/day. |
 | `camera`, `solar_cycle`, `segment` | Public camera IDs, scene orientation, frozen boundaries/timezone model, allocated frames and capture/processing state. |
 | `capture_manifest`, `render_run` | Small source manifests/hash closure, timing/coverage, recipe/build, state, quality validation and immutable output references. |
+| `capture_identity`, `archival_still` | Stable compact source identity after raw cleanup; explicit camera/day/hour/source-segment FKs; one active still per camera/slot; private original asset FK, verified timing/hash/geometry, selection policy and revision. |
+| `image_derivative`, `keogram`, `camera_preview` | Private-parent lineage with public projection separation; media asset FK, transformation/mask version; keogram segment/time-bin map; preview generation/capture-time bounds/delay/expiry. |
 | `video`, `media_asset`, `publication` | Source window/time map, media revision, geometry/codec/bytes/hash, poster identities, publication generation/visibility and tombstones. |
+| `event_annotation`, `event_video_link` | Event time/interval, calendar day and optional source camera, measured/visual/manual provenance, evidence/rule version, publication state and explicit video/seek relationships. Distinct from raw station-event tables. |
+| `editorial_revision`, `tag_assignment`, `operator_favorite` | Authenticated actor/action/time/reason, original/edited revision and CAS token, tag visibility; favorites private by default; immutable audit and active editorial override. |
 | `analysis_run`, `visual_observation`, `weather_narrative` | Media/evidence/prompt/model versions, bounded validated output, actual time precision, coverage, failure state. |
 | `search_document`, `embedding_profile`, `search_embedding` | Canonical text/hash, typed camera/time fields, full vector, profile/generation and active-revision linkage. |
 | `job`, `outbox`, `input_pin` | Durable leases, idempotence key, retry/deadline/fencing, dependencies and raw-input references. |
 | `recovery_checkpoint`, `custody_receipt` | Database recovery target, media closure, extension/schema/profile versions, offsite coverage and validation state. |
 
-Keep JPEGs/MP4s out of PostgreSQL. Store originals only in staging until cleanup, media in Garage, and small canonical metadata/observations in CNPG. Use separate database roles for ingest, orchestration, analysis/embedding, public read views, migrations and backup administration. Avoid allowing public query parameters to select unrestricted raw tables.
+Keep JPEGs/MP4s out of PostgreSQL. Store bulk raw snapshots only in NFS until cleanup; retain the selected hourly originals privately in Garage under R30, alongside separately authorized public derivative/media classes. Small canonical metadata/observations belong in CNPG. Use separate database roles for ingest, orchestration, analysis/embedding, public read views, private editorial operations, migrations and backup administration. Avoid allowing public query parameters to select unrestricted raw tables.
+
+The archival day/camera relationships are **required foreign keys**, not strings inside JSON metadata. A stable non-partitioned capture registry or partition-key-aware composite FK must keep source references enforceable under the selected PostgreSQL layout. Validate camera/day/slot consistency and require original-versus-public-derivative asset classes in transactional write paths. Do not permit cascading deletion from a shorter-lived video/segment publication to retained stills, events or calendar-day records. Define explicit tombstone/expiry behavior and verify zero orphaned active asset/day references after retries, corrections and restore. Sidecars export these canonical relationships; they do not replace the database constraints.
 
 ### 10.4 Current conditions and historical query API
 
@@ -650,7 +740,7 @@ Expose current and historical weather through same-origin versioned APIs. Public
 
 Serve a latest-valid projection with source timestamp, receive timestamp, expected interval, quality and expiry **per metric**. Use a small bounded API cache and conditional requests; the database remains canonical. Persist sufficient last-known data so a service restart does not display invented zeroes. During database failure, a cached response must explicitly retain its original timestamps and become stale; do not advance `observed_at` on every request.
 
-Initial browser polling can be 15 seconds, with backend cache TTL around 5 seconds, then finalized from desired rapid-wind UX/load. The displayed server/source age must continue to increase between polls. An API outage shows last-known values with an unavailable/stale label. Current conditions and historical queries must not call Tempest cloud or Home Assistant.
+The selected browser current-condition refresh is approximately **15 seconds**, with a proposed backend cache TTL around 5 seconds finalized from load/freshness measurements. A dedicated rapid-wind UI is not selected. Ingestion still archives every received packet at its native arrival cadence. The displayed server/source age must continue to increase between polls. An API outage shows last-known values with an unavailable/stale label. Current conditions and historical queries must not call Tempest cloud or Home Assistant.
 
 Historical endpoints accept explicit metrics, source-time interval, resolution, aggregation and cursor. Enforce a maximum raw-query duration/page size and a maximum returned point count; automatically suggest an appropriate aggregate resolution for long ranges without silently changing measurement meaning. Support cursor-paged export for the complete history. All captured fields remain accessible through documented queries, including an authenticated/private raw/diagnostic endpoint where public exposure would reveal hardware/network identifiers. Public schemas expose useful weather data using public station aliases.
 
@@ -674,15 +764,31 @@ Compute coverage from the union of valid support intervals, not just sample coun
 
 Create stable evidence IDs for metric/value/unit/window/algorithm/coverage records. Late observations or parser corrections produce a new aggregate revision and trigger dependent synthesis/metadata updates. Preserve prior revisions for provenance. The original observations remain retained under the complete-history requirement, enabling later recalculation.
 
+### 10.6 Local almanac and comparisons
+
+Provide observed daily/monthly/yearly summaries, temperature and other qualified records, a precipitation calendar, wind roses, and comparisons across selected historical periods. Compute sun/moon context locally with a pinned astronomical library and the private site configuration; the public response contains derived event times/phase information without exact coordinates. No remote forecast, radar, astronomical API or alert feed is required. Derived values must be labeled separately from instrument measurements.
+
+Use calendar-day boundaries from `weather_day`, including real 23/25-hour duration. Preserve metric units, source support, formula/library version, valid-duration coverage, data availability range and late-data revision. Precipitation totals conserve reported accumulation under §10.5, and an incomplete record is an observed total, not a full-day estimate. Wind-rose sector frequencies are duration-weighted, with documented direction/speed bins, separate calm/variable/missing categories and a denominator visible to the user. Do not average compass degrees arithmetically or count duplicated packets as additional time.
+
+Label records as records **within the available station history** and show that period and coverage; do not call a short record a climatological normal. Define minimum coverage for ranking records and comparing periods; exclude or visibly qualify inadequate data. Comparisons align explicit local dates/periods and acknowledge unequal duration/missing days rather than interpolate fictitious observations. Refresh affected aggregates/records after corrected or late data. Existing bounded history queries and exports remain required; a new CSV format, growing-degree days or gardening/frost analysis is not implied by Q07=A.
+
+### 10.7 Weather event annotations and in-site feed
+
+Create first-class weather annotations for qualified measured events (for example precipitation onset, gust maximum, reported lightning), validated visual events (for example cloud clearing), and authenticated manual annotations. Keep these distinct from exact raw Tempest event receipts. Store source interval/precision, evidence references, producer/rule/model or author revision, threshold/units where applicable, camera scope, relevant calendar days and visibility state. A station-wide event may link to all three camera videos by UTC overlap without claiming every camera shows it.
+
+The initial product uses bookmarks, a daily event strip and a bounded paginated in-site feed. A cross-midnight event retains one identity with explicit day links; a cross-dawn/dusk event can link to both nonoverlapping video intervals without double-counting measurements. Clip/window-level AI evidence remains an interval rather than a falsely precise event instant. Missing footage produces an honest unavailable link or weather-only event. A lightning report is not proof of a visible flash.
+
+Events and corrections update through durable jobs/revisions and the outbox. Measured events must remain available while AI is down; visual annotations appear asynchronously after validation. No extra event video render, raw-frame retention extension, outbound webhook, email or push subscription is included. Set threshold/hysteresis/dedup rules in D05/D16 and test repeated packets, late observations, overlapping evidence, withdrawal and event-feed load.
+
 ## 11. Garage storage, publication, and access control
 
 ### 11.1 One isolated bucket and an explicit tier decision
 
-Create a private weather-specific Garage bucket through the storage owner's IaC/API workflow. It holds published video renditions, posters, immutable sanitized metadata exports, recovery manifests, and the weather database's physical backup/WAL hierarchy. It is not used for raw snapshot staging. Never reuse another application's bucket or credentials.
+Create a private weather-specific Garage bucket through the storage owner's IaC/API workflow. It holds published video renditions, posters, keograms, delayed previews, sparse private hourly originals and their sanitized public comparison derivatives, immutable sanitized metadata exports, recovery manifests, and the weather database's physical backup/WAL hierarchy. It is not used for continuous raw snapshot staging. Never reuse another application's bucket or credentials.
 
 The inspected estate distinguishes a small availability-oriented tier from a large NAS-backed HDD tier. Its recorded small-tier allowance is at most 50 GiB/bucket and less than 2 GiB/day; current policy and installed state must be revalidated privately. A full archive at the planning rates is a likely HDD-tier workload, not an automatic small-tier admission. A bucket occupies one tier; do not claim that prefixes in one bucket inherit different physical durability.
 
-At illustrative combined rendition rates of 30 Mb/s native + 8 Mb/s web + 4 Mb/s mobile, 120 seconds/camera/cycle gives approximately **630 MB per camera**, **1.89 GB for three cameras per cycle**, and **690 GB/year**. Add posters, metadata revisions, retained deleted objects, database base backups, WAL, growth reserve and the tier's actual replication overhead. CRF rates vary; replace these estimates with a pilot. Published-media retention and database recovery retention are D07/D15 decisions. A 365-day media horizon is a planning default, not authorization to activate deletion before the policy is agreed.
+At illustrative combined rendition rates of 30 Mb/s native + 8 Mb/s web + 4 Mb/s mobile, 120 seconds/camera/cycle gives approximately **630 MB per camera**, **1.89 GB for three cameras per cycle**, and **690 GB/year**. Add posters, keograms, selected originals/comparison images, bounded preview churn, metadata revisions, retained deleted objects, database base backups, WAL, growth reserve and the tier's actual replication overhead. CRF rates vary; replace these estimates with a pilot. A **365-day video/poster/keogram horizon** is a planning default; the selected hourly-original/comparison-image default is **five years** and current-preview retention is separately bounded. D07/D15 must finalize each class and its recovery policy before any deletion is activated.
 
 Selecting NAS-backed Garage means Obsidian failure can also interrupt uploads and **uncached playback**. A healthy Garage metadata endpoint does not prove object GET/PUT health. Cloudflare cache residency is not guaranteed availability. Database/application HA must be described separately from media-origin and capture availability.
 
@@ -695,6 +801,10 @@ Use logical areas such as:
 ```text
 media/<immutable-media-id>/<rendition>.mp4
 previews/<immutable-media-id>/<poster-size>.<format>
+images/originals/<immutable-still-id>/<sha256>.jpg
+images/public/<immutable-derivative-id>/<size>.<format>
+keograms/<immutable-product-id>/<asset>.<format>
+camera-previews/<immutable-preview-id>/<size>.<format>
 metadata/<video-id>/<metadata-revision>.json
 releases/<publication-generation>/...
 database/<cluster-incarnation>/<archive-server>/...
@@ -708,6 +818,7 @@ recovery/<checkpoint-id>.json
 | Browser/public UI | Read the intended weather-domain API/media/poster/download routes only. No S3 credentials or direct/presigned Garage URLs. |
 | Media origin | GET/HEAD of allowlisted, committed published asset IDs; no arbitrary key, list, copy, write or backup access. |
 | Publisher | Create and verify authorized immutable media/poster/metadata objects; no overwrite of an existing different hash and no backup access. |
+| Image-product archive worker | Create/verify selected private originals and authorized image/keogram/preview derivatives; read only source classes needed for its jobs; no database-backup access. |
 | Media retention worker | Delete explicitly authorized unreferenced/tombstoned media after recovery-reference and grace checks. |
 | Database archive identity | Only qualified Barman-required operations within the database archive hierarchy. |
 | Recovery identity | Read the selected verified database/media recovery set through an independent recovery path. |
@@ -720,6 +831,8 @@ If the current gateway cannot support the required shared-bucket boundary, selec
 
 Backup/restore authorization must **not depend on querying the weather database being restored**. Its fixed archive scope, credentials and configuration must be recoverable independently. Public media authorization can use a committed publication projection with bounded caching; it must not require exposing the backup hierarchy to survive a database interruption.
 
+Extend D08's positive/negative matrix to `images/originals` versus every public image class. Media origin, embed and anonymous API identities cannot GET/HEAD/list or copy an original, even when a related public derivative is valid. Authorized image workers may derive a public image but cannot publish a raw-original key through a different route. Include encoded-path, parent-ID, direct-key, stale-pointer and mixed-class batch-operation tests. All new asset classes share the bucket's actual physical tier; a prefix is not a different storage tier or automatic security boundary.
+
 ### 11.3 Local durability and immutable publication
 
 Qualify the actual Garage build/effective configuration, NFS/NAS flush behavior, and accepted local-loss window. The examined source does not establish enabled `data_fsync`/`metadata_fsync`; upstream defaults are false. A successful PUT followed by immediate HEAD/GET proves visibility and readable content, not survival of power loss. D07 must define the actual durability receipt and any owner-reviewed remediation before raw cleanup is enabled. [S29]
@@ -730,11 +843,13 @@ There is no transaction spanning PostgreSQL and S3. Use this idempotent publicat
 2. Render, decode/validate, checksum and size every required rendition/poster. Build the initial sanitized sidecar, even when AI is pending or weather coverage is incomplete.
 3. Upload immutable objects through authorized operations. Use application SHA-256 identities; a multipart ETag is not a content SHA-256. Verify existence, size and content according to the qualified storage contract; abort multipart remnants safely on failure.
 4. In one CNPG transaction, compare the expected generation, insert asset/metadata references, mark the video published/partial, and append the outbox event and durable publication receipt.
-5. Activate/invalidate the public projection, verify same-origin media/metadata access, and record readback. Then release pins and enable raw cleanup under §6.9.
+5. Activate/invalidate the public projection, verify same-origin media/metadata access, and record readback. Release video-render pins; enable raw cleanup only after the additional hourly/keogram input prerequisites in §6.9 are satisfied.
 
 An upload followed by DB failure creates an unlisted orphan, which can be reconciled or garbage-collected after a safe grace. Committing DB visibility before uploads finish creates broken references and is prohibited. Retrying must reuse immutable identities. A late worker cannot overwrite a newer media revision.
 
 Metadata enrichment creates a new immutable JSON sidecar and a new database revision, then atomically advances the active reference. The media hash remains unchanged. Store measured weather, AI evidence, search state and pending/degraded labels in CNPG; sidecars are portable exports of that canonical state. Reconciliation must detect stale/missing sidecars and regenerate them idempotently.
+
+Use the same upload/verify/transaction/outbox/readback pattern for still/keogram publication, with private originals committed to their private catalog rather than made public. Per-product state permits a valid video to appear while another derived artifact is pending/degraded. A preview pointer advances only after privacy delay and derivative validation. Corrections and poster selection create immutable metadata/asset references; they never overwrite published bytes in place. Reconciliation handles orphan uploads, failed FK commits, missing derivative exports and stale public pointers without duplicate active selections.
 
 ### 11.4 Posters and retention
 
@@ -742,7 +857,11 @@ Generate a representative poster from the **completed validated video**, preserv
 
 All thumbnails/posters are first-class publication objects: validated, accessible through the weather domain, backed up, versioned with the media and included in recovery/retention reference checks. They are not generative images. An unavailable segment may use a clearly labeled UI placeholder, not a fabricated snapshot.
 
+Private poster selection may choose an eligible retained observed original or an actual decoded frame of the same validated video/source segment, with the distinction recorded. A private original is processed into a new approved public poster; its bytes/key are never directly exposed. Selection must respect source interval, quality, camera identity and masks. After full raw cleanup, the UI offers only genuinely retained eligible sources, not a promise to recover an arbitrary original exposure from synthetic video frames.
+
 Retention starts with a database tombstone/publication update, then a grace period and a check against active clients/jobs, supported recovery points and custody policy. Do not delete media needed by an older retained PITR point. Keep metadata about expired/unavailable video so the archive does not misrepresent missing dates. Urgent withdrawal must invalidate origin and CDN visibility through the controlled purge path; a database flag alone does not erase a previously cached public object.
+
+Define lifecycles separately for video/poster/keogram products, five-year hourly originals/comparison derivatives, bounded current-preview revisions, editorial audit and database backup/WAL/recovery references. Current-preview rotation is not permission to expire an hourly original. Long-term selected stills must survive a related video's shorter retention period. A restored public preview pointer must be re-evaluated for age/withdrawal and may become stale/unavailable; restore must not relabel old imagery as current. Public masks/withdrawals need a controlled regeneration/purge policy across all derivative classes while the private original remains private.
 
 ## 12. Website, API, and same-origin playback
 
@@ -758,18 +877,25 @@ Use a compact Weather identity, link back to `vallery.net`, and focused navigati
 
 | Route/purpose | Required behavior |
 |---|---|
-| `/` | Current conditions with per-metric age, latest available camera videos/posters, current cycle status and recent summaries. |
+| `/` | Approximately 15-second current conditions with per-metric age, all-three-camera delayed previews, latest videos/posters/keograms, current cycle status and recent weather events. |
 | `/archive/` and month views | Calendar/date search, camera/daytime/overnight/availability filters, useful empty states and shareable URLs. |
-| `/day/YYYY-MM-DD/` | All three cameras and both segments for the cycle, twilight boundaries, measured summaries, AI state and coverage. |
-| `/timelapses/<camera>/<date>/<segment>/` | Dedicated player, exact source interval, time mapping, weather evidence/narrative, poster, native download, sidecar and adjacent dates. |
+| `/day/YYYY-MM-DD/` | All three cameras and both segments for the solar cycle, keograms, event strip, twilight boundaries, measured summaries and coverage. Link separately labeled calendar-day hourly stills/observations. |
+| `/timelapses/<camera>/<date>/<segment>/` | Dedicated player linked to weather plots and keogram/events, exact source interval, evidence/narrative, poster, native download, sidecar and adjacent dates. |
+| `/stills/` and camera/date views | Sanitized hourly images, calendar-day/hour/offset navigation, selected-date comparison, missing/expired states and source provenance; no private-original URLs. |
 | `/weather/history/` | Interactive historical charts/aggregates with units, time range/resolution, coverage and export links. |
-| `/search/` | Natural-language weather search plus typed camera/date/segment filters; honest semantic/degraded state and seekable results. |
+| `/weather/almanac/` | Records within observed history, precipitation calendar, wind rose, local sun/moon context and period comparisons with coverage. |
+| `/events/` | Paginated local in-site event feed, measured/visual/manual provenance and valid camera/video links. |
+| `/search/` | Natural-language weather search plus typed camera/date/segment and measured-weather filters; honest semantic/degraded state and seekable results. |
+| `/embed/weather/` | Small responsive self-hosted current-weather card for approved `vallery.net` framing, explicit timestamps/stale state and link to Weather. |
 | `/about/` | Cameras/orientations, civil-twilight date convention, processed/accelerated imagery, station-versus-AI distinction, freshness and limitations. |
 | `/api/v1/weather/current` | Sanitized, timestamped, cached current measurement projection. |
 | `/api/v1/weather/observations`, `/aggregates` | Bounded historical queries/cursor exports; explicit metric, units and coverage. |
 | `/api/v1/timelapses` and per-video metadata | Bounded catalog/history and versioned publication sidecars; no private object keys. |
+| `/api/v1/stills`, `/api/v1/cameras/<camera>/preview`, `/api/v1/keograms` | Bounded published image/slot metadata, exact time/day identities, status and same-origin derivative URLs. |
+| `/api/v1/events`, `/api/v1/weather/almanac` | Bounded annotations and deterministic history products, evidence/coverage and revision identities. |
 | `/api/v1/search` | Bounded hybrid/semantic search with structured filters and result provenance. |
 | `/media/<asset-id>` and `/downloads/<video-id>/native` | Allowlisted streaming and download routes, with immutable revision identity and correct HTTP semantics. |
+| Private editorial UI/API | Authenticated operator-only corrections/tags/favorites/poster choices, audited revision-aware writes; never anonymous public mutations. |
 
 API paths are proposed contracts to finalize in Phase 1; required behavior is fixed. Use one consistent versioned naming scheme. Preserve URL filters/back-forward navigation and make basic archive/video links usable without JavaScript. A cycle's overnight is visibly labeled with both dates. Distinguish capturing, queued, processing, published, partial, unavailable and expired; do not display a blank card as if it were still loading indefinitely.
 
@@ -796,6 +922,26 @@ Current documented default cacheable object limits are 512 MB on Free/Pro/Busine
 Support keyboard navigation, visible focus, labels, readable contrast, reduced-motion preferences and touch targets around 44 px. Test 320/390/768-pixel and desktop widths, long summaries and unavailable data. Announce useful state changes without reading every polling update to screen readers. Charts need text/summary equivalents and clear missing-data gaps.
 
 Self-host fonts, icons, scripts and player assets. Use a restrictive CSP compatible with the chosen build, sanitize all description/AI text, and avoid external analytics/weather widgets. Do not emit credentials, internal endpoints, source payloads or private infrastructure in frontend bundles, public source maps or error pages.
+
+### 12.6 Linked video and measured-weather plots
+
+For an individual camera/segment, display relevant measured-weather plots aligned to the video's source interval. Playback moves a UTC cursor; selecting a chart instant, keogram bin or event interval seeks the corresponding video position. Use the authoritative source-time map and rational frame boundaries, not percentage of retained frames or nearest telemetry array index. Clamp/select only within the owned interval and represent uncertainty/precision honestly.
+
+Plots show units, metric-specific coverage, explicit gaps and the chosen aggregate resolution. A shared station value is not a separate camera measurement. The time cursor may move through a weather gap without inventing a value; missing video shows its partial/unavailable state instead of jumping over elapsed time. Source-time zoom and UTC/offset-bearing labels must behave correctly overnight and across DST. Shareable links preserve camera, segment and source-time selection. Keyboard controls and text summaries offer equivalent navigation; on mobile use one active player and bounded chart points. Multi-camera simultaneous playback is not an initial requirement.
+
+### 12.7 Private editorial controls and automatic publication
+
+Publish valid AI descriptions automatically with clear AI/analysis-mode labels; do not make operator review a media/AI publication gate. Provide an authenticated private interface for description/event corrections, tags, favorites and poster selection. D13 must use the qualified fleet identity/access pattern with explicit operator authorization, server-side checks on every write and read of private data, CSRF/session protections as applicable, and a separate least-privilege database role. No public account/subscription system is required. Neither a hidden path nor LAN origin is sufficient authorization.
+
+Preserve the immutable validated automated revision and human editorial revisions separately. Private raw model responses/validation diagnostics keep the short bounded lifecycle in §13.7 rather than an indefinite editorial-retention requirement. Record actor, timestamp, reason, old/new revision and input/media/evidence identities. Writes use compare-and-set and reject stale edits. An active human override remains active across routine analysis reruns against unchanged evidence. If bound media or measured evidence changes, retain the revision for review but invalidate dependent public/search claims until they are reconciled; unaffected text can remain current when its evidence binding still holds. Show new evidence for deliberate replace/rebase rather than silently treating an old correction as newly reviewed. Do not present a human correction as an untouched AI output, or let free-form text overwrite measured station values.
+
+Corrections, explicitly published tags and poster choices atomically update active metadata via the outbox, generate a new sidecar/public revision, invalidate relevant caches and enqueue text reindexing. Withdraw the outdated searchable text immediately; while reindexing, typed/lexical browsing follows the current public revision. Favorites and operator-only notes remain private by default and must not enter public search/sidecars. Poster choices use §11.4's genuine retained/decoded-source rules. Cover concurrent automated/human edits, revocation, rollback, audit visibility, model outage and restored revision state in acceptance tests.
+
+### 12.8 Embeddable weather card
+
+Provide a small responsive card served by Weather and embedded on the existing `vallery.net` site. Use a self-hosted iframe route as the starting design, with a narrow `frame-ancestors` allowlist for the actual approved main-site origins. Keep normal/private application routes protected against unwanted framing. The parent site embedding change belongs to its existing owner/repository workflow and must be linked as an implementation prerequisite; Weather's public repository does not own unrelated main-site code.
+
+The card reads the same sanitized current-weather contract, refreshes about every 15 seconds while visible, shows measured timestamps/staleness and links to the full site. Use bounded requests and pause unnecessary polling in hidden views. It must work without third-party scripts/fonts/widgets, camera credentials, parent-page access, public visitor accounts or privileged cookies. Its framing policy does not authorize arbitrary API CORS or admin embedding. Test narrow mobile containers, unavailable data, reduced-motion/keyboard access and allowed/denied framing origins.
 
 ## 13. Automated weather-focused video analysis
 
@@ -1014,6 +1160,8 @@ If station measurements are included, label their instrument provenance and unit
 
 Embedding work is a durable outbox-driven job with idempotence on `(document_id, text_hash, profile_id)`, bounded attempts/deadline and compare-and-set on the current media/analysis revision. Media publication and weather ingestion do not wait for it. Do not keep an old withdrawn/incorrect description searchable as if current while its replacement is pending. Record explicit indexing status; pending videos remain discoverable through date/camera metadata browsing. A weather-evidence correction also invalidates dependent synthesis documents immediately under §13.7; independent visual-only documents may remain valid if their exact media/evidence revision is unchanged.
 
+Canonical public text includes the effective editorial revision from §12.7, with provenance that distinguishes automated and human-edited content. Bind documents to automated, measured-evidence and editorial revisions so an older embedding job cannot restore corrected text. Private favorites, private notes, operator identity and original-object metadata are excluded. Initial indexing remains text-only; the reserved WX-46 visual-index investigation must use a separate future model/profile/representation and eligibility evaluation, not compare image vectors directly with the current text space or require wholesale raw-frame retention.
+
 For a model/profile change, build a shadow generation, validate representative retrieval and filters, atomically switch the active generation, and retain the previous generation for bounded rollback. Store original vectors in backups; re-embedding is not a recovery strategy. Do not mix vectors from incompatible profiles in one ranking operation.
 
 ### 14.3 pgvector representation and index decision
@@ -1048,6 +1196,16 @@ Rate-limit public embedding calls separately from SQL queries, cap concurrent mo
 
 Evaluate representative clear/cloudy/rain/snow/night/obstructed/partial queries, negative cases, multiple cameras and strict date filters. Compare ANN against exact results, document qualitative relevance and false matches, and verify every seek result lies inside the cited media interval. Restore tests must recover metadata/vectors with inference deliberately unavailable, then verify stored-vector exact search and typed/lexical queries.
 
+### 14.5 Measured-weather search predicates
+
+Add a small versioned typed filter schema for measured precipitation, gust, temperature and other qualified metrics. Each predicate defines metric, statistic (for example observed accumulation, maximum gust or duration-weighted mean temperature), comparison operator, value/unit, time scope and minimum coverage. Convert units deterministically and parameterize SQL. The UI must explain the selected statistic/window rather than expose an ambiguous temperature field. Never infer numeric measurements from an AI description or accept arbitrary user SQL/formulas.
+
+The initial default scope is the complete video's exact source segment, using its deterministic aggregate revision. A matched analysis-window result must state that a numeric condition applies to the whole video; do not imply the gust occurred at that exact semantic hit. Offer a narrower window only when its own measured aggregate/support and precision are qualified. Calendar-day filters and solar-cycle labels remain distinct. Return matched measurement, units, interval, coverage and evidence revision alongside the result.
+
+Unknown or insufficiently covered values do not satisfy `= 0`, `no rain` or any ordinary numeric comparison. Support explicit unknown/coverage filters if useful. Apply authorization, publication, camera/time and numeric predicates inside candidate selection, before semantic ranking, and preserve them through ANN/exact/lexical fallback. An empty textual query may perform numeric/date/camera filtering without a model request; measured-only filtering and browsing work while AI or embeddings are unavailable. Include the complete filter schema and aggregate revision in relevant cache identities and revalidate corrected evidence.
+
+Acceptance covers unit equivalence, empty/zero/incomplete rain, sparse gusts, late telemetry, camera-independent station data, DST/overnight windows, boundary overlaps, ANN underfill and inference outages. Numeric truth and coverage never relax merely to fill `top_k` results.
+
 ## 15. Database backups, central B2 custody, and recovery
 
 ### 15.1 Required backup path
@@ -1062,7 +1220,7 @@ Assign a new archive identity to each cluster incarnation. A restored cluster mu
 
 The central Garage-to-B2 path supersedes a separate weather NAS media export and direct B2 uploader. Codex must create/manage the bucket and credentials through the owning infrastructure workflow and enroll the shared bucket in **both** relevant custody profiles:
 
-- **Full profile:** media, posters, immutable metadata, release/recovery manifests and database base backups. The inspected central implementation runs daily and excludes declared WAL prefixes.
+- **Full profile:** videos, posters, keograms and their maps/manifests, private hourly originals (`images/originals`), sanitized comparison images (`images/public`), retained preview objects under their bounded lifecycle, immutable metadata, release/recovery manifests and database base backups. The inspected central implementation runs daily and excludes declared WAL prefixes; enrollment must cover all required new asset classes rather than reuse an obsolete media-prefix allowlist.
 - **WAL profile:** the exact `<database-path>/<archive-server>/wals/` hierarchy, with the installed frequent schedule; the examined source uses 15-minute runs with bounded transfer budgets.
 
 These are source observations to revalidate and admit, not a promise of weather coverage before enrollment. A new archive-server/incarnation name requires updating the frequent-prefix enrollment. Record expected daily bytes/object counts, base/WAL growth, budgets, lifecycle, independent verification, owner and restore authority. Central custody owns B2 credentials; the public application does not receive them.
@@ -1077,7 +1235,7 @@ Each checkpoint must identify:
 
 - Database system/cluster incarnation, base-backup ID, timeline and an unambiguous recovery target such as a qualified LSN/named PITR point.
 - A transactionally defined catalog/publication generation at that target.
-- The complete immutable media/poster/sidecar object identity and hash closure referenced by that generation, including required historical metadata.
+- The complete immutable video/poster/keogram/sidecar and hourly-original/comparison-derivative object identity and hash closure referenced by that generation, including required historical metadata, calendar-day/hour FKs and effective editorial/event revisions.
 - Application/schema, PostgreSQL/extension and embedding-profile/generation versions.
 - Required recovery configuration/secret identities, without exposing their values.
 - Destination object/version identities, verification time, custody evidence and incomplete/missing items.
@@ -1101,6 +1259,8 @@ Finalize numeric RPO/RTO in D15 from admitted topology, archive timeout/cadence,
 The required recovery exercise uses an isolated target with no access to the original CNPG cluster, Garage instance or Obsidian. Read data from B2 through an independent identity. Restore the database, media/sidecars/posters, metadata visibility, weather queries, vectors/profile identity and application configuration; verify hashes and actual playback. Keep inference unavailable during the core recovery test. Assign the new cluster an independent archive identity before normal operations.
 
 Include deliberate mismatch cases: newer WAL than copied media, one absent media object, one missing WAL segment, a tombstoned-but-PITR-required asset, and an expired model route. A checkpoint with missing prerequisites must remain incomplete. Record measured RPO/RTO, recovery constraints and the exact validated application/image/schema generation.
+
+Extend the exercise to a missing selected original, mismatched still/day/hour FK, public/private asset confusion, a corrected human revision with pending embeddings and a video expired before its five-year still. Restore originals byte-for-byte and prove private access remains denied to the public origin. Current previews have a bounded, explicitly reconstructible lifecycle: D15 must define their checkpoint exclusion/expiry policy, restore them only as eligible stale state or clear their pointers, and resume from a newly eligible capture. Do not require obsolete minute previews for historical recovery or silently omit durable hourly/keogram assets from the closure. Central full-bucket custody still accounts for preview churn and retention cost.
 
 ### 15.6 Failure-domain contract
 
@@ -1137,7 +1297,7 @@ Use expand/contract migrations compatible with rollout/rollback; do not automati
 
 ### 16.3 Configuration and documentation
 
-Document installation for another operator with generic values, then document the private estate overlay separately. Include a development environment with synthetic JPEGs, synthetic Tempest datagrams, mock inference, disposable local PostgreSQL and an S3-compatible test boundary. It must exercise the same contracts without real camera/station credentials.
+Optimize installation, IaC and operations for this fleet, with documented configuration/customization points and a separate private estate overlay. Keep public examples generic and secrets out of source; no general installer, multi-site/tenant platform or broad camera-adapter ecosystem is required. Include a development environment with synthetic JPEGs, synthetic Tempest datagrams, mock inference, disposable local PostgreSQL and an S3-compatible test boundary. It must exercise the same contracts without real camera/station credentials.
 
 Operational runbooks cover camera credential rotation, time/cadence recalibration, NFS interruption and fencing, database failover/archive backlog, Garage access/key rotation, render/GPU fallback, model capability changes, embedding reindex, media withdrawal, custody mismatch and full restore. Provide retention/capacity dashboards and make loss/partial states diagnosable without publishing private data.
 
@@ -1171,6 +1331,29 @@ capture:
   staging_backend: obsidian_nfs_pvc
   chunk_seconds: 300
   total_request_deadline_seconds: 5
+hourly_archive:
+  enabled_cameras: [skycam_east, skycam_west, frontyard_1]
+  slots: actual_elapsed_local_hours
+  anchor: hour_midpoint
+  fallback: nearest_qualified_in_same_hour_with_offset_label
+  retain_original_bytes: true
+  originals_visibility: private
+  retention_years: 5 # selected questionnaire default; lifecycle requires D07/D15
+  enforce_camera_day_hour_foreign_keys: true
+  public_derivatives_only: true
+camera_previews:
+  enabled_cameras: [skycam_east, skycam_west, frontyard_1]
+  refresh_seconds: 60
+  minimum_publication_age_seconds: 600
+  timing_basis: latest_plausible_exposure_time
+  retention: bounded_policy_selected_in_D16
+  queue_policy: coalesce_to_newest_eligible
+keograms:
+  enabled_cameras: [skycam_east, skycam_west, frontyard_1]
+  segments: [daytime, overnight]
+  axis: elapsed_utc
+  source: qualified_observed_captures
+  region_and_bins: per_camera_versioned_qualification
 render:
   reference_profile: observed_exposure
   qualification_target: motion_exposure_4x
@@ -1183,6 +1366,8 @@ weather:
   preserve_all_observation_rows: true
   history_store: cnpg
   detailed_retention: until_explicitly_changed_by_approved_policy
+  current_ui_refresh_seconds: 15
+  almanac: local_observations_and_local_astronomy
 media:
   primary_store: garage
   isolated_bucket_count: 1
@@ -1200,6 +1385,16 @@ search:
   candidate_embedding_route: embed.main
   store: cnpg_pgvector
   exact_search_baseline: true
+  measured_filters: typed_parameterized_sql
+  image_embedding_model: deferred_research_only
+experience:
+  exploration: per_camera_linked_video_and_weather
+  events: bookmarks_daily_strip_and_in_site_feed
+  editor: authenticated_operator_with_audited_revisions
+  ai_publication: automatic_labeled
+  embed: approved_vallery_net_origins
+  combined_east_west_skycam: follow_on_WX_45
+  product_scope: fleet_first_with_documented_customization
 ```
 
 Separate fixed requirements from commissioning overrides. Secrets/endpoints, concrete PVC/cluster/bucket/role names, GPU admission, database/extension versions, resource budgets and retention windows are resolved in private deployment configuration after the relevant ADR. Validate configuration at startup; do not silently choose insecure/default production endpoints.
@@ -1212,8 +1407,10 @@ The sidecar schema must support **published, partial and unavailable** records w
 - Time: source UTC start/end, local offset-bearing labels/timezone, twilight model/version, allocated frame count, exact fps, rational duration, source-time map and uncertainty.
 - Capture/quality: expected/accepted slots, cadence epochs, gaps, source-time basis, exposure-weight coverage and processing caveats; no raw private source credentials/addresses.
 - Media/previews: same-origin URLs, MIME/codec/profile/level, dimensions, fps, bytes, SHA-256, poster frame/PTS/source interval and downloadable-native identity.
+- Related products: keogram asset/status and UTC axis map, relevant calendar-day/hourly public image references and event links; private original asset keys/bytes are excluded.
 - Weather: per-metric values/units/coverage, evidence IDs, aggregate algorithm/revision and missing-data reasons.
 - Analysis: state/mode, validated claims/events/evidence IDs, source-time precision, coverage/limitations, prompt/schema/capability version and safe provenance.
+- Editorial: effective public revision, human-edited indicator and update time, active public tags/poster choice; private actor audit, notes and favorites are excluded.
 - Search: index state, profile/generation identifier and canonical metadata revision; no need to publish vectors or private serving details.
 - Integrity: input-manifest hash, recipe/build identity, immutable object references and publication generation. Keep self-referential digest fields out of the bytes being hashed; bind the sidecar hash in its database/object receipt.
 
@@ -1225,6 +1422,14 @@ Current weather includes `generated_at`, station alias, per-metric `value`, `uni
 
 Search includes ranking mode, active profile, filters, result count and result metadata with evidence precision/seek bounds. Do not return a “confidence percent” derived from cosine distance. All API timestamps use unambiguous UTC representations; local labels are additional display data.
 
+### 17.4 Image, event, almanac and editorial contracts
+
+Image responses distinguish `calendar_date` from `cycle_date`, and include camera, stable day/slot IDs, offset-bearing local label, actual UTC source interval/time uncertainty, selection offset/policy, state/reason, publication revision and same-origin **public derivative** URLs. A private archival receipt additionally binds original hash/bytes/geometry, enforced day/hour/source FKs and durability/retention policy. It is not returned by public serializers.
+
+Preview responses include captured time/bounds, `public_not_before`, actual first-publication time, expected refresh, expiry and stale/unavailable state. Keograms include segment identity, exact UTC bin map, sampled-source lineage/coverage and image recipe. An image asset's public eligibility is enforced at origin, independently of whether its listing is cached.
+
+Events include measured/visual/manual origin, source interval/precision, evidence/rule revision, linked calendar days and validated video seek intervals. Almanac responses include explicit calendar bounds, units, formula/library revision, coverage, record-history range and missing reasons. Numeric-search responses identify the statistic/window/coverage that satisfied each predicate. Editorial write schemas include expected effective revision and bounded allowed fields; server-side authorization and audit choose the actor identity, never an arbitrary public request field.
+
 ## 18. Operational targets and production acceptance
 
 ### 18.1 Targets to finalize in Phase 1
@@ -1232,6 +1437,8 @@ Search includes ranking mode, active profile, filters, result count and result m
 Initial commissioning targets are publication within two hours of a segment boundary on the admitted CPU fallback, cleanup within one hour of qualified publication, current-condition API response/cache behavior that reflects station cadence, bounded four-hour analysis runs, and public API/media responsiveness measured on the real origin. D10/D11/D15/D16 must replace provisional numbers with achievable SLOs and explicit workload/resource assumptions. Native-video analysis, GPU acceleration and high-flow default enablement each have their own capability/quality gate.
 
 Track camera success/freshness/latency; slot and exposure coverage; NFS capacity/IO stalls; active writer generation; queue/deadline age; CPU/GPU memory and render rate; output validation failures; publication/cleanup lag; Tempest receive/spool/commit/project gaps; per-metric freshness; DB replication/archive/WAL space; Garage actual GET/PUT; AI tokens/errors/deadlines; embedding generation/backlog/query latency/recall; and database/media/joint custody age.
+
+Add hourly expected/selected/archived/missing counts, day/FK reconciliation failures, oldest pending selection pin, keogram completeness/gaps, preview publication-age violations and capture age, preview queue/retention growth, editorial outbox/index lag and almanac evidence-revision freshness. Initial product targets are all eligible hourly originals archived, six healthy keograms per complete cycle, approximately minute-level delayed previews for three cameras, and 15-second current-condition refresh. D16 defines measured deadlines/error budgets and explicit degraded-product behavior without weakening the ten-minute minimum eligibility rule or retaining dense snapshots indefinitely.
 
 Separate health of process, dependency, data freshness and completed business work. A running pod or 200 health endpoint is not proof of fresh frames, valid UDP reception, readable Garage blocks, schema-valid model output or a restorable backup. Use existing alert delivery integrations only after configured through the owner workflow; this document does not authorize sending messages to arbitrary recipients.
 
@@ -1249,6 +1456,12 @@ Separate health of process, dependency, data freshness and completed business wo
 | Shared bucket | No anonymous read; real broker authorization; negative prefix/action/multipart tests; real Barman backup/archive/restore/retention through the boundary. |
 | Publication | Crash between upload/commit, no broken visible references, SHA-256 integrity, revision CAS, independent cameras, poster and sidecar completeness. |
 | Web/API | Mobile/accessibility/date navigation, freshness, bounded history/search, all weather-domain playback/download/range semantics and supported-browser matrix. |
+| Hourly archive | All three cameras; native-byte/hash fidelity, enforced day/hour/camera FKs; 23/24/25-hour days and repeated offsets; dawn/dusk pin race; upload/commit restart; missing-slot truth; video expiry does not remove five-year originals. |
+| Keograms | Six products for a complete cycle; versioned camera regions including frontyard; UTC bins/gaps and source-only lineage; keyboard/click seek; durable extraction before raw cleanup. |
+| Delayed previews | All three cameras; trusted upper time bound plus 600 seconds at origin; guessed URL/HEAD/range/alias/cache tests; same embargo for newly archived still derivatives; stale/clock/error behavior and bounded/coalesced work. |
+| Linked exploration/events | Bidirectional plot/video/keogram/event UTC navigation; overnight/DST/gaps and evidence precision; one active mobile player; measured event feed works with AI offline and makes no outbound product notifications. |
+| Almanac/filters | Coverage-aware records/rain, duration-weighted wind rose, local astronomy, period comparisons/exports; null versus zero, equivalent units, late-data revision and exact measured predicates during model outage. |
+| Editorial/embed | Authenticated CAS/audit, human-override precedence, private favorites/notes exclusion, correction-aware sidecars/indexing and eligible poster sources; allowed/denied framing, self-hosted assets and 15-second weather freshness. |
 | Analysis | Fresh temporal-order controls, complete schema/evidence validation, exact clip mapping, numerical grounding, stale revision rejection and honest degraded modes. |
 | Search | Verified profile/dimensions, correct pgvector representation, typed filters, exact baseline/ANN recall, bounded queries, update/withdrawal/reindex and outage behavior. |
 | DR | Full plus exact WAL enrollment; missing-object/WAL mismatch rejection; inference-independent B2-only restore; new archive identity; retained historical recovery references. |
@@ -1275,7 +1488,7 @@ Create labels for area, type, priority and readiness as useful; do not confuse p
 
 ### 19.2 Candidate catalog
 
-All candidates depend on the relevant completed Phase-1 decisions. The table lists direct implementation prerequisites; transitive dependencies need not be repeated. Optional GPU/CDN work blocks production only if the selected deployment enables it.
+The seed contains **46 candidates**, preserving WX-01–WX-35 and adding WX-36–WX-46: **42 required initial-release candidates**, **two conditional initial GPU/CDN candidates**, one accepted composite-product follow-on and one reserved visual-index research item. It has **90 direct edges plus two conditional rollout edges**. All candidates depend on the relevant completed Phase-1 decisions. The table lists direct implementation prerequisites; transitive dependencies need not be repeated. Optional GPU/CDN work blocks production only if enabled. Implementation ordering does not create a runtime dependency on AI or a playable video for current previews, hourly stills, measured events or numeric search.
 
 | Key | Implementation outcome and principal acceptance | Direct prerequisites | Requirement IDs |
 |---|---|---|---|
@@ -1284,42 +1497,57 @@ All candidates depend on the relevant completed Phase-1 decisions. The table lis
 | WX-03 | Owner-managed Obsidian NFS grant/PVC, capacity and qualified writer-transfer contract. | WX-01 | R07, R08, R26, R28 |
 | WX-04 | Approved Tempest UDP network attachment/relay and source filtering, with real packet reception. | WX-01 | R13, R27, R28 |
 | WX-05 | Admitted HA CNPG/storage/image/extension deployment and least-privilege database roles. | WX-01 | R14, R16, R22, R28 |
-| WX-06 | Isolated Garage bucket/tier, quotas, keys and verified local durability contract. | WX-01 | R17, R23, R26, R28 |
-| WX-07 | Shared-bucket authorization boundary, independent backup/restore credentials and Barman-compatible prefix enforcement. | WX-06 | R17, R18, R23, R27 |
-| WX-08 | Canonical schemas/migrations/contracts, job leases/outbox, media revisions and evidence identities. | WX-02, WX-05 | R14, R19, R20, R22 |
-| WX-09 | Solar schedule, cycle allocation, source-time mapping and DST/boundary fixtures. | WX-08 | R03, R04, R05 |
+| WX-06 | Isolated Garage bucket/tier, quotas, keys and verified local durability contract. | WX-01 | R17, R23, R26, R28, R29, R30, R31 |
+| WX-07 | Shared-bucket authorization boundary, independent backup/restore credentials and Barman-compatible prefix enforcement. | WX-06 | R17, R18, R23, R27, R30, R31 |
+| WX-08 | Canonical schemas, calendar-day/hour FKs, typed asset visibility, event/editorial revisions, job leases and outbox. | WX-02, WX-05 | R14, R19, R20, R22, R29, R30, R31, R33, R36 |
+| WX-09 | Solar schedule and calendar-day/hour identities, cycle allocation, source-time mapping and DST/boundary fixtures. | WX-08 | R03, R04, R05, R30, R32, R34 |
 | WX-10 | Snapshot collectors, total HTTP deadlines, time/freshness ledger, atomic chunks and NFS writer fencing. | WX-03, WX-09 | R03, R06, R07, R08 |
 | WX-11 | Complete UDP receipt capture and independent durable spool with idempotent commit/replay. | WX-04, WX-08 | R13, R14, R15 |
 | WX-12 | All-field/row normalization, event deduplication, timeseries partitions/history and coverage. | WX-11 | R14, R15, R20 |
-| WX-13 | Current/history/aggregate APIs with freshness, pagination, units, bounds and measured-summary evidence. | WX-12 | R14, R15, R20, R26 |
+| WX-13 | Current/history/aggregate APIs with approximately 15-second UI freshness, exports, coverage and reusable interval evidence. | WX-12 | R14, R15, R20, R26, R34, R35 |
 | WX-14 | CPU render pipeline and high-interpolation implementation; jitter-aware shutter/exposure, gaps and deadline. | WX-10 | R05, R09, R26 |
-| WX-15 | **If admitted:** optional GPU stage/co-tenancy configuration and resident-SLO/CPU-fallback qualification. | WX-14 | R09, R10, R28 |
+| WX-15 | **Conditional:** If admitted: optional GPU stage/co-tenancy configuration and resident-SLO/CPU-fallback qualification. | WX-14 | R09, R10, R28 |
 | WX-16 | Native/web/mobile encodes, both MP4 timescales, posters, checksums and full validation. | WX-14 | R05, R11, R20 |
-| WX-17 | Immutable uploads, DB publication transaction/outbox, sidecars and crash-safe reconciliation. | WX-07, WX-08, WX-16 | R03, R17, R19, R20 |
-| WX-18 | Final same-origin readback, input pins, durable receipts, raw cleanup, staging backpressure and restart reconciliation. | WX-10, WX-17, WX-19 | R07, R19, R26 |
-| WX-19 | Same-origin allowlisted media/poster/download origin, ranges, validators and backup-access denial. | WX-07, WX-17 | R11, R18, R25, R27 |
-| WX-20 | Responsive themed Today/archive/day/video/history UI with accessible posters, filters and playback. | WX-13, WX-19 | R11, R12, R15, R20 |
+| WX-17 | Typed immutable artifact uploads, private-original catalog commits, publication transaction/outbox, sidecars and reconciliation. | WX-07, WX-08, WX-16 | R03, R17, R19, R20, R29, R30, R31, R36 |
+| WX-18 | Qualified readback, source-product pins, durable hourly promotion, safe raw cleanup and staging backpressure. | WX-10, WX-17, WX-19, WX-36, WX-37 | R07, R19, R26, R29, R30 |
+| WX-19 | Same-origin typed media/image/download origin, range semantics, private-original denial and preview eligibility. | WX-07, WX-17 | R11, R18, R25, R27, R29, R30, R31 |
+| WX-20 | Responsive themed Today/archive/day/video/history UI with 15-second conditions, camera products and accessible navigation. | WX-13, WX-19 | R11, R12, R15, R20, R29, R30, R31, R32 |
 | WX-21 | Qualified completed-video adapter, temporal control tests, clip mapping and bounded inference capability handling. | WX-17 | R21, R28 |
 | WX-22 | Versioned visual/synthesis prompts, strict evidence schemas, measured/visual distinction and asynchronous metadata CAS. | WX-13, WX-21 | R19, R20, R21 |
-| WX-23 | Embedding profile/extension/storage and exact-search baseline; compatible ANN only if justified. | WX-08 | R22, R24 |
-| WX-24 | Canonical search documents, embedding outbox, revision checks, generation backfill/switch/rollback. | WX-22, WX-23 | R19, R20, R22 |
-| WX-25 | Bounded hybrid semantic/lexical API, filters, query-vector cache, relevance/recall and outage behavior. | WX-24 | R22, R26, R27 |
-| WX-26 | Search UI, filter URLs, result provenance and validated video seeks. | WX-20, WX-25 | R12, R20, R22 |
-| WX-27 | **If selected:** plan-compliant Cloudflare routing/cache, object-size/range/Safari tests and purge controls. | WX-19 | R11, R18, R25 |
+| WX-23 | Text-embedding profile/extension/storage and exact baseline; compatible ANN only if justified; reserve visual profile boundary. | WX-08 | R22, R24 |
+| WX-24 | Effective public search documents, editorial-aware outbox/revision checks and embedding generation lifecycle. | WX-22, WX-23 | R19, R20, R22, R36 |
+| WX-25 | Bounded hybrid semantic/lexical API with exact measured predicates, numeric-only mode, recall and outage behavior. | WX-24, WX-42 | R22, R26, R27, R35 |
+| WX-26 | Search UI, typed measured filter URLs, result evidence/coverage and validated video seeks. | WX-20, WX-25 | R12, R20, R22, R35 |
+| WX-27 | **Conditional:** If selected: plan-compliant Cloudflare routing/cache, object-size/range/Safari tests and purge controls. | WX-19 | R11, R18, R25 |
 | WX-28 | Barman physical base/WAL archives, unique identities, retention and real gateway backup/restore qualification. | WX-05, WX-07 | R16, R17, R23 |
-| WX-29 | Central full and exact-WAL custody enrollment, budgets, monitoring and independently checked receipts. | WX-28 | R17, R23, R28 |
-| WX-30 | Joint checkpoint verifier, catalog/object hash closure and recovery-aware retention/GC. | WX-17, WX-29 | R19, R20, R23 |
-| WX-31 | Integrated operational dashboards/alerts, SLOs, capacity and dependency-failure visibility. | WX-13, WX-18, WX-25, WX-29 | R10, R15, R16, R26 |
-| WX-32 | B2-only joint restore and HA/outage/replay tests, including missing-media/WAL and inference-offline recovery. | WX-20, WX-24, WX-30, WX-31 | R14, R16, R22, R23, R26 |
-| WX-33 | End-to-end security/browser/accessibility/quality acceptance with public/private boundary checks. | WX-02, WX-18, WX-20, WX-22, WX-26, WX-31 | R03, R04, R05, R06, R08, R09, R11, R12, R13, R18, R21, R24, R27, R28 |
-| WX-34 | Portable install, upgrades, capacity, incident, withdrawal, reindex and recovery runbooks; provenance/licenses. | WX-32, WX-33 | R02, R23, R24, R26, R27 |
-| WX-35 | Controlled production rollout with all required evidence, published service, operational handoff and rollback. | WX-32, WX-33, WX-34; add WX-15/WX-27 if enabled | R01–R28 |
+| WX-29 | Central full and exact-WAL custody enrollment, budgets, monitoring and independently checked receipts. | WX-28 | R17, R23, R28, R29, R30 |
+| WX-30 | Joint checkpoint closure and recovery-aware GC including keograms, hourly originals/day FKs and public/private assets. | WX-17, WX-29, WX-36, WX-37 | R19, R20, R23, R29, R30 |
+| WX-31 | Integrated operational dashboards/alerts, SLOs, capacity and dependency-failure visibility. | WX-13, WX-18, WX-25, WX-29, WX-38 | R10, R15, R16, R26, R29, R30, R31 |
+| WX-32 | B2-only joint restore and outage/replay tests including private originals, day FKs, editorial state and inference-offline search. | WX-20, WX-24, WX-30, WX-31, WX-43 | R14, R16, R22, R23, R26, R29, R30, R31, R33, R36 |
+| WX-33 | Integrated security/browser/accessibility/quality acceptance for all selected initial features and privacy boundaries. | WX-02, WX-18, WX-20, WX-22, WX-26, WX-31, WX-41, WX-43, WX-44 | R03, R04, R05, R06, R08, R09, R11, R12, R13, R18, R21, R24, R27, R28, R29, R30, R31, R32, R33, R34, R35, R36, R37 |
+| WX-34 | Fleet deployment, customization, upgrades, capacity and recovery runbooks; selected upstream provenance and licenses. | WX-32, WX-33 | R02, R23, R24, R26, R27 |
+| WX-35 | Controlled initial production rollout with R01-R37 evidence, operational handoff and rollback; deferred products remain separate. | WX-32, WX-33, WX-34; add WX-15/WX-27 if enabled | R01–R37 |
+| WX-36 | Observed UTC-axis keograms for all three cameras and both civil segments. | WX-19 | R29, R04, R19, R20 |
+| WX-37 | Hourly private native originals in Garage, calendar-day FKs and sanitized still comparison archive. | WX-19 | R30, R07, R17, R18, R19, R23 |
+| WX-38 | Delayed current preview publication for all three cameras with bounded freshness work. | WX-19 | R31, R08, R18, R19 |
+| WX-39 | Per-camera bidirectional video, keogram and measured-weather plot exploration. | WX-20, WX-36 | R32, R12, R20 |
+| WX-40 | Provenance-aware weather bookmarks, daily event strip and bounded in-site feed. | WX-22, WX-39 | R33, R14, R20, R21 |
+| WX-41 | Local records, precipitation calendar, wind rose, sun/moon context and historical comparisons. | WX-20, WX-37 | R34, R14, R15, R24 |
+| WX-42 | Typed measured-weather search predicates and bounded source-interval evidence queries. | WX-13, WX-17 | R35, R14, R20, R22 |
+| WX-43 | Authenticated private corrections, tags, favorites and poster selection with audit and reindexing. | WX-24, WX-37, WX-40 | R36, R19, R20, R21, R22, R27 |
+| WX-44 | Responsive self-hosted weather card for the approved vallery.net embedding origin. | WX-20, WX-38 | R37, R12, R15, R24, R27 |
+| WX-45 | **Deferred:** Follow-on: single composite skycam product containing east and west views. | WX-35 | R38, R04, R05, R11, R19, R20, R23 |
+| WX-46 | **Deferred:** Deferred research: value and feasibility of a separate local visual-search index. | WX-35 | R22, R10, R24, R27 |
 
 R01 also requires the first-pass research/repository/issue-filing deliverables themselves; it is not deferred until production. Native-video capability must remain an explicit rollout gate if only sampled-frame fallback is available. Optional GPU/CDN candidates may be filed as deferred with a recorded decision; their absence does not excuse required CPU/browser functionality.
+
+WX-36–WX-44 are selected initial-release work and must be in WX-35's prerequisite closure. **WX-45 is the accepted combined east/west skycam follow-on; WX-46 is deferred visual-index research.** File and label both during the first assignment, but neither may be an initial-rollout prerequisite. R38 is covered by a concrete filed follow-on issue with design/acceptance/dependencies; it does not claim that composite videos are deployed at initial launch. Follow-on layout/model details can be resolved in their scheduled work without making the initial architecture decision incomplete.
 
 ### 19.3 Graph contract and readable views
 
 The accompanying `backlog-candidate.json` is a seed with stable keys, requirement mapping and dependencies. It has **no fabricated GitHub issue numbers**. After research, Codex must emit the authoritative filed graph with actual repository, issue number, issue ID, URL, decision references, readiness state and direct `depends_on` keys. A blocked research item records owner/evidence needed; an implementation prerequisite records the linked owner issue.
+
+Schema version 2 adds `phase` (`initial_release`, `follow_on`, `deferred_research`) and `release_gate` (`required`, `conditional`, `none`) to each candidate. These fields distinguish an admitted acceleration option from an accepted later product or a reserved investigation. Preserve the activation conditions of WX-15/WX-27, and regenerate topological order after all edges change. Validate the full graph and the selected initial-release closure independently; all required initial work must precede WX-35, and WX-45/WX-46 must be outside that closure.
 
 Use native blocked-by relationships as well as the committed graph. Verify they agree. Validate that every edge resolves, no issue depends on itself, the graph is acyclic, optional paths are handled correctly, each requirement is covered, and critical production gates have incoming prerequisites. On retries, reconcile stable keys to existing issues rather than creating duplicates. Record creation/update results and read them back.
 
@@ -1335,8 +1563,12 @@ flowchart TD
   O --> U["Durable publication"]
   D --> U
   R --> U
+  N --> I["Keograms and hourly originals"]
+  O --> I
   U --> W["Origin and archive UI"]
   U --> C["Safe raw cleanup"]
+  I --> C
+  I --> W
 ```
 
 ```mermaid
@@ -1359,11 +1591,37 @@ The first pass is complete only when the repository configuration relevant to pl
 
 The handoff report must include the chosen architecture, GPU co-tenancy proposal or qualified CPU path, UDP/network design, database/time-series/search design, shared-bucket authorization/durability decision, framework/CDN decision, recovery objectives, critical path and first ready implementation issues. It must not imply that the website, ingestion, cluster resources or backups are deployed merely because the planning repository is populated.
 
+Include Q01–Q16-to-requirement/ADR/issue traceability, the initial-versus-follow-on milestone split, the selected original/preview lifecycle and disclosure policy, and the linked owner prerequisite for embedding on `vallery.net`. The original questionnaire is answered; only evidence-backed implementation decisions and the owner's concrete license/reuse selection remain to be completed during Phase 1.
+
 ## 20. Research sources and evidence handling
 
 Research date: **2026-10-23**. Prefer the primary sources below, then pin and test the actual implementation versions. Development documentation can describe features absent from a stable binary; historical repository receipts can expire or describe a retired deployment. The requirements, schemas, prompts, capacity arithmetic and issue decomposition are design decisions, not claims that a system has already been deployed.
 
 Public references are suitable for the public repository. Current estate readbacks, private configuration and unredacted receipts belong in the private evidence system identified during Phase 1. Read current owner-repository contracts directly; do not publish their contents or assume a historical commit grants weather admission. The Verdify links are public reference code/retirement context, not an instruction to change Verdify.
+
+### 20.1 Selected implementation references, without an application fork
+
+The [source-pinned landscape review](research/open-source-landscape.md#9-evidence-and-revision-ledger) records what was inspected and its limits. The owner selected an independent implementation. The following mapping tells Codex where those references are useful; it is not blanket permission to import source or inherit upstream defaults. Revalidate exact files and dependencies under D01's owner-selected license/reuse policy, document notices/provenance, and preserve Weather's own time/data/security/failure contracts.
+
+| Reference | Apply to Weather | Constraint to preserve / candidate work |
+|---|---|---|
+| [indi-allsky HTTP adapter](https://github.com/aaronwmorris/indi-allsky/blob/18b8407d31843f3df9c69f8b5b16443f7df65c82/indi_allsky/camera/pycurl_camera.py) and [archive architecture](https://github.com/aaronwmorris/indi-allsky/tree/18b8407d31843f3df9c69f8b5b16443f7df65c82) | Authenticated native-image acquisition, solar-segment archive and image-product concepts. | WX-09/10/36/37. Do not inherit redirect/TLS-verification defaults, persistence model or ordinal-frame timing; GPL reuse requires the explicit license decision. |
+| [Allsky](https://github.com/AllskyTeam/allsky/tree/2b2c7b1347d076a489df5e614acf27de450738fb) | Keogram generation and compact daily visual navigation. | WX-36. Adapt any file-index axis to fixed UTC bins with gaps and capture provenance; qualify all three camera regions, including frontyard. |
+| [ReoLapse](https://github.com/SeriesOfTubez/reolapse/tree/2ae0589f7449296340389ee6abfd0c15228513b8) | Temporary-output validation/promotion, sparse seasonal-image and event-navigation workflow ideas. | WX-17/37/40. Its camera-specific scheduler does not establish Weather's one-second fresh-image capability; preserve our exact timing, CNPG authority and private original classes. |
+| [ChronoSnap](https://github.com/kernelkaribou/chronosnap/tree/01b055cb102ce60d226ce9e0b8ba93ce102aae73) | Historical comparison, private job controls, favorites and management UI patterns. | WX-20/37/43. Do not replace native byte-preserving capture with screenshot re-encoding or assume its scheduling meets the target cadence. |
+| [pyweatherflowudp](https://github.com/natekspencer/pyweatherflowudp/tree/c89fa2aeade2f8d834aaabce3bd2cffa398012d6) | A possible narrowly scoped Tempest parser/protocol helper. | WX-11/12. Preserve exact raw datagrams before parsing and project every observation row; a convenience event API is not the complete archival contract. |
+| [Stormglass](https://github.com/jacaudi/stormglass/tree/ffa4b40f2472f8248660b4386910131128121ec5) | Local UDP, current-weather cards, metrics and selected collector/UI implementation ideas. | WX-11/13/20. Reviewed PostgreSQL writes and SQLite historical reader do not establish a full CNPG-backed service; retain all received data and durable spool/replay. No subsystem fork is selected. |
+| [WeeWX](https://github.com/weewx/weewx/tree/a5790be2d0d33da50440eb37e0a9e21499246920) and [Belchertown](https://github.com/poblabs/weewx-belchertown/tree/049f615952da8d9e0c779ccab9e6f64cf88fedf6) | Weather calculations, records, precipitation reporting, almanac and comparison presentation. | WX-13/41/42. Reconcile units, coverage and calendar semantics with raw CNPG history; do not inherit reduced archival resolution, third-party CDN assets or unreviewed chart-library licensing. |
+| [StormDesk current upstream](https://github.com/d4vid87/stormdesk/tree/0750136f59dfcd0594d20d7dcc548b3f71b25e4b) | Local weather dashboard/history/wind-rose interactions and selected modules. | WX-20/41. Use the reviewed upstream rather than assume an older WeatherDesk fork is current; its partial telemetry projection/auth model must not replace complete receipts or qualified operator access. |
+| [AviationWX](https://github.com/alexwitherspoon/aviationwx/tree/42eaf02b7cd311bc577b6f5771e0c6f9b6972c39) | Public weather/camera presentation, observed-versus-fetched freshness, image history and embeds. | WX-20/38/44. Use Weather's local UDP/CNPG backend, minimum disclosure delay and same-origin immutable publication; no provider REST dependency or direct camera proxy. |
+| [BreatheCam](https://github.com/CMU-CREATE-Lab/breathecam/tree/f6a83dd33eef9e74ec7c7696496d336bfd239b8e) / [Time Machine viewer](https://github.com/CMU-CREATE-Lab/timemachine-viewer/tree/d34f55968072a0b224dbfcfc04dfbd8d88e49891) | Shared UTC chart/video cursor and historical exploration ideas. | WX-39/45. BreatheCam application licensing was not established: interaction reference only unless resolved. No tiled-panorama platform or multi-player requirement is selected. |
+| [Frigate](https://github.com/blakeblackshear/frigate/releases/tag/v0.18.2) | Evidence cards, event bookmarks and search-to-timeline interaction. | WX-26/40. Keep the existing NVR independent; weather windows are not tracked security objects. No persistent RTSP or household-activity analysis is introduced. |
+| [Immich](https://github.com/immich-app/immich/releases/tag/v3.3.5) | Gallery/date navigation, rendition choices and later visual-search evaluation ideas. | WX-20/37; deferred WX-46. Preview-image embeddings are distinct from temporal video analysis and text embeddings; AGPL/source/dependency obligations require review before imports. |
+| [Glimpser](https://github.com/KristopherKubicki/glimpser/tree/9a62aba11f6aff2858e2794b1e9ff9ca4047e7a9) | Caption history, metadata editing and asynchronous presentation ideas. | WX-22/43. Its screenshot-caption/text-summary route and reviewed media defaults do not satisfy native 60-fps completed-video analysis; no application adaptation experiment is mandatory. |
+
+Smaller screened projects remain in the evidence ledger. The `snapshotr` README/license discrepancy and unlicensed `webcam-archives` material are not approved code sources. Reuse an idea through an independent implementation where code licensing is unestablished; do not treat public GitHub visibility as a license. D01 should propose a concrete project license and reuse policy, continue unblocked research, and obtain the owner's final choice before imports. Do not silently select a copyleft or permissive foundation on their behalf.
+
+### 20.2 Platform and protocol primary sources
 
 | References | Primary evidence |
 |---|---|

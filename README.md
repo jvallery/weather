@@ -6,30 +6,37 @@ Requirements and implementation planning for **[weather.vallery.net](https://wea
 
 ## Start here
 
-1. Read [the requirements and design research brief](docs/requirements.md).
+1. Read [the v4.0 requirements and design research brief](docs/requirements.md) and the [accepted product decisions](docs/decisions/2026-10-23-product-scope.md).
 2. Follow [Codex's first assignment](docs/codex-first-task.md): investigate the live estate, resolve the decisions, complete repository configuration, then file the implementation issues and their dependency graph.
-3. Use [the candidate issue graph](docs/implementation/backlog-candidate.json) as a seed. Its 35 stable keys are candidates, **not GitHub issue numbers**. Revise them after research and replace the seed with a read-back-verified filed graph.
+3. Use [the candidate issue graph](docs/implementation/backlog-candidate.json) as a seed. Its **46 stable keys** are candidates, **not GitHub issue numbers**: 42 required initial-release items, two conditional GPU/CDN items, an accepted composite-video follow-on and a reserved visual-index investigation. Revise them after research and replace the seed with a read-back-verified filed graph.
 
 ## Open-source comparison and product choices
 
-The [open-source landscape review](docs/research/open-source-landscape.md) compares camera/timelapse applications, local weather collectors, public dashboards, media galleries, and semantic search. It includes source-level findings, potential fork experiments, proposed feature additions, and 16 owner decisions.
+The [open-source landscape review](docs/research/open-source-landscape.md) compares camera/timelapse applications, local weather collectors, public dashboards, media galleries and semantic search. It preserves source-level findings and the original questionnaire. **All 16 product questions are answered** in the [accepted decision record](docs/decisions/2026-10-23-product-scope.md) and incorporated into v4.0.
 
-The review is dated 2026-10-23. Its proposed changes are pending owner choices; the requirements remain the implementation baseline until those choices are recorded and reconciled.
+The selected direction is an independent, fleet-first application with documented customization. [Requirements §20.1](docs/requirements.md#201-selected-implementation-references-without-an-application-fork) maps reviewed solutions to implementation work and constraints. No application fork or mandatory fork experiment is selected.
 
 ## Required product
 
 - Daytime and overnight timelapses for `skycam_east`, `skycam_west`, and `frontyard_1`, partitioned at civil twilight with no overlapping source intervals.
 - A combined 120-second budget per camera/cycle, 60 fps, native downloads, browser-friendly renditions, and real-frame posters.
-- Timer-driven camera snapshots staged on an Obsidian-backed NFS PVC, then purged after qualified durable publication.
+- Daytime and overnight keograms for all three cameras; per-camera video linked to weather plots, event bookmarks and an in-site feed.
+- Timer-driven camera snapshots staged on an Obsidian-backed NFS PVC, then purged after required source-dependent work and qualified durable publication.
+- One private native still per camera per actual local hour, archived in Garage with database/day foreign keys and sanitized comparison derivatives; selected five-year retention default.
+- Delayed current previews for all three cameras, about one-minute refresh with a minimum ten-minute publication age.
 - Direct local Tempest UDP collection preserving all received data, historical queries and current conditions in HA CNPG.
+- Approximately 15-second current-weather refresh; local records, precipitation calendar, wind rose, sun/moon context and historical comparisons.
 - One isolated private Garage bucket for media and database backups, with enforced application access boundaries and central B2 custody.
-- Weather-focused analysis of completed video, versioned pgvector embeddings, and bounded semantic search.
-- A responsive site consistent with `vallery.net`, independent `weather` namespace, and local CI/CD.
+- Weather-focused analysis of completed video, versioned text embeddings, bounded hybrid search and typed measured-weather filters.
+- Automatic labeled AI descriptions plus authenticated private corrections, tags, favorites and poster selection with provenance/reindexing.
+- A responsive site consistent with `vallery.net`, an embeddable weather card, independent `weather` namespace and local CI/CD.
+
+**Follow-on:** WX-45 tracks one combined east/west skycam video product while preserving the original camera outputs. WX-46 reserves visual-index research. Neither blocks the initial release. External forecasts/radar/alerts, product notifications, additional event clips, kiosk/PWA modes and multi-tenancy are outside the selected initial scope.
 
 ## Planning rules
 
 The requirements distinguish fixed choices from decisions that need cluster investigation. GPU co-tenancy, UDP networking, CNPG/time-series extensions, Garage authorization and durability, framework choice, CDN delivery, and recovery objectives must be resolved with evidence.
 
-This public repository contains portable code and sanitized documentation. Secrets, private topology, precise location, device identities and raw operational receipts belong in the existing private deployment/evidence system. Do not copy private reference repositories wholesale.
+This public repository contains fleet-focused code with documented customization and sanitized examples. Secrets, private topology, precise location, device identities and raw operational receipts belong in the existing private deployment/evidence system. Do not copy private reference repositories wholesale.
 
-The first pass must select an explicit source license and configure the project's contribution/security and repository policies. Until then, do not assume a license that has not been added.
+Codex's first pass must propose a concrete project license/reuse policy for the owner's final choice before upstream code imports, and configure contribution/security and repository policies. Until then, do not assume a license that has not been added. The selected hourly five-year default and preview retention still require explicit operational lifecycle/recovery configuration before deletion jobs are enabled.
