@@ -1,6 +1,6 @@
 # Operator identity — D13 protocol selection
 
-Status: select server-side OIDC authorization code with PKCE S256 and opaque Weather sessions. Actual Weather provider enrollment, client-library pin, claim mapping and provider-session revocation remain unqualified. Requirements §12.7 and R36; implementation WX-01/43, security acceptance WX-33. Fleet identity belongs to agents; no provider, credential, role or access rule was created.
+Status: select server-side OIDC authorization code with PKCE S256 and opaque Weather sessions. Actual Weather provider enrollment, client adapter qualification, claim mapping and provider-session revocation remain unqualified. Requirements §12.7 and R36; implementation WX-01/43, security acceptance WX-33. Fleet identity belongs to agents; no provider, credential, role or access rule was created.
 
 ## Source and live evidence
 
@@ -30,8 +30,16 @@ Local logout, authorization removal, expiration and restore invalidation are det
 
 Track owner enrollment/configuration through the existing agents OWN-CI namespace/identity prerequisite (#5366), with this exact identity scope added to its planning work. WX-01 must retain private provider/client/subject and secret-distribution receipts; WX-43 consumes them transitively through the existing initial platform dependencies. This uses the existing owner prerequisite and adds no graph edge or duplicate provider. If the owner splits its work later, reconcile the graph by exact issue ID.
 
-Before closing the identity planning gap, inspect the actual owner-supported enrollment path and current provider discovery/claims/revocation controls, select the compatible Python client, and bind the exact session/authorization policy. No new credentials or provider changes are authorized merely by this research decision.
+Before closing the identity planning gap, inspect the actual owner-supported enrollment path and current provider discovery/claims/revocation controls, qualify the selected Authlib adapter, and bind the exact session/authorization policy. No new credentials or provider changes are authorized merely by this research decision.
 
 ## Required negative evidence
 
 Test forged identity headers, missing session, authenticated nonoperator, wrong issuer/audience/nonce/state, replayed login code, altered return URL, key rotation, expired session, removed allowlist identity, CSRF, failed provider round trip, logout replay, stale CAS and DB restore. Check private reads as well as writes. A ready identity pod or options-tracker source does not satisfy any of these Weather tests. Real enrollment/login/revocation and end-to-end browser acceptance remain open.
+
+## Selected client adapter boundary
+
+Select Authlib 1.9.1 with HTTPX2 2.16.0 under D13's Python stack. Pinned source inspection confirms the maintained async OIDC components and HTTPX2 preference, but the Starlette convenience callback reads and clears state separately, and ID-token parsing returns no identity when the token is absent. Its default token leeway is 120 seconds and advertised algorithms come from discovery. These defaults are not Weather's policy.
+
+The adapter must atomically consume the ten-minute server-side login record with browser binding before token exchange; simultaneous/replayed callbacks cannot both proceed. A transport failure after consumption requires a fresh login, not restoration/replay of the old record. Use Authlib's validated OAuth/OIDC primitives with mandatory ID token and nonce, exact configured issuer/audience/allowed algorithm policy and explicitly admitted clock leeway. Validate discovery/JWKS/token endpoints against fixed trusted configuration, bound response sizes/timeouts, and prevent redirects from forwarding credentials. Do not accept an access token alone as operator identity or inherit a cookie-backed login-state example. Do not hand-roll JWT cryptography to avoid the adapter work.
+
+Back-channel logout remains a distinct validated protocol and provider enrollment obligation; generic OAuth logout helpers do not prove revocation support. Complete cryptography/joserfc/native dependency lock, advisories and provider behavior must be qualified before enablement. Add parallel callback, missing ID token, discovery algorithm widening, unsafe endpoint redirect and implicit default-leeway cases to WX-43's existing negative acceptance. No provider login, credential issuance or package execution occurred in this source review.

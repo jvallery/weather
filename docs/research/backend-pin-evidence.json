@@ -1,0 +1,319 @@
+{
+  "observed_at": "2026-10-23T23:42:42.305178+00:00",
+  "status": "selected_direct_pins_and_native_core_metadata_hashes_verified_not_build_qualified",
+  "runtime": {
+    "implementation": "CPython standard GIL build",
+    "version": "3.14.9",
+    "source_url": "https://raw.githubusercontent.com/python/cpython/v3.14.9/Include/patchlevel.h",
+    "source_sha256": "f0ba21fa5390ca9ac79f7bb8e03a3caec930558b8fca80125582148a4663c5db"
+  },
+  "target": "Linux amd64 glibc; exact image and full wheel closure pending",
+  "packages": [
+    {
+      "package": "fastapi",
+      "version": "0.162.0",
+      "metadata_url": "https://pypi.org/pypi/fastapi/0.162.0/json",
+      "requires_python": ">=3.10",
+      "requires_dist": [
+        "starlette>=0.46.0",
+        "pydantic>=2.9.0",
+        "typing-extensions>=4.8.0",
+        "typing-inspection>=0.4.2",
+        "annotated-doc>=0.0.2",
+        "opentelemetry-api>=1.44.0",
+        "opentelemetry-sdk>=1.44.0; extra == \"opentelemetry\"",
+        "opentelemetry-exporter-otlp-proto-http>=1.44.0; extra == \"opentelemetry\"",
+        "opentelemetry-sdk>=1.44.0; extra == \"standard\"",
+        "opentelemetry-exporter-otlp-proto-http>=1.44.0; extra == \"standard\"",
+        "fastapi-cli[standard]>=0.0.32; extra == \"standard\"",
+        "fastar>=0.9.0; extra == \"standard\"",
+        "httpx<1.0.0,>=0.23.0; extra == \"standard\"",
+        "httpx2>=2.0.0; extra == \"standard\"",
+        "jinja2>=3.1.5; extra == \"standard\"",
+        "python-multipart>=0.0.18; extra == \"standard\"",
+        "email-validator>=2.0.0; extra == \"standard\"",
+        "uvicorn[standard]>=0.12.0; extra == \"standard\"",
+        "pydantic-settings>=2.0.0; extra == \"standard\"",
+        "pydantic-extra-types>=2.0.0; extra == \"standard\"",
+        "opentelemetry-sdk>=1.44.0; extra == \"standard-no-fastapi-cloud-cli\"",
+        "opentelemetry-exporter-otlp-proto-http>=1.44.0; extra == \"standard-no-fastapi-cloud-cli\"",
+        "fastapi-cli[standard-no-fastapi-cloud-cli]>=0.0.32; extra == \"standard-no-fastapi-cloud-cli\"",
+        "httpx<1.0.0,>=0.23.0; extra == \"standard-no-fastapi-cloud-cli\"",
+        "httpx2>=2.0.0; extra == \"standard-no-fastapi-cloud-cli\"",
+        "jinja2>=3.1.5; extra == \"standard-no-fastapi-cloud-cli\"",
+        "python-multipart>=0.0.18; extra == \"standard-no-fastapi-cloud-cli\"",
+        "email-validator>=2.0.0; extra == \"standard-no-fastapi-cloud-cli\"",
+        "uvicorn[standard]>=0.12.0; extra == \"standard-no-fastapi-cloud-cli\"",
+        "pydantic-settings>=2.0.0; extra == \"standard-no-fastapi-cloud-cli\"",
+        "pydantic-extra-types>=2.0.0; extra == \"standard-no-fastapi-cloud-cli\"",
+        "opentelemetry-sdk>=1.44.0; extra == \"all\"",
+        "opentelemetry-exporter-otlp-proto-http>=1.44.0; extra == \"all\"",
+        "fastapi-cli[standard]>=0.0.32; extra == \"all\"",
+        "httpx<1.0.0,>=0.23.0; extra == \"all\"",
+        "httpx2>=2.0.0; extra == \"all\"",
+        "jinja2>=3.1.5; extra == \"all\"",
+        "python-multipart>=0.0.18; extra == \"all\"",
+        "itsdangerous>=1.1.0; extra == \"all\"",
+        "pyyaml>=5.3.1; extra == \"all\"",
+        "email-validator>=2.0.0; extra == \"all\"",
+        "uvicorn[standard]>=0.12.0; extra == \"all\"",
+        "pydantic-settings>=2.0.0; extra == \"all\"",
+        "pydantic-extra-types>=2.0.0; extra == \"all\""
+      ],
+      "declared_license": "MIT",
+      "artifact": {
+        "url": "https://files.pythonhosted.org/packages/b4/4f/3f2c25c9b43970b5e9a08beb5e04776247edea684ddc0930f4f02f0bb6cb/fastapi-0.162.0-py3-none-any.whl",
+        "filename": "fastapi-0.162.0-py3-none-any.whl",
+        "bytes": 148912,
+        "sha256": "3785963de305dd09912426cb81f2d230fce98ab3521cdfe97265c8d14983128c",
+        "yanked": false
+      },
+      "license_members": [
+        {
+          "path": "fastapi-0.162.0.dist-info/licenses/LICENSE",
+          "sha256": "4ec89ffc81485b97fec584b2d4a961032eeffe834453894fd9c1274906cc744e"
+        }
+      ]
+    },
+    {
+      "package": "starlette",
+      "version": "1.9.0",
+      "metadata_url": "https://pypi.org/pypi/starlette/1.9.0/json",
+      "requires_python": ">=3.11",
+      "requires_dist": [
+        "anyio<5,>=4.0.0",
+        "typing-extensions>=4.10.0; python_version < \"3.13\"",
+        "httpx2>=2.0.0; extra == \"full\"",
+        "httpx<0.29.0,>=0.27.0; extra == \"full\"",
+        "itsdangerous; extra == \"full\"",
+        "jinja2; extra == \"full\"",
+        "opentelemetry-api; extra == \"full\"",
+        "python-multipart>=0.0.18; extra == \"full\"",
+        "pyyaml; extra == \"full\""
+      ],
+      "declared_license": "BSD-3-Clause",
+      "artifact": {
+        "url": "https://files.pythonhosted.org/packages/f3/93/181df62699d9b5aca1d87e5cfda131dac87e3cdaebf668662f7206ca3470/starlette-1.9.0-py3-none-any.whl",
+        "filename": "starlette-1.9.0-py3-none-any.whl",
+        "bytes": 80335,
+        "sha256": "fd3f159936e882d06c1108f84688f7cda2cf85fc6a592a50edbd175e882c2ddc",
+        "yanked": false
+      },
+      "license_members": [
+        {
+          "path": "starlette-1.9.0.dist-info/licenses/LICENSE.md",
+          "sha256": "dcb95677a02240243187e964f941847d19b17821cf99e5afae684fab328c19bf"
+        }
+      ]
+    },
+    {
+      "package": "pydantic",
+      "version": "2.14.1",
+      "metadata_url": "https://pypi.org/pypi/pydantic/2.14.1/json",
+      "requires_python": ">=3.10",
+      "requires_dist": [
+        "annotated-types>=0.6.0",
+        "pydantic-core==2.50.1",
+        "typing-extensions>=4.16.0",
+        "typing-inspection>=0.4.4",
+        "email-validator>=2.0.0; extra == \"email\"",
+        "tzdata; platform_system == \"Windows\" and extra == \"timezone\""
+      ],
+      "declared_license": "MIT",
+      "artifact": {
+        "url": "https://files.pythonhosted.org/packages/35/ea/a56b9fe5066f3537b7882f77e9c5dfb26d8c2eefdaed9b5fc73d57b4dc22/pydantic-2.14.1-py3-none-any.whl",
+        "filename": "pydantic-2.14.1-py3-none-any.whl",
+        "bytes": 488106,
+        "sha256": "9195d967ec791692a04438115466764fb8b9a27b31f14a760437694f40d6b454",
+        "yanked": false
+      },
+      "license_members": [
+        {
+          "path": "pydantic-2.14.1.dist-info/licenses/LICENSE",
+          "sha256": "a9e186f3ca16b5eef84318e7a701721351a00cb7b8ae3a4394b67b49e3529ef3"
+        }
+      ]
+    },
+    {
+      "package": "pydantic-core",
+      "version": "2.50.1",
+      "metadata_url": "https://pypi.org/pypi/pydantic-core/2.50.1/json",
+      "requires_python": ">=3.10",
+      "requires_dist": [
+        "typing-extensions>=4.16.0"
+      ],
+      "declared_license": "MIT",
+      "artifact": {
+        "url": "https://files.pythonhosted.org/packages/45/35/38f6d6564fae57d9b12e5676dfa947e0e7d5c46dbeaa7eb3352261d6d299/pydantic_core-2.50.1-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "filename": "pydantic_core-2.50.1-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "bytes": 2159857,
+        "sha256": "42b54c2c90ad348b5e3a85e03e715d572c1fde357ef104cdfe3b03b697a404ea",
+        "yanked": false
+      },
+      "license_members": [
+        {
+          "path": "pydantic_core-2.50.1.dist-info/licenses/LICENSE",
+          "sha256": "2afdd30d54b4d62b6f488a6bcc1546e84ec5061f13f4209c03d012348783795a"
+        }
+      ]
+    },
+    {
+      "package": "uvicorn",
+      "version": "0.54.0",
+      "metadata_url": "https://pypi.org/pypi/uvicorn/0.54.0/json",
+      "requires_python": ">=3.10",
+      "requires_dist": [
+        "click>=7.0",
+        "h11>=0.8",
+        "typing-extensions>=4.0; python_version < \"3.11\"",
+        "httptools>=0.8.0; extra == \"standard\"",
+        "python-dotenv>=0.13; extra == \"standard\"",
+        "pyyaml>=5.1; extra == \"standard\"",
+        "uvloop>=0.15.1; (sys_platform != \"win32\" and (sys_platform != \"cygwin\" and platform_python_implementation != \"PyPy\")) and extra == \"standard\"",
+        "watchfiles>=0.20; extra == \"standard\"",
+        "websockets>=13.0; extra == \"standard\""
+      ],
+      "declared_license": "BSD-3-Clause",
+      "artifact": {
+        "url": "https://files.pythonhosted.org/packages/38/0c/b54a4fdd7f90a3af8b02ebc9ce6712c2c208b7926a2f7bad95c33ebbe943/uvicorn-0.54.0-py3-none-any.whl",
+        "filename": "uvicorn-0.54.0-py3-none-any.whl",
+        "bytes": 87427,
+        "sha256": "505bdb0f318731d45f1f712071fc781a8981f6847a31c902c9f5e652d4f67faf",
+        "yanked": false
+      },
+      "license_members": [
+        {
+          "path": "uvicorn-0.54.0.dist-info/licenses/LICENSE.md",
+          "sha256": "efe1acf3e62fb99c288b0ec73e5a773b7268ef4320fe757ea994214e4b63c371"
+        }
+      ]
+    },
+    {
+      "package": "Authlib",
+      "version": "1.9.1",
+      "metadata_url": "https://pypi.org/pypi/Authlib/1.9.1/json",
+      "requires_python": ">=3.10",
+      "requires_dist": [
+        "cryptography>=45.0.1",
+        "joserfc>=1.6.8"
+      ],
+      "declared_license": "BSD-3-Clause",
+      "artifact": {
+        "url": "https://files.pythonhosted.org/packages/39/44/a46089266de32a0d809023b6bf31b80a1f26a46954446a7ce695a565cbea/authlib-1.9.1-py2.py3-none-any.whl",
+        "filename": "authlib-1.9.1-py2.py3-none-any.whl",
+        "bytes": 266042,
+        "sha256": "8b9be8b1e5174dcbf5520e984f1a22dc2edae5b6e40a61d4cedbf86b97e9e69b",
+        "yanked": false
+      },
+      "license_members": [
+        {
+          "path": "authlib-1.9.1.dist-info/licenses/LICENSE",
+          "sha256": "8e1b48518de9c6cd00cb48c7fe5b8023fd90d5552ca12ebe7362a0df30ddbe45"
+        }
+      ]
+    },
+    {
+      "package": "httpx2",
+      "version": "2.16.0",
+      "metadata_url": "https://pypi.org/pypi/httpx2/2.16.0/json",
+      "requires_python": ">=3.11",
+      "requires_dist": [
+        "anyio>=4.10; sys_platform != \"emscripten\"",
+        "httpcore2==2.16.0; sys_platform != \"emscripten\"",
+        "httpx2-jsfetch; sys_platform == \"emscripten\" and python_version >= \"3.12\"",
+        "idna>=3.18",
+        "truststore>=0.10; sys_platform != \"emscripten\"",
+        "typing-extensions>=4.5.0; python_version < \"3.13\"",
+        "brotli>=1.2.0; platform_python_implementation == \"CPython\" and extra == \"brotli\"",
+        "brotlicffi>=1.2.0.2; platform_python_implementation != \"CPython\" and extra == \"brotli\"",
+        "click>=8.4.2; extra == \"cli\"",
+        "pygments==2.*; extra == \"cli\"",
+        "rich<16,>=10; extra == \"cli\"",
+        "h2<5,>=3; extra == \"http2\"",
+        "socksio==1.*; extra == \"socks\"",
+        "wsproto>=1.2; extra == \"ws\"",
+        "backports-zstd>=1.0.0; python_version <= \"3.13\" and extra == \"zstd\""
+      ],
+      "declared_license": "BSD-3-Clause",
+      "artifact": {
+        "url": "https://files.pythonhosted.org/packages/7b/3d/2e4bc4fd1ef9770871669adb348d612a6e4786b303a23f9935b81c48dd60/httpx2-2.16.0-py3-none-any.whl",
+        "filename": "httpx2-2.16.0-py3-none-any.whl",
+        "bytes": 97880,
+        "sha256": "fd2c5d7909e8d86fe92d53020c310ca0e4e431b838c207c5754b9bbf0308d49a",
+        "yanked": false
+      },
+      "license_members": [
+        {
+          "path": "httpx2-2.16.0.dist-info/licenses/LICENSE.md",
+          "sha256": "7e7d6dbaf7fe160d39fd6e84fd02c33cab96bcbea34d36998d545bceb4a19c30"
+        }
+      ]
+    },
+    {
+      "package": "asyncpg",
+      "version": "0.32.0",
+      "metadata_url": "https://pypi.org/pypi/asyncpg/0.32.0/json",
+      "requires_python": ">=3.9.0",
+      "requires_dist": [
+        "async_timeout>=4.0.3; python_version < \"3.11.0\"",
+        "gssapi; platform_system != \"Windows\" and extra == \"gssauth\"",
+        "sspilib; platform_system == \"Windows\" and extra == \"gssauth\""
+      ],
+      "declared_license": "Apache-2.0",
+      "artifact": {
+        "url": "https://files.pythonhosted.org/packages/68/db/fc91b503b3ec66cf242d83c799388285ea5f0ee238435d53dd9c1a8648a9/asyncpg-0.32.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "filename": "asyncpg-0.32.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "bytes": 3794539,
+        "sha256": "63417b8f7369c54f6754c1fbd5a2968fbe632ff55bfbedd56a0177b6a96bd251",
+        "yanked": false
+      },
+      "license_members": [
+        {
+          "path": "asyncpg-0.32.0.dist-info/licenses/",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "asyncpg-0.32.0.dist-info/licenses/LICENSE",
+          "sha256": "d9222d73fdac50992174076efa04f44f6fbcd9d56155a7c7092e98757042a6f6"
+        }
+      ]
+    }
+  ],
+  "selected_dependency_constraints": [
+    {
+      "package": "fastapi",
+      "requirement": "starlette>=0.46.0",
+      "selected_version": "1.9.0"
+    },
+    {
+      "package": "fastapi",
+      "requirement": "pydantic>=2.9.0",
+      "selected_version": "2.14.1"
+    },
+    {
+      "package": "pydantic",
+      "requirement": "pydantic-core==2.50.1",
+      "selected_version": "2.50.1"
+    }
+  ],
+  "limitations": [
+    "Not a complete dependency lock or security/license audit",
+    "No install, imported package, build or container execution",
+    "Registry SHA256 equality is not independent signing/provenance verification",
+    "Actual API, database, OIDC behavior and native ABI compatibility remain unqualified"
+  ],
+  "source_inspections": [
+    {
+      "url": "https://raw.githubusercontent.com/authlib/authlib/v1.9.1/authlib/integrations/httpx_client/_compat.py",
+      "sha256": "2cea46cdfb58bf08da76d53cd57f9eae02f5ad8aa08ba51d37c5b8f2ccb81a2f"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/authlib/authlib/v1.9.1/authlib/integrations/starlette_client/apps.py",
+      "sha256": "9bf118faf7fb3562fb2e16e4eaf02f726533d552ff236b2c614a424093f4dff0"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/authlib/authlib/v1.9.1/authlib/integrations/base_client/async_openid.py",
+      "sha256": "e71c505a379c5cff4990c91d32f2910dbb59981bcb27955a6d96d58280fb29b4"
+    }
+  ]
+}
