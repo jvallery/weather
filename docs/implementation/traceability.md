@@ -129,3 +129,7 @@ The [§§6.1–6.11 audit](capture-clause-audit.md) preserves every source block
 ## Rendering and GPU audit
 
 The [sections 7–8 audit](media-clause-audit.md) preserves 44 source blocks and maps 47 grouped acceptance obligations. Required CPU/high-interpolation work, optional GPU execution and follow-on composite release scope remain distinct. Source coverage is verified; actual build, media quality, performance and co-tenancy are unproven.
+
+## Telemetry/database-history audit
+
+The [sections 9–10 audit](history-clause-audit.md) preserves 39 source blocks and maps 52 grouped obligations, including complete packet-family and conceptual-entity tables. Independent receive/spool/commit/project semantics, retained detail, supported constraints, bounded complete-history queries and revisions remain separate acceptance surfaces. No runtime proof is inferred.
