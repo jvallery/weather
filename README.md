@@ -2,7 +2,7 @@
 
 Requirements and implementation planning for **[weather.vallery.net](https://weather.vallery.net)**: a public weather history and timelapse service using three security cameras, direct Tempest UDP telemetry, CNPG, Garage, and local inference.
 
-**Status:** planning audit in progress under [WX-00 / issue #1](https://github.com/jvallery/weather/issues/1). All 46 implementation/follow-on issues are [filed](docs/implementation/backlog.md), and their 119 native prerequisite relationships (including the planning gate and 12 owner issues) have been read back and matched. See the [adversarial audit](docs/research/adversarial-audit.md), [decision register](docs/decisions/implementation-register.md) and [traceability](docs/implementation/traceability.md). Material research and contract work remain; application implementation, cluster resources and CI/CD have not been built.
+**Status:** planning audit in progress under [WX-00 / issue #1](https://github.com/jvallery/weather/issues/1). All 46 implementation/follow-on issues are [filed](docs/implementation/backlog.md), and their 122 native prerequisite relationships (including the planning gate and 14 owner issues) have been read back and matched through the initial full snapshot and subsequent exact changed-edge checks. See the [adversarial audit](docs/research/adversarial-audit.md), [decision register](docs/decisions/implementation-register.md) and [traceability](docs/implementation/traceability.md). Material research and contract work remain; application implementation, cluster resources and CI/CD have not been built.
 
 ## Start here
 
@@ -22,12 +22,13 @@ Requirements and implementation planning for **[weather.vallery.net](https://wea
 - [D06 dedicated PostgreSQL and storage admission](docs/decisions/D06-database-and-storage.md), with live extension/replication evidence and explicit storage prerequisites.
 - [D09 CPU baseline and GPU admission](docs/decisions/D09-gpu-and-cpu-admission.md), with a verified nine-device census and explicit sharing limitations.
 - [D08 role-scoped object gateway](docs/decisions/D08-object-access-boundary.md), including the action matrix and independent archive/recovery boundary.
+- [D14 public media transport](docs/decisions/D14-public-media-transport.md), with live zone/tunnel evidence and an explicit unresolved external-route decision.
 - [D15 custody/recovery design and open decisions](docs/decisions/D15-custody-and-recovery.md), grounded in [live central custody evidence](docs/research/custody-evidence.md).
 - [HTTP/API semantic contract](docs/contracts/api-contract.md), [OpenAPI](docs/contracts/openapi.json), [JSON Schema](docs/contracts/api.schema.json), and [synthetic schema fixtures](docs/contracts/schema-fixtures.json).
 - [Capture, chunk sealing and source-time assignment](docs/contracts/capture-contract.md), with [private capture schemas](docs/contracts/capture.schema.json).
 - [Private recovery candidates and verification receipts](docs/contracts/recovery-contract.md), with [recovery schemas](docs/contracts/recovery.schema.json).
 - [Private visual-model candidate schema](docs/contracts/visual-analysis.schema.json) and its [shape fixtures](docs/contracts/visual-analysis-fixtures.json); grounding remains a separate validation boundary.
-- [Production acceptance evidence matrix](docs/implementation/acceptance-matrix.md), [hash-bound contract validation](docs/contracts/validation-receipt.json), and [complete live dependency readback](docs/implementation/graph-verification.json).
+- [Production acceptance evidence matrix](docs/implementation/acceptance-matrix.md), [hash-bound contract validation](docs/contracts/validation-receipt.json), and [historical full dependency readback](docs/implementation/graph-verification.json) (later owner-edge checks are recorded in the current backlog).
 
 These are design contracts with mandatory implementation tests, not completed runtime qualification. The API/schema draft is published; remaining internal schemas, full contract coverage and design qualification are still in progress.
 
