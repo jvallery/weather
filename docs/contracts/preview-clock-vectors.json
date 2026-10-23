@@ -1,0 +1,128 @@
+{
+  "scope": "Synthetic exact-integer arithmetic only; no runtime clock/publication qualification",
+  "checked_at": "2026-10-23T23:46:29.577773+00:00",
+  "units": "integer milliseconds relative to a synthetic UTC epoch",
+  "cases": [
+    {
+      "name": "exact embargo",
+      "exposure_lower_ms": 0,
+      "exposure_upper_ms": 0,
+      "now_lower_ms": 600000,
+      "now_upper_ms": 600000,
+      "expires_at_ms": 86400000,
+      "expected_current_state": "fresh",
+      "expected_direct_access_eligible": true,
+      "arithmetic_checked": true
+    },
+    {
+      "name": "server uncertainty crosses embargo",
+      "exposure_lower_ms": 0,
+      "exposure_upper_ms": 0,
+      "now_lower_ms": 599999,
+      "now_upper_ms": 600001,
+      "expires_at_ms": 86400000,
+      "expected_current_state": "unavailable",
+      "expected_direct_access_eligible": false,
+      "arithmetic_checked": true
+    },
+    {
+      "name": "source uncertainty crosses embargo",
+      "exposure_lower_ms": 0,
+      "exposure_upper_ms": 1,
+      "now_lower_ms": 600000,
+      "now_upper_ms": 600000,
+      "expires_at_ms": 86400000,
+      "expected_current_state": "unavailable",
+      "expected_direct_access_eligible": false,
+      "arithmetic_checked": true
+    },
+    {
+      "name": "exact fresh maximum",
+      "exposure_lower_ms": 0,
+      "exposure_upper_ms": 0,
+      "now_lower_ms": 1200000,
+      "now_upper_ms": 1200000,
+      "expires_at_ms": 86400000,
+      "expected_current_state": "fresh",
+      "expected_direct_access_eligible": true,
+      "arithmetic_checked": true
+    },
+    {
+      "name": "clock upper crosses freshness",
+      "exposure_lower_ms": 0,
+      "exposure_upper_ms": 0,
+      "now_lower_ms": 1199999,
+      "now_upper_ms": 1200001,
+      "expires_at_ms": 86400000,
+      "expected_current_state": "stale",
+      "expected_direct_access_eligible": true,
+      "arithmetic_checked": true
+    },
+    {
+      "name": "exact current maximum",
+      "exposure_lower_ms": 0,
+      "exposure_upper_ms": 0,
+      "now_lower_ms": 1800000,
+      "now_upper_ms": 1800000,
+      "expires_at_ms": 86400000,
+      "expected_current_state": "stale",
+      "expected_direct_access_eligible": true,
+      "arithmetic_checked": true
+    },
+    {
+      "name": "clock upper crosses current maximum",
+      "exposure_lower_ms": 0,
+      "exposure_upper_ms": 0,
+      "now_lower_ms": 1799999,
+      "now_upper_ms": 1800001,
+      "expires_at_ms": 86400000,
+      "expected_current_state": "unavailable",
+      "expected_direct_access_eligible": true,
+      "arithmetic_checked": true
+    },
+    {
+      "name": "expiry uncertainty",
+      "exposure_lower_ms": 0,
+      "exposure_upper_ms": 0,
+      "now_lower_ms": 899999,
+      "now_upper_ms": 900001,
+      "expires_at_ms": 900000,
+      "expected_current_state": "unavailable",
+      "expected_direct_access_eligible": false,
+      "arithmetic_checked": true
+    },
+    {
+      "name": "exact expiry",
+      "exposure_lower_ms": 0,
+      "exposure_upper_ms": 0,
+      "now_lower_ms": 900000,
+      "now_upper_ms": 900000,
+      "expires_at_ms": 900000,
+      "expected_current_state": "unavailable",
+      "expected_direct_access_eligible": false,
+      "arithmetic_checked": true
+    },
+    {
+      "name": "invalid clock interval",
+      "exposure_lower_ms": 0,
+      "exposure_upper_ms": 0,
+      "now_lower_ms": 700001,
+      "now_upper_ms": 700000,
+      "expires_at_ms": 86400000,
+      "expected_current_state": "unavailable",
+      "expected_direct_access_eligible": false,
+      "arithmetic_checked": true
+    },
+    {
+      "name": "unknown clock",
+      "exposure_lower_ms": 0,
+      "exposure_upper_ms": 0,
+      "now_lower_ms": null,
+      "now_upper_ms": null,
+      "expires_at_ms": 86400000,
+      "expected_current_state": "unavailable",
+      "expected_direct_access_eligible": false,
+      "arithmetic_checked": true
+    }
+  ]
+}

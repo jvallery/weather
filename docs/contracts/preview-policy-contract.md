@@ -10,6 +10,22 @@ Requirements §6.11, D13/D16; producers WX-08/19/38, consumers WX-20/33 and clea
 
 At exactly 1,200 seconds classify fresh, exactly 1,800 classify stale, and at the logical expiry instant deny access (half-open public lifetime). Earliest publication equality is eligible. Safety withdrawal may deny access sooner than natural expiry; never extend retention through pointer refresh. Asset authorization must evaluate current expiry/withdrawal before HEAD, range or conditional 304 responses. Cache withdrawal delay is still an unresolved D14/D16 production qualification; the 15-second pointer cache bound does not make immutable browser copies revocable.
 
+## Conservative authorization-clock bounds
+
+The source-time uncertainty and the authorizing server's clock uncertainty are independent inputs. A local wall-clock read alone is not trusted `now`. The owner-qualified clock adapter supplies an interval `[now_lower, now_upper]` containing the actual authorization instant, bound to the exact host boot, policy revision, sample identity and validity envelope. Source bounds remain `[exposure_lower, exposure_upper]`. Compare exact UTC instants without rounding away uncertainty.
+
+- Earliest public access requires `exposure_upper + 600 seconds <= now_lower`. Equality is eligible. Using the clock midpoint or upper bound can release an image early.
+- Logical access additionally requires `now_upper < expires_at`; equality denies. A time interval straddling expiry cannot establish eligibility. Apply this before GET/HEAD/ranges/conditional 304 on every alias.
+- Current freshness uses the worst-case age `now_upper - exposure_lower`: fresh through 1,200 seconds, stale through 1,800, then unavailable. This classification never bypasses embargo, logical expiry or withdrawal. Unknown/future/inconsistent bounds produce unavailable, not zero age.
+
+Resolve the existing `clock_qualification` reference to an owner-approved revision specifying clock source/measurement method, maximum sample age, maximum uncertainty, maximum drift during extrapolation, suspend/step detection and exact host/boot binding. Numeric values require commissioning evidence; no arbitrary tolerance or inherited NTP label is selected here. A sample that lacks a finite error bound cannot establish this invariant. A ready clock daemon or small last offset alone is insufficient proof of a continuing bound.
+
+Within a qualified boot, advance both sample bounds by elapsed monotonic time and widen them by the admitted drift bound using conservative outward rounding. A wall-clock step, reboot, stale sample, suspend not covered by the selected monotonic source, reversed bounds or unresolved policy invalidates the result until requalified. Do not reset sample age on HTTP requests or reuse another host's monotonic epoch. Consumers obtain time through the qualified local adapter; collector camera-only permissions do not expand to infrastructure queries.
+
+Public pointer/cache lifetime must not outlive its next conservative eligibility/freshness/expiry transition. A client may conservatively age or hide an already-received image; its clock never grants new access. The separate D14 cache-withdrawal limit remains unresolved, and downloaded bytes remain unrecoverable. Restored samples are invalid: a fresh boot-qualified observation is required before publication resumes.
+
+The [synthetic arithmetic vectors](preview-clock-vectors.json) cover exact boundaries and clock uncertainty. Their expected outcomes were checked with integer milliseconds during planning; they do not qualify a clock daemon/adapter, host, cache or application implementation. WX-08/19/38 implement the interval checks; WX-33 exercises actual failure behavior. OWN-CAM/source calibration and owner host-clock qualification remain distinct evidence obligations.
+
 ## Binding and immutable policy revisions
 
 Resolve and hash-check the referenced policy from approved custody. Require its policy ID and namespace/environment binding to match the effective configuration. The initial v1 product values `minimum_publication_age_seconds` and `refresh_seconds` must equal the resolved policy's 600 and 60; disagreement is a startup/configuration error, not min/max guessing. More conservative future embargo changes require a compatible new policy version and revised expiry/freshness semantics. This v1 schema intentionally does not pretend arbitrary numeric changes are already qualified.
