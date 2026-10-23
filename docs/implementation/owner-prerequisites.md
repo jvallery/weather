@@ -37,3 +37,15 @@ Re-read owner issue status and current admission before claiming a consumer read
 
 
 Owner-side native dependencies are also part of the execution graph: OWN-CUSTODY depends on OWN-OBJECT, and OWN-EMBED depends on WX-44. The [combined readback](embed-order-graph-verification.json) verifies these along with Weather-side dependencies. Parent design coordination occurs during WX-00; completed live parent integration does not block construction of its own prerequisite card.
+
+## Owner readiness versus consumer acceptance
+
+Native edges require a completed prerequisite, so its closure must not demand the downstream Weather feature that the edge prevents from starting. The 2026-10-23 semantic review corrected the operative acceptance paragraphs of OWN-CI, OWN-CUSTODY and OWN-OBS. These owner issues are still open; no design-only completion or platform admission is claimed.
+
+| Owner prerequisite closes with | Required consumer completion remains |
+|---|---|
+| OWN-CI: implemented/admitted identity/profile/candidate/build interfaces, exact generated outputs and bounded owner-fixture execution/negative authority proof | WX-01 actual bootstrap; WX-02 actual Weather checks, dependencies/images/provenance; WX-34 exact rollout and rollback |
+| OWN-CUSTODY: supported full/WAL enrollment and exact-version verification/reader/discovery/bootstrap interfaces, admitted budgets and copy/key disposition, qualified owner fixtures | WX-29 actual enrollment/copy/protection; WX-30 application joint checkpoints; WX-32 complete independent application restore |
+| OWN-OBS: supported owner delivery interface, agreed metrics/labels/SLOs/receivers, synthetic rule/render and missing-series qualification | WX-31 actual producer integration, loaded rules/live dashboards and failure exercise; WX-33/35 combined acceptance/rollout |
+
+Synthetic fixture proof qualifies the owner interface only. It never substitutes for real application behavior, full recovery or live observability. Weather issues coordinate shared-owner changes without copying their implementation into the Weather repository. No native edges changed in this clarification; the existing 124-edge combined receipt remains the graph evidence. Other owner issues still require exact admitted source/interface evidence and final semantic consolidation; absence of a syntactic cycle does not establish readiness.
