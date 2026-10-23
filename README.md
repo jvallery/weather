@@ -10,6 +10,12 @@ Requirements and implementation planning for **[weather.vallery.net](https://wea
 2. Follow [Codex's first assignment](docs/codex-first-task.md): investigate the live estate, resolve the decisions, complete repository configuration, then file the implementation issues and their dependency graph.
 3. Use [the candidate issue graph](docs/implementation/backlog-candidate.json) as a seed. Its 35 stable keys are candidates, **not GitHub issue numbers**. Revise them after research and replace the seed with a read-back-verified filed graph.
 
+## Open-source comparison and product choices
+
+The [open-source landscape review](docs/research/open-source-landscape.md) compares camera/timelapse applications, local weather collectors, public dashboards, media galleries, and semantic search. It includes source-level findings, potential fork experiments, proposed feature additions, and 16 owner decisions.
+
+The review is dated 2026-10-23. Its proposed changes are pending owner choices; the requirements remain the implementation baseline until those choices are recorded and reconciled.
+
 ## Required product
 
 - Daytime and overnight timelapses for `skycam_east`, `skycam_west`, and `frontyard_1`, partitioned at civil twilight with no overlapping source intervals.
