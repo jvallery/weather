@@ -1,0 +1,831 @@
+{
+  "schema_version": 1,
+  "kind": "candidate_implementation_backlog",
+  "repository": "jvallery/weather",
+  "requirements_version": "3.0",
+  "prepared_at": "2026-10-23",
+  "status": "requires_phase_1_research_and_real_issue_filing",
+  "first_assignment": "Resolve D01-D16, configure the existing repository, file implementation issues, set native blocked-by relationships, and read back the final graph.",
+  "phase_1_requirement": "R01",
+  "rules": {
+    "edge_meaning": "issue depends_on prerequisite",
+    "do_not_invent_issue_numbers": true,
+    "resolve_optional_paths_before_filing_final_graph": true,
+    "require_private_owner_prerequisite_links": true
+  },
+  "issues": [
+    {
+      "key": "WX-01",
+      "title": "Independent namespace, ownership, RBAC, quotas and secret delivery; no inherited Sentinel privileges.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [],
+      "requirements": [
+        "R02",
+        "R08",
+        "R16",
+        "R27",
+        "R28"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D01",
+        "D16"
+      ]
+    },
+    {
+      "key": "WX-02",
+      "title": "Local reproducible build/registry/promotion pipeline; isolated untrusted PR execution and pinned images.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-01"
+      ],
+      "requirements": [
+        "R02",
+        "R24",
+        "R27"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D01",
+        "D10"
+      ]
+    },
+    {
+      "key": "WX-03",
+      "title": "Owner-managed Obsidian NFS grant/PVC, capacity and qualified writer-transfer contract.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-01"
+      ],
+      "requirements": [
+        "R07",
+        "R08",
+        "R26",
+        "R28"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D03"
+      ]
+    },
+    {
+      "key": "WX-04",
+      "title": "Approved Tempest UDP network attachment/relay and source filtering, with real packet reception.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-01"
+      ],
+      "requirements": [
+        "R13",
+        "R27",
+        "R28"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D04"
+      ]
+    },
+    {
+      "key": "WX-05",
+      "title": "Admitted HA CNPG/storage/image/extension deployment and least-privilege database roles.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-01"
+      ],
+      "requirements": [
+        "R14",
+        "R16",
+        "R22",
+        "R28"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D06"
+      ]
+    },
+    {
+      "key": "WX-06",
+      "title": "Isolated Garage bucket/tier, quotas, keys and verified local durability contract.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-01"
+      ],
+      "requirements": [
+        "R17",
+        "R23",
+        "R26",
+        "R28"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D07"
+      ]
+    },
+    {
+      "key": "WX-07",
+      "title": "Shared-bucket authorization boundary, independent backup/restore credentials and Barman-compatible prefix enforcement.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-06"
+      ],
+      "requirements": [
+        "R17",
+        "R18",
+        "R23",
+        "R27"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D08"
+      ]
+    },
+    {
+      "key": "WX-08",
+      "title": "Canonical schemas/migrations/contracts, job leases/outbox, media revisions and evidence identities.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-02",
+        "WX-05"
+      ],
+      "requirements": [
+        "R14",
+        "R19",
+        "R20",
+        "R22"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D05",
+        "D06",
+        "D11",
+        "D12",
+        "D13"
+      ]
+    },
+    {
+      "key": "WX-09",
+      "title": "Solar schedule, cycle allocation, source-time mapping and DST/boundary fixtures.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-08"
+      ],
+      "requirements": [
+        "R03",
+        "R04",
+        "R05"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D02"
+      ]
+    },
+    {
+      "key": "WX-10",
+      "title": "Snapshot collectors, total HTTP deadlines, time/freshness ledger, atomic chunks and NFS writer fencing.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-03",
+        "WX-09"
+      ],
+      "requirements": [
+        "R03",
+        "R06",
+        "R07",
+        "R08"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D02",
+        "D03"
+      ]
+    },
+    {
+      "key": "WX-11",
+      "title": "Complete UDP receipt capture and independent durable spool with idempotent commit/replay.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-04",
+        "WX-08"
+      ],
+      "requirements": [
+        "R13",
+        "R14",
+        "R15"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D04",
+        "D05",
+        "D06"
+      ]
+    },
+    {
+      "key": "WX-12",
+      "title": "All-field/row normalization, event deduplication, timeseries partitions/history and coverage.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-11"
+      ],
+      "requirements": [
+        "R14",
+        "R15",
+        "R20"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D05",
+        "D06"
+      ]
+    },
+    {
+      "key": "WX-13",
+      "title": "Current/history/aggregate APIs with freshness, pagination, units, bounds and measured-summary evidence.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-12"
+      ],
+      "requirements": [
+        "R14",
+        "R15",
+        "R20",
+        "R26"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D05",
+        "D06",
+        "D13"
+      ]
+    },
+    {
+      "key": "WX-14",
+      "title": "CPU render pipeline and high-interpolation implementation; jitter-aware shutter/exposure, gaps and deadline.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-10"
+      ],
+      "requirements": [
+        "R05",
+        "R09",
+        "R26"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D02",
+        "D10"
+      ]
+    },
+    {
+      "key": "WX-15",
+      "title": "If admitted: optional GPU stage/co-tenancy configuration and resident-SLO/CPU-fallback qualification.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-14"
+      ],
+      "requirements": [
+        "R09",
+        "R10",
+        "R28"
+      ],
+      "optional": true,
+      "requires_decisions": [
+        "D09",
+        "D10"
+      ],
+      "enable_when": "GPU acceleration selected and admitted"
+    },
+    {
+      "key": "WX-16",
+      "title": "Native/web/mobile encodes, both MP4 timescales, posters, checksums and full validation.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-14"
+      ],
+      "requirements": [
+        "R05",
+        "R11",
+        "R20"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D10",
+        "D14"
+      ]
+    },
+    {
+      "key": "WX-17",
+      "title": "Immutable uploads, DB publication transaction/outbox, sidecars and crash-safe reconciliation.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-07",
+        "WX-08",
+        "WX-16"
+      ],
+      "requirements": [
+        "R03",
+        "R17",
+        "R19",
+        "R20"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D07",
+        "D08",
+        "D13"
+      ]
+    },
+    {
+      "key": "WX-18",
+      "title": "Final same-origin readback, input pins, durable receipts, raw cleanup, staging backpressure and restart reconciliation.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-10",
+        "WX-17",
+        "WX-19"
+      ],
+      "requirements": [
+        "R07",
+        "R19",
+        "R26"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D03",
+        "D07",
+        "D16"
+      ]
+    },
+    {
+      "key": "WX-19",
+      "title": "Same-origin allowlisted media/poster/download origin, ranges, validators and backup-access denial.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-07",
+        "WX-17"
+      ],
+      "requirements": [
+        "R11",
+        "R18",
+        "R25",
+        "R27"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D08",
+        "D14"
+      ]
+    },
+    {
+      "key": "WX-20",
+      "title": "Responsive themed Today/archive/day/video/history UI with accessible posters, filters and playback.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-13",
+        "WX-19"
+      ],
+      "requirements": [
+        "R11",
+        "R12",
+        "R15",
+        "R20"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D13"
+      ]
+    },
+    {
+      "key": "WX-21",
+      "title": "Qualified completed-video adapter, temporal control tests, clip mapping and bounded inference capability handling.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-17"
+      ],
+      "requirements": [
+        "R21",
+        "R28"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D11"
+      ]
+    },
+    {
+      "key": "WX-22",
+      "title": "Versioned visual/synthesis prompts, strict evidence schemas, measured/visual distinction and asynchronous metadata CAS.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-13",
+        "WX-21"
+      ],
+      "requirements": [
+        "R19",
+        "R20",
+        "R21"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D05",
+        "D11"
+      ]
+    },
+    {
+      "key": "WX-23",
+      "title": "Embedding profile/extension/storage and exact-search baseline; compatible ANN only if justified.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-08"
+      ],
+      "requirements": [
+        "R22",
+        "R24"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D06",
+        "D12"
+      ]
+    },
+    {
+      "key": "WX-24",
+      "title": "Canonical search documents, embedding outbox, revision checks, generation backfill/switch/rollback.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-22",
+        "WX-23"
+      ],
+      "requirements": [
+        "R19",
+        "R20",
+        "R22"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D11",
+        "D12"
+      ]
+    },
+    {
+      "key": "WX-25",
+      "title": "Bounded hybrid semantic/lexical API, filters, query-vector cache, relevance/recall and outage behavior.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-24"
+      ],
+      "requirements": [
+        "R22",
+        "R26",
+        "R27"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D12",
+        "D13"
+      ]
+    },
+    {
+      "key": "WX-26",
+      "title": "Search UI, filter URLs, result provenance and validated video seeks.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-20",
+        "WX-25"
+      ],
+      "requirements": [
+        "R12",
+        "R20",
+        "R22"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D12",
+        "D13"
+      ]
+    },
+    {
+      "key": "WX-27",
+      "title": "If selected: plan-compliant Cloudflare routing/cache, object-size/range/Safari tests and purge controls.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-19"
+      ],
+      "requirements": [
+        "R11",
+        "R18",
+        "R25"
+      ],
+      "optional": true,
+      "requires_decisions": [
+        "D14"
+      ],
+      "enable_when": "Cloudflare delivery selected and qualified"
+    },
+    {
+      "key": "WX-28",
+      "title": "Barman physical base/WAL archives, unique identities, retention and real gateway backup/restore qualification.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-05",
+        "WX-07"
+      ],
+      "requirements": [
+        "R16",
+        "R17",
+        "R23"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D06",
+        "D08",
+        "D15"
+      ]
+    },
+    {
+      "key": "WX-29",
+      "title": "Central full and exact-WAL custody enrollment, budgets, monitoring and independently checked receipts.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-28"
+      ],
+      "requirements": [
+        "R17",
+        "R23",
+        "R28"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D07",
+        "D15"
+      ]
+    },
+    {
+      "key": "WX-30",
+      "title": "Joint checkpoint verifier, catalog/object hash closure and recovery-aware retention/GC.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-17",
+        "WX-29"
+      ],
+      "requirements": [
+        "R19",
+        "R20",
+        "R23"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D07",
+        "D15"
+      ]
+    },
+    {
+      "key": "WX-31",
+      "title": "Integrated operational dashboards/alerts, SLOs, capacity and dependency-failure visibility.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-13",
+        "WX-18",
+        "WX-25",
+        "WX-29"
+      ],
+      "requirements": [
+        "R10",
+        "R15",
+        "R16",
+        "R26"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D16"
+      ]
+    },
+    {
+      "key": "WX-32",
+      "title": "B2-only joint restore and HA/outage/replay tests, including missing-media/WAL and inference-offline recovery.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-20",
+        "WX-24",
+        "WX-30",
+        "WX-31"
+      ],
+      "requirements": [
+        "R14",
+        "R16",
+        "R22",
+        "R23",
+        "R26"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D06",
+        "D15",
+        "D16"
+      ]
+    },
+    {
+      "key": "WX-33",
+      "title": "End-to-end security/browser/accessibility/quality acceptance with public/private boundary checks.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-02",
+        "WX-18",
+        "WX-20",
+        "WX-22",
+        "WX-26",
+        "WX-31"
+      ],
+      "requirements": [
+        "R03",
+        "R04",
+        "R05",
+        "R06",
+        "R08",
+        "R09",
+        "R11",
+        "R12",
+        "R13",
+        "R18",
+        "R21",
+        "R24",
+        "R27",
+        "R28"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D02",
+        "D03",
+        "D04",
+        "D08",
+        "D10",
+        "D11",
+        "D12",
+        "D13",
+        "D14",
+        "D16"
+      ]
+    },
+    {
+      "key": "WX-34",
+      "title": "Portable install, upgrades, capacity, incident, withdrawal, reindex and recovery runbooks; provenance/licenses.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-32",
+        "WX-33"
+      ],
+      "requirements": [
+        "R02",
+        "R23",
+        "R24",
+        "R26",
+        "R27"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D01",
+        "D15",
+        "D16"
+      ]
+    },
+    {
+      "key": "WX-35",
+      "title": "Controlled production rollout with all required evidence, published service, operational handoff and rollback.",
+      "status": "candidate_not_filed",
+      "github_issue": null,
+      "depends_on": [
+        "WX-32",
+        "WX-33",
+        "WX-34"
+      ],
+      "requirements": [
+        "R01",
+        "R02",
+        "R03",
+        "R04",
+        "R05",
+        "R06",
+        "R07",
+        "R08",
+        "R09",
+        "R10",
+        "R11",
+        "R12",
+        "R13",
+        "R14",
+        "R15",
+        "R16",
+        "R17",
+        "R18",
+        "R19",
+        "R20",
+        "R21",
+        "R22",
+        "R23",
+        "R24",
+        "R25",
+        "R26",
+        "R27",
+        "R28"
+      ],
+      "optional": false,
+      "requires_decisions": [
+        "D01",
+        "D02",
+        "D03",
+        "D04",
+        "D05",
+        "D06",
+        "D07",
+        "D08",
+        "D09",
+        "D10",
+        "D11",
+        "D12",
+        "D13",
+        "D14",
+        "D15",
+        "D16"
+      ],
+      "conditional_dependencies": [
+        {
+          "key": "WX-15",
+          "when": "gpu_acceleration_enabled"
+        },
+        {
+          "key": "WX-27",
+          "when": "cloudflare_delivery_enabled"
+        }
+      ]
+    }
+  ],
+  "topological_order": [
+    "WX-01",
+    "WX-02",
+    "WX-03",
+    "WX-04",
+    "WX-05",
+    "WX-06",
+    "WX-07",
+    "WX-08",
+    "WX-09",
+    "WX-10",
+    "WX-11",
+    "WX-12",
+    "WX-13",
+    "WX-14",
+    "WX-15",
+    "WX-16",
+    "WX-17",
+    "WX-19",
+    "WX-18",
+    "WX-20",
+    "WX-21",
+    "WX-22",
+    "WX-23",
+    "WX-24",
+    "WX-25",
+    "WX-26",
+    "WX-27",
+    "WX-28",
+    "WX-29",
+    "WX-30",
+    "WX-31",
+    "WX-32",
+    "WX-33",
+    "WX-34",
+    "WX-35"
+  ]
+}
