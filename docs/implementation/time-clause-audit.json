@@ -1,0 +1,269 @@
+{
+  "scope": "All paragraphs and fenced examples in requirements section 5; grouped obligations, not sentence-level whole-document audit",
+  "requirements_sha256": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+  "section_sha256": "38b0cf0dff187c42968963d458092d94964d1e33c5daae1f666a1190cc4e1588",
+  "source_blocks": [
+    {
+      "id": "T5.1.01",
+      "section": "5.1",
+      "source_text": "Use **`America/Denver`** for site-local dates and display. Obtain latitude, longitude, and the authoritative location configuration from the approved private estate configuration during Phase 1; the runtime does not depend on Home Assistant. Record a location-config hash in private provenance. Do not publish exact coordinates, camera addresses, station serials, or credentials in the public API or sidecars.",
+      "source_sha256": "25538c06ccd68a4ac86ec770a23a7bc58a1f3157beb244a198b732e1158c4683",
+      "producer": "WX-09",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.1.02",
+      "section": "5.1",
+      "source_text": "Use a pinned astronomical calculation library, preferably **Astral**, with explicit `dawn(..., depression=6)` and `dusk(..., depression=6)`. Compute sunrise/sunset separately for display. Astral's `night()` is astronomical night, and `daylight()` excludes twilight; neither is the required partition. [S01]",
+      "source_sha256": "0234ba81e72da956382d58a4553fe66ca0aae35c6b93ac6162c2f44ee5592486",
+      "producer": "WX-09",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.1.03",
+      "section": "5.1",
+      "source_text": "Civil dawn/dusk are calculated solar events, not a camera brightness threshold or the time the sun appears over a local obstruction. Record the horizon/elevation model. Initially use the standard unobstructed-horizon civil definition with solar-center depression 6\u00b0; do not feed the property's elevation above sea level into an observer-height correction without validating its intended meaning. Camera ISP day/night transitions do not determine the slice.",
+      "source_sha256": "6e01956c68613c48b8e3af46c3284645aa736f2d3c063a7d4ad90131fd8c348f",
+      "producer": "WX-09",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.1.04",
+      "section": "5.1",
+      "source_text": "For a local calendar date `D`, calculate and freeze:",
+      "source_sha256": "52d7ffae6e00f84a454b73c85d5da6a94d7b27a5ae8b4aea4fe3906a4370ff66",
+      "producer": "WX-09",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.1.05",
+      "section": "5.1",
+      "source_text": "```text\nA = civil_dawn(D)\nB = civil_dusk(D)\nC = civil_dawn(D + one local calendar day)\n\ndaytime(D)   = [A, B)\novernight(D) = [B, C)\ncycle(D)     = [A, C)\n```",
+      "source_sha256": "caec1fffd9731608572f7b51b8cd4198e5e5281ff809ad7dda098641f213895f",
+      "producer": "WX-09",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.1.06",
+      "section": "5.1",
+      "source_text": "Use UTC instants for ordering, elapsed durations, storage keys, and arithmetic. Calculate `D + 1` as a local calendar date before finding its dawn. Do not obtain the next boundary by adding 86,400 seconds to the previous dawn.",
+      "source_sha256": "727ab8f6fd084a1e9f135bdc574acf50586d4bcfe3f4b754c48ba0b43cae0142",
+      "producer": "WX-09",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.1.07",
+      "section": "5.1",
+      "source_text": "**A solar cycle is approximately, not exactly, 24 elapsed hours.** Its duration varies slightly with the solar events. At a DST change, subtract the UTC instants; do not assume the dawn-to-dawn cycle becomes a 23- or 25-hour civil-midnight day. Store both UTC and offset-bearing local labels.",
+      "source_sha256": "7a6e64f53d4ec01f1eb3734f23b7ea928f755817a83e82ae053f4d2429424ec1",
+      "producer": "WX-09",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.1.08",
+      "section": "5.1",
+      "source_text": "Defaults are `dawn_offset_seconds=0` and `dusk_offset_seconds=0`. If offsets are configured later, use each shifted boundary once for both neighboring intervals and validate `A < B < C`. Do not introduce an independently configured overlap. Invalid coordinates, missing solar events, reversed windows, or calculation failure must produce a visible schedule error; do not silently substitute sunrise/sunset or midnight.",
+      "source_sha256": "f19f59075e93c14000033f5fc1f2548bfe22a978b2011405b096bb4bdb95f079",
+      "producer": "WX-09",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.2.01",
+      "section": "5.2",
+      "source_text": "`cycle_date` is the local date of `A`. The daytime record is labeled \u201cDaytime \u00b7 Oct 23.\u201d The overnight record is labeled \u201cOvernight \u00b7 Oct 23\u201324.\u201d The page for Oct 23 contains both, even though its overnight video becomes available after dawn on Oct 24.",
+      "source_sha256": "d504b56ab1d936f035a56ce35b98f6b34faba7221e60cd6b5e28d40deade82bb",
+      "producer": "WX-17",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.2.02",
+      "section": "5.2",
+      "source_text": "Daytime rendering starts after civil dusk and seal grace. Overnight rendering starts after the next civil dawn and seal grace. Do not wait until midnight to publish a completed daytime video. Invalidate or regenerate affected catalog/page projections after each publication or metadata update according to the selected framework; run a nightly reconciliation as a repair pass.",
+      "source_sha256": "3f00e0251e37584311bf78299891ab82bd69f1eac7c8bdeb303bf7fce3a50074",
+      "producer": "WX-17",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.2.03",
+      "section": "5.2",
+      "source_text": "The site distinguishes `capturing`, `processing`, `published`, `partial`, and `unavailable`. A missing camera must not prevent the other cameras from publishing. Six records per completed cycle is the target; an outage produces an honest unavailable/partial record, not fabricated footage.",
+      "source_sha256": "c99163761004ee77585ab12f14f38fe25190ddf4625a6374a01f81ac350e5500",
+      "producer": "WX-17",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.3.01",
+      "section": "5.3",
+      "source_text": "The initial mode is `duration_policy: cycle_total`, `cycle_budget_seconds: 120`, `fps: 60/1`. This interpretation is deliberate: two independent 120-second outputs would double the original daily playback budget.",
+      "source_sha256": "bd3e8241d3d4e7e5cbfa6dafe801bf314b2e0ba8b31a5b2d7f3432636696601b",
+      "producer": "WX-09",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.3.02",
+      "section": "5.3",
+      "source_text": "```python\nfrom math import floor\n\ntotal_frames = 7200\nday_seconds = (B_utc - A_utc).total_seconds()\nnight_seconds = (C_utc - B_utc).total_seconds()\nassert day_seconds > 0 and night_seconds > 0\nday_frames = floor(total_frames * day_seconds / (day_seconds + night_seconds) + 0.5)\nnight_frames = total_frames - day_frames\nassert 0 < day_frames < total_frames\nassert day_frames + night_frames == total_frames\n```",
+      "source_sha256": "c1bb14747d193910347f316170a9b191516fe593ff11ba6ed28e0be2618c2362",
+      "producer": "WX-09",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.3.03",
+      "section": "5.3",
+      "source_text": "For a segment with start `a`, end `b`, and frame count `N`:",
+      "source_sha256": "03501c248d7532acdfd311c7168302a2eba0df40674713ab51eb9a74396746ff",
+      "producer": "WX-09",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.3.04",
+      "section": "5.3",
+      "source_text": "```text\nsource_duration = b - a                     # elapsed UTC seconds\noutput_duration = N / 60\nsource_step     = source_duration / N\nsource_center(k)= a + (k + 0.5)*source_step  # 0 <= k < N\noutput_pts(k)   = k / 60\n```",
+      "source_sha256": "30e310d824024b51065acab06fdaea658c45fec961b618ba751356e97f12bd3a",
+      "producer": "WX-09",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.3.05",
+      "section": "5.3",
+      "source_text": "The pair lasts exactly 120 seconds without audio or extra title frames. A 14-hour/10-hour example allocates 4,200/3,000 frames: 70/50 seconds. All three cameras use the same schedule and allocation, enabling synchronized comparison. Missing input never compresses the remaining time.",
+      "source_sha256": "21284bf37cb22b6da571c960f0b8554ae4eaed4b0bfe3f0ee991521b499b57a5",
+      "producer": "WX-09",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.3.06",
+      "section": "5.3",
+      "source_text": "Do not use 59.94 fps: 7,200 frames at `60000/1001` lasts 120.12 seconds. Set both `-video_track_timescale 60000` and `-movie_timescale 60000`, and verify decoded frame count, frame timestamps, terminal sample duration, and container duration using rational time bases. A default 1,000-unit movie timescale can round a segment duration even when the video track is exact. If future configuration allows a different total budget, derive the frame allocation anew; do not hardcode a 12-second source step. [S10]",
+      "source_sha256": "3e1c7bbe1a6206ffc93f4a262dc309a3f42e1f40d47f4368c2e84ceb12aa5f45",
+      "producer": "WX-09",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.4.01",
+      "section": "5.4",
+      "source_text": "Every accepted snapshot is assigned by its best verified source-time estimate to one half-open interval. A sample at `B` belongs to overnight; one at `C` belongs to the next daytime segment. No snapshot ID may appear in two segment input manifests.",
+      "source_sha256": "9d2d2ce00bbbc495414e062ad1ffaec017e059b33f93540312ee468b6b2fe7a9",
+      "producer": "WX-10",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.4.02",
+      "section": "5.4",
+      "source_text": "All image-dependent temporal context is segment-local: interpolation, deflicker, denoising, stabilization estimation, and exposure integration cannot borrow images from the other segment. Edge extension may use only an in-segment observation, within a small configured allowance, and must be recorded as synthetic. There is no cross-boundary crossfade.",
+      "source_sha256": "881e2ae0f55837fc815f004a2f90b3dd9afaaf5d86c9092eee9af8eb135cba59",
+      "producer": "WX-10",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.4.03",
+      "section": "5.4",
+      "source_text": "This guarantees nonoverlapping **assigned source-time intervals**. A snapshot API without trustworthy exposure timestamps cannot guarantee subsecond physical exposure boundaries. Preserve timing uncertainty; a stricter mode may reject any boundary-adjacent image whose uncertainty interval crosses the boundary and record the resulting gap.",
+      "source_sha256": "335a96205148761469e6f8a8e76a50611695b5c33dc0568c044b651d195926de",
+      "producer": "WX-10",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.5.01",
+      "section": "5.5",
+      "source_text": "Add a durable local-calendar-day entity, `weather_day`, with a primary key, site/station reference, local date, timezone/configuration version and exact UTC midnight-to-midnight bounds. Enforce uniqueness for the logical site/date identity. This day is distinct from the existing `solar_cycle`, whose interval starts at civil dawn. Rain calendars, hourly archive browsing and daily station aggregates use calendar days; videos and keograms use solar cycles/segments. The UI must label that distinction.",
+      "source_sha256": "fe9abe83db59b05c7b1fca4ded59aea3367e079aaffea1d18f3fbd448b097472",
+      "producer": "WX-08",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.5.02",
+      "section": "5.5",
+      "source_text": "Generate `archive_hour_slot` rows for the actual elapsed local hours within each calendar day. In `America/Denver`, daylight-saving transition days have 23 or 25 such slots; ordinary days have 24. Key slots by UTC start, store UTC end and local label/offset/fold, and never deduplicate two repeated `01:00` labels. The hourly archive selects at most one observed original per camera/slot; retrying or changing a selection policy cannot create two active selections. Persist an explicit missing/ineligible state when no valid frame meets the tolerance. Do not fill a missing hour with another hour's image.",
+      "source_sha256": "fbf272e977db0e0f43e91a4a50877ead681cd88adea75590f4758dc058421433",
+      "producer": "WX-08",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.5.03",
+      "section": "5.5",
+      "source_text": "Every selected still has enforced foreign keys to its camera, calendar day, hour slot, source capture identity and source segment/cycle. Its calendar-day identity comes from the selected image's verified source time, not upload time or `cycle_date`. Selection candidates must lie within the slot and its parent day. A same-day composite FK or equivalent constraint must prevent a still from pointing to a slot in a different day. Keep compact capture identities after raw deletion so these relationships remain valid. Video/keogram records retain their solar-cycle relationship; the API can join them through UTC overlap without pretending the overnight interval belongs to one calendar day.",
+      "source_sha256": "196cfc865a66c815e65d6b9932636dca4520f2705a8ecd0fd45260ba365805a0",
+      "producer": "WX-08",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    },
+    {
+      "id": "T5.5.04",
+      "section": "5.5",
+      "source_text": "All linked visualizations and event navigation exchange UTC instants or half-open UTC intervals. Local labels always include enough date/offset information to distinguish repeated hours. Missing imagery/weather remains a visible gap; no index-based axis, removed frame or late database insert may compress elapsed time.",
+      "source_sha256": "9d658614292cf894490dc26647526e060131f1ee32e0623ffa439085fa9bfc94",
+      "producer": "WX-08",
+      "integration": "WX-33",
+      "review_state": "design_mapped_runtime_unproven"
+    }
+  ],
+  "acceptance_by_section": {
+    "5.1": {
+      "producer": "WX-09",
+      "obligations": [
+        "Private location/config hash and pinned tzdata/astronomy; no HA runtime dependency or public precise coordinates",
+        "Explicit civil depression 6 and unobstructed horizon; sunrise/sunset display distinct; do not treat elevation above sea level as observer height",
+        "Freeze A/B/C from local date and next local date, half-open shared boundaries, UTC elapsed arithmetic and offset labels",
+        "Zero offsets default; shifted shared boundaries must preserve strict ordering; invalid/no solar event yields schedule error, never substitute midnight/sunrise"
+      ]
+    },
+    "5.2": {
+      "producer": "WX-17",
+      "obligations": [
+        "Cycle date is local date of dawn; overnight label spans dates while belonging to the first cycle page",
+        "Dusk/dawn plus seal grace triggers publication independently; no midnight wait; invalidate projections and run repair reconciliation",
+        "All six scheduled records accounted for with honest states and independent camera progress"
+      ]
+    },
+    "5.3": {
+      "producer": "WX-09",
+      "obligations": [
+        "Exactly 7200 frames across both segments, rational half-up daytime allocation and exact remainder; reject zero-frame segment",
+        "Exact frame centers and output PTS; all three cameras share allocation and gaps do not compress time",
+        "No title/audio duration extension, no 59.94 fps; both timescales 60000, terminal sample and container duration checked",
+        "Do not hardcode 12-second step; derive from actual solar interval and selected budget"
+      ]
+    },
+    "5.4": {
+      "producer": "WX-10",
+      "obligations": [
+        "B belongs only to overnight; C only to next daytime; capture IDs cannot occur in two segment manifests",
+        "All temporal context stays inside assigned segment; synthetic edge extension is declared and bounded (D10 v1 disables it)",
+        "Assigned interval disjointness is not physical exposure precision; retain uncertainty and record gaps in strict boundary mode"
+      ]
+    },
+    "5.5": {
+      "producer": "WX-08",
+      "obligations": [
+        "weather_day has stable unique site/date identity, timezone epoch and UTC midnight bounds, distinct from solar cycle",
+        "Elapsed local hour slots keyed by UTC with offsets/fold; 23/24/25 slots and only one active selection per camera/slot",
+        "Missing/ineligible slots explicit; no another-hour substitution; source capture time selects parent day, not upload/cycle date",
+        "Enforce camera/day/hour/capture/segment relationships and same-day slot FK; retain compact identities after raw cleanup",
+        "Join solar/calendar products by UTC overlap; navigation uses UTC intervals and visible gaps with disambiguating local labels"
+      ]
+    }
+  }
+}

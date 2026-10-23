@@ -1,0 +1,20 @@
+{
+  "observed_at": "2026-10-23T21:55:34.953491+00:00",
+  "source_blocks": 24,
+  "all_nonblank_nonheading_lines_preserved": true,
+  "checks": [
+    "Four Python Fraction allocations independently matched with Node BigInt",
+    "72 Python zoneinfo hourly slot labels independently matched with Node Intl",
+    "Three rational frame centers generated; no application code tested"
+  ],
+  "sha256": {
+    "docs/requirements.md": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+    "docs/implementation/time-clause-audit.json": "ac26d53307967574e0897be4861b985b55a755c47faf34271f688b65b0dd08eb",
+    "docs/implementation/time-clause-audit.md": "b7d76fd152566179908ab27c8499fc251185c02b90686c5474d27ac812cebd37",
+    "docs/contracts/time-model-vectors.json": "0c6d8ebd4c9a1b9ee671f18d8331d8f90f7e2fc46c271b0fea7c2d9197f9ce10"
+  },
+  "limits": [
+    "No astronomy/camera/render/database/browser runtime qualification",
+    "Host timezone implementations used for golden values; production pin remains required"
+  ]
+}

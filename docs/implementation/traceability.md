@@ -117,3 +117,7 @@ The [§§12.6–12.8 audit](ui-clause-audit.md) maps all 38 source sentences to 
 ## Configuration boundary
 
 [Public product configuration](../contracts/configuration-contract.md) covers §17.1 categories and rejects unresolved placeholder policies. Private bundle formats, semantic/admission checks and production startup remain incomplete; 13 synthetic shape fixtures do not close §17.
+
+## Time-model paragraph audit
+
+The [§§5.1–5.5 audit](time-clause-audit.md) preserves all paragraphs/fenced examples and maps grouped acceptance obligations to time, schema, capture, publication and consumer issues. Exact arithmetic/DST expected-value vectors are checked independently of application code; runtime and astronomy remain unqualified. This expands the focused audit without claiming full-document clause coverage.

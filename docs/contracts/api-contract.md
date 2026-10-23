@@ -105,3 +105,7 @@ The subsequent [hash-bound validation receipt](validation-receipt.json) records 
 ## Preview expiry clarification
 
 `Image.expires_at` is logical derivative expiry, not current-preview freshness or permission to delete storage. The [preview policy contract](preview-policy-contract.md) distinguishes earliest publication, conservative current-display age and retention/recovery. A latest-preview response above its current-age cutoff is unavailable with no assets even while a historical direct asset is still eligible. Clients must age already-received current previews during failed polling. Origin authorization checks logical expiry/withdrawal before conditional 304, HEAD and range responses.
+
+## Exact time ownership
+
+The [section 5 audit](../implementation/time-clause-audit.md) binds civil schedules, calendar/hour identities and frame ownership. Interval ordering and membership are semantic, not JSON Schema guarantees. Derive seeks from validated rational source/frame maps; decimal browser seek values never define capture/clip ownership. Exclusive endpoints and explicit UI clamping must not introduce an adjacent-segment sample.
