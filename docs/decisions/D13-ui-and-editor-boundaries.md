@@ -1,6 +1,6 @@
 # D13 — UI, theme and editorial boundaries
 
-Status: owner-approved React/TypeScript framework/layout and theme policy selected; executable framework pins, identity integration, rendered responsive wireframes remain open; exact font provenance is resolved by the separate review. Requirements R14/R24/R25/R30–R37, §§12.1–12.8; consumers WX-20/26/39/40/41/43/44 and integration WX-33. This is design collateral, not an application implementation or evidence of a deployed Weather UI.
+Status: owner-approved React/TypeScript framework/layout and theme policy selected; direct frontend pins selected, full lock/image/build qualification, identity integration and rendered responsive wireframes remain open; exact font provenance is resolved by the separate review. Requirements R14/R24/R25/R30–R37, §§12.1–12.8; consumers WX-20/26/39/40/41/43/44 and integration WX-33. This is design collateral, not an application implementation or evidence of a deployed Weather UI.
 
 ## Architecture and why
 
@@ -43,6 +43,29 @@ The E12 web image now packages the React Router Node server and versioned static
 ### React-specific acceptance
 
 WX-20/26/39/43/44 and integrated WX-33 must demonstrate direct deep links, server-rendered no-JavaScript reading/navigation, hydration without private leakage or stale-state mismatch, route-level errors and keyboard focus/scroll restoration. Cover back/forward filter restoration, rapid route/query changes with late responses, duplicate-effect/poll prevention, unmount cleanup, one active video, source-time cursor/seek agreement and preservation of playhead where a rendition switch permits it. Test stale editor CAS, expired identity, failed save and navigation-away draft protection without silent overwrite. Verify request-local isolation across simultaneous SSR requests and shared-cache exclusion for search/private responses. Test a rolling web/API deployment with an already-open tab, unavailable JS/API, narrow/zoomed layouts and the required mobile/browser matrix. Passing framework build or schema checks alone closes none of those behaviors.
+
+## Selected frontend versions and server entrypoint
+
+The [upstream metadata and archive receipt](../research/frontend-pin-evidence.json) selects the following direct versions. All 13 selected package archives were downloaded within a bounded 13.2 MB read and matched their published SHA-512 integrity values; SHA-256 byte identities are recorded. Direct engine/peer ranges were reviewed for this combination. No package was installed, imported, compiled or executed. This is a reproducible selection for implementation, not a complete dependency lock or qualified build.
+
+| Component | Selected version |
+|---|---|
+| Node / bundled npm | 24.22.1 LTS / 11.19.1 |
+| React / React DOM | 19.3.1 / 19.3.1 |
+| React Router / dev / node / express adapter | 8.5.0 for each |
+| Express | 5.2.1 |
+| Vite | 8.3.5 |
+| TypeScript / selected Linux x64 compiler package | 7.0.2 for each |
+| TanStack React Query | 5.104.5 |
+| React / React DOM type packages | 19.3.0 for each |
+
+Node 24 is an upstream [LTS release line](https://nodejs.org/en/about/previous-releases); the selected exact release also satisfies the declared Router and Vite engine ranges. The [Router deployment guidance](https://reactrouter.com/start/framework/deploying) supports self-hosted Node deployment. These upstream facts do not grant estate resources or establish a qualified runtime image.
+
+Use the official Express adapter with an explicit minimal server entrypoint, not the stock `react-router-serve` CLI. Inspection of that CLI's 8.5.0 archive shows default `morgan("tiny")` middleware. Weather instead defines sanitized route-template/status/latency logging with no raw query strings, cookies, authorization headers, private form fields or bodies. Configure trusted proxy hops/addresses explicitly from the private ingress policy; never trust all forwarded headers. Permit only the expected host/origin, bounded public API fetches, body/header/deadline limits and graceful shutdown. API/private/session/media routes stay with their designated upstream owners; the Node server does not become an arbitrary proxy or a second authentication service.
+
+WX-02 must resolve and commit the complete package lock and trusted native artifact closure under the admitted build path. TypeScript 7 includes platform-specific compiler packages; the checked Linux x64 archive is not permission to download binaries at runtime or assume another architecture works. Preserve exact compatible Router package versions, verify build-only dependency pruning, and pin the final mirrored Node/base/runtime image digests. Optional RSC and Cloudflare peers are unselected. Third-party fonts and all runtime assets remain locally served under their existing provenance contract.
+
+Before release, run dependency/license/security review against the complete lock/SBOM, verify upstream provenance under the estate policy, and execute SSR/hydration/build/negative-header/offline/rolling-upgrade acceptance. Direct metadata licenses are MIT or Apache-2.0 for this selected set, but that is not a transitive license clearance. A discovered incompatibility or advisory requires a recorded replacement/version decision and relevant requalification, not floating latest or disabled checks. Rendered responsive wireframes and Python/OIDC pins are separate remaining planning work.
 
 ## Live theme evidence and token roles
 

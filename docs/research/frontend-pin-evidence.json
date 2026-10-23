@@ -1,0 +1,337 @@
+{
+  "schema_version": 1,
+  "status": "selected_direct_versions_and_archive_hashes_not_build_qualified",
+  "observed_at": "2026-10-23T23:17:05.424057+00:00",
+  "runtime": {
+    "node": "v24.22.1",
+    "npm": "11.19.1",
+    "lts": "Krypton",
+    "release_date": "2026-10-20",
+    "source": "https://nodejs.org/dist/index.json"
+  },
+  "packages": [
+    {
+      "name": "react",
+      "version": "19.3.1",
+      "metadata_url": "https://registry.npmjs.org/react/19.3.1",
+      "engines": {
+        "node": ">=0.10.0"
+      },
+      "peer_dependencies": {},
+      "optional_peers": {},
+      "declared_license": "MIT",
+      "tarball": "https://registry.npmjs.org/react/-/react-19.3.1.tgz",
+      "expected_integrity": "sha512-QNhWdt7nrgVWWQG58QuGsAR3jv3Hbe4mb4vz7w2csnHavciZJgda1CPNaldF6eVxv90ud3jUXpKlHL69gO38yw==",
+      "verified_sha256": "56936913918dcf1f7a6fe58784e79df54b18200a88655ce809cf5e9c4ef871aa",
+      "verified_bytes": 26394
+    },
+    {
+      "name": "react-dom",
+      "version": "19.3.1",
+      "metadata_url": "https://registry.npmjs.org/react-dom/19.3.1",
+      "engines": {},
+      "peer_dependencies": {
+        "react": "^19.3.1"
+      },
+      "optional_peers": {},
+      "declared_license": "MIT",
+      "tarball": "https://registry.npmjs.org/react-dom/-/react-dom-19.3.1.tgz",
+      "expected_integrity": "sha512-Y0bARz53lhEC1NMCASs0/j+faB/zqt3R8hpvg1e8+61ZVJ4UL0UdC4cBbXfZMcIuhrfgeILTLe+ZeBCavQPtKQ==",
+      "verified_sha256": "8b49975821eec6311e00d2b3f4b8337923253c876517388a33f9839c61ab262e",
+      "verified_bytes": 1410652
+    },
+    {
+      "name": "react-router",
+      "version": "8.5.0",
+      "metadata_url": "https://registry.npmjs.org/react-router/8.5.0",
+      "engines": {
+        "node": ">=22.22.0"
+      },
+      "peer_dependencies": {
+        "react": ">=19.2.7",
+        "react-dom": ">=19.2.7",
+        "@types/react": ">=19.2.0",
+        "@types/react-dom": ">=19.2.0"
+      },
+      "optional_peers": {
+        "react-dom": {
+          "optional": true
+        },
+        "@types/react": {
+          "optional": true
+        },
+        "@types/react-dom": {
+          "optional": true
+        }
+      },
+      "declared_license": "MIT",
+      "tarball": "https://registry.npmjs.org/react-router/-/react-router-8.5.0.tgz",
+      "expected_integrity": "sha512-9nEd/deifcTJIIcUaNIyQGkyXD0D6QVB9XD2O5GgHpP3xu3U5RXm87YQ8++Wn8JQWgMBM/5+PjWPM/7n7O7WHA==",
+      "verified_sha256": "b1fea97d7e02eaf5865d9fba2b5c0ee91b7d76d7bab9b88b6996b75a32ee48e4",
+      "verified_bytes": 654754
+    },
+    {
+      "name": "@react-router/dev",
+      "version": "8.5.0",
+      "metadata_url": "https://registry.npmjs.org/@react-router%2fdev/8.5.0",
+      "engines": {
+        "node": ">=22.22.0"
+      },
+      "peer_dependencies": {
+        "vite": "^7.0.0 || ^8.0.0",
+        "wrangler": "^4.0.0",
+        "typescript": "^5.1.0 || ^6.0.0 || ^7.0.0",
+        "react-router": "^8.5.0",
+        "@vitejs/plugin-rsc": "~0.5.26",
+        "@react-router/serve": "^8.5.0",
+        "react-server-dom-webpack": "^19.2.7"
+      },
+      "optional_peers": {
+        "wrangler": {
+          "optional": true
+        },
+        "typescript": {
+          "optional": true
+        },
+        "@vitejs/plugin-rsc": {
+          "optional": true
+        },
+        "@react-router/serve": {
+          "optional": true
+        },
+        "react-server-dom-webpack": {
+          "optional": true
+        }
+      },
+      "declared_license": "MIT",
+      "tarball": "https://registry.npmjs.org/@react-router/dev/-/dev-8.5.0.tgz",
+      "expected_integrity": "sha512-SXmL0ym9Wp8Hi0LdXLG6yPaN8V1rUW4PuavvBS9eqpr0hM3PFjiCUT44pRzCj4G9lKEQBeNcj4beOtpN7IxuCg==",
+      "verified_sha256": "32f22fa0e7080d5d9903be4c9c25ad987750ed40e34a8bacb7db6169c926f0a2",
+      "verified_bytes": 111085
+    },
+    {
+      "name": "@react-router/node",
+      "version": "8.5.0",
+      "metadata_url": "https://registry.npmjs.org/@react-router%2fnode/8.5.0",
+      "engines": {
+        "node": ">=22.22.0"
+      },
+      "peer_dependencies": {
+        "typescript": "^5.1.0 || ^6.0.0 || ^7.0.0",
+        "react-router": "8.5.0"
+      },
+      "optional_peers": {
+        "typescript": {
+          "optional": true
+        }
+      },
+      "declared_license": "MIT",
+      "tarball": "https://registry.npmjs.org/@react-router/node/-/node-8.5.0.tgz",
+      "expected_integrity": "sha512-9a3a37TW5GAo/J336Uk1tca/X1OxjpseETz/zCHcojtL7oRlFrlFoDt6wSdCtFRCiwlLyHcWY+qwZ+xnb05kSg==",
+      "verified_sha256": "617d11a17db5f3f74fdeb16b955bd13eb1ca9a8dfca53dad21191f429e5f6c00",
+      "verified_bytes": 11797
+    },
+    {
+      "name": "@react-router/express",
+      "version": "8.5.0",
+      "metadata_url": "https://registry.npmjs.org/@react-router%2fexpress/8.5.0",
+      "engines": {
+        "node": ">=22.22.0"
+      },
+      "peer_dependencies": {
+        "express": "^4.22.2 || ^5",
+        "typescript": "^5.1.0 || ^6.0.0 || ^7.0.0",
+        "react-router": "8.5.0"
+      },
+      "optional_peers": {
+        "typescript": {
+          "optional": true
+        }
+      },
+      "declared_license": "MIT",
+      "tarball": "https://registry.npmjs.org/@react-router/express/-/express-8.5.0.tgz",
+      "expected_integrity": "sha512-uJDrp6XrW9MQSgbw6EKNXekSz0CS2dcnqWFTA4NZaL7CsPTwe7tXVR7auMxCEiTVg5+4wd0PWsPtX+J4VEqWDg==",
+      "verified_sha256": "a0142f3bae7ebfb04e25f45bf68de650b4b571761f83c13e7c80f1cdb2411b93",
+      "verified_bytes": 6605
+    },
+    {
+      "name": "express",
+      "version": "5.2.1",
+      "metadata_url": "https://registry.npmjs.org/express/5.2.1",
+      "engines": {
+        "node": ">= 18"
+      },
+      "peer_dependencies": {},
+      "optional_peers": {},
+      "declared_license": "MIT",
+      "tarball": "https://registry.npmjs.org/express/-/express-5.2.1.tgz",
+      "expected_integrity": "sha512-hIS4idWWai69NezIdRt2xFVofaF4j+6INOpJlVOLDO8zXGpUVEVzIYk12UUi2JzjEzWL3IOAxcTubgz9Po0yXw==",
+      "verified_sha256": "1773a16c02b4422653479b9c4d211268f7022bdac0d817b5698535bb485dd005",
+      "verified_bytes": 22560
+    },
+    {
+      "name": "vite",
+      "version": "8.3.5",
+      "metadata_url": "https://registry.npmjs.org/vite/8.3.5",
+      "engines": {
+        "node": "^20.19.0 || >=22.12.0"
+      },
+      "peer_dependencies": {
+        "tsx": "^4.8.1",
+        "jiti": ">=1.21.0",
+        "less": "^4.0.0",
+        "sass": "^1.70.0",
+        "yaml": "^2.4.2",
+        "stylus": ">=0.54.8",
+        "terser": "^5.16.0",
+        "esbuild": "^0.27.0 || ^0.28.0",
+        "sugarss": "^5.0.0",
+        "@types/node": "^20.19.0 || >=22.12.0",
+        "sass-embedded": "^1.70.0",
+        "@vitejs/devtools": "^0.7.1 || ^0.8.0"
+      },
+      "optional_peers": {
+        "tsx": {
+          "optional": true
+        },
+        "jiti": {
+          "optional": true
+        },
+        "less": {
+          "optional": true
+        },
+        "sass": {
+          "optional": true
+        },
+        "yaml": {
+          "optional": true
+        },
+        "stylus": {
+          "optional": true
+        },
+        "terser": {
+          "optional": true
+        },
+        "esbuild": {
+          "optional": true
+        },
+        "sugarss": {
+          "optional": true
+        },
+        "@types/node": {
+          "optional": true
+        },
+        "sass-embedded": {
+          "optional": true
+        },
+        "@vitejs/devtools": {
+          "optional": true
+        }
+      },
+      "declared_license": "MIT",
+      "tarball": "https://registry.npmjs.org/vite/-/vite-8.3.5.tgz",
+      "expected_integrity": "sha512-z1YpjieJ9g0ebTmQpLBv/oq9E3F9EIlOe+7LahW8SrE3LTiG3udBRUXQOlYXP9b+IC2q2phHeVxj9xGlw34OEQ==",
+      "verified_sha256": "7f22c2a78d15bac5ad755c5f413806048db453604fa0c293f6a0613890dc7c17",
+      "verified_bytes": 587457
+    },
+    {
+      "name": "typescript",
+      "version": "7.0.2",
+      "metadata_url": "https://registry.npmjs.org/typescript/7.0.2",
+      "engines": {
+        "node": ">=16.20.0"
+      },
+      "peer_dependencies": {},
+      "optional_peers": {},
+      "declared_license": "Apache-2.0",
+      "tarball": "https://registry.npmjs.org/typescript/-/typescript-7.0.2.tgz",
+      "expected_integrity": "sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==",
+      "verified_sha256": "da2513f4b95176d6dde8b51aab7afe8a927656c9d277369793f77f7e59371c08",
+      "verified_bytes": 365612
+    },
+    {
+      "name": "@typescript/typescript-linux-x64",
+      "version": "7.0.2",
+      "metadata_url": "https://registry.npmjs.org/@typescript%2ftypescript-linux-x64/7.0.2",
+      "engines": {
+        "node": ">=16.20.0"
+      },
+      "peer_dependencies": {},
+      "optional_peers": {},
+      "declared_license": "Apache-2.0",
+      "tarball": "https://registry.npmjs.org/@typescript/typescript-linux-x64/-/typescript-linux-x64-7.0.2.tgz",
+      "expected_integrity": "sha512-EYdf2cNg7rgCWJnxCdJ+F3V39O8ihb37eHAu1LK8oAFizgTQbPOK7zHHXbPt8rX24COqODXeI3sIf0fCXG7H/A==",
+      "verified_sha256": "7ecad6f67377e831856367ab062ef394f21506a611405bf8ac0ff039348637d3",
+      "verified_bytes": 9669334
+    },
+    {
+      "name": "@tanstack/react-query",
+      "version": "5.104.5",
+      "metadata_url": "https://registry.npmjs.org/@tanstack%2freact-query/5.104.5",
+      "engines": {},
+      "peer_dependencies": {
+        "react": "^18 || ^19",
+        "@types/react": "^18 || ^19"
+      },
+      "optional_peers": {
+        "@types/react": {
+          "optional": true
+        }
+      },
+      "declared_license": "MIT",
+      "tarball": "https://registry.npmjs.org/@tanstack/react-query/-/react-query-5.104.5.tgz",
+      "expected_integrity": "sha512-RORgFe052U+93weaNuqg7qHq7vNVNzXN/VrXqD4bbAuQCWUqOl2lV5Ui9flWk5CVvMyL/Bh27QWhzwH0aaOx9g==",
+      "verified_sha256": "192ccdcdd033b12e576095097cdcdd5590fa56237cc9893447f3d72dcb98dfdf",
+      "verified_bytes": 211143
+    },
+    {
+      "name": "@types/react",
+      "version": "19.3.0",
+      "metadata_url": "https://registry.npmjs.org/@types%2freact/19.3.0",
+      "engines": {},
+      "peer_dependencies": {},
+      "optional_peers": {},
+      "declared_license": "MIT",
+      "tarball": "https://registry.npmjs.org/@types/react/-/react-19.3.0.tgz",
+      "expected_integrity": "sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==",
+      "verified_sha256": "ffa77ffdbdc82e5f67a0fd74d750990375a7dfd8685ec7f10a27c0db128f7766",
+      "verified_bytes": 77822
+    },
+    {
+      "name": "@types/react-dom",
+      "version": "19.3.0",
+      "metadata_url": "https://registry.npmjs.org/@types%2freact-dom/19.3.0",
+      "engines": {},
+      "peer_dependencies": {
+        "@types/react": "^19.3.0"
+      },
+      "optional_peers": {},
+      "declared_license": "MIT",
+      "tarball": "https://registry.npmjs.org/@types/react-dom/-/react-dom-19.3.0.tgz",
+      "expected_integrity": "sha512-ZI7bU42mZXXKHn/qNLEw2IrbiINU7X5+vfgdixBHkCNpYWXjKgfQ/P+uyGb5CjOLB9UcnTeg3rylQtV2hym44Q==",
+      "verified_sha256": "0782e1cd4af4a6a030843235a48e55dc690c36f9428b0b672dc53350806dcf21",
+      "verified_bytes": 8185
+    }
+  ],
+  "direct_metadata_review": [
+    "Node 24.22.1 satisfies Router >=22.22.0, Vite ^20.19.0 || >=22.12.0, Express >=18 and TypeScript >=16.20.0.",
+    "React/React DOM 19.3.1 satisfy DOM ^19.3.1, Router >=19.2.7 and Query ^18 || ^19.",
+    "Router/node/express exact 8.5.0 versions match; dev ^8.5.0 accepts selected router.",
+    "Vite 8.3.5 satisfies dev ^7.0.0 || ^8.0.0; TypeScript 7.0.2 satisfies selected Router ^5.1.0 || ^6.0.0 || ^7.0.0 peers.",
+    "Express 5.2.1 satisfies adapter ^4.22.2 || ^5.",
+    "React type packages 19.3.0 satisfy Router >=19.2.0, React DOM types ^19.3.0 and Query ^18 || ^19.",
+    "TypeScript linux-x64 native package is the exact compiler-package dependency 7.0.2; only its archive hash was checked, not execution."
+  ],
+  "excluded": {
+    "astro": "Superseded by owner-approved React design",
+    "react_server_components": "Not selected; optional dev peers do not authorize RSC",
+    "cloudflare_wrangler": "Not selected; no Cloudflare deployment adapter",
+    "stock_router_serve": "8.5.0 source CLI enables morgan tiny; use explicit Express adapter entrypoint for logging/trust policy"
+  },
+  "limitations": [
+    "No npm install, lifecycle hook, compiler, build, app or container executed",
+    "Direct peer/engine review is not a full transitive dependency solution",
+    "Archive equality against publisher metadata is not independent signature/provenance verification or a security/license clearance",
+    "Node base-image digests, complete lockfile/native artifact closure, SBOM/security/license checks and SSR/browser/rollout tests remain required"
+  ]
+}
