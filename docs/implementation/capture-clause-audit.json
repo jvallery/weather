@@ -1,0 +1,799 @@
+{
+  "scope": "All prose/list/table/fenced blocks of requirements section 6; grouped acceptance, not sentence-level whole-document closure",
+  "requirements_sha256": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+  "section_sha256": "fa4c5ffa7ad23d8c688ebd855c0361d308951e0af92fdd94b5a0e9adec71bc3a",
+  "source_blocks": [
+    {
+      "id": "C6.1.01",
+      "section": "6.1",
+      "source_text": "Phase 1 must verify the selected cameras against the current private inventory. The earlier source records an Amcrest panoramic camera family and native main-stream geometry **4096 \u00d7 1856**; these are planning inputs, not proof of current JPEG dimensions or sustainable snapshot rate. Record private device/firmware details in D02 evidence. A change in main-stream settings is not required for this service.",
+      "sha256": "ef69efb96253136fd2a79840511e0a77ea768758ea2370489f88a367e26f0069",
+      "producers": [
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.1.02",
+      "section": "6.1",
+      "source_text": "Start with the manufacturer-documented endpoint:",
+      "sha256": "262e8606a7c0be7e807136a0eab603f093d4cac3db17d1cf9ef3e24c49784bda",
+      "producers": [
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.1.03",
+      "section": "6.1",
+      "source_text": "```text\nGET http[s]://<fixed-camera-address>/cgi-bin/snapshot.cgi?channel=1\nAuthentication: HTTP Digest\nExpected payload: JPEG\n```",
+      "sha256": "47f48005902b8e7951dc94ea9fa2c02251f53df64a5fb6016b55fc51ddf7a1e9",
+      "producers": [
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.1.04",
+      "section": "6.1",
+      "source_text": "Channel numbering starts at one in the documented API. The manufacturer provides the endpoint and authentication contract, not a guaranteed sustainable snapshot rate. Do not import a Reolink-specific rate limit into this Amcrest implementation. [S02], [S03]",
+      "sha256": "65414f28832b72fc6771ab371fef6163b159cbd97dd2c6ca2138e9fd13cbcceb",
+      "producers": [
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.1.05",
+      "section": "6.1",
+      "source_text": "Do not change existing stream encoding, frame rate, stitching, exposure profiles, day/night automation, or other camera consumers to enable this service. Verify source helper behavior before reusing it; a configuration snapshot/rollback utility is not necessarily a JPEG capture API.",
+      "sha256": "fed2cd01375f3e1e69d8fc651c14655eb890a3d101039d75665e073eb296387c",
+      "producers": [
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.2.01",
+      "section": "6.2",
+      "source_text": "1. Read mounted configuration and scoped camera credentials; validate that the target is the allowlisted camera IP and API port.\n2. Start an absolute monotonic timer for one-second slots. Stagger camera phases approximately 0, 333, and 667 ms to avoid synchronized request bursts.\n3. Use a bounded HTTP connection pool with **one in-flight request per camera**. HTTP keep-alive is permitted; there is no continuous media stream.\n4. Use initial connect/read timeouts of 1/3 seconds, a separate monotonic **total attempt deadline** (initially five seconds) covering Digest negotiation, any retry and the entire body transfer, bounded response bytes (initially 16 MiB), and a strict allowed JPEG dimension range. Tune from actual latency evidence. Idle/per-operation timeouts alone do not bound a slow-trickle response.\n5. Validate status, content type/signature, JPEG decode, dimensions, and checksum. Reject HTML login responses, truncated images, unexpected geometry, and oversized payloads.\n6. Record the attempt whether it succeeds or fails. Complete the current request before considering the next eligible slot. Skip overdue slots; never issue catch-up bursts.\n7. Back off repeated transport failures with a capped schedule such as 1, 2, 4, 8, 16, 30 seconds. Authentication failures require a slow retry/alert, not rapid repeated logins.\n8. Seal chunks and windows atomically; shut down by finishing or cancelling the bounded request and checkpointing.",
+      "sha256": "cc9944234e613525c6cc434b914d3482491f3b477e272259cb7da3cca541b5c5",
+      "producers": [
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.2.02",
+      "section": "6.2",
+      "source_text": "Follow no HTTP redirects to another authority. Prefer camera HTTPS with a verified/pinned trust configuration if supported; otherwise use the approved camera VLAN and Digest endpoint. Never put credentials in URLs, command-line arguments, public logs, or manifests. No camera management writes belong in this collector.",
+      "sha256": "fbe79a0c3162c35b7db81a76aecf3c1689727b92bab62ec7b9a52b79306a6cfd",
+      "producers": [
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.3.01",
+      "section": "6.3",
+      "source_text": "Default is **1 Hz**. Commission each camera independently through day, twilight, and night. Measure median/p95/p99 response time, bytes, decoded dimensions, observed fresh-frame rate, error rate, camera resource/latency effects, and existing Frigate frame health. Test 2 Hz only if responses and the camera's actual snapshot refresh permit it without harming existing workloads.",
+      "sha256": "afc9eaf7e3efc105e29be8e8af65cc481cc7b289170576cd760c78de147f57be",
+      "producers": [
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.3.02",
+      "section": "6.3",
+      "source_text": "A lower cadence such as one frame every two seconds is an explicit degraded/low-write profile. Record cadence changes in the attempt ledger and output metadata. Do not change source timing by simply renumbering a missing sequence.",
+      "sha256": "9664654cf8ec8345a39c9b001c190a73d67ed18e817c6cbcc92b5cbfc6b90648",
+      "producers": [
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.3.03",
+      "section": "6.3",
+      "source_text": "At 1 Hz and a representative 0.5 MB JPEG, the request stream is about 4 Mb/s per camera before overhead. Snapshots do not automatically consume fewer bytes than interframe-compressed video. Their advantages here are simpler acquisition, no persistent RTSP decode, and bounded retention.",
+      "sha256": "f0a311017a29dfc5ebdaac2c2526f5ecaf243475ab5e4940bd7273a03d9669a2",
+      "producers": [
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.4.01",
+      "section": "6.4",
+      "source_text": "Persist these distinct fields:",
+      "sha256": "cabc261c58fc07a147031da1cb522dc79908262a1289a4a6ae433d3be737d920",
+      "producers": [
+        "WX-08",
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.4.02",
+      "section": "6.4",
+      "source_text": "| Field | Meaning |\n|---|---|\n| `slot_at_utc` | Intended sample slot. |\n| `request_started_at_utc` / `response_completed_at_utc` | Local acquisition interval. |\n| `monotonic_started_ns` / `monotonic_completed_ns` | Duration and timer evidence within a boot epoch. |\n| `source_at_utc` | Best source exposure-time estimate. |\n| `source_time_basis` | `verified_camera_timestamp` or `calibrated_request_midpoint`; never an implied certainty. |\n| `uncertainty_ms` | Measured/estimated time uncertainty, or null when unbounded. |\n| `clock_epoch` | Incremented after a material wall-clock correction/restart requiring a new mapping. |\n| `freshness` | `verified`, `plausible`, `suspected_stale`, or `unknown`, with evidence. |",
+      "sha256": "be660e68be2517fba2a661b09872d1986ef98096770b728eec6a873e4157a90c",
+      "producers": [
+        "WX-08",
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.4.03",
+      "section": "6.4",
+      "source_text": "Use a verified camera timestamp when available. Otherwise calibrate request midpoint and camera caching behavior. HTTP `Date`, file modification time, and response arrival are not themselves exposure timestamps. Identical hashes can represent a truly static scene, so do not delete or call an image stale from hash equality alone.",
+      "sha256": "c23143f791f75f42124b4ec89bf3c4f5c847892d814ec53c747efb97fa14f03f",
+      "producers": [
+        "WX-08",
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.4.04",
+      "section": "6.4",
+      "source_text": "Node time synchronization belongs to the infrastructure. The collector does not contact NTP. On a significant wall-clock step, create a new clock epoch, recompute future slot mapping, and record a discontinuity. Never reuse a prior slot ID or interpolate across unexplained time reversal.",
+      "sha256": "2ff6d026f6c553612e7eb42e0223be0723dc58b5e4625486a71b80fbefe0fddb",
+      "producers": [
+        "WX-08",
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.5.01",
+      "section": "6.5",
+      "source_text": "Prefer **five-minute uncompressed TAR chunks containing the original JPEG bytes**, with an accompanying JSONL index recording member offset/length, source time, ID, checksum, and quality flags. Cut a chunk early at a segment boundary. This limits filesystem directory and inode churn without recompressing images or retaining a full-rate video.",
+      "sha256": "e863f39d4d22a887caa688b6dbc51037abc16e0cb87f06e2132498ee6759ae8a",
+      "producers": [
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.5.02",
+      "section": "6.5",
+      "source_text": "The collector is the only active-chunk writer. Write to an `active` directory, checkpoint durably on a configurable bounded interval (initially five seconds), then fsync and atomically rename a complete chunk into `sealed` under the qualified NFS durability and ownership protocol. A rename is a visibility operation, not by itself proof that data survives NAS power loss. Seal the TAR, index and binding manifest as one atomically renamed directory bundle, or publish a final commit marker binding both content hashes after both are durable. Renaming only the TAR must not expose an incomplete/mismatched index. A crash may lose at most the explicitly accepted unflushed tail. Recovery verifies complete TAR members/checksums, truncates incomplete tail data, and reconciles the JSONL index before sealing. Never treat a partially written chunk as complete.",
+      "sha256": "4c8ca765368908d11ac40b9d6dc99605d222f5965a35f3cd39b7ab8af4690417",
+      "producers": [
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.5.03",
+      "section": "6.5",
+      "source_text": "Record missing attempts even when there are no JPEG bytes. Keep small status/checkpoint metadata in a reserved space budget. Processing reads sealed chunks only and uses explicit retention pins. Generic archive extraction must reject absolute paths, traversal, links, and unknown members.",
+      "sha256": "dfcd5974ad872e88c85ce4a56fb4c3d4e1a2f7118f85845dd3a7f65f3e92ec3f",
+      "producers": [
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.6.01",
+      "section": "6.6",
+      "source_text": "Precompute schedules several days ahead locally and freeze the active cycle manifest. Seal a segment once its boundary passes, all in-flight relevant attempts resolve or time out, and an initial 30-second grace has elapsed. Validate that the manifest contains only assigned in-segment observations. Store attempt totals, accepted unique samples, coverage intervals, discontinuities, input hashes, and the exact boundary model.",
+      "sha256": "9054af35f17ec7f2aa507ae31218abfca16a479e077693b3c5c167dfa6b7ba89",
+      "producers": [
+        "WX-09",
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.6.02",
+      "section": "6.6",
+      "source_text": "Later discovery of a clock problem creates a corrected revision with provenance; do not silently mutate the sealed input of a running job.",
+      "sha256": "7e435479ff6ae3f0ee3849a93c384a980bc9b1d4b4d834fddff1024974b0d3db",
+      "producers": [
+        "WX-09",
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.7.01",
+      "section": "6.7",
+      "source_text": "Use a dedicated, storage-owner-managed **NFS PVC backed by Obsidian HDDs**. No alternative raw-snapshot Longhorn PVC is part of this design. Request the export/PV through the existing inventory and grant workflow; do not mount an unrelated share or duplicate a provider-owned resource. Restrict access to the participating nodes/workloads, assign the approved ownership/mode, and document capacity and export policy. RWX NFS permits independent collector/worker placement; RWO colocation constraints from the previous design no longer apply. Kubernetes access modes describe mount access and do not themselves provide application writer fencing. [S14]",
+      "sha256": "a20401853e006b9434ef3448c5348ce691e850fa23c35ae2dcce1070e025dbcc",
+      "producers": [
+        "WX-03",
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.7.02",
+      "section": "6.7",
+      "source_text": "One authoritative writer must exist per camera. D03 must select the actual ownership protocol: safe rollout/restart policy, qualified NFS locking/lease behavior, unique writer epochs, and a way to prevent an old process from committing accepted chunks after takeover. A strong candidate is one collector per camera with non-overlapping replacement, an NFS lock held for its lifetime, epoch-specific chunk paths, and coordinator validation of the admitted generation. Its safety still depends on actual NFS lock recovery and node/process fencing; a lock file, `replicas: 1`, or force-deleting a pod is not proof. The coordinator may use Kubernetes/DB control mechanisms; the collector may not gain those network permissions. Cleanup belongs to a separate fenced role, never an old collector.",
+      "sha256": "7905115a46e6b74f1284432004b00d856eee17c9a206d42d41fdffc755322d3b",
+      "producers": [
+        "WX-03",
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.7.03",
+      "section": "6.7",
+      "source_text": "If a previous writer cannot be proved stopped or fenced, pause that camera rather than start an ambiguous second writer. Recover sealed/active chunks by generation and checksum, reject stale commits, and never let a stale worker delete a newer generation's data. Implementation tests must cover node partition, NFS reconnect, lock recovery, stale process return, rollover at dawn/dusk, and restart during a chunk append.",
+      "sha256": "303f530b91481aa0905e05f8a562203a6582806a3c0982b1792480dd2601bf76",
+      "producers": [
+        "WX-03",
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.7.04",
+      "section": "6.7",
+      "source_text": "**NAS outage is an accepted capture dependency:** durable JPEG staging stops, and input-dependent rendering may pause or fail. Bound in-memory pending images/bytes and record gaps when persistence is unavailable. Do not silently spill to unapproved NVMe storage or retain an unbounded queue. Hard NFS mounts can block kernel I/O beyond an application timeout; D03 must define watchdog/node handling and recovery rather than promise that cancelling a future always interrupts the mount. Preserve essential status where possible and reconstruct skipped slots from the durable last checkpoint on recovery.",
+      "sha256": "c9ed5b93d6e4810536800583e995d10bb02281bc0ba4511cd163866c6d99427e",
+      "producers": [
+        "WX-03",
+        "WX-10"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.8.01",
+      "section": "6.8",
+      "source_text": "For `C` cameras, average JPEG size `J` in decimal MB, and interval `I` seconds:",
+      "sha256": "c3adbe303dd921ef463ce2dc6bd439d50a16f010542261bbcfd57a304676ac4f",
+      "producers": [
+        "WX-03",
+        "WX-18",
+        "WX-31"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.8.02",
+      "section": "6.8",
+      "source_text": "```text\nlogical_GB_per_day = 86400 * C * J / (1000 * I)\nlogical_TB_per_year = logical_GB_per_day * 365 / 1000\n```",
+      "sha256": "1c1870073c73213e21292d94901684250d1562eca8358d2674290e03d6218238",
+      "producers": [
+        "WX-03",
+        "WX-18",
+        "WX-31"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.8.03",
+      "section": "6.8",
+      "source_text": "| Illustrative cadence/size | Three cameras/day | Annual bytes written if continuous |\n|---|---:|---:|\n| 2-second interval, 0.5 MB/JPEG | 64.8 GB | 23.65 TB |\n| 1-second interval, 0.5 MB/JPEG | 129.6 GB | 47.30 TB |\n| 0.5-second interval, 0.5 MB/JPEG | 259.2 GB | 94.61 TB |\n| 1-second interval, 1.0 MB/JPEG | 259.2 GB | 94.61 TB |",
+      "sha256": "b84dc4c238356a90e3acd8e6d0fb6e2daaa9489e32a37b08952fa7f48014e65b",
+      "producers": [
+        "WX-03",
+        "WX-18",
+        "WX-31"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.8.04",
+      "section": "6.8",
+      "source_text": "These are arithmetic examples, not measured camera output. NFS moves the bulk snapshot writes to HDDs; database WAL, logs, container storage and other cluster writes still exist. Deletion bounds occupied capacity, not cumulative device writes. Chunking reduces filesystem metadata operations, not JPEG payload bytes. Do not write intermediate full-day optical-flow or uncompressed sequences to disk.",
+      "sha256": "9f77383bc12ac40bd88894952309369f720a67108c57160882ea719975de5921",
+      "producers": [
+        "WX-03",
+        "WX-18",
+        "WX-31"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.8.05",
+      "section": "6.8",
+      "source_text": "Provision from measured p95 JPEG size, actual cadence, the longest solar segment, processing time and retry backlog:",
+      "sha256": "e3464b715b4a239179633c2357cc53862b101b089cf3548ecc4dd5922b255b54",
+      "producers": [
+        "WX-03",
+        "WX-18",
+        "WX-31"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.8.06",
+      "section": "6.8",
+      "source_text": "```text\nstaging_bytes >= 1.3 * (capture_bytes_per_second * max_unprocessed_seconds\n                       + maximum_render_scratch_bytes)\n```",
+      "sha256": "d562e01a008cb4c3ec35ead25365f076b220e3805ed06887b69809f9902ab60a",
+      "producers": [
+        "WX-03",
+        "WX-18",
+        "WX-31"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.8.07",
+      "section": "6.8",
+      "source_text": "At the 0.5 MB/1 Hz example, 48 hours of three-camera raw input alone is 259.2 GB; with 30% reserve it is about 337 GB before render scratch. Treat that as a sizing example, not a fixed grant. Distinguish an export quota, advertised PVC capacity and genuinely free NAS space. Include metadata and other NAS users in admission.",
+      "sha256": "921d12d09f3aa5509d13b79b30e1d662ea23cca0f69b945f03a37bea01c411f2",
+      "producers": [
+        "WX-03",
+        "WX-18",
+        "WX-31"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.8.08",
+      "section": "6.8",
+      "source_text": "Proposed watermarks are warning at 70%, urgent at 85%, stop new JPEG writes at 90%, with a lower resume threshold and a reserved control-metadata budget. Remove committed, unpinned inputs first. Never overwrite active/unpublished frames or delete unrelated share content. During an extended failure, bounded loss and visible gaps are preferable to exhausting the NAS. The maximum unresolved age and terminal-loss policy must be explicit; a proposed 48-hour escalation point is not automatic authorization to erase unpublished inputs.",
+      "sha256": "28e97cd3e13fb8c3ec45948acd03b6109bf73bd84f226aec328c0badd0fe593d",
+      "producers": [
+        "WX-03",
+        "WX-18",
+        "WX-31"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.9.01",
+      "section": "6.9",
+      "source_text": "All mandatory renditions and posters must pass validation; immutable artifacts must meet the qualified Garage durability contract; the CNPG publication transaction and receipt must be committed; the same-origin publication must pass internal readback; and no active job may retain a pin on the chunk being removed. Hourly selected originals must additionally be durably archived with committed slot/day/camera relationships **or** have their exact bytes and pending selection obligations transferred into the bounded durable promotion working set described below. Keograms must have durable outputs or sufficient compact extracted inputs to complete without full raw JPEGs. A missing slot has an explicit completed missing-state decision, never an invented archival receipt. Only then may the separate cleanup role remove sealed chunks.",
+      "sha256": "98febff6b132e25408241938a7f074775ef192db1a9c0aaba083a0786d82235d",
+      "producers": [
+        "WX-18",
+        "WX-36",
+        "WX-37"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.9.02",
+      "section": "6.9",
+      "source_text": "Target cleanup within one hour of successful publication. Keep small immutable manifests, capture/processing quality summaries, hashes and deletion receipts. Retry cleanup idempotently and never remove an active chunk. AI and embedding jobs use durable completed media and do not delay cleanup. Central B2 custody is asynchronous and is not normally a raw-retention prerequisite; if the selected Garage durability cannot meet the accepted local-loss requirement, D07 must resolve that before enabling cleanup. Immediate PUT/HEAD visibility is insufficient evidence of power-loss durability.",
+      "sha256": "1a4ffd24db4fafa884b0bfccaf3b1b709362085c35366d4e4bd68ebcc3197b7d",
+      "producers": [
+        "WX-18",
+        "WX-36",
+        "WX-37"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.9.03",
+      "section": "6.9",
+      "source_text": "Capture scheduling and new-cycle collection continue independently while the previous segment renders. Backpressure and per-camera resource limits prevent one failed render or stalled cleanup from consuming the entire staging grant.",
+      "sha256": "594a778d47da4459ec96759b76ba53d454f78ac1f10704f1d8cdfe7b7fa28917",
+      "producers": [
+        "WX-18",
+        "WX-36",
+        "WX-37"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.9.04",
+      "section": "6.9",
+      "source_text": "Image-product jobs have bounded pins and extraction deadlines. D16 must define how selected stills and keogram slices are extracted promptly into their small durable working set, so a slow public derivative does not pin all full-resolution captures. If required extraction/archive fails, preserve the affected evidence within the admitted staging budget, surface the degraded product and apply the explicit incident/backpressure policy; do not fabricate success or silently discard its only inputs. Expiring a job lease is not proof its input is disposable. Routine cleanup should still meet the one-hour target once all required source-dependent work is safely independent of the raw chunks. Preview rolling-buffer retention is separately bounded and never becomes a continuous long-term archive.",
+      "sha256": "4414d89fd0e7b426f87c31c29314403447d914b8e6ff330b4e6f10e2afa64599",
+      "producers": [
+        "WX-18",
+        "WX-36",
+        "WX-37"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.9.05",
+      "section": "6.9",
+      "source_text": "The promotion working set uses the approved Obsidian NFS staging grant with its qualified flush/rename/fencing contract and a separately bounded allocation. Validate copied source bytes/hash and persist the new owner/pin before releasing the source-chunk pin; crash reconciliation must never leave neither copy protected. Pending hour obligations transfer with their candidate identities. The copied original and its own pin remain until verified Garage archival and the CNPG selection/FK receipt commit; this transfer is not an `archived` success or permission to expire the last copy. Apply the same durability/ownership discipline to compact keogram extraction inputs. This reduces retained payload without introducing unapproved NVMe staging.",
+      "sha256": "9d91b8f8c2fd55632a7ef57d48d713a8415c50e38ec755263b4b5753ff0fd121",
+      "producers": [
+        "WX-18",
+        "WX-36",
+        "WX-37"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.10.01",
+      "section": "6.10",
+      "source_text": "For each completed camera/hour slot, select one fresh, valid, natively captured JPEG using a deterministic versioned policy. The starting policy chooses the eligible image closest to the hour's midpoint, breaking equal distance by earlier source time and then stable capture ID. Prefer captures within a provisional 60 seconds of the anchor; otherwise allow the closest qualified image elsewhere in the same hour and flag the actual offset as off-target. D02/D16 finalize this quality/tolerance policy after observing capture timing. No eligible in-hour image produces an explicit missing slot. Selection is by source time/quality, not filename order, AI aesthetics or an HTTP retry's arrival time. Keep selection policy/version and rejection/missing reasons.",
+      "sha256": "0ecad2490c98d20b188412ee8ae3a61802c0a0ee15d89fb5443da289c76b4a43",
+      "producers": [
+        "WX-37",
+        "WX-08",
+        "WX-19",
+        "WX-40"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.10.02",
+      "section": "6.10",
+      "source_text": "Finalize only after the hour closes and its candidate interval is sealed or a defined late-input deadline expires. Register the pending selection obligation before segment cleanup can remove candidates. An hour can straddle civil dawn/dusk: preserve a small explicit candidate/promotion pin across that segment's cleanup, then bind the winner to its actual source segment and calendar hour. Do not retain the whole day's capture to resolve one hour, finalize against a mutable chunk or count that original as input to both video segments.",
+      "sha256": "43f6c4f7ecee1cdd1738912cbcca8affe02a4f80108bdd2401047bc4e2e69dd9",
+      "producers": [
+        "WX-37",
+        "WX-08",
+        "WX-19",
+        "WX-40"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.10.03",
+      "section": "6.10",
+      "source_text": "Preserve exact selected JPEG bytes as an immutable **private** Garage original. Store size, SHA-256, geometry, source timestamp/uncertainty, source manifest/capture identity, camera/day/hour FKs and archive revision in CNPG. An object PUT alone does not fulfill R30: verify the qualified durability condition and commit the corresponding indexed relationship before releasing the original's pin. Retrying must converge on one active selection and must not overwrite a different hash. Corrections create a revision with an audit trail and tombstone/grace handling for replaced assets.",
+      "sha256": "7de1c2f9aa340b30b5d53324f90ba29610d239902432da3c9e922bd3de1005bf",
+      "producers": [
+        "WX-37",
+        "WX-08",
+        "WX-19",
+        "WX-40"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.10.04",
+      "section": "6.10",
+      "source_text": "Produce privacy-processed, metadata-sanitized public derivatives at useful screen/thumbnail sizes. Archive browsing supports camera/date/hour selection and comparisons of selected dates/hours with actual timestamps, offsets and missing states. Native originals do not become a public download merely because the related video has a native download. Public image IDs map only to approved derivative assets. Comparing the same clock hour across dates is permitted, but must not suggest the solar phase or scene lighting is identical.",
+      "sha256": "06ec6c5a6c7c451e6b70c1c5d1e1c283c81142fc7b148792f09966ca973f26e7",
+      "producers": [
+        "WX-37",
+        "WX-08",
+        "WX-19",
+        "WX-40"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.10.05",
+      "section": "6.10",
+      "source_text": "A late-hour fallback can still be less than ten minutes old when the hour closes. Apply the same ten-minute minimum public eligibility test in \u00a76.11 to its comparison/poster/thumbnail derivatives so an alternate still route cannot bypass the current-preview policy. Private archival may complete immediately; the public derivative can wait without retaining dense raw input.",
+      "sha256": "a3ddd1ca3d2760bf00594f72a71a123eaadae01477d731bdcec6220e06d8847d",
+      "producers": [
+        "WX-37",
+        "WX-08",
+        "WX-19",
+        "WX-40"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.10.06",
+      "section": "6.10",
+      "source_text": "The selected Q03=B default is **five years** for sparse originals and their required comparison derivatives, independently of video retention; the owner did not separately restate that horizon. D07/D15 must record the approved operational policy and recovery-aware deletion before enabling expiry. Keep day/slot metadata and tombstones as needed for retained references. Do not cascade-delete a five-year still because a shorter-lived video expires.",
+      "sha256": "9b406c94636c4601ef43f91d19c1488835d0c7ce6dcc252d8333b329e31fa87c",
+      "producers": [
+        "WX-37",
+        "WX-08",
+        "WX-19",
+        "WX-40"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.10.07",
+      "section": "6.10",
+      "source_text": "At an illustrative 2 MB/JPEG, three cameras \u00d7 24 hours \u00d7 365 days equals 26,280 originals or **52.56 GB/year**, about **262.8 GB over five 365-day years**, before derivatives, replicas, backups and leap days. These are payload arithmetic, not measured storage allocation. Measure actual source sizes, account for 23/25-hour days and the separate preview/keogram budgets, and include all classes in Garage/B2 capacity. This sparse archive does not authorize retaining the full snapshot cadence.",
+      "sha256": "48894941821ec7a8b1da6b7986fccad47c02bee14809f549eb2dd39299106607",
+      "producers": [
+        "WX-37",
+        "WX-08",
+        "WX-19",
+        "WX-40"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.11.01",
+      "section": "6.11",
+      "source_text": "Publish a current preview for each of the three cameras approximately once per minute, using already captured snapshots. **No frame may become public until at least ten minutes after its latest plausible exposure time.** Use `source_time_upper_bound <= publication_now - 600 seconds`; reject unknown, future or implausible clock states. The minimum delay is a privacy/publication invariant, not a target that freshness optimization may shorten. Actual capture time and uncertainty remain visible in the sanitized response.",
+      "sha256": "de6eabe5661a5c8b01de0a7e9a3b4bbf3230d6962e0fa791bab0071a4cb01e07",
+      "producers": [
+        "WX-38",
+        "WX-19",
+        "WX-20"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.11.02",
+      "section": "6.11",
+      "source_text": "A separate image worker reads committed sealed input, selects the newest eligible frame, applies the approved public processing, publishes an immutable derivative and atomically advances its per-camera pointer. Public requests never fetch a camera, open RTSP or trigger capture. Existing five-minute chunk sealing can make an eligible frame older than ten minutes; D03/D16 must either qualify a safe small committed preview handoff or accept/document additional age. Do not read mutable TAR tails or weaken atomic chunk/fencing guarantees just to approach the minimum delay.",
+      "sha256": "5c0d405cf41221aac3258f8561e12eae0d7f289e7f525534ff461ae2fa76855c",
+      "producers": [
+        "WX-38",
+        "WX-19",
+        "WX-20"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.11.03",
+      "section": "6.11",
+      "source_text": "Persist `public_not_before` and enforce it at the asset origin as well as the latest-preview listing. Guessed immutable URLs, thumbnails, HEAD/range responses, embed aliases and cache prewarming cannot bypass preview eligibility. Never release an unripe object into a public cache. Delay changes, withdrawals and corrected timestamps require projection/cache invalidation under the controlled policy.",
+      "sha256": "e2660f66ac77feb06cea5a95d40a9f73fe9ecda556f0b08ee0773007923c7041",
+      "producers": [
+        "WX-38",
+        "WX-19",
+        "WX-20"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.11.04",
+      "section": "6.11",
+      "source_text": "Expose captured time, first-publication time, generation, delay policy, source quality, current age and explicit stale/unavailable state. Refreshing a pointer or re-serving identical bytes must not make old imagery appear newly captured. Failures retain a clearly stale last-known preview or show unavailable. Define short, bounded pointer caching and a bounded retained derivative/rolling-input horizon; once the preview maximum age is exceeded, show a placeholder instead of serving it as current. Hourly archival and preview retention are separate policies. Same-origin authorization, withdrawal and backup rules cover published derivatives; private originals remain inaccessible.",
+      "sha256": "a2f97e151fa66c7d0eeb23d6068fad26ee56d808a4c7209684b76511b19f2874",
+      "producers": [
+        "WX-38",
+        "WX-19",
+        "WX-20"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "C6.11.05",
+      "section": "6.11",
+      "source_text": "Preview jobs coalesce to the newest eligible capture. After an outage, resume current publication rather than replay every missed minute as a historical preview backlog. Historical continuity belongs to the hourly archive and completed videos; preview freshness work has its own bounded queue and expiry.",
+      "sha256": "780f2917989f4a864a43fbab13ee5ad6082b242ac29fe0ad4cf3f7b0e1e972bc",
+      "producers": [
+        "WX-38",
+        "WX-19",
+        "WX-20"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    }
+  ],
+  "acceptance": {
+    "6.1": {
+      "producers": [
+        "WX-10"
+      ],
+      "obligations": [
+        "Reconcile private inventory/firmware and exact JPEG geometry; distinguish single-frame proof from sustained-rate/native-mode qualification.",
+        "Fixed channel-1 Digest snapshot API; no assumed Reolink limit, no management writes or changes to existing stream/stitch/exposure/NVR configuration.",
+        "Validate helper semantics before reuse and keep source credentials private."
+      ],
+      "design_dependencies": [
+        "D02",
+        "OWN-CAM"
+      ]
+    },
+    "6.2": {
+      "producers": [
+        "WX-10"
+      ],
+      "obligations": [
+        "Allowlisted camera/port and mounted scoped credentials; no redirects to another authority, prefer verified HTTPS or approved VLAN/Digest.",
+        "Absolute monotonic slots with staggered phases, bounded pool and one in-flight request per camera; skip overdue slots, never catch-up bursts.",
+        "Connect/read limits plus one total deadline covering negotiation/retry/body; bounded bytes and dimension/decode/signature/checksum validation reject HTML, truncation and slow trickle.",
+        "Persist every attempt; transport backoff differs from slow auth-failure retries; bounded shutdown and atomic seals."
+      ],
+      "design_dependencies": [
+        "D02",
+        "D03"
+      ]
+    },
+    "6.3": {
+      "producers": [
+        "WX-10"
+      ],
+      "obligations": [
+        "Commission each camera at 1 Hz through day/twilight/night: latency quantiles, bytes, geometry, fresh-frame rate, errors and existing NVR health.",
+        "Enable 2 Hz only after actual refresh/capacity evidence; lower cadence is explicit revisioned degradation.",
+        "Snapshot bandwidth example is not a guarantee of savings versus compressed video; no persistent RTSP decoder."
+      ],
+      "design_dependencies": [
+        "D02",
+        "OWN-CAM"
+      ]
+    },
+    "6.4": {
+      "producers": [
+        "WX-08",
+        "WX-10"
+      ],
+      "obligations": [
+        "Retain slot/request/completion UTC, monotonic evidence, source estimate/basis, uncertainty, clock epoch and freshness evidence distinctly.",
+        "Camera timestamp must be verified or midpoint/cache behavior calibrated; HTTP Date, arrival and mtime are not exposure time.",
+        "Identical hashes do not alone establish staleness or authorize deletion.",
+        "Collector does not contact NTP; wall-clock discontinuity creates new epoch/future mapping without slot reuse or interpolation across unexplained reversal."
+      ],
+      "design_dependencies": [
+        "D02",
+        "D03"
+      ]
+    },
+    "6.5": {
+      "producers": [
+        "WX-10"
+      ],
+      "obligations": [
+        "Five-minute original-byte TAR/index bundles cut at boundaries; sole active writer, durable checkpoints and atomic full-bundle seal.",
+        "Rename visibility is not power-loss durability; accepted tail-loss budget, complete-member repair and index/hash reconciliation are required.",
+        "Preserve failed/skipped attempts and reserved control metadata; process sealed inputs only under pins.",
+        "Reject traversal/links/devices/unknown or duplicate members, extension/name violations and bad bounds; plain TAR representation now has 19 checked shape fixtures."
+      ],
+      "design_dependencies": [
+        "D03",
+        "OWN-NFS"
+      ]
+    },
+    "6.6": {
+      "producers": [
+        "WX-09",
+        "WX-10"
+      ],
+      "obligations": [
+        "Precompute/freeze several days of schedule; seal only after boundary, all relevant bounded attempts resolved and admitted grace elapsed.",
+        "Validate source-assigned membership, attempts/accepted unique totals, coverage/discontinuities, hashes and boundary model.",
+        "Clock corrections create immutable superseding revisions; never silently edit running-job inputs."
+      ],
+      "design_dependencies": [
+        "D02",
+        "D03"
+      ]
+    },
+    "6.7": {
+      "producers": [
+        "WX-03",
+        "WX-10"
+      ],
+      "obligations": [
+        "Dedicated approved Obsidian HDD NFS grant, exact ownership/modes/capacity and allowed workload/node access; no unrelated share or Longhorn raw substitute.",
+        "RWX permits placement but supplies no fencing; one admitted writer/camera with qualified lock, epoch and old-process stop/fence proof.",
+        "Coordinator may use control APIs; collector camera-only network boundary remains; separate fenced cleanup role cannot delete newer generations.",
+        "If old writer stop/fence is uncertain pause; test partition/reconnect/lock recovery/stale return/boundary rollover/append crash.",
+        "NAS failure stops persistence, bounds pending memory, records gaps and never spills to unapproved disk; kernel-I/O watchdog and checkpoint reconstruction need qualification."
+      ],
+      "design_dependencies": [
+        "D03",
+        "OWN-NFS"
+      ]
+    },
+    "6.8": {
+      "producers": [
+        "WX-03",
+        "WX-18",
+        "WX-31"
+      ],
+      "obligations": [
+        "Use measured p95 bytes/cadence, longest segment/backlog/scratch and 30% reserve; distinguish quota/PVC label/free NAS space and other consumers.",
+        "Verify decimal-unit rate arithmetic; cleanup reduces occupancy, not lifetime write volume, and TAR does not reduce JPEG bytes.",
+        "No full-day synthetic/uncompressed intermediate; preserve control reserve, per-camera accounting and healthy/recovery capacity.",
+        "70/85/90 watermarks require admitted usable budget; lower resume threshold and pressure policy cannot overwrite unpublished/active/pinned inputs or unrelated data.",
+        "Forty-eight hours is escalation, not terminal-loss authorization; uncertain capacity stops payload writes with visible gaps."
+      ],
+      "design_dependencies": [
+        "D03",
+        "D16",
+        "OWN-NFS"
+      ]
+    },
+    "6.9": {
+      "producers": [
+        "WX-18",
+        "WX-36",
+        "WX-37"
+      ],
+      "obligations": [
+        "All mandatory video/poster validation, qualified Garage durability, DB publication receipt and origin readback plus all pins resolved before dense-source deletion.",
+        "Hourly bytes/obligations and compact keogram input may transfer durably with hash/ownership receipt before releasing source pin; pending promotion is not archived success.",
+        "Cross-boundary selection remains pinned; crash transfer may retain both copies but never leave neither protected; use same approved NFS grant, no alternate NVMe.",
+        "Missing-slot decision is explicit; one-hour cleanup target never overrides holds; retain compact provenance/deletion receipts and retry idempotently.",
+        "New capture proceeds independently under admitted budgets; AI uses completed media, and asynchronous B2 is not normally a raw hold unless local-loss qualification requires it.",
+        "Extraction/archive failure preserves last evidence, reports degradation and invokes admitted backpressure; lease expiry is never deletion permission."
+      ],
+      "design_dependencies": [
+        "D03",
+        "D07",
+        "D15",
+        "D16"
+      ]
+    },
+    "6.10": {
+      "producers": [
+        "WX-37",
+        "WX-08",
+        "WX-19",
+        "WX-40"
+      ],
+      "obligations": [
+        "Nearest qualified source-time midpoint selection; earlier time then ID tie-break; preferred 60-second offset otherwise flagged same-hour fallback or explicit missing.",
+        "Finalize after hour closes plus sealed candidates/late-input deadline; register obligation before either cross-twilight segment cleans up; no whole-day retention or double segment ownership.",
+        "Private immutable exact JPEG with size/hash/geometry/time/uncertainty/source and camera/day/hour FKs; durable receipt/transaction before releasing last original pin.",
+        "Retries converge on one active selection; corrections preserve revision/audit/tombstone/grace and never overwrite different hashes.",
+        "Sanitized/masked public derivatives only, useful responsive sizes and comparison dates/offsets/missing states; never expose native original or imply matching solar phase.",
+        "Every comparison/poster/thumbnail obeys 600-second upper-bound embargo even for late-hour fallback; archive can finish privately first.",
+        "Five-year selected original/comparison horizon is independent of shorter video life; retain needed FK/tombstone/recovery references; no cascade deletion.",
+        "Capacity includes leap/DST hours, derivative/replica/offsite bytes; sparse archive is not authority to retain dense capture."
+      ],
+      "design_dependencies": [
+        "D02",
+        "D07",
+        "D08",
+        "D15",
+        "D16"
+      ]
+    },
+    "6.11": {
+      "producers": [
+        "WX-38",
+        "WX-19",
+        "WX-20"
+      ],
+      "obligations": [
+        "Three cameras, minute-level coalesced publication from existing sealed captures; no public request starts capture or RTSP.",
+        "All routes enforce latest plausible exposure +600 seconds, including guessed URLs, aliases/thumbnails/HEAD/range/embed/prewarm; unknown/future/unsafe timing fails closed.",
+        "Separate image worker, approved masking/sanitation, immutable derivative and atomic pointer; extra sealed-chunk age accepted rather than mutable-tail bypass.",
+        "Preserve source/publication times, generation, policy/quality/uncertainty and current age; stale/placeholder bounds and short caches do not relabel old frames fresh.",
+        "Outage recovery coalesces newest eligible capture rather than historical backlog; preview retention/custody separate from hourly originals.",
+        "Controlled policy/timestamp correction withdraws/invalidate projections/caches; logical expiry never releases recovery-held physical bytes."
+      ],
+      "design_dependencies": [
+        "D03",
+        "D13",
+        "D16"
+      ]
+    }
+  },
+  "verification": {
+    "all_nonblank_nonheading_source_lines_preserved": true,
+    "runtime_acceptance": false
+  }
+}

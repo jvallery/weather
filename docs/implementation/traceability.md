@@ -121,3 +121,7 @@ The [§§12.6–12.8 audit](ui-clause-audit.md) maps all 38 source sentences to 
 ## Time-model paragraph audit
 
 The [§§5.1–5.5 audit](time-clause-audit.md) preserves all paragraphs/fenced examples and maps grouped acceptance obligations to time, schema, capture, publication and consumer issues. Exact arithmetic/DST expected-value vectors are checked independently of application code; runtime and astronomy remain unqualified. This expands the focused audit without claiming full-document clause coverage.
+
+## Acquisition paragraph audit
+
+The [§§6.1–6.11 audit](capture-clause-audit.md) preserves every source block and maps 51 grouped acceptance obligations across capture, fencing, capacity, cleanup, hourly custody and delayed previews. It verifies source coverage, not runtime behavior or complete-document clause closure.
