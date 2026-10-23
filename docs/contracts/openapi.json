@@ -1,0 +1,2102 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Weather API",
+    "version": "1.0.0-planning",
+    "description": "Design contract, not deployed endpoints. Cross-field security/time/revision invariants are normative in api-contract.md. Limits are design ceilings requiring D16 load qualification."
+  },
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "security": [],
+  "paths": {
+    "/api/v1/weather/current": {
+      "get": {
+        "operationId": "getCurrent",
+        "description": "Read the current projection; never poll a camera, cloud service or model. Preserve measurement timestamps during cache/dependency failure.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Canonical response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Current"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/weather/observations": {
+      "get": {
+        "operationId": "getObservations",
+        "description": "Raw normalized observations, bounded source window and keyset pagination. All public measurement families are discoverable through the metric registry; diagnostics remain private.",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/UTC"
+            },
+            "description": "Inclusive source-time bound."
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/UTC"
+            },
+            "description": "Exclusive source-time bound; must exceed start."
+          },
+          {
+            "name": "metrics",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "minItems": 1,
+              "maxItems": 32
+            },
+            "description": ""
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5000,
+              "default": 1000
+            },
+            "description": ""
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canonical response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/History"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/weather/aggregates": {
+      "get": {
+        "operationId": "getAggregates",
+        "description": "Reject unsupported metric/statistic/resolution combinations. Never silently change requested measurement meaning.",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/UTC"
+            },
+            "description": "Inclusive source-time bound."
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/UTC"
+            },
+            "description": "Exclusive source-time bound; must exceed start."
+          },
+          {
+            "name": "metrics",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "minItems": 1,
+              "maxItems": 32
+            },
+            "description": ""
+          },
+          {
+            "name": "resolution_seconds",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": ""
+          },
+          {
+            "name": "statistic",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": ""
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canonical response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Aggregates"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/timelapses": {
+      "get": {
+        "operationId": "listTimelapses",
+        "description": "",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "description": ""
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "description": ""
+          },
+          {
+            "name": "camera",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/Camera"
+            },
+            "description": ""
+          },
+          {
+            "name": "cycle_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/Date"
+            },
+            "description": ""
+          },
+          {
+            "name": "segment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "daytime",
+                "overnight"
+              ]
+            },
+            "description": ""
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "capturing",
+                "queued",
+                "processing",
+                "published",
+                "partial",
+                "unavailable",
+                "expired"
+              ]
+            },
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canonical response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/VideoPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/timelapses/{video_id}": {
+      "get": {
+        "operationId": "getTimelapse",
+        "description": "Canonical current sidecar revision; unavailable records have no fictitious media assets.",
+        "parameters": [
+          {
+            "name": "video_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canonical response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Video"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stills": {
+      "get": {
+        "operationId": "listStills",
+        "description": "Only sanitized public derivatives. Hour slots distinguish repeated local offsets.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "description": ""
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "description": ""
+          },
+          {
+            "name": "camera",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/Camera"
+            },
+            "description": ""
+          },
+          {
+            "name": "calendar_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/Date"
+            },
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canonical response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/ImagePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cameras/{camera}/preview": {
+      "get": {
+        "operationId": "getPreview",
+        "description": "A missing/unavailable preview is a typed state. Unknown camera is 404. No request-triggered capture.",
+        "parameters": [
+          {
+            "name": "camera",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/Camera"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canonical response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Image"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/keograms": {
+      "get": {
+        "operationId": "listKeograms",
+        "description": "",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "description": ""
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "description": ""
+          },
+          {
+            "name": "camera",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/Camera"
+            },
+            "description": ""
+          },
+          {
+            "name": "cycle_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/Date"
+            },
+            "description": ""
+          },
+          {
+            "name": "segment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "daytime",
+                "overnight"
+              ]
+            },
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canonical response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/KeogramPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events": {
+      "get": {
+        "operationId": "listEvents",
+        "description": "",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "description": ""
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "description": ""
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/UTC"
+            },
+            "description": "Inclusive source-time bound."
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/UTC"
+            },
+            "description": "Exclusive source-time bound; must exceed start."
+          },
+          {
+            "name": "camera",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/Camera"
+            },
+            "description": ""
+          },
+          {
+            "name": "origin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "measured",
+                "visual",
+                "manual"
+              ]
+            },
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canonical response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/EventPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/weather/almanac": {
+      "get": {
+        "operationId": "getAlmanac",
+        "description": "Calendar bounds and history coverage are explicit. Comparisons use separately validated equal-purpose intervals; no external forecast dependency. Comparison requires both comparison bounds; other products reject them.",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/UTC"
+            },
+            "description": "Inclusive source-time bound."
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/UTC"
+            },
+            "description": "Exclusive source-time bound; must exceed start."
+          },
+          {
+            "name": "product",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "records",
+                "precipitation_calendar",
+                "wind_rose",
+                "astronomy",
+                "comparison"
+              ]
+            },
+            "description": ""
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "description": ""
+          },
+          {
+            "name": "comparison_start",
+            "in": "query",
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/UTC"
+            },
+            "description": "Required with comparison_end when product=comparison; inclusive bound."
+          },
+          {
+            "name": "comparison_end",
+            "in": "query",
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/UTC"
+            },
+            "description": "Required with comparison_start when product=comparison; exclusive bound."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canonical response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Almanac"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/search": {
+      "post": {
+        "operationId": "search",
+        "description": "Bounded read-only search. An empty textual query performs typed filtering without model calls. Numeric filters apply before ranking and never relax on underfill.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./api.schema.json#/$defs/SearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ranked results and explicit fallback mode",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/SearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/operator/subjects/{subject_id}": {
+      "patch": {
+        "operationId": "editSubject",
+        "security": [
+          {
+            "OperatorSession": [],
+            "CsrfToken": []
+          }
+        ],
+        "description": "Authenticated operator-only write. Server derives actor identity and verifies role, Origin/CSRF and expected revision. Reject stale/evidence-invalid edits; never overwrite measurements.",
+        "parameters": [
+          {
+            "name": "subject_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./api.schema.json#/$defs/EditorWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Committed audit/revision; derivative work may be pending",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/EditorReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getOperatorSubject",
+        "security": [
+          {
+            "OperatorSession": []
+          }
+        ],
+        "description": "Authorized private effective state; never cache publicly or include in public sidecars/search.",
+        "parameters": [
+          {
+            "name": "subject_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canonical response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/OperatorSubject"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/media/{asset_id}": {
+      "get": {
+        "operationId": "getMedia",
+        "description": "Authorize published asset class, embargo, expiry and withdrawal before validators/ranges. No provider redirect. Stream bounded buffers. HEAD returns no body; Range processing is supported on GET only. Multi-range requests are deliberately rejected; see semantic contract.",
+        "parameters": [
+          {
+            "name": "asset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/Id"
+            }
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Range",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized representation (HEAD: headers only)",
+            "headers": {
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "description": "Selected representation length, or range length for 206."
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong validator bound to immutable asset bytes."
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "video/mp4": {},
+              "image/jpeg": {},
+              "image/png": {},
+              "image/webp": {},
+              "application/json": {}
+            }
+          },
+          "206": {
+            "description": "GET single byte range only",
+            "headers": {
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "description": "Selected representation length, or range length for 206."
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong validator bound to immutable asset bytes."
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "video/mp4": {},
+              "image/jpeg": {},
+              "image/png": {},
+              "image/webp": {},
+              "application/json": {}
+            }
+          },
+          "304": {
+            "description": "Authorized representation unchanged",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong validator bound to immutable asset bytes."
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "416": {
+            "description": "Unsatisfiable range",
+            "headers": {
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "operationId": "headMedia",
+        "description": "Authorize published asset class, embargo, expiry and withdrawal before validators/ranges. No provider redirect. Stream bounded buffers. HEAD returns no body; Range processing is supported on GET only. Multi-range requests are deliberately rejected; see semantic contract.",
+        "parameters": [
+          {
+            "name": "asset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/Id"
+            }
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Range",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized representation (HEAD: headers only)",
+            "headers": {
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "description": "Selected representation length, or range length for 206."
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong validator bound to immutable asset bytes."
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Authorized representation unchanged",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong validator bound to immutable asset bytes."
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "416": {
+            "description": "Unsatisfiable range",
+            "headers": {
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/downloads/{video_id}/native": {
+      "get": {
+        "operationId": "getNativeDownload",
+        "description": "Authorize published asset class, embargo, expiry and withdrawal before validators/ranges. No provider redirect. Stream bounded buffers. HEAD returns no body; Range processing is supported on GET only. Multi-range requests are deliberately rejected; see semantic contract.",
+        "parameters": [
+          {
+            "name": "video_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/Id"
+            }
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Range",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized representation (HEAD: headers only)",
+            "headers": {
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "description": "Selected representation length, or range length for 206."
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong validator bound to immutable asset bytes."
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "attachment with sanitized filename"
+              }
+            },
+            "content": {
+              "video/mp4": {}
+            }
+          },
+          "206": {
+            "description": "GET single byte range only",
+            "headers": {
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "description": "Selected representation length, or range length for 206."
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong validator bound to immutable asset bytes."
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "attachment with sanitized filename"
+              }
+            },
+            "content": {
+              "video/mp4": {}
+            }
+          },
+          "304": {
+            "description": "Authorized representation unchanged",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong validator bound to immutable asset bytes."
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "416": {
+            "description": "Unsatisfiable range",
+            "headers": {
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "operationId": "headNativeDownload",
+        "description": "Authorize published asset class, embargo, expiry and withdrawal before validators/ranges. No provider redirect. Stream bounded buffers. HEAD returns no body; Range processing is supported on GET only. Multi-range requests are deliberately rejected; see semantic contract.",
+        "parameters": [
+          {
+            "name": "video_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/Id"
+            }
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Range",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized representation (HEAD: headers only)",
+            "headers": {
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "description": "Selected representation length, or range length for 206."
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong validator bound to immutable asset bytes."
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "attachment with sanitized filename"
+              }
+            }
+          },
+          "304": {
+            "description": "Authorized representation unchanged",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Strong validator bound to immutable asset bytes."
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "416": {
+            "description": "Unsatisfiable range",
+            "headers": {
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/weather/metrics": {
+      "get": {
+        "operationId": "getMetricRegistry",
+        "description": "Public weather field, canonical unit and supported aggregate registry. Excludes private hardware/network diagnostics.",
+        "responses": {
+          "200": {
+            "description": "Canonical response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/MetricRegistry"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/operator/telemetry/receipts": {
+      "get": {
+        "operationId": "getPrivateReceipts",
+        "security": [
+          {
+            "OperatorSession": []
+          }
+        ],
+        "description": "Bounded private receipt export. Requires diagnostic-reader capability in addition to authenticated session; exact payload bytes may contain hardware identities. Cursor preserves full retained history access.",
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/UTC"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "./api.schema.json#/$defs/UTC"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canonical response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/PrivateReceipts"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "./api.schema.json#/$defs/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "OperatorSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "weather_operator_session",
+        "description": "Same-origin secure HttpOnly session established by approved fleet identity; concrete integration remains D13."
+      },
+      "CsrfToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-CSRF-Token",
+        "description": "Required for cookie-authenticated mutations; verify Origin as well."
+      }
+    }
+  }
+}

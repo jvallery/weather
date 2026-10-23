@@ -1,0 +1,2870 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weather.vallery.net/contracts/v1/api.schema.json",
+  "title": "Weather public and operator API contracts",
+  "description": "Planning contract. Semantic invariants and commissioning limits are documented alongside this schema. No endpoint is deployed.",
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+    },
+    "UTC": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?Z$"
+    },
+    "Date": {
+      "type": "string",
+      "format": "date"
+    },
+    "Hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "Camera": {
+      "enum": [
+        "skycam_east",
+        "skycam_west",
+        "frontyard_1"
+      ]
+    },
+    "Interval": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "$ref": "#/$defs/UTC"
+        },
+        "end": {
+          "$ref": "#/$defs/UTC"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ]
+    },
+    "Rational": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "numerator": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "denominator": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "numerator",
+        "denominator"
+      ]
+    },
+    "Reason": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "Coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fraction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "support_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "expected_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "algorithm_revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "gaps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Interval"
+          },
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "fraction",
+        "support_seconds",
+        "expected_seconds",
+        "algorithm_revision",
+        "gaps"
+      ]
+    },
+    "Metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "metric": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "observed_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UTC"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "received_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UTC"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expected_interval_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "valid_until": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UTC"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "quality": {
+          "enum": [
+            "valid",
+            "suspect",
+            "missing",
+            "invalid"
+          ]
+        },
+        "freshness": {
+          "enum": [
+            "fresh",
+            "stale",
+            "unavailable"
+          ]
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        }
+      },
+      "required": [
+        "metric",
+        "value",
+        "unit",
+        "observed_at",
+        "received_at",
+        "expected_interval_seconds",
+        "valid_until",
+        "quality",
+        "freshness",
+        "reason"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "value": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "value"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "freshness": {
+                "enum": [
+                  "unavailable"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "freshness": {
+                "const": "fresh"
+              }
+            },
+            "required": [
+              "freshness"
+            ]
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "number"
+              },
+              "observed_at": {
+                "$ref": "#/$defs/UTC"
+              },
+              "received_at": {
+                "$ref": "#/$defs/UTC"
+              },
+              "valid_until": {
+                "$ref": "#/$defs/UTC"
+              },
+              "quality": {
+                "enum": [
+                  "valid"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Current": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "generated_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "station_alias": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "data_state": {
+          "enum": [
+            "live",
+            "cached",
+            "unavailable"
+          ]
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Metric"
+          },
+          "maxItems": 128,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "schema_version",
+        "generated_at",
+        "station_alias",
+        "data_state",
+        "metrics"
+      ]
+    },
+    "Problem": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "retry_after_seconds": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "request_id",
+        "retry_after_seconds"
+      ]
+    },
+    "Asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "asset_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "class": {
+          "enum": [
+            "video",
+            "poster",
+            "public_still",
+            "keogram",
+            "camera_preview",
+            "metadata"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^/media/[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+        },
+        "mime": {
+          "enum": [
+            "video/mp4",
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "application/json"
+          ]
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/Hash"
+        },
+        "width": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "height": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "asset_id",
+        "class",
+        "url",
+        "mime",
+        "bytes",
+        "sha256",
+        "width",
+        "height"
+      ]
+    },
+    "Image": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "image_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "camera": {
+          "$ref": "#/$defs/Camera"
+        },
+        "calendar_date": {
+          "$ref": "#/$defs/Date"
+        },
+        "day_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "slot_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cycle_date": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "local_label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "source_interval": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exposure_upper_bound": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UTC"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "selection_policy": {
+          "$ref": "#/$defs/Id"
+        },
+        "selection_offset_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "state": {
+          "enum": [
+            "pending",
+            "published",
+            "missing",
+            "stale",
+            "unavailable",
+            "expired",
+            "withdrawn"
+          ]
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "publication_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "public_not_before": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UTC"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "first_published_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UTC"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UTC"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expected_refresh_seconds": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Asset"
+          },
+          "maxItems": 8
+        }
+      },
+      "required": [
+        "schema_version",
+        "image_id",
+        "camera",
+        "calendar_date",
+        "day_id",
+        "slot_id",
+        "cycle_date",
+        "local_label",
+        "source_interval",
+        "exposure_upper_bound",
+        "selection_policy",
+        "selection_offset_seconds",
+        "state",
+        "reason",
+        "publication_revision",
+        "public_not_before",
+        "first_published_at",
+        "expires_at",
+        "expected_refresh_seconds",
+        "assets"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "published",
+                  "stale"
+                ]
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "assets": {
+                "minItems": 1
+              },
+              "source_interval": {
+                "$ref": "#/$defs/Interval"
+              },
+              "exposure_upper_bound": {
+                "$ref": "#/$defs/UTC"
+              },
+              "public_not_before": {
+                "$ref": "#/$defs/UTC"
+              },
+              "first_published_at": {
+                "$ref": "#/$defs/UTC"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "pending",
+                  "missing",
+                  "unavailable",
+                  "expired",
+                  "withdrawn"
+                ]
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "assets": {
+                "maxItems": 0
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              }
+            }
+          }
+        }
+      ]
+    },
+    "KeogramBin": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/Interval"
+        },
+        "x_start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "x_end": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "coverage": {
+          "$ref": "#/$defs/Coverage"
+        }
+      },
+      "required": [
+        "source",
+        "x_start",
+        "x_end",
+        "coverage"
+      ]
+    },
+    "Keogram": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "keogram_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "camera": {
+          "$ref": "#/$defs/Camera"
+        },
+        "cycle_date": {
+          "$ref": "#/$defs/Date"
+        },
+        "segment": {
+          "enum": [
+            "daytime",
+            "overnight"
+          ]
+        },
+        "source_interval": {
+          "$ref": "#/$defs/Interval"
+        },
+        "recipe_revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "lineage_digest": {
+          "$ref": "#/$defs/Hash"
+        },
+        "state": {
+          "enum": [
+            "processing",
+            "published",
+            "partial",
+            "unavailable",
+            "expired"
+          ]
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "asset": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Asset"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "bins": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/KeogramBin"
+          },
+          "maxItems": 10000
+        },
+        "publication_revision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "schema_version",
+        "keogram_id",
+        "camera",
+        "cycle_date",
+        "segment",
+        "source_interval",
+        "recipe_revision",
+        "lineage_digest",
+        "state",
+        "reason",
+        "asset",
+        "bins",
+        "publication_revision"
+      ]
+    },
+    "TimeMapEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "frame_start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "frame_end": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source_interval": {
+          "$ref": "#/$defs/Interval"
+        },
+        "uncertainty_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "coverage": {
+          "$ref": "#/$defs/Coverage"
+        },
+        "mode": {
+          "enum": [
+            "observed_exposure",
+            "motion_exposure",
+            "gap"
+          ]
+        }
+      },
+      "required": [
+        "frame_start",
+        "frame_end",
+        "source_interval",
+        "uncertainty_seconds",
+        "coverage",
+        "mode"
+      ]
+    },
+    "Rendition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "native",
+            "web",
+            "mobile"
+          ]
+        },
+        "asset": {
+          "$ref": "#/$defs/Asset"
+        },
+        "codec": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "profile": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "level": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "fps": {
+          "$ref": "#/$defs/Rational"
+        },
+        "frame_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "duration": {
+          "$ref": "#/$defs/Rational"
+        },
+        "track_timescale": {
+          "const": 60000
+        },
+        "movie_timescale": {
+          "const": 60000
+        }
+      },
+      "required": [
+        "role",
+        "asset",
+        "codec",
+        "profile",
+        "level",
+        "fps",
+        "frame_count",
+        "duration",
+        "track_timescale",
+        "movie_timescale"
+      ]
+    },
+    "Poster": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "asset": {
+          "$ref": "#/$defs/Asset"
+        },
+        "source_interval": {
+          "$ref": "#/$defs/Interval"
+        },
+        "output_pts": {
+          "$ref": "#/$defs/Rational"
+        },
+        "source_kind": {
+          "enum": [
+            "observed_capture",
+            "decoded_output_frame"
+          ]
+        },
+        "recipe_revision": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "asset",
+        "source_interval",
+        "output_pts",
+        "source_kind",
+        "recipe_revision"
+      ]
+    },
+    "Aggregate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "metric": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "statistic": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "interval": {
+          "$ref": "#/$defs/Interval"
+        },
+        "coverage": {
+          "$ref": "#/$defs/Coverage"
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "maxItems": 1000
+        },
+        "evidence_revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        }
+      },
+      "required": [
+        "metric",
+        "statistic",
+        "value",
+        "unit",
+        "interval",
+        "coverage",
+        "evidence_ids",
+        "evidence_revision",
+        "reason"
+      ]
+    },
+    "Seek": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "start_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "end_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "precision": {
+          "enum": [
+            "frame",
+            "interval",
+            "clip",
+            "segment"
+          ]
+        },
+        "source_interval": {
+          "$ref": "#/$defs/Interval"
+        }
+      },
+      "required": [
+        "start_seconds",
+        "end_seconds",
+        "precision",
+        "source_interval"
+      ]
+    },
+    "Claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "claim_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "origin": {
+          "enum": [
+            "visual",
+            "measured",
+            "human"
+          ]
+        },
+        "source_interval": {
+          "$ref": "#/$defs/Interval"
+        },
+        "precision": {
+          "enum": [
+            "frame",
+            "interval",
+            "clip",
+            "segment"
+          ]
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "maxItems": 100
+        },
+        "seek": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Seek"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "claim_id",
+        "text",
+        "origin",
+        "source_interval",
+        "precision",
+        "evidence_ids",
+        "seek"
+      ]
+    },
+    "Analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "enum": [
+            "pending",
+            "running",
+            "complete",
+            "partial",
+            "unavailable",
+            "invalidated"
+          ]
+        },
+        "mode": {
+          "enum": [
+            "native_video",
+            "sampled_frames",
+            "none"
+          ]
+        },
+        "claims": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Claim"
+          },
+          "maxItems": 256
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "maxItems": 64
+        },
+        "prompt_revision": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schema_revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "capability_revision": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence_revision": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "state",
+        "mode",
+        "claims",
+        "limitations",
+        "prompt_revision",
+        "schema_revision",
+        "capability_revision",
+        "evidence_revision"
+      ]
+    },
+    "EditorialPublic": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "effective_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "human_edited": {
+          "type": "boolean"
+        },
+        "updated_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "public_tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "effective_revision",
+        "human_edited",
+        "updated_at",
+        "public_tags"
+      ]
+    },
+    "SearchState": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "enum": [
+            "pending",
+            "indexed",
+            "degraded",
+            "withdrawn"
+          ]
+        },
+        "profile_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "generation_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "metadata_revision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "state",
+        "profile_id",
+        "generation_id",
+        "metadata_revision"
+      ]
+    },
+    "Video": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "video_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "camera": {
+          "$ref": "#/$defs/Camera"
+        },
+        "cycle_date": {
+          "$ref": "#/$defs/Date"
+        },
+        "segment": {
+          "enum": [
+            "daytime",
+            "overnight"
+          ]
+        },
+        "media_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "metadata_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "state": {
+          "enum": [
+            "capturing",
+            "queued",
+            "processing",
+            "published",
+            "partial",
+            "unavailable",
+            "expired",
+            "withdrawn"
+          ]
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "updated_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "source_interval": {
+          "$ref": "#/$defs/Interval"
+        },
+        "local_start_label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "local_end_label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "twilight_model": {
+          "$ref": "#/$defs/Id"
+        },
+        "allocated_frames": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "fps": {
+          "$ref": "#/$defs/Rational"
+        },
+        "duration": {
+          "$ref": "#/$defs/Rational"
+        },
+        "time_map": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimeMapEntry"
+          },
+          "maxItems": 10000
+        },
+        "expected_slots": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "accepted_slots": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cadence_epochs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "interval": {
+                "$ref": "#/$defs/Interval"
+              },
+              "interval_seconds": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            },
+            "required": [
+              "interval",
+              "interval_seconds"
+            ]
+          },
+          "maxItems": 100
+        },
+        "source_time_basis": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "coverage": {
+          "$ref": "#/$defs/Coverage"
+        },
+        "caveats": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "maxItems": 64
+        },
+        "renditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Rendition"
+          },
+          "maxItems": 3,
+          "allOf": [
+            {
+              "contains": {
+                "properties": {
+                  "role": {
+                    "const": "native"
+                  }
+                },
+                "required": [
+                  "role"
+                ]
+              },
+              "minContains": 0,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "properties": {
+                  "role": {
+                    "const": "web"
+                  }
+                },
+                "required": [
+                  "role"
+                ]
+              },
+              "minContains": 0,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "properties": {
+                  "role": {
+                    "const": "mobile"
+                  }
+                },
+                "required": [
+                  "role"
+                ]
+              },
+              "minContains": 0,
+              "maxContains": 1
+            }
+          ]
+        },
+        "poster": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Poster"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "native_download_url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^/downloads/[A-Za-z0-9][A-Za-z0-9_-]{0,127}/native$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "keogram_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "keogram_state": {
+          "enum": [
+            "pending",
+            "published",
+            "partial",
+            "unavailable",
+            "expired"
+          ]
+        },
+        "calendar_day_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "maxItems": 4
+        },
+        "public_still_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "maxItems": 100
+        },
+        "event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "maxItems": 1000
+        },
+        "weather": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Aggregate"
+          },
+          "maxItems": 128
+        },
+        "analysis": {
+          "$ref": "#/$defs/Analysis"
+        },
+        "editorial": {
+          "$ref": "#/$defs/EditorialPublic"
+        },
+        "search": {
+          "$ref": "#/$defs/SearchState"
+        },
+        "input_manifest_hash": {
+          "$ref": "#/$defs/Hash"
+        },
+        "recipe_revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "build_identity": {
+          "$ref": "#/$defs/Id"
+        },
+        "publication_generation": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "schema_version",
+        "video_id",
+        "camera",
+        "cycle_date",
+        "segment",
+        "media_revision",
+        "metadata_revision",
+        "state",
+        "reason",
+        "updated_at",
+        "source_interval",
+        "local_start_label",
+        "local_end_label",
+        "timezone",
+        "twilight_model",
+        "allocated_frames",
+        "fps",
+        "duration",
+        "time_map",
+        "expected_slots",
+        "accepted_slots",
+        "cadence_epochs",
+        "source_time_basis",
+        "coverage",
+        "caveats",
+        "renditions",
+        "poster",
+        "native_download_url",
+        "keogram_id",
+        "keogram_state",
+        "calendar_day_ids",
+        "public_still_ids",
+        "event_ids",
+        "weather",
+        "analysis",
+        "editorial",
+        "search",
+        "input_manifest_hash",
+        "recipe_revision",
+        "build_identity",
+        "publication_generation"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "published",
+                  "partial"
+                ]
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "renditions": {
+                "minItems": 3,
+                "allOf": [
+                  {
+                    "contains": {
+                      "properties": {
+                        "role": {
+                          "const": "native"
+                        }
+                      },
+                      "required": [
+                        "role"
+                      ]
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "properties": {
+                        "role": {
+                          "const": "web"
+                        }
+                      },
+                      "required": [
+                        "role"
+                      ]
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "properties": {
+                        "role": {
+                          "const": "mobile"
+                        }
+                      },
+                      "required": [
+                        "role"
+                      ]
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                ]
+              },
+              "poster": {
+                "$ref": "#/$defs/Poster"
+              },
+              "native_download_url": {
+                "type": "string",
+                "pattern": "^/downloads/[A-Za-z0-9][A-Za-z0-9_-]{0,127}/native$"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "enum": [
+                  "unavailable",
+                  "expired",
+                  "withdrawn"
+                ]
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "renditions": {
+                "maxItems": 0
+              },
+              "poster": {
+                "type": "null"
+              },
+              "native_download_url": {
+                "type": "null"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              }
+            }
+          }
+        }
+      ]
+    },
+    "HistoryPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "observed_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "received_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "metric": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "quality": {
+          "enum": [
+            "valid",
+            "suspect",
+            "invalid",
+            "missing"
+          ]
+        },
+        "evidence_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "support_interval": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "observed_at",
+        "received_at",
+        "metric",
+        "value",
+        "unit",
+        "quality",
+        "evidence_id",
+        "reason",
+        "support_interval"
+      ]
+    },
+    "History": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "generated_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "interval": {
+          "$ref": "#/$defs/Interval"
+        },
+        "resolution_seconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "aggregation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HistoryPoint"
+          },
+          "maxItems": 5000
+        },
+        "gaps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Interval"
+          },
+          "maxItems": 1000
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "generated_at",
+        "interval",
+        "resolution_seconds",
+        "aggregation",
+        "points",
+        "gaps",
+        "next_cursor"
+      ]
+    },
+    "Aggregates": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "generated_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Aggregate"
+          },
+          "maxItems": 5000
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "generated_at",
+        "revision",
+        "items",
+        "next_cursor"
+      ]
+    },
+    "Event": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "event_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "origin": {
+          "enum": [
+            "measured",
+            "visual",
+            "manual"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "source_interval": {
+          "$ref": "#/$defs/Interval"
+        },
+        "precision": {
+          "enum": [
+            "frame",
+            "interval",
+            "clip",
+            "segment"
+          ]
+        },
+        "camera": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Camera"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "calendar_day_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "maxItems": 32
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "maxItems": 100
+        },
+        "rule_revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "video_links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "video_id": {
+                "$ref": "#/$defs/Id"
+              },
+              "media_revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "seek": {
+                "$ref": "#/$defs/Seek"
+              }
+            },
+            "required": [
+              "video_id",
+              "media_revision",
+              "seek"
+            ]
+          },
+          "maxItems": 16
+        }
+      },
+      "required": [
+        "event_id",
+        "revision",
+        "origin",
+        "title",
+        "description",
+        "source_interval",
+        "precision",
+        "camera",
+        "calendar_day_ids",
+        "evidence_ids",
+        "rule_revision",
+        "video_links"
+      ]
+    },
+    "Almanac": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "generated_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "interval": {
+          "$ref": "#/$defs/Interval"
+        },
+        "history_interval": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Interval"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "formula_revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "library_revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "products": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "record",
+                  "rain_day",
+                  "wind_rose_bin",
+                  "astronomy",
+                  "comparison"
+                ]
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "aggregate": {
+                "$ref": "#/$defs/Aggregate"
+              },
+              "comparison": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Aggregate"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "angle_start_degrees": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 360
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "angle_end_degrees": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 360
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "instant": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/UTC"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "label",
+              "aggregate",
+              "comparison",
+              "angle_start_degrees",
+              "angle_end_degrees",
+              "instant"
+            ]
+          },
+          "maxItems": 5000
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "generated_at",
+        "revision",
+        "interval",
+        "history_interval",
+        "timezone",
+        "formula_revision",
+        "library_revision",
+        "products",
+        "next_cursor"
+      ]
+    },
+    "NumericPredicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "metric": {
+          "enum": [
+            "precipitation",
+            "wind_gust",
+            "temperature"
+          ]
+        },
+        "statistic": {
+          "enum": [
+            "observed_accumulation",
+            "maximum",
+            "duration_weighted_mean",
+            "minimum"
+          ]
+        },
+        "operator": {
+          "enum": [
+            "eq",
+            "lt",
+            "lte",
+            "gt",
+            "gte"
+          ]
+        },
+        "value": {
+          "type": "number"
+        },
+        "unit": {
+          "enum": [
+            "mm",
+            "in",
+            "m/s",
+            "km/h",
+            "mph",
+            "degC",
+            "degF"
+          ]
+        },
+        "scope": {
+          "const": "video_segment"
+        },
+        "minimum_coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "metric",
+        "statistic",
+        "operator",
+        "value",
+        "unit",
+        "scope",
+        "minimum_coverage"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "metric": {
+                "const": "precipitation"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "statistic": {
+                "const": "observed_accumulation"
+              },
+              "unit": {
+                "enum": [
+                  "mm",
+                  "in"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "metric": {
+                "const": "wind_gust"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "statistic": {
+                "const": "maximum"
+              },
+              "unit": {
+                "enum": [
+                  "m/s",
+                  "km/h",
+                  "mph"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "metric": {
+                "const": "temperature"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "statistic": {
+                "enum": [
+                  "minimum",
+                  "maximum",
+                  "duration_weighted_mean"
+                ]
+              },
+              "unit": {
+                "enum": [
+                  "degC",
+                  "degF"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "SearchRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "query": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "interval": {
+          "$ref": "#/$defs/Interval"
+        },
+        "cameras": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Camera"
+          },
+          "maxItems": 3
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "daytime",
+              "overnight"
+            ]
+          },
+          "maxItems": 2
+        },
+        "predicates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NumericPredicate"
+          },
+          "maxItems": 8
+        },
+        "top_k": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        }
+      },
+      "required": [
+        "schema_version",
+        "query",
+        "interval",
+        "cameras",
+        "segments",
+        "predicates",
+        "top_k"
+      ]
+    },
+    "SearchHit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "video_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "camera": {
+          "$ref": "#/$defs/Camera"
+        },
+        "media_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "metadata_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source_interval": {
+          "$ref": "#/$defs/Interval"
+        },
+        "snippet": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "analysis_mode": {
+          "enum": [
+            "native_video",
+            "sampled_frames",
+            "none"
+          ]
+        },
+        "quality": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "poster": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Asset"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "seek": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Seek"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "matched_measurements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Aggregate"
+          },
+          "maxItems": 8
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "video_id",
+        "camera",
+        "media_revision",
+        "metadata_revision",
+        "source_interval",
+        "snippet",
+        "analysis_mode",
+        "quality",
+        "poster",
+        "seek",
+        "matched_measurements",
+        "evidence_ids"
+      ]
+    },
+    "SearchResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "generated_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "ranking_mode": {
+          "enum": [
+            "hybrid_exact",
+            "hybrid_ann",
+            "lexical",
+            "numeric"
+          ]
+        },
+        "degraded_reason": {
+          "$ref": "#/$defs/Reason"
+        },
+        "profile_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "generation_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "filters": {
+          "$ref": "#/$defs/SearchRequest"
+        },
+        "result_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SearchHit"
+          },
+          "maxItems": 20
+        }
+      },
+      "required": [
+        "generated_at",
+        "ranking_mode",
+        "degraded_reason",
+        "profile_id",
+        "generation_id",
+        "filters",
+        "result_count",
+        "results"
+      ]
+    },
+    "EditorWrite": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expected_effective_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "changes": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "description": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 16384
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "public_tags": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "maxItems": 32
+            },
+            "favorite": {
+              "type": "boolean"
+            },
+            "private_note": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 8192
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "poster_asset_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "event_corrections": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "event_id": {
+                    "$ref": "#/$defs/Id"
+                  },
+                  "expected_revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  "source_interval": {
+                    "$ref": "#/$defs/Interval"
+                  }
+                },
+                "required": [
+                  "event_id",
+                  "expected_revision",
+                  "text",
+                  "source_interval"
+                ]
+              },
+              "maxItems": 32
+            }
+          },
+          "required": [],
+          "minProperties": 1
+        }
+      },
+      "required": [
+        "expected_effective_revision",
+        "reason",
+        "changes"
+      ]
+    },
+    "EditorReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "subject_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "effective_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "audit_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "updated_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "sidecar_state": {
+          "enum": [
+            "pending",
+            "current"
+          ]
+        },
+        "search_state": {
+          "enum": [
+            "pending",
+            "current",
+            "withdrawn"
+          ]
+        }
+      },
+      "required": [
+        "subject_id",
+        "effective_revision",
+        "audit_id",
+        "updated_at",
+        "sidecar_state",
+        "search_state"
+      ]
+    },
+    "VideoPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "generated_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Video"
+          },
+          "maxItems": 100
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "generated_at",
+        "revision",
+        "items",
+        "next_cursor"
+      ]
+    },
+    "ImagePage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "generated_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Image"
+          },
+          "maxItems": 100
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "generated_at",
+        "revision",
+        "items",
+        "next_cursor"
+      ]
+    },
+    "KeogramPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "generated_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Keogram"
+          },
+          "maxItems": 100
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "generated_at",
+        "revision",
+        "items",
+        "next_cursor"
+      ]
+    },
+    "EventPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "generated_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Event"
+          },
+          "maxItems": 100
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "generated_at",
+        "revision",
+        "items",
+        "next_cursor"
+      ]
+    },
+    "MetricDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "metric": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "canonical_unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "display_units": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "maxItems": 16
+        },
+        "statistics": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "maxItems": 16
+        },
+        "expected_interval_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "public": {
+          "const": true
+        },
+        "revision": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "metric",
+        "label",
+        "canonical_unit",
+        "display_units",
+        "statistics",
+        "expected_interval_seconds",
+        "public",
+        "revision"
+      ]
+    },
+    "MetricRegistry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MetricDefinition"
+          },
+          "maxItems": 256
+        }
+      },
+      "required": [
+        "revision",
+        "metrics"
+      ]
+    },
+    "OperatorSubject": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "subject_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "effective_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 16384
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "public_tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "maxItems": 32
+        },
+        "favorite": {
+          "type": "boolean"
+        },
+        "private_note": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 8192
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "poster_asset_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence_revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "requires_rebase": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "subject_id",
+        "effective_revision",
+        "description",
+        "public_tags",
+        "favorite",
+        "private_note",
+        "poster_asset_id",
+        "evidence_revision",
+        "requires_rebase"
+      ]
+    },
+    "PrivateReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "receipt_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "received_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "payload_base64": {
+          "type": "string",
+          "maxLength": 90000,
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+        },
+        "payload_sha256": {
+          "$ref": "#/$defs/Hash"
+        },
+        "parser_revision": {
+          "$ref": "#/$defs/Id"
+        },
+        "state": {
+          "enum": [
+            "unparsed",
+            "parsed",
+            "unknown_family",
+            "malformed"
+          ]
+        }
+      },
+      "required": [
+        "receipt_id",
+        "received_at",
+        "payload_base64",
+        "payload_sha256",
+        "parser_revision",
+        "state"
+      ]
+    },
+    "PrivateReceipts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "generated_at": {
+          "$ref": "#/$defs/UTC"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PrivateReceipt"
+          },
+          "maxItems": 100
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "generated_at",
+        "items",
+        "next_cursor"
+      ]
+    }
+  }
+}

@@ -1,0 +1,450 @@
+{
+  "description": "Synthetic shape validation cases, not runtime semantic or privacy qualification.",
+  "cases": [
+    {
+      "name": "fresh measured value",
+      "schema": "Metric",
+      "valid": true,
+      "value": {
+        "metric": "temperature",
+        "value": 12.5,
+        "unit": "degC",
+        "observed_at": "2026-01-01T00:00:00Z",
+        "received_at": "2026-01-01T00:00:01Z",
+        "expected_interval_seconds": 60,
+        "valid_until": "2026-01-01T00:02:00Z",
+        "quality": "valid",
+        "freshness": "fresh",
+        "reason": null
+      }
+    },
+    {
+      "name": "missing is null with reason",
+      "schema": "Metric",
+      "valid": true,
+      "value": {
+        "metric": "temperature",
+        "value": null,
+        "unit": "degC",
+        "observed_at": null,
+        "received_at": null,
+        "expected_interval_seconds": 60,
+        "valid_until": null,
+        "quality": "missing",
+        "freshness": "unavailable",
+        "reason": "No observation"
+      }
+    },
+    {
+      "name": "fresh null forbidden",
+      "schema": "Metric",
+      "valid": false,
+      "value": {
+        "metric": "temperature",
+        "value": null,
+        "unit": "degC",
+        "observed_at": "2026-01-01T00:00:00Z",
+        "received_at": "2026-01-01T00:00:01Z",
+        "expected_interval_seconds": 60,
+        "valid_until": "2026-01-01T00:02:00Z",
+        "quality": "valid",
+        "freshness": "fresh",
+        "reason": null
+      }
+    },
+    {
+      "name": "local timestamp forbidden",
+      "schema": "Metric",
+      "valid": false,
+      "value": {
+        "metric": "temperature",
+        "value": 12.5,
+        "unit": "degC",
+        "observed_at": "2026-01-01T00:00:00-07:00",
+        "received_at": "2026-01-01T00:00:01Z",
+        "expected_interval_seconds": 60,
+        "valid_until": "2026-01-01T00:02:00Z",
+        "quality": "valid",
+        "freshness": "fresh",
+        "reason": null
+      }
+    },
+    {
+      "name": "impossible calendar timestamp forbidden",
+      "schema": "Metric",
+      "valid": false,
+      "value": {
+        "metric": "temperature",
+        "value": 12.5,
+        "unit": "degC",
+        "observed_at": "2026-02-30T00:00:00Z",
+        "received_at": "2026-01-01T00:00:01Z",
+        "expected_interval_seconds": 60,
+        "valid_until": "2026-01-01T00:02:00Z",
+        "quality": "valid",
+        "freshness": "fresh",
+        "reason": null
+      }
+    },
+    {
+      "name": "numeric-only search",
+      "schema": "SearchRequest",
+      "valid": true,
+      "value": {
+        "schema_version": 1,
+        "query": "",
+        "interval": {
+          "start": "2026-01-01T00:00:00Z",
+          "end": "2026-01-02T00:00:00Z"
+        },
+        "cameras": [
+          "skycam_east"
+        ],
+        "segments": [
+          "daytime"
+        ],
+        "predicates": [
+          {
+            "metric": "precipitation",
+            "statistic": "observed_accumulation",
+            "operator": "eq",
+            "value": 0,
+            "unit": "mm",
+            "scope": "video_segment",
+            "minimum_coverage": 0.95
+          }
+        ],
+        "top_k": 20
+      }
+    },
+    {
+      "name": "rain temperature unit forbidden",
+      "schema": "SearchRequest",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "query": "",
+        "interval": {
+          "start": "2026-01-01T00:00:00Z",
+          "end": "2026-01-02T00:00:00Z"
+        },
+        "cameras": [
+          "skycam_east"
+        ],
+        "segments": [
+          "daytime"
+        ],
+        "predicates": [
+          {
+            "metric": "precipitation",
+            "statistic": "observed_accumulation",
+            "operator": "eq",
+            "value": 0,
+            "unit": "degC",
+            "scope": "video_segment",
+            "minimum_coverage": 0.95
+          }
+        ],
+        "top_k": 20
+      }
+    },
+    {
+      "name": "rain statistic mismatch forbidden",
+      "schema": "SearchRequest",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "query": "",
+        "interval": {
+          "start": "2026-01-01T00:00:00Z",
+          "end": "2026-01-02T00:00:00Z"
+        },
+        "cameras": [
+          "skycam_east"
+        ],
+        "segments": [
+          "daytime"
+        ],
+        "predicates": [
+          {
+            "metric": "precipitation",
+            "statistic": "maximum",
+            "operator": "eq",
+            "value": 0,
+            "unit": "mm",
+            "scope": "video_segment",
+            "minimum_coverage": 0.95
+          }
+        ],
+        "top_k": 20
+      }
+    },
+    {
+      "name": "overlarge search forbidden",
+      "schema": "SearchRequest",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "query": "",
+        "interval": {
+          "start": "2026-01-01T00:00:00Z",
+          "end": "2026-01-02T00:00:00Z"
+        },
+        "cameras": [
+          "skycam_east"
+        ],
+        "segments": [
+          "daytime"
+        ],
+        "predicates": [
+          {
+            "metric": "precipitation",
+            "statistic": "observed_accumulation",
+            "operator": "eq",
+            "value": 0,
+            "unit": "mm",
+            "scope": "video_segment",
+            "minimum_coverage": 0.95
+          }
+        ],
+        "top_k": 21
+      }
+    },
+    {
+      "name": "SQL field forbidden",
+      "schema": "SearchRequest",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "query": "",
+        "interval": {
+          "start": "2026-01-01T00:00:00Z",
+          "end": "2026-01-02T00:00:00Z"
+        },
+        "cameras": [
+          "skycam_east"
+        ],
+        "segments": [
+          "daytime"
+        ],
+        "predicates": [
+          {
+            "metric": "precipitation",
+            "statistic": "observed_accumulation",
+            "operator": "eq",
+            "value": 0,
+            "unit": "mm",
+            "scope": "video_segment",
+            "minimum_coverage": 0.95
+          }
+        ],
+        "top_k": 20,
+        "sql": "SELECT 1"
+      }
+    },
+    {
+      "name": "editor bounded edit",
+      "schema": "EditorWrite",
+      "valid": true,
+      "value": {
+        "expected_effective_revision": 2,
+        "reason": "Correct description",
+        "changes": {
+          "description": "Low clouds",
+          "favorite": true
+        }
+      }
+    },
+    {
+      "name": "editor cannot choose actor",
+      "schema": "EditorWrite",
+      "valid": false,
+      "value": {
+        "expected_effective_revision": 2,
+        "reason": "Correct description",
+        "changes": {
+          "description": "Low clouds",
+          "favorite": true
+        },
+        "actor": "operator"
+      }
+    },
+    {
+      "name": "empty edit forbidden",
+      "schema": "EditorWrite",
+      "valid": false,
+      "value": {
+        "expected_effective_revision": 2,
+        "reason": "Correct description",
+        "changes": {}
+      }
+    },
+    {
+      "name": "editor cannot overwrite measured temperature",
+      "schema": "EditorWrite",
+      "valid": false,
+      "value": {
+        "expected_effective_revision": 2,
+        "reason": "Correct description",
+        "changes": {
+          "temperature": 0
+        }
+      }
+    },
+    {
+      "name": "missing image no fictional asset",
+      "schema": "Image",
+      "valid": true,
+      "value": {
+        "schema_version": 1,
+        "image_id": "preview_skycam_east",
+        "camera": "skycam_east",
+        "calendar_date": "2026-01-01",
+        "day_id": "day_20260101",
+        "slot_id": null,
+        "cycle_date": null,
+        "local_label": "2025-12-31T17:00:00-07:00",
+        "source_interval": null,
+        "exposure_upper_bound": null,
+        "selection_policy": "preview_v1",
+        "selection_offset_seconds": null,
+        "state": "unavailable",
+        "reason": "No qualified source",
+        "publication_revision": 1,
+        "public_not_before": null,
+        "first_published_at": null,
+        "expires_at": null,
+        "expected_refresh_seconds": 60,
+        "assets": []
+      }
+    },
+    {
+      "name": "published image cannot omit assets",
+      "schema": "Image",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "image_id": "preview_skycam_east",
+        "camera": "skycam_east",
+        "calendar_date": "2026-01-01",
+        "day_id": "day_20260101",
+        "slot_id": null,
+        "cycle_date": null,
+        "local_label": "2025-12-31T17:00:00-07:00",
+        "source_interval": null,
+        "exposure_upper_bound": null,
+        "selection_policy": "preview_v1",
+        "selection_offset_seconds": null,
+        "state": "published",
+        "reason": "No qualified source",
+        "publication_revision": 1,
+        "public_not_before": null,
+        "first_published_at": null,
+        "expires_at": null,
+        "expected_refresh_seconds": 60,
+        "assets": []
+      }
+    },
+    {
+      "name": "public derivative shape",
+      "schema": "Asset",
+      "valid": true,
+      "value": {
+        "asset_id": "asset_1",
+        "class": "public_still",
+        "url": "/media/asset_1",
+        "mime": "image/jpeg",
+        "bytes": 100,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "name": "private original class forbidden",
+      "schema": "Asset",
+      "valid": false,
+      "value": {
+        "asset_id": "asset_1",
+        "class": "original",
+        "url": "/media/asset_1",
+        "mime": "image/jpeg",
+        "bytes": 100,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "name": "upstream asset URL forbidden",
+      "schema": "Asset",
+      "valid": false,
+      "value": {
+        "asset_id": "asset_1",
+        "class": "public_still",
+        "url": "https://provider.example/private.jpg",
+        "mime": "image/jpeg",
+        "bytes": 100,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "name": "unavailable image cannot expose assets",
+      "schema": "Image",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "image_id": "preview_skycam_east",
+        "camera": "skycam_east",
+        "calendar_date": "2026-01-01",
+        "day_id": "day_20260101",
+        "slot_id": null,
+        "cycle_date": null,
+        "local_label": "2025-12-31T17:00:00-07:00",
+        "source_interval": null,
+        "exposure_upper_bound": null,
+        "selection_policy": "preview_v1",
+        "selection_offset_seconds": null,
+        "state": "unavailable",
+        "reason": "No qualified source",
+        "publication_revision": 1,
+        "public_not_before": null,
+        "first_published_at": null,
+        "expires_at": null,
+        "expected_refresh_seconds": 60,
+        "assets": [
+          {
+            "asset_id": "asset_1",
+            "class": "public_still",
+            "url": "/media/asset_1",
+            "mime": "image/jpeg",
+            "bytes": 100,
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "width": 1920,
+            "height": 1080
+          }
+        ]
+      }
+    },
+    {
+      "name": "public metric cannot leak station serial",
+      "schema": "Metric",
+      "valid": false,
+      "value": {
+        "metric": "temperature",
+        "value": 12.5,
+        "unit": "degC",
+        "observed_at": "2026-01-01T00:00:00Z",
+        "received_at": "2026-01-01T00:00:01Z",
+        "expected_interval_seconds": 60,
+        "valid_until": "2026-01-01T00:02:00Z",
+        "quality": "valid",
+        "freshness": "fresh",
+        "reason": null,
+        "station_serial": "synthetic"
+      }
+    }
+  ]
+}
