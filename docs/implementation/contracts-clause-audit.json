@@ -1,0 +1,278 @@
+{
+  "scope": "All section 17 source including introduction, full YAML and all ten sidecar field groups",
+  "requirements_sha256": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+  "section_sha256": "5a0aea0c622c6e16a7cfa8f158b2f873a2267305b17edca76879946bf01421d5",
+  "source_blocks": [
+    {
+      "id": "K17.01",
+      "section": "17",
+      "source_text": "Phase 1 finalizes machine-readable JSON Schemas/OpenAPI and migration contracts. These examples communicate shape and invariants; they are not deployable production configuration or a claim that open decisions are resolved.",
+      "sha256": "450dfa57fd843f908fd7bde67c386dfc24686d97429b9d0d34069f3e5aaa2d6b",
+      "producers": [
+        "WX-01",
+        "WX-08",
+        "WX-17",
+        "WX-33"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "K17.1.01",
+      "section": "17.1",
+      "source_text": "```yaml\nschema_version: 1\nsite:\n  public_origin: https://weather.vallery.net\n  timezone: America/Denver\n  location_source: private_mounted_configuration\ncameras:\n  - id: skycam_east\n  - id: skycam_west\n  - id: frontyard_1\ntime:\n  boundary: civil_twilight\n  solar_depression_degrees: 6\n  dawn_offset_seconds: 0\n  dusk_offset_seconds: 0\n  duration_policy: cycle_total\n  cycle_budget_seconds: 120\n  output_fps: \"60/1\"\ncapture:\n  source: snapshot_api\n  default_interval_seconds: 1\n  staging_backend: obsidian_nfs_pvc\n  chunk_seconds: 300\n  total_request_deadline_seconds: 5\nhourly_archive:\n  enabled_cameras: [skycam_east, skycam_west, frontyard_1]\n  slots: actual_elapsed_local_hours\n  anchor: hour_midpoint\n  fallback: nearest_qualified_in_same_hour_with_offset_label\n  retain_original_bytes: true\n  originals_visibility: private\n  retention_years: 5 # selected questionnaire default; lifecycle requires D07/D15\n  enforce_camera_day_hour_foreign_keys: true\n  public_derivatives_only: true\ncamera_previews:\n  enabled_cameras: [skycam_east, skycam_west, frontyard_1]\n  refresh_seconds: 60\n  minimum_publication_age_seconds: 600\n  timing_basis: latest_plausible_exposure_time\n  retention: bounded_policy_selected_in_D16\n  queue_policy: coalesce_to_newest_eligible\nkeograms:\n  enabled_cameras: [skycam_east, skycam_west, frontyard_1]\n  segments: [daytime, overnight]\n  axis: elapsed_utc\n  source: qualified_observed_captures\n  region_and_bins: per_camera_versioned_qualification\nrender:\n  reference_profile: observed_exposure\n  qualification_target: motion_exposure_4x\n  optional_profile: motion_exposure_8x\n  shutter_angle_degrees: 180\n  cpu_fallback_required: true\nweather:\n  source: tempest_udp\n  preserve_original_datagrams: true\n  preserve_all_observation_rows: true\n  history_store: cnpg\n  detailed_retention: until_explicitly_changed_by_approved_policy\n  current_ui_refresh_seconds: 15\n  almanac: local_observations_and_local_astronomy\nmedia:\n  primary_store: garage\n  isolated_bucket_count: 1\n  same_origin_delivery_required: true\n  poster_required: true\nbackup:\n  database_method: qualified_cnpg_barman_plugin\n  database_destination: same_weather_garage_bucket_private_prefix\n  offsite_custody: central_garage_to_b2_full_and_wal\nanalysis:\n  candidate_route: llm.primary.longctx.mm\n  input: completed_validated_video\n  asynchronous: true\nsearch:\n  candidate_embedding_route: embed.main\n  store: cnpg_pgvector\n  exact_search_baseline: true\n  measured_filters: typed_parameterized_sql\n  image_embedding_model: deferred_research_only\nexperience:\n  exploration: per_camera_linked_video_and_weather\n  events: bookmarks_daily_strip_and_in_site_feed\n  editor: authenticated_operator_with_audited_revisions\n  ai_publication: automatic_labeled\n  embed: approved_vallery_net_origins\n  combined_east_west_skycam: follow_on_WX_45\n  product_scope: fleet_first_with_documented_customization\n```",
+      "sha256": "c8131508af1fddbf85f1e8bdd17f962282cd809a8ebe47afee313ee026ca55c8",
+      "producers": [
+        "WX-01",
+        "WX-03",
+        "WX-08",
+        "WX-09",
+        "WX-10",
+        "WX-18",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "K17.1.02",
+      "section": "17.1",
+      "source_text": "Separate fixed requirements from commissioning overrides. Secrets/endpoints, concrete PVC/cluster/bucket/role names, GPU admission, database/extension versions, resource budgets and retention windows are resolved in private deployment configuration after the relevant ADR. Validate configuration at startup; do not silently choose insecure/default production endpoints.",
+      "sha256": "dcd020d7f0443073810ebbb02888bdf90f0d02b3ecc392cac304f8f4b23a9862",
+      "producers": [
+        "WX-01",
+        "WX-03",
+        "WX-08",
+        "WX-09",
+        "WX-10",
+        "WX-18",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "K17.2.01",
+      "section": "17.2",
+      "source_text": "The sidecar schema must support **published, partial and unavailable** records with appropriate nullable assets, rather than require a fictitious MP4 for every scheduled segment. Include:",
+      "sha256": "a9517b43e595d4f99948fe71d31d092a50b09efd80ad43d6db8bedfc8a7ccf11",
+      "producers": [
+        "WX-13",
+        "WX-16",
+        "WX-17",
+        "WX-22",
+        "WX-24",
+        "WX-36",
+        "WX-37",
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "K17.2.02",
+      "section": "17.2",
+      "source_text": "- Identity: schema version, video/camera/cycle-date/segment IDs, media revision, metadata revision, publication state and update time.\n- Time: source UTC start/end, local offset-bearing labels/timezone, twilight model/version, allocated frame count, exact fps, rational duration, source-time map and uncertainty.\n- Capture/quality: expected/accepted slots, cadence epochs, gaps, source-time basis, exposure-weight coverage and processing caveats; no raw private source credentials/addresses.\n- Media/previews: same-origin URLs, MIME/codec/profile/level, dimensions, fps, bytes, SHA-256, poster frame/PTS/source interval and downloadable-native identity.\n- Related products: keogram asset/status and UTC axis map, relevant calendar-day/hourly public image references and event links; private original asset keys/bytes are excluded.\n- Weather: per-metric values/units/coverage, evidence IDs, aggregate algorithm/revision and missing-data reasons.\n- Analysis: state/mode, validated claims/events/evidence IDs, source-time precision, coverage/limitations, prompt/schema/capability version and safe provenance.\n- Editorial: effective public revision, human-edited indicator and update time, active public tags/poster choice; private actor audit, notes and favorites are excluded.\n- Search: index state, profile/generation identifier and canonical metadata revision; no need to publish vectors or private serving details.\n- Integrity: input-manifest hash, recipe/build identity, immutable object references and publication generation. Keep self-referential digest fields out of the bytes being hashed; bind the sidecar hash in its database/object receipt.",
+      "sha256": "3e4fa2c10bf5764bb376258cf1b5a092b746e16c24f6e2681bafb975712b82e8",
+      "producers": [
+        "WX-13",
+        "WX-16",
+        "WX-17",
+        "WX-22",
+        "WX-24",
+        "WX-36",
+        "WX-37",
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "K17.2.03",
+      "section": "17.2",
+      "source_text": "Validate every sidecar before export and serve the same canonical revision through the API. A single \u201cAI description\u201d string without evidence, state and revision binding is insufficient. Public content contains no station serial, private location, raw camera URL, token, internal GPU placement or unsanitized model response.",
+      "sha256": "c4aba4cf12c0cfc7c96530213b8a8431c864c8a85b4685e3296de797d54b9a05",
+      "producers": [
+        "WX-13",
+        "WX-16",
+        "WX-17",
+        "WX-22",
+        "WX-24",
+        "WX-36",
+        "WX-37",
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "K17.3.01",
+      "section": "17.3",
+      "source_text": "Current weather includes `generated_at`, station alias, per-metric `value`, `unit`, `observed_at`, `received_at`, `expected_interval_seconds`, `valid_until`, quality and stale reason. `generated_at` does not replace measurement time. History includes query interval/resolution, cursor, source support and gaps; zero and missing remain distinct.",
+      "sha256": "c352f78a03eb76c31db30023d83577fba01852fc5f59789d82164e8498292848",
+      "producers": [
+        "WX-13",
+        "WX-25",
+        "WX-26"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "K17.3.02",
+      "section": "17.3",
+      "source_text": "Search includes ranking mode, active profile, filters, result count and result metadata with evidence precision/seek bounds. Do not return a \u201cconfidence percent\u201d derived from cosine distance. All API timestamps use unambiguous UTC representations; local labels are additional display data.",
+      "sha256": "c3686b1440177de9fb70d9e4d31508ffe1fe431b727ca78c8caf4af93b44d6b9",
+      "producers": [
+        "WX-13",
+        "WX-25",
+        "WX-26"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "K17.4.01",
+      "section": "17.4",
+      "source_text": "Image responses distinguish `calendar_date` from `cycle_date`, and include camera, stable day/slot IDs, offset-bearing local label, actual UTC source interval/time uncertainty, selection offset/policy, state/reason, publication revision and same-origin **public derivative** URLs. A private archival receipt additionally binds original hash/bytes/geometry, enforced day/hour/source FKs and durability/retention policy. It is not returned by public serializers.",
+      "sha256": "d7da082cf41fb7ccd22f7e65cf3b2b81c4ac163f7425dfbca365481dba06eb2d",
+      "producers": [
+        "WX-17",
+        "WX-36",
+        "WX-37",
+        "WX-38",
+        "WX-40",
+        "WX-41",
+        "WX-42",
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "K17.4.02",
+      "section": "17.4",
+      "source_text": "Preview responses include captured time/bounds, `public_not_before`, actual first-publication time, expected refresh, expiry and stale/unavailable state. Keograms include segment identity, exact UTC bin map, sampled-source lineage/coverage and image recipe. An image asset's public eligibility is enforced at origin, independently of whether its listing is cached.",
+      "sha256": "db314ef68eb74f5fa877701d5943624db3f476fde5b64303009321c9d6f5b282",
+      "producers": [
+        "WX-17",
+        "WX-36",
+        "WX-37",
+        "WX-38",
+        "WX-40",
+        "WX-41",
+        "WX-42",
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "K17.4.03",
+      "section": "17.4",
+      "source_text": "Events include measured/visual/manual origin, source interval/precision, evidence/rule revision, linked calendar days and validated video seek intervals. Almanac responses include explicit calendar bounds, units, formula/library revision, coverage, record-history range and missing reasons. Numeric-search responses identify the statistic/window/coverage that satisfied each predicate. Editorial write schemas include expected effective revision and bounded allowed fields; server-side authorization and audit choose the actor identity, never an arbitrary public request field.",
+      "sha256": "29395de9f48dc1e8778666eff0918f4499767fe67f12f50ed62000d97d3ab4d2",
+      "producers": [
+        "WX-17",
+        "WX-36",
+        "WX-37",
+        "WX-38",
+        "WX-40",
+        "WX-41",
+        "WX-42",
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    }
+  ],
+  "acceptance": {
+    "17": {
+      "producers": [
+        "WX-01",
+        "WX-08",
+        "WX-17",
+        "WX-33"
+      ],
+      "obligations": [
+        "Finalize machine-readable schemas/OpenAPI and migration contracts before implementation; illustrative shapes are not production configuration or closure of unresolved ADRs."
+      ]
+    },
+    "17.1": {
+      "producers": [
+        "WX-01",
+        "WX-03",
+        "WX-08",
+        "WX-09",
+        "WX-10",
+        "WX-18",
+        "WX-34"
+      ],
+      "obligations": [
+        "Preserve every category and selected invariant in the complete YAML example: site/cameras/time/capture/hourly/previews/keograms/render/weather/media/backup/analysis/search/experience.",
+        "Distinguish fixed product scope from admitted commissioning overrides; the three cameras, CPU fallback, private originals, exact FKs, single bucket, same-origin media, complete telemetry, local history and follow-on/deferred scope cannot silently change.",
+        "Resolve private location/endpoints/credentials and exact PVC/cluster/bucket/role/GPU/version/resource/retention bindings under their ADR/owner policies, with hashes and authority checks; references alone do not constitute complete deployment configuration.",
+        "Validate effective settings at startup, reject placeholders/unsafe defaults and refuse affected role work when policy resolution fails. Preserve sealed work revisions on config changes."
+      ]
+    },
+    "17.2": {
+      "producers": [
+        "WX-13",
+        "WX-16",
+        "WX-17",
+        "WX-22",
+        "WX-24",
+        "WX-36",
+        "WX-37",
+        "WX-43"
+      ],
+      "obligations": [
+        "Published/partial/unavailable sidecars represent real state with nullable absent assets; never fabricate MP4s for scheduled segments.",
+        "Identity binds schema/video/camera/cycle/segment, media/metadata revision, state and update time; temporal fields include UTC and offset labels/timezone, twilight version, frames/fps/rational duration, authoritative source map and uncertainty.",
+        "Capture fields preserve expected/accepted slots, cadence epochs, gaps, time basis, exposure coverage and processing caveats without private source credentials/addresses.",
+        "Media/poster fields expose same-origin immutable identities, MIME/codec/profile/level, geometry/fps/bytes/hash, poster PTS/source interval and native download; related keogram/status/UTC map, day/hour public still and event links remain resolvable.",
+        "Weather binds per-metric values/units/coverage/evidence, aggregate computation algorithm and input revision plus missing reasons; never conflate value algorithm with coverage algorithm.",
+        "Analysis binds state/mode, validated claims/events/evidence, precision/coverage/limitations and safe prompt/schema/capability provenance; one unsupported prose string is insufficient.",
+        "Editorial projection exposes effective public revision, human attribution flag/time, public tags/poster choice; exclude private actor audit, notes and favorites. Search exposes index/profile/generation/current metadata revision, not vectors/private serving details.",
+        "Integrity binds input manifest, recipe/build, immutable objects and publication generation; sidecar hash belongs in external DB/object receipt, never self-referential bytes.",
+        "Validate before export and serve the same canonical API revision; deny station serial/private location/raw URL/token/internal GPU placement/unsanitized response in every public projection."
+      ]
+    },
+    "17.3": {
+      "producers": [
+        "WX-13",
+        "WX-25",
+        "WX-26"
+      ],
+      "obligations": [
+        "Current response separates generated_at from per-metric observed/received/cadence/valid-until/quality/stale reason and sanitized station alias.",
+        "History binds requested interval/resolution/cursor/support/gaps; missing remains distinct from zero.",
+        "Search retains ranking/profile/filters/count/metadata and evidence precision independently of nullable seek; cosine similarity is never confidence percentage. API timestamps are UTC; local labels are supplemental."
+      ]
+    },
+    "17.4": {
+      "producers": [
+        "WX-17",
+        "WX-36",
+        "WX-37",
+        "WX-38",
+        "WX-40",
+        "WX-41",
+        "WX-42",
+        "WX-43"
+      ],
+      "obligations": [
+        "Images distinguish calendar/cycle dates and bind camera/day/slot, offset label, UTC support/uncertainty, selection offset/policy, state/reason/revision and public derivative URLs only.",
+        "Private final archive receipt binds original hash/bytes/geometry, enforced day/hour/source FKs and durability/retention policy; never serialize it through public APIs. Compact staging promotion is not final Garage archival success.",
+        "Preview includes capture bounds, embargo, actual first publication, expected refresh, expiry and state; origin enforces eligibility independently of cached listing.",
+        "Keogram binds segment, exact UTC bins, observed lineage/coverage and image recipe; public digest must resolve to qualified private lineage without exposing original credentials.",
+        "Events bind origin, interval/precision, evidence/rule revision, linked calendar days and valid seeks. Almanac binds calendar bounds, units, formula/library/history/coverage/missing reasons; numeric matches state actual statistic/window/coverage.",
+        "Editorial writes carry expected effective revision and bounded allowed fields; server authorization/audit chooses actor, never caller-supplied identity."
+      ]
+    }
+  },
+  "verification": {
+    "all_nonblank_nonheading_source_lines_preserved": true,
+    "runtime_acceptance": false
+  }
+}

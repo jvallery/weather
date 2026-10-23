@@ -162,3 +162,7 @@ The [section 16 and §18.1 audit](../implementation/delivery-clause-audit.md) pr
 ## Aggregate algorithm identity missing from public schema
 
 Section 17.2 requires weather aggregate algorithm/revision provenance. The draft `Aggregate` identified input evidence and the coverage algorithm, but lacked an independent computation recipe identity. Added required `algorithm_revision` and documented its distinction from `evidence_revision` and `coverage.algorithm_revision`. Formula/boundary-policy changes must invalidate dependent sidecar, search and almanac projections even when underlying evidence is unchanged. Updated three nested synthetic aggregate fixtures and added explicit present/missing/empty revision cases; all 60 API fixtures pass with explicit date/UTC assertions. This verifies shape only; actual recipe execution and invalidation remain implementation acceptance.
+
+## Complete configuration and transport requirement mapping
+
+The [section 17 audit](../implementation/contracts-clause-audit.md) preserves the introduction, complete YAML and every sidecar group. Public configuration categories and transport shapes exist, with explicit gaps retained for private resolved policy and the final hourly Garage archive/FK receipt. Compact staging promotion cannot stand in for final archival success. Related product/recipe IDs require coherent revision-aware resolution, and sidecar/API canonical equality remains runtime acceptance. No application implementation or production configuration was added.
