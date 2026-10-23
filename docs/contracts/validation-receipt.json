@@ -1,0 +1,41 @@
+{
+  "kind": "planning_contract_validation",
+  "observed_at": "2026-10-23T20:34:49.884552Z",
+  "source_revision": "25f28dcdc8fe06121890df0852f4f1499af99307",
+  "validator": {
+    "package": "jsonschema",
+    "version": "4.26.0",
+    "format_assertion": "explicit UTC-Z and calendar parsers; impossible-date negative fixture required"
+  },
+  "openapi_meta_schema": {
+    "url": "https://spec.openapis.org/oas/3.1/schema/2022-10-07",
+    "sha256": "da01ba28852cac0de53893797cb8d1942bc3b05084f526dcc216717dec314ed0",
+    "errors": 0
+  },
+  "json_schema_metaschemas_passed": 3,
+  "resolved_local_reference_occurrences": 371,
+  "fixture_counts": {
+    "schema-fixtures.json": 24,
+    "capture-fixtures.json": 13,
+    "visual-analysis-fixtures.json": 8
+  },
+  "all_fixture_expectations_matched": true,
+  "input_sha256": {
+    "api.schema.json": "56bf3281f4459a544f4b2f2fa86d6504bc0296ef530b612d7fba3c7b25fe7138",
+    "capture-fixtures.json": "11abddc7d0085fac302cf4ff21edbb903e32649401e1f8be3cdbe5f38acd359b",
+    "capture.schema.json": "56f04973de4ff269975a65be3315d10b9c218fc604d7d30c7024c884d180d3fc",
+    "openapi.json": "f062c8c1dddcf05be87b5a0ec921533e64f3e2e0cfa5e52bb1b40edd5b66c4a5",
+    "schema-fixtures.json": "3910c5d8d2a0bd2008c1681b214d3c046492af1e67d4c6d5e924944c7c18d3fd",
+    "visual-analysis-fixtures.json": "793a5f18a40eac34a391f36be61e3ed08befae03bdd51ce84192b43671fc1a0d",
+    "visual-analysis.schema.json": "a6deded75f7e0b0178667d2b6cb756f52147c0392fdc223ec120186f101ac7f5"
+  },
+  "limits": [
+    "OpenAPI structural validation does not prove HTTP behavior, authorization or implementation conformance.",
+    "JSON Schema shape tests do not prove cross-record identities, timestamps, source evidence, filesystem durability or model grounding.",
+    "The official OpenAPI schema does not itself validate embedded Schema Objects; the three referenced schema documents were separately metaschema-checked.",
+    "No application, camera, inference or production service test was executed."
+  ],
+  "inline_schema_objects_metaschema_checked": 200,
+  "unique_operations": 19,
+  "path_parameter_bindings_matched": true
+}
