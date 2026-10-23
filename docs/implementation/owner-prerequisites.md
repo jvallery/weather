@@ -16,7 +16,7 @@ These are actual owner issues, not placeholders. Weather's public graph records 
 | OWN-MODELS | [jvallery/cortex-ai-compute#402](https://github.com/jvallery/cortex-ai-compute/issues/402) | WX-21, WX-23 | Native temporal video and versioned text embedding qualification |
 | OWN-GPU | [jvallery/cortex-ai-compute#403](https://github.com/jvallery/cortex-ai-compute/issues/403) | WX-15 | All-device ownership and bounded GPU or CPU admission |
 | OWN-OBS | [jvallery/monitoring-stack#1072](https://github.com/jvallery/monitoring-stack/issues/1072) | WX-31 | Delivered freshness, capacity and recovery signals |
-| OWN-EMBED | [VerdifyConsultancy/wordpress#242](https://github.com/VerdifyConsultancy/wordpress/issues/242) | WX-44 | Embed delivered through the actual serving site |
+| OWN-EMBED | [VerdifyConsultancy/wordpress#242](https://github.com/VerdifyConsultancy/wordpress/issues/242) | WX-33 | Follows WX-44 qualified card; delivers the actual serving-site integration before combined acceptance |
 | OWN-L2 | [jvallery/agents#5368](https://github.com/jvallery/agents/issues/5368) | WX-04 | Pinned VLAN CNI, owner-admitted secondary attachment and fail-closed per-namespace isolation; qualify native pod reception on existing observed trunks |
 
 ## Findings that change implementation
@@ -35,3 +35,5 @@ GPU inventory, object-service health and historic station network reservations a
 
 Re-read owner issue status and current admission before claiming a consumer ready. A closed issue with stale capacity, expired credentials or changed serving ownership is insufficient. Run independent ready branches while preserving blocked work; do not weaken the product requirements to bypass an external dependency. The conditional GPU branch does not force GPU use when the required CPU path is qualified.
 
+
+Owner-side native dependencies are also part of the execution graph: OWN-CUSTODY depends on OWN-OBJECT, and OWN-EMBED depends on WX-44. The [combined readback](embed-order-graph-verification.json) verifies these along with Weather-side dependencies. Parent design coordination occurs during WX-00; completed live parent integration does not block construction of its own prerequisite card.

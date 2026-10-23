@@ -1243,7 +1243,8 @@
         "WX-42",
         "WX-43",
         "WX-44",
-        "WX-16"
+        "WX-16",
+        "OWN-EMBED"
       ],
       "additional_acceptance": [
         "Verify React SSR/hydration request isolation, deep links/no-JavaScript reading, stale response and duplicate-effect races, focus/scroll restoration, editor draft protection and old-tab behavior during web/API rollout."
@@ -1755,8 +1756,7 @@
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
         "WX-20",
-        "WX-38",
-        "OWN-EMBED"
+        "WX-38"
       ],
       "additional_acceptance": [
         "Render a small React SSR embed with the existing parent-origin/CSP contract, independent public polling and no editor/player bundle, private hydration or privileged cookie dependency."
@@ -1895,7 +1895,7 @@
     "planning_issue_count": 1,
     "direct_edge_count": 103,
     "planning_edge_count": 2,
-    "native_edge_count": 122,
+    "native_edge_count": 124,
     "conditional_edge_count": 2,
     "conditional_edges_active": false,
     "required_initial_count": 42,
@@ -1907,7 +1907,9 @@
       "WX-46"
     ],
     "external_prerequisite_count": 14,
-    "external_edge_count": 17
+    "external_edge_count": 17,
+    "weather_native_edge_count": 122,
+    "owner_native_edge_count": 2
   },
   "audit_issue": {
     "key": "WX-00",
@@ -1916,11 +1918,13 @@
     "url": "https://github.com/jvallery/weather/issues/1"
   },
   "native_verification": {
-    "observed_at": "2026-10-23T21:08:53.201789Z",
+    "observed_at": "2026-10-23T23:39:55.049966+00:00",
     "verified_nodes": 46,
     "verified_external_prerequisites": 14,
-    "verified_edges": 122,
-    "method": "Complete fresh GitHub REST readback of all 46 blocked_by sets, 47 Weather issue identities/bodies and 14 external identities; exact issue-ID set equality"
+    "verified_edges": 124,
+    "method": "Exact native ID-set readback for Weather and owner-side prerequisites; no issue-body completeness claim",
+    "receipt": "docs/implementation/embed-order-graph-verification.json",
+    "scope": "Exact native edges including owner-side prerequisites; body/semantic completion remains pending"
   },
   "external_prerequisites": [
     {
@@ -1936,7 +1940,8 @@
         "WX-02"
       ],
       "status": "open",
-      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution",
+      "native_depends_on": []
     },
     {
       "key": "OWN-NFS",
@@ -1950,7 +1955,8 @@
         "WX-03"
       ],
       "status": "open",
-      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution",
+      "native_depends_on": []
     },
     {
       "key": "OWN-OBJECT",
@@ -1964,7 +1970,8 @@
         "WX-06"
       ],
       "status": "open",
-      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution",
+      "native_depends_on": []
     },
     {
       "key": "OWN-GATEWAY",
@@ -1978,7 +1985,8 @@
         "WX-07"
       ],
       "status": "open",
-      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution",
+      "native_depends_on": []
     },
     {
       "key": "OWN-CUSTODY",
@@ -1992,7 +2000,10 @@
         "WX-29"
       ],
       "status": "open",
-      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution",
+      "native_depends_on": [
+        "OWN-OBJECT"
+      ]
     },
     {
       "key": "OWN-UDP",
@@ -2006,7 +2017,8 @@
         "WX-04"
       ],
       "status": "open",
-      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution",
+      "native_depends_on": []
     },
     {
       "key": "OWN-EDGE",
@@ -2020,7 +2032,8 @@
         "WX-19"
       ],
       "status": "open",
-      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution",
+      "native_depends_on": []
     },
     {
       "key": "OWN-MODELS",
@@ -2035,7 +2048,8 @@
         "WX-23"
       ],
       "status": "open",
-      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution",
+      "native_depends_on": []
     },
     {
       "key": "OWN-GPU",
@@ -2049,7 +2063,8 @@
         "WX-15"
       ],
       "status": "open",
-      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution",
+      "native_depends_on": []
     },
     {
       "key": "OWN-OBS",
@@ -2063,7 +2078,8 @@
         "WX-31"
       ],
       "status": "open",
-      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution",
+      "native_depends_on": []
     },
     {
       "key": "OWN-EMBED",
@@ -2074,10 +2090,13 @@
         "url": "https://github.com/VerdifyConsultancy/wordpress/issues/242"
       },
       "consumers": [
-        "WX-44"
+        "WX-33"
       ],
       "status": "open",
-      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+      "scope": "Parent integration after WX-44 card qualification; blocks integrated acceptance WX-33. Parent-origin/CSP design is resolved in WX-00, not a circular completed-integration prerequisite for the card.",
+      "native_depends_on": [
+        "WX-44"
+      ]
     },
     {
       "key": "OWN-L2",
@@ -2091,7 +2110,8 @@
         "WX-04"
       ],
       "status": "open",
-      "scope": "Owner qualification and implementation of isolated secondary VLAN attachments; no new infrastructure installed during planning"
+      "scope": "Owner qualification and implementation of isolated secondary VLAN attachments; no new infrastructure installed during planning",
+      "native_depends_on": []
     },
     {
       "key": "OWN-DB",
@@ -2106,7 +2126,8 @@
         "WX-11"
       ],
       "status": "open",
-      "scope": "Dedicated CNPG storage and independent bounded telemetry spool admission; no reuse of unrelated R1 grants"
+      "scope": "Dedicated CNPG storage and independent bounded telemetry spool admission; no reuse of unrelated R1 grants",
+      "native_depends_on": []
     },
     {
       "key": "OWN-CAM",
@@ -2120,7 +2141,8 @@
         "WX-10"
       ],
       "status": "open",
-      "scope": "Native snapshot source, bounded cadence/NVR impact, source-time calibration and image privacy qualification"
+      "scope": "Native snapshot source, bounded cadence/NVR impact, source-time calibration and image privacy qualification",
+      "native_depends_on": []
     }
   ]
 }

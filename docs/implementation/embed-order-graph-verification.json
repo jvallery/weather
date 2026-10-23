@@ -1,0 +1,613 @@
+{
+  "observed_at": "2026-10-23T23:39:55.051767+00:00",
+  "backlog_sha256": "bd309d4fd6b8297d2be27c37ba5df1ed3c0258bf9f282f97caaf92333aca02b2",
+  "scope": "All 46 Weather work issues and 14 owner prerequisite native dependency sets, including owner-side edges",
+  "verified_native_edges": 124,
+  "acyclic": true,
+  "required_initial_count": 42,
+  "required_initial_in_release_closure": true,
+  "follow_on_deferred_excluded": true,
+  "planning_root_blocks_all_weather_work": true,
+  "topological_order_including_owners": [
+    "WX-00",
+    "OWN-CI",
+    "WX-01",
+    "WX-02",
+    "OWN-NFS",
+    "WX-03",
+    "OWN-UDP",
+    "OWN-L2",
+    "WX-04",
+    "OWN-DB",
+    "WX-05",
+    "OWN-OBJECT",
+    "WX-06",
+    "OWN-GATEWAY",
+    "WX-07",
+    "WX-08",
+    "WX-09",
+    "OWN-CAM",
+    "WX-10",
+    "WX-11",
+    "WX-12",
+    "WX-13",
+    "WX-14",
+    "OWN-GPU",
+    "WX-15",
+    "WX-16",
+    "WX-17",
+    "OWN-EDGE",
+    "WX-19",
+    "WX-36",
+    "WX-37",
+    "WX-18",
+    "WX-20",
+    "OWN-MODELS",
+    "WX-21",
+    "WX-22",
+    "WX-23",
+    "WX-24",
+    "WX-42",
+    "WX-25",
+    "WX-26",
+    "WX-27",
+    "WX-28",
+    "OWN-CUSTODY",
+    "WX-29",
+    "WX-30",
+    "WX-38",
+    "OWN-OBS",
+    "WX-31",
+    "WX-40",
+    "WX-41",
+    "WX-43",
+    "WX-32",
+    "WX-39",
+    "WX-44",
+    "OWN-EMBED",
+    "WX-33",
+    "WX-34",
+    "WX-35",
+    "WX-45",
+    "WX-46"
+  ],
+  "issues": [
+    {
+      "key": "WX-01",
+      "id": 6004107646,
+      "prerequisites": [
+        "WX-00",
+        "OWN-CI"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-02",
+      "id": 6004107982,
+      "prerequisites": [
+        "WX-00",
+        "OWN-CI"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-03",
+      "id": 6004108232,
+      "prerequisites": [
+        "WX-01",
+        "OWN-NFS"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-04",
+      "id": 6004108510,
+      "prerequisites": [
+        "WX-01",
+        "OWN-UDP",
+        "OWN-L2"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-05",
+      "id": 6004108787,
+      "prerequisites": [
+        "WX-01",
+        "OWN-DB"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-06",
+      "id": 6004109064,
+      "prerequisites": [
+        "WX-01",
+        "OWN-OBJECT"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-07",
+      "id": 6004109365,
+      "prerequisites": [
+        "WX-06",
+        "OWN-GATEWAY"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-08",
+      "id": 6004109686,
+      "prerequisites": [
+        "WX-02",
+        "WX-05"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-09",
+      "id": 6004110036,
+      "prerequisites": [
+        "WX-08"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-10",
+      "id": 6004110337,
+      "prerequisites": [
+        "WX-03",
+        "WX-09",
+        "OWN-CAM"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-11",
+      "id": 6004110708,
+      "prerequisites": [
+        "WX-04",
+        "WX-08",
+        "OWN-DB"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-12",
+      "id": 6004111021,
+      "prerequisites": [
+        "WX-11"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-13",
+      "id": 6004111386,
+      "prerequisites": [
+        "WX-12"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-14",
+      "id": 6004111681,
+      "prerequisites": [
+        "WX-10"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-15",
+      "id": 6004111989,
+      "prerequisites": [
+        "WX-14",
+        "OWN-GPU"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-16",
+      "id": 6004112251,
+      "prerequisites": [
+        "WX-14"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-17",
+      "id": 6004112558,
+      "prerequisites": [
+        "WX-07",
+        "WX-08"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-18",
+      "id": 6004112962,
+      "prerequisites": [
+        "WX-10",
+        "WX-17",
+        "WX-19",
+        "WX-36",
+        "WX-37"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-19",
+      "id": 6004113388,
+      "prerequisites": [
+        "WX-07",
+        "WX-17",
+        "OWN-EDGE"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-20",
+      "id": 6004113726,
+      "prerequisites": [
+        "WX-13",
+        "WX-19"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-21",
+      "id": 6004114041,
+      "prerequisites": [
+        "WX-17",
+        "OWN-MODELS"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-22",
+      "id": 6004114415,
+      "prerequisites": [
+        "WX-13",
+        "WX-21"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-23",
+      "id": 6004114750,
+      "prerequisites": [
+        "WX-08",
+        "OWN-MODELS"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-24",
+      "id": 6004115070,
+      "prerequisites": [
+        "WX-17",
+        "WX-23"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-25",
+      "id": 6004115426,
+      "prerequisites": [
+        "WX-24",
+        "WX-42"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-26",
+      "id": 6004115716,
+      "prerequisites": [
+        "WX-20",
+        "WX-25"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-27",
+      "id": 6004116063,
+      "prerequisites": [
+        "WX-19"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-28",
+      "id": 6004116426,
+      "prerequisites": [
+        "WX-05",
+        "WX-07"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-29",
+      "id": 6004116838,
+      "prerequisites": [
+        "WX-28",
+        "OWN-CUSTODY"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-30",
+      "id": 6004117151,
+      "prerequisites": [
+        "WX-17",
+        "WX-29",
+        "WX-36",
+        "WX-37"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-31",
+      "id": 6004117502,
+      "prerequisites": [
+        "WX-13",
+        "WX-18",
+        "WX-25",
+        "WX-29",
+        "WX-38",
+        "OWN-OBS"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-32",
+      "id": 6004117853,
+      "prerequisites": [
+        "WX-16",
+        "WX-20",
+        "WX-22",
+        "WX-24",
+        "WX-30",
+        "WX-31",
+        "WX-40",
+        "WX-41",
+        "WX-43"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-33",
+      "id": 6004118399,
+      "prerequisites": [
+        "WX-02",
+        "WX-18",
+        "WX-20",
+        "WX-21",
+        "WX-22",
+        "WX-26",
+        "WX-31",
+        "WX-36",
+        "WX-37",
+        "WX-38",
+        "WX-39",
+        "WX-40",
+        "WX-41",
+        "WX-42",
+        "WX-43",
+        "WX-44",
+        "WX-16",
+        "OWN-EMBED"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-34",
+      "id": 6004119045,
+      "prerequisites": [
+        "WX-32",
+        "WX-33"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-35",
+      "id": 6004119544,
+      "prerequisites": [
+        "WX-32",
+        "WX-33",
+        "WX-34"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-36",
+      "id": 6004120098,
+      "prerequisites": [
+        "WX-10",
+        "WX-17"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-37",
+      "id": 6004120439,
+      "prerequisites": [
+        "WX-10",
+        "WX-17"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-38",
+      "id": 6004120779,
+      "prerequisites": [
+        "WX-10",
+        "WX-19"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-39",
+      "id": 6004121109,
+      "prerequisites": [
+        "WX-20",
+        "WX-36"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-40",
+      "id": 6004121462,
+      "prerequisites": [
+        "WX-13",
+        "WX-20"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-41",
+      "id": 6004121752,
+      "prerequisites": [
+        "WX-13",
+        "WX-20"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-42",
+      "id": 6004122087,
+      "prerequisites": [
+        "WX-08",
+        "WX-13"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-43",
+      "id": 6004122458,
+      "prerequisites": [
+        "WX-20",
+        "WX-24",
+        "WX-37"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-44",
+      "id": 6004122801,
+      "prerequisites": [
+        "WX-20",
+        "WX-38"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-45",
+      "id": 6004123126,
+      "prerequisites": [
+        "WX-35"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-46",
+      "id": 6004123485,
+      "prerequisites": [
+        "WX-35"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "OWN-CI",
+      "id": 6004250757,
+      "prerequisites": [],
+      "exact_id_match": true
+    },
+    {
+      "key": "OWN-NFS",
+      "id": 6004251329,
+      "prerequisites": [],
+      "exact_id_match": true
+    },
+    {
+      "key": "OWN-OBJECT",
+      "id": 6004251653,
+      "prerequisites": [],
+      "exact_id_match": true
+    },
+    {
+      "key": "OWN-GATEWAY",
+      "id": 6004251974,
+      "prerequisites": [],
+      "exact_id_match": true
+    },
+    {
+      "key": "OWN-CUSTODY",
+      "id": 6004252341,
+      "prerequisites": [
+        "OWN-OBJECT"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "OWN-UDP",
+      "id": 6004252616,
+      "prerequisites": [],
+      "exact_id_match": true
+    },
+    {
+      "key": "OWN-EDGE",
+      "id": 6004252871,
+      "prerequisites": [],
+      "exact_id_match": true
+    },
+    {
+      "key": "OWN-MODELS",
+      "id": 6004253184,
+      "prerequisites": [],
+      "exact_id_match": true
+    },
+    {
+      "key": "OWN-GPU",
+      "id": 6004253526,
+      "prerequisites": [],
+      "exact_id_match": true
+    },
+    {
+      "key": "OWN-OBS",
+      "id": 6004253883,
+      "prerequisites": [],
+      "exact_id_match": true
+    },
+    {
+      "key": "OWN-EMBED",
+      "id": 6004293631,
+      "prerequisites": [
+        "WX-44"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "OWN-L2",
+      "id": 6004789310,
+      "prerequisites": [],
+      "exact_id_match": true
+    },
+    {
+      "key": "OWN-DB",
+      "id": 6005193909,
+      "prerequisites": [],
+      "exact_id_match": true
+    },
+    {
+      "key": "OWN-CAM",
+      "id": 6005269862,
+      "prerequisites": [],
+      "exact_id_match": true
+    }
+  ],
+  "limitations": [
+    "No application/runtime acceptance",
+    "Final issue-body semantic consolidation remains incomplete",
+    "Owner prerequisites with no native dependencies can still contain unresolved scope dependencies; their prose needs final review"
+  ]
+}
