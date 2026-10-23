@@ -1,0 +1,48 @@
+# Adversarial planning audit
+
+Status: in progress. This is a planning audit, not implementation or production acceptance.
+
+## Baseline and evidence
+
+The repository was cloned into the requested folder at `c506736` on 2026-10-23. The complete GitHub REST issue listing and connected GitHub issue search both returned zero issues. The existing 46 WX keys therefore identify candidate tasks, not filed issues. No existing issue can be considered audited or complete merely from the candidate catalog.
+
+The candidate graph was checked directly: 46 nodes, 90 direct edges, no missing dependency targets, no cycles, and coverage of R01–R38. All 42 required initial items are in the WX-35 prerequisite closure (including WX-35 itself); WX-45 and WX-46 are outside that closure. These are structural checks only. They do not prove actionable issue bodies, complete detailed acceptance, live feasibility, or native GitHub dependencies.
+
+Read-only fleet observations on 2026-10-23 established that Weather has no namespace or Argo Application. Existing database operators, storage providers and CI are present. The inference platform reported Healthy but OutOfSync. Source and live deployment revisions must remain separate in decision records. No new workload, credential, provider configuration or network path was created by this audit.
+
+Private raw receipts and owner-source excerpts must stay outside this public repository. Public decisions will use opaque evidence IDs and sanitized capability summaries. The current observations below are an initial census; detailed qualification is outstanding.
+
+## Findings and required disposition
+
+| ID | Finding | Consequence and disposition | Requirements / work |
+|---|---|---|---|
+| A01 | No GitHub issues exist. | File the complete selected backlog, resolve actual issue IDs, attach native blocked-by edges and read every issue and edge back. Do not rename the candidate file to imply filing. | R01; all WX keys |
+| A02 | Acyclicity and broad R-ID coverage conceal missing detailed acceptance coverage. | Build a section-level acceptance matrix, including the normative contracts and failure cases, with issue and evidence destinations. WX-35's broad R01–R37 mapping cannot serve as the only implementation coverage. | R01; WX-33/35 |
+| A03 | The seed serializes image products behind complete video encoding/publication. | Separate shared asset publication interfaces from video-specific integration. Permit image workers to develop against committed contracts and synthetic sealed chunks; retain integrated origin/privacy qualification as a rollout prerequisite. Images must also work when a video is unavailable. | R19, R29–R31; WX-17/19/36/37/38 |
+| A04 | Measured events, numeric search and almanac have unnecessary media/AI ordering. | Distinguish prerequisite interfaces from integration completion. Measured event extraction and numeric-only search must be independently executable and testable with inference unavailable. Almanac calculations must not wait for the hourly image browser. | R33–R35; WX-40/41/42 |
+| A05 | The first ready seed task creates production foundations before an independently usable development/qualification path exists. | Add explicit planning/research and platform-admission tasks. Separate isolated synthetic CI from trusted integration and deployment; do not borrow another tenant's identity or claim Weather is enrolled already. | R01, R02, R24, R27; WX-01/02 |
+| A06 | HA claims could be inferred from available CNPG operators or a StorageClass name. | Select a dedicated Weather database and obtain explicit capacity/storage admission. Existing restricted database storage grants are not Weather grants. Verify physical failure domains, synchronous-write behavior, failover and recovery budgets. | R14, R16, R23; D06; WX-05/28/32 |
+| A07 | Archive-tier Garage health does not prove object-block availability or power-loss durability. | The observed configuration leaves fsync options unspecified. Inspect the installed build's defaults and the complete storage path. Keep raw deletion disabled until an explicit local durability condition is qualified; neither PUT/HEAD nor Healthy is sufficient. | R07, R17, R19, R23; D07; WX-06/18 |
+| A08 | One bucket contains public derivatives, private originals and physical database archives. | Require an enforcing authorization service with independent recovery authorization. Test every supported S3 operation, multipart identity and encoded path; bucket-level native credentials cannot enforce prefix isolation. | R17, R18, R23, R27, R30; D08; WX-07/28 |
+| A09 | LAN UDP reachability is unresolved. | Locate the actual station network and prove an approved direct-packet receiver path. Host networking and LoadBalancer/ClusterIP objects do not bridge broadcast domains. Link the network-owner prerequisite before receiver integration is ready. | R13, R14, R28; D04; WX-04/11 |
+| A10 | Nine-device source inventory is not evidence of shareable runtime capacity. | Reconcile device ownership, admission, runtime visibility and resident budgets. Record a bounded candidate or qualified CPU path; preserve protected camera processing. Never infer admission from idle memory or a resource called shared. | R09, R10, R28; D09; WX-14/15 |
+| A11 | Native video and embedding capabilities are historical expectations. | Requalify temporal order, reversed controls, schema completion, cancellation and embedding profile/dimensions. Keep unsupported native video visible as an initial acceptance failure even if sampled-frame fallback works. | R21, R22; D11/12; WX-21/23 |
+| A12 | Public video transport is not resolved by switching off Cloudflare cache. | Select a valid origin delivery path and verify the actual account/route/terms before enabling video delivery. CDN is conditional; required origin playback cannot depend on an unqualified optional path. | R11, R25; D14; WX-19/27 |
+| A13 | Source-time uncertainty can bypass disclosure rules through alternate image routes. | Enforce the ten-minute rule at every public derivative origin, including archived still thumbnails, poster choices, HEAD/ranges, guessed immutable URLs and cache prewarming. Persist expiry/withdrawal state. | R18, R30, R31, R36; WX-19/37/38/43 |
+| A14 | Sparse-original retention and raw cleanup have distinct ownership transfers. | Require durable pin transfer with byte/hash verification before releasing dense-source pins. Preserve cross-twilight hourly candidates, day/hour/camera FKs and the original's longer retention independently of video expiry. | R07, R19, R30; WX-08/18/37 |
+| A15 | Independent backup success is weaker than joint recoverability. | Bind a transactional catalog generation to a recoverable database target and verify its complete offsite object closure. Include private originals, keograms, editorial state and stored vectors. Test B2-only recovery without local storage or inference. | R23; D15; WX-29/30/32 |
+| A16 | Main-site historical framework/theme assumptions may be stale. | Inspect the live main-site theme and source ownership. The current owner documentation describes WordPress as serving and Astro as rollback; embed work must target the serving site through its owner. Do not edit the dormant site and claim delivery. | R12, R37; D13; WX-20/44 |
+| A17 | Fleet standards have exceptions and owner-specific delivery paths. | Map applicable standards explicitly. Public read-only Weather is an intentional publishing contract; privileged writes/private data still require authentication. Use delivered static monitoring configuration rather than inert monitoring CRs. Honor pinned/manual Argo delivery and verify actual revisions/digests. | R02, R24, R26–R28; WX-01/02/31/33 |
+| A18 | License choice remains reserved to the owner. | MIT with permissive selective reuse is proposed; final choice was requested. Continue independent planning, but do not import upstream code or assert a selected license before the answer. | R02, R24, R27; D01 |
+
+## Completion conditions
+
+- D01–D16 select implementable approaches, with alternatives, requirement mapping, current source/live evidence, costs/failure domains and remaining qualification gates.
+- Every material unresolved research question has a precise owner, evidence needed and blocked descendants; a blocked decision is never reported as complete.
+- Each implementation issue documents outcome, motivation, scope, interface contracts, owner prerequisites, acceptance/failure tests, evidence destination, operations and rollout/rollback.
+- The filed graph distinguishes implementation ordering, rollout gates, conditional paths and deferred scope; its native GitHub edges exactly match the committed graph.
+- R01–R38 and accepted Q01–Q16 map to concrete work and acceptance; detailed requirements cannot disappear inside umbrella mappings.
+- Planning configuration, public/private evidence separation, schemas/OpenAPI, migration contracts, runbooks, readable graph, critical path and first ready work are published and read back.
+- No application implementation begins during this pass.
+
+The initial graph checks pass. The overall audit remains incomplete until these conditions are verified against the final artifacts and GitHub state.

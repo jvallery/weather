@@ -2,7 +2,7 @@
 
 Requirements and implementation planning for **[weather.vallery.net](https://weather.vallery.net)**: a public weather history and timelapse service using three security cameras, direct Tempest UDP telemetry, CNPG, Garage, and local inference.
 
-**Status:** requirements handoff. The application, cluster resources, CI/CD pipeline, and implementation issue backlog have not been built by this documentation publication.
+**Status:** planning audit in progress under [WX-00 / issue #1](https://github.com/jvallery/weather/issues/1). See the [adversarial audit](docs/research/adversarial-audit.md) for findings and completion conditions. The application, cluster resources and CI/CD pipeline have not been built; the candidate implementation backlog is not yet a verified filed graph.
 
 ## Start here
 
