@@ -1,0 +1,428 @@
+{
+  "scope": "Every source block of section 11; grouped acceptance, not runtime qualification",
+  "requirements_sha256": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+  "section_sha256": "6bb79e68024b667f64377c8abe29979fefc4f51e33543723d3989ecd9caf81ab",
+  "source_blocks": [
+    {
+      "id": "S11.1.01",
+      "section": "11.1",
+      "source_text": "Create a private weather-specific Garage bucket through the storage owner's IaC/API workflow. It holds published video renditions, posters, keograms, delayed previews, sparse private hourly originals and their sanitized public comparison derivatives, immutable sanitized metadata exports, recovery manifests, and the weather database's physical backup/WAL hierarchy. It is not used for continuous raw snapshot staging. Never reuse another application's bucket or credentials.",
+      "sha256": "85f4a48d506b21ad418454caea607b87d6361a3c464959c3f41d4cc7cb8c34f2",
+      "producers": [
+        "WX-06",
+        "WX-29"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.1.02",
+      "section": "11.1",
+      "source_text": "The inspected estate distinguishes a small availability-oriented tier from a large NAS-backed HDD tier. Its recorded small-tier allowance is at most 50 GiB/bucket and less than 2 GiB/day; current policy and installed state must be revalidated privately. A full archive at the planning rates is a likely HDD-tier workload, not an automatic small-tier admission. A bucket occupies one tier; do not claim that prefixes in one bucket inherit different physical durability.",
+      "sha256": "29eae600eca877dcf79f09ea564f1fdc01dec733d633dace69c01722926e9587",
+      "producers": [
+        "WX-06",
+        "WX-29"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.1.03",
+      "section": "11.1",
+      "source_text": "At illustrative combined rendition rates of 30 Mb/s native + 8 Mb/s web + 4 Mb/s mobile, 120 seconds/camera/cycle gives approximately **630 MB per camera**, **1.89 GB for three cameras per cycle**, and **690 GB/year**. Add posters, keograms, selected originals/comparison images, bounded preview churn, metadata revisions, retained deleted objects, database base backups, WAL, growth reserve and the tier's actual replication overhead. CRF rates vary; replace these estimates with a pilot. A **365-day video/poster/keogram horizon** is a planning default; the selected hourly-original/comparison-image default is **five years** and current-preview retention is separately bounded. D07/D15 must finalize each class and its recovery policy before any deletion is activated.",
+      "sha256": "5a5222790bd3d126e0d868b5a52cf1a15947c9f26fe84c6633e57c4fbed1da1c",
+      "producers": [
+        "WX-06",
+        "WX-29"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.1.04",
+      "section": "11.1",
+      "source_text": "Selecting NAS-backed Garage means Obsidian failure can also interrupt uploads and **uncached playback**. A healthy Garage metadata endpoint does not prove object GET/PUT health. Cloudflare cache residency is not guaranteed availability. Database/application HA must be described separately from media-origin and capture availability.",
+      "sha256": "7a79a2631ebdcc8631bf7db118252a8230336c2589076ee4e0f3bd4ab4e4f20a",
+      "producers": [
+        "WX-06",
+        "WX-29"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.2.01",
+      "section": "11.2",
+      "source_text": "Garage's native permissions are per access key and bucket. An S3 **object key** is an object name, not an object-specific credential. Garage does not provide general AWS bucket-policy/ACL prefix isolation, and its documented compatibility also lacks bucket versioning/object lock. Verify the installed build, but do not invent IAM JSON policies that the provider does not enforce. [S28]",
+      "sha256": "44c3a8ad6d8b56dab434dd372f45cc93d9c6fb8588ba47b390eb5a2f96ec5314",
+      "producers": [
+        "WX-07",
+        "WX-19",
+        "WX-28",
+        "WX-32",
+        "WX-37",
+        "WX-38"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.2.02",
+      "section": "11.2",
+      "source_text": "Use logical areas such as:",
+      "sha256": "ef439eeb2fd059cec40627280f14b44097ee2df034d7fa8a9409ae17ed5d2c7e",
+      "producers": [
+        "WX-07",
+        "WX-19",
+        "WX-28",
+        "WX-32",
+        "WX-37",
+        "WX-38"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.2.03",
+      "section": "11.2",
+      "source_text": "```text\nmedia/<immutable-media-id>/<rendition>.mp4\npreviews/<immutable-media-id>/<poster-size>.<format>\nimages/originals/<immutable-still-id>/<sha256>.jpg\nimages/public/<immutable-derivative-id>/<size>.<format>\nkeograms/<immutable-product-id>/<asset>.<format>\ncamera-previews/<immutable-preview-id>/<size>.<format>\nmetadata/<video-id>/<metadata-revision>.json\nreleases/<publication-generation>/...\ndatabase/<cluster-incarnation>/<archive-server>/...\nrecovery/<checkpoint-id>.json\n```",
+      "sha256": "f3bfc298dfc4f17f85df3e27b967b22000f73ae89ab572ed03f52b0a6fd698e1",
+      "producers": [
+        "WX-07",
+        "WX-19",
+        "WX-28",
+        "WX-32",
+        "WX-37",
+        "WX-38"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.2.04",
+      "section": "11.2",
+      "source_text": "**Prefixes organize data; a qualified broker/gateway enforces narrower rights.** Because one bucket must hold both media and database backups, separate native Garage keys alone do not isolate those classes. The public/media workloads must not receive a bucket-wide reader or a bypass path. The trusted gateway's actual upstream authority must be documented and protected.",
+      "sha256": "8108c2ed0c4876941dab4ca20ac86600a7dc56027c79f8523530a8087938ac22",
+      "producers": [
+        "WX-07",
+        "WX-19",
+        "WX-28",
+        "WX-32",
+        "WX-37",
+        "WX-38"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.2.05",
+      "section": "11.2",
+      "source_text": "| Identity | Effective authorized operations |\n|---|---|\n| Browser/public UI | Read the intended weather-domain API/media/poster/download routes only. No S3 credentials or direct/presigned Garage URLs. |\n| Media origin | GET/HEAD of allowlisted, committed published asset IDs; no arbitrary key, list, copy, write or backup access. |\n| Publisher | Create and verify authorized immutable media/poster/metadata objects; no overwrite of an existing different hash and no backup access. |\n| Image-product archive worker | Create/verify selected private originals and authorized image/keogram/preview derivatives; read only source classes needed for its jobs; no database-backup access. |\n| Media retention worker | Delete explicitly authorized unreferenced/tombstoned media after recovery-reference and grace checks. |\n| Database archive identity | Only qualified Barman-required operations within the database archive hierarchy. |\n| Recovery identity | Read the selected verified database/media recovery set through an independent recovery path. |\n| Central custody | Existing owner-controlled read/copy scope and B2 credentials; not supplied to weather web pods. |\n| Bucket administrator | Provisioning, quotas, keys/lifecycle; private owner process, never an application runtime role. |",
+      "sha256": "c2bc254361633e9568b225c29b38bb7c9394bc118c55cf8959f65e7c67391a46",
+      "producers": [
+        "WX-07",
+        "WX-19",
+        "WX-28",
+        "WX-32",
+        "WX-37",
+        "WX-38"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.2.06",
+      "section": "11.2",
+      "source_text": "D08 must test Barman-compatible listing/pagination, HEAD/GET/PUT, multipart, WAL checks, retries, retention deletion and restore through the actual gateway. A weather-specific upload API is not automatically an S3 endpoint Barman can use. Test path encoding, `CopyObject` source, mixed-prefix `DeleteObjects`, multipart IDs/parts and list-prefix escape attempts. Do not pass upstream lifecycle/admin actions from application credentials.",
+      "sha256": "b168aeca3e812f46b63cef255b957abcafc0d94e87ab6dde3eadc761d738aaf5",
+      "producers": [
+        "WX-07",
+        "WX-19",
+        "WX-28",
+        "WX-32",
+        "WX-37",
+        "WX-38"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.2.07",
+      "section": "11.2",
+      "source_text": "If the current gateway cannot support the required shared-bucket boundary, select and file the enforcing gateway work as a prerequisite. Do not silently split into two buckets, grant a public origin broad native read, or declare the risk solved by an obscure backup prefix. A genuine conflict between the single-bucket requirement and the available trust model must be resolved explicitly in Phase 1.",
+      "sha256": "3f85603c3cbcf27fb7a8ae3aad94e53ef7cb6ecd164ded79c0a9c13d24502d74",
+      "producers": [
+        "WX-07",
+        "WX-19",
+        "WX-28",
+        "WX-32",
+        "WX-37",
+        "WX-38"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.2.08",
+      "section": "11.2",
+      "source_text": "Backup/restore authorization must **not depend on querying the weather database being restored**. Its fixed archive scope, credentials and configuration must be recoverable independently. Public media authorization can use a committed publication projection with bounded caching; it must not require exposing the backup hierarchy to survive a database interruption.",
+      "sha256": "566a0f36c0e8b1c6e2f9bffcc77927510b11d8e9e0be550ec975389699cf691c",
+      "producers": [
+        "WX-07",
+        "WX-19",
+        "WX-28",
+        "WX-32",
+        "WX-37",
+        "WX-38"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.2.09",
+      "section": "11.2",
+      "source_text": "Extend D08's positive/negative matrix to `images/originals` versus every public image class. Media origin, embed and anonymous API identities cannot GET/HEAD/list or copy an original, even when a related public derivative is valid. Authorized image workers may derive a public image but cannot publish a raw-original key through a different route. Include encoded-path, parent-ID, direct-key, stale-pointer and mixed-class batch-operation tests. All new asset classes share the bucket's actual physical tier; a prefix is not a different storage tier or automatic security boundary.",
+      "sha256": "7d81ade79a975242a689e530c799df5928e6d32ced4c4f61ddd7f0334bbd1f27",
+      "producers": [
+        "WX-07",
+        "WX-19",
+        "WX-28",
+        "WX-32",
+        "WX-37",
+        "WX-38"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.3.01",
+      "section": "11.3",
+      "source_text": "Qualify the actual Garage build/effective configuration, NFS/NAS flush behavior, and accepted local-loss window. The examined source does not establish enabled `data_fsync`/`metadata_fsync`; upstream defaults are false. A successful PUT followed by immediate HEAD/GET proves visibility and readable content, not survival of power loss. D07 must define the actual durability receipt and any owner-reviewed remediation before raw cleanup is enabled. [S29]",
+      "sha256": "f90c1f456199a38bf314b339848319c3e29122126bc811d3c5f21531f34e0df8",
+      "producers": [
+        "WX-06",
+        "WX-07",
+        "WX-17",
+        "WX-18"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.3.02",
+      "section": "11.3",
+      "source_text": "There is no transaction spanning PostgreSQL and S3. Use this idempotent publication sequence:",
+      "sha256": "4950e5622a91286174eb2f5c8d5afe588629352815ef844f12124f25fb30af58",
+      "producers": [
+        "WX-06",
+        "WX-07",
+        "WX-17",
+        "WX-18"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.3.03",
+      "section": "11.3",
+      "source_text": "1. Seal and hash the input manifest; claim the expected render generation and input pins.\n2. Render, decode/validate, checksum and size every required rendition/poster. Build the initial sanitized sidecar, even when AI is pending or weather coverage is incomplete.\n3. Upload immutable objects through authorized operations. Use application SHA-256 identities; a multipart ETag is not a content SHA-256. Verify existence, size and content according to the qualified storage contract; abort multipart remnants safely on failure.\n4. In one CNPG transaction, compare the expected generation, insert asset/metadata references, mark the video published/partial, and append the outbox event and durable publication receipt.\n5. Activate/invalidate the public projection, verify same-origin media/metadata access, and record readback. Release video-render pins; enable raw cleanup only after the additional hourly/keogram input prerequisites in \u00a76.9 are satisfied.",
+      "sha256": "5582f5a34a26fc66839d29879e3c4857015136d9f337cb279b135c800e62d9c7",
+      "producers": [
+        "WX-06",
+        "WX-07",
+        "WX-17",
+        "WX-18"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.3.04",
+      "section": "11.3",
+      "source_text": "An upload followed by DB failure creates an unlisted orphan, which can be reconciled or garbage-collected after a safe grace. Committing DB visibility before uploads finish creates broken references and is prohibited. Retrying must reuse immutable identities. A late worker cannot overwrite a newer media revision.",
+      "sha256": "97703a18e5c9cf51e3775e3190605c63f4c29127ff717b44e2d6f793aa2fc561",
+      "producers": [
+        "WX-06",
+        "WX-07",
+        "WX-17",
+        "WX-18"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.3.05",
+      "section": "11.3",
+      "source_text": "Metadata enrichment creates a new immutable JSON sidecar and a new database revision, then atomically advances the active reference. The media hash remains unchanged. Store measured weather, AI evidence, search state and pending/degraded labels in CNPG; sidecars are portable exports of that canonical state. Reconciliation must detect stale/missing sidecars and regenerate them idempotently.",
+      "sha256": "3d7e30f4243d0f7374748bda65caa71bc3e64215470d81dab02e73650affad55",
+      "producers": [
+        "WX-06",
+        "WX-07",
+        "WX-17",
+        "WX-18"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.3.06",
+      "section": "11.3",
+      "source_text": "Use the same upload/verify/transaction/outbox/readback pattern for still/keogram publication, with private originals committed to their private catalog rather than made public. Per-product state permits a valid video to appear while another derived artifact is pending/degraded. A preview pointer advances only after privacy delay and derivative validation. Corrections and poster selection create immutable metadata/asset references; they never overwrite published bytes in place. Reconciliation handles orphan uploads, failed FK commits, missing derivative exports and stale public pointers without duplicate active selections.",
+      "sha256": "4460ea96d72fd5d15a5cda9b1d92f94de691e331404682e2e5bbe5ac7c835b00",
+      "producers": [
+        "WX-06",
+        "WX-07",
+        "WX-17",
+        "WX-18"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.4.01",
+      "section": "11.4",
+      "source_text": "Generate a representative poster from the **completed validated video**, preserving the actual aspect ratio and any privacy processing. Record its source frame/PTS, mapped source interval, dimensions, MIME type, size and SHA-256. Avoid unavailable slates, obstruction or extreme black frames when a better representative frame exists; a dark but valid overnight scene must not be replaced with a different day's daylight scene. Produce responsive JPEG/WebP sizes, with a broadly compatible fallback. Optional contact sheets or hover previews may be added later.",
+      "sha256": "3b496adbdc5492ca07092834f16961e5243f53d01dc6d942c01ab6c5651eb04e",
+      "producers": [
+        "WX-16",
+        "WX-18",
+        "WX-30",
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.4.02",
+      "section": "11.4",
+      "source_text": "All thumbnails/posters are first-class publication objects: validated, accessible through the weather domain, backed up, versioned with the media and included in recovery/retention reference checks. They are not generative images. An unavailable segment may use a clearly labeled UI placeholder, not a fabricated snapshot.",
+      "sha256": "67a1ba7314a1f88bd4bf691f2b05bf4779c3f22a65eefc46bb0ee134ec95c233",
+      "producers": [
+        "WX-16",
+        "WX-18",
+        "WX-30",
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.4.03",
+      "section": "11.4",
+      "source_text": "Private poster selection may choose an eligible retained observed original or an actual decoded frame of the same validated video/source segment, with the distinction recorded. A private original is processed into a new approved public poster; its bytes/key are never directly exposed. Selection must respect source interval, quality, camera identity and masks. After full raw cleanup, the UI offers only genuinely retained eligible sources, not a promise to recover an arbitrary original exposure from synthetic video frames.",
+      "sha256": "6df0522c71220c219f844154a5399d4ebbd036b977e67ee3441d146be195bff8",
+      "producers": [
+        "WX-16",
+        "WX-18",
+        "WX-30",
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.4.04",
+      "section": "11.4",
+      "source_text": "Retention starts with a database tombstone/publication update, then a grace period and a check against active clients/jobs, supported recovery points and custody policy. Do not delete media needed by an older retained PITR point. Keep metadata about expired/unavailable video so the archive does not misrepresent missing dates. Urgent withdrawal must invalidate origin and CDN visibility through the controlled purge path; a database flag alone does not erase a previously cached public object.",
+      "sha256": "730e31c24acc009b3518cc786659d72605e3c02f1a433d81a52eafcf035018dc",
+      "producers": [
+        "WX-16",
+        "WX-18",
+        "WX-30",
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "S11.4.05",
+      "section": "11.4",
+      "source_text": "Define lifecycles separately for video/poster/keogram products, five-year hourly originals/comparison derivatives, bounded current-preview revisions, editorial audit and database backup/WAL/recovery references. Current-preview rotation is not permission to expire an hourly original. Long-term selected stills must survive a related video's shorter retention period. A restored public preview pointer must be re-evaluated for age/withdrawal and may become stale/unavailable; restore must not relabel old imagery as current. Public masks/withdrawals need a controlled regeneration/purge policy across all derivative classes while the private original remains private.",
+      "sha256": "3a809d5691b916d70c33c54f33fea4b518e41f782e9829149b9a4514ec17d40d",
+      "producers": [
+        "WX-16",
+        "WX-18",
+        "WX-30",
+        "WX-43"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    }
+  ],
+  "acceptance": {
+    "11.1": {
+      "producers": [
+        "WX-06",
+        "WX-29"
+      ],
+      "obligations": [
+        "One private owner-provisioned Weather bucket includes every named media/image/metadata/recovery/database class; no dense raw staging, borrowed credentials or another application bucket.",
+        "Revalidate tier policy/current state; one bucket occupies one actual tier and prefixes do not create different physical durability.",
+        "Replace illustrative 630 MB/camera, 1.89 GB/cycle and annual payload estimate with measured rates plus all class/revision/backup/replica/growth costs.",
+        "Class-specific video/poster/keogram, five-year hourly/comparison and preview horizons require recovery policy before deletion.",
+        "NAS-backed uploads and uncached reads can fail despite metadata health/CDN cache; distinguish DB/application HA from capture/media availability."
+      ]
+    },
+    "11.2": {
+      "producers": [
+        "WX-07",
+        "WX-19",
+        "WX-28",
+        "WX-32",
+        "WX-37",
+        "WX-38"
+      ],
+      "obligations": [
+        "Verify installed Garage native bucket/key scope and compatibility; object key/prefix is not an object credential, enforced IAM policy, versioning or object lock.",
+        "Preserve every logical area in the example while implementing actual broker isolation; public/origin roles have no bucket-wide native credential or bypass.",
+        "Enforce all nine identity rows: browser, origin, publisher, image worker, retention, archive, recovery, central custody and administrator with exact least privilege.",
+        "Barman must use qualified S3 operations: pagination/list, GET/HEAD/PUT, multipart/abort/retry/WAL checks, deletion and restore; media upload API alone is insufficient.",
+        "Negative tests include encoded/ambiguous paths, copy source, mixed-class delete batch, multipart IDs/parts, list-prefix escape and lifecycle/admin escalation.",
+        "If existing gateway is insufficient, owner prerequisite supplies enforcement; never silently split buckets, widen origin keys or hide backups behind obscure names.",
+        "Independent archive/restore scope/config/credentials survive Weather DB failure; media projection outage must not expose backup hierarchy.",
+        "Private originals denied to origin/embed/anonymous routes including parent/direct/stale-pointer/copy paths; public derivation requires validated transformation, not class renaming."
+      ]
+    },
+    "11.3": {
+      "producers": [
+        "WX-06",
+        "WX-07",
+        "WX-17",
+        "WX-18"
+      ],
+      "obligations": [
+        "Qualify exact Garage build/configuration plus NAS/NFS flush and accepted local-loss window; visibility/hash readback alone does not authorize cleanup.",
+        "Seal/hash/pin immutable input and current generation before work; validate all mandatory outputs and initial sanitized sidecar even with pending AI/incomplete weather.",
+        "Upload immutable hashes through scoped roles, verify qualified bytes/size/content and safely abort own multipart remnants; ETag is not SHA-256.",
+        "One DB transaction CASes generation and commits asset/metadata references, publication state/outbox/receipt only after uploads are complete.",
+        "Origin readback is required; video pin release cannot discard hourly/keogram obligations.",
+        "DB failure after upload leaves an unlisted orphan with safe reconciliation/grace; no stale worker overwrite or mutable retry identity.",
+        "Enrichment uses new immutable sidecar and DB revision while media hash stays fixed; detect/regenerate stale or absent exports.",
+        "Image/keogram uses same publication discipline; private original catalog is not public, preview needs delay, per-product degradation and corrections never overwrite published bytes."
+      ]
+    },
+    "11.4": {
+      "producers": [
+        "WX-16",
+        "WX-18",
+        "WX-30",
+        "WX-43"
+      ],
+      "obligations": [
+        "Automatic poster comes from completed validated video with actual aspect/privacy and frame/PTS/source mapping, dimensions/MIME/bytes/hash.",
+        "Select genuine representative frame without gap slate/obstruction/black when better exists; never swap another day into a dark valid night. Responsive JPEG/WebP and compatible fallback; extras optional.",
+        "Posters are first-class same-origin/versioned/backup/recovery assets; unavailable uses labeled UI placeholder, never generative snapshot.",
+        "Private manual choice uses eligible retained observed original or decoded same-video/segment frame with recorded distinction, camera/quality/masks and approved new derivative; never reveal private bytes/key or promise arbitrary raw exposure after cleanup.",
+        "Retention starts with tombstone/public update then grace and all client/job/PITR/custody reference checks; preserve expired-date metadata.",
+        "Urgent withdrawal requires controlled origin/cache purge; DB flag cannot recall cached bytes.",
+        "Independent lifecycles preserve five-year stills despite video expiry, bounded preview rotation, editorial audit and DB/WAL/recovery references.",
+        "Restore reevaluates preview age/withdrawal; masks/withdrawals propagate through all public derivative classes without making private original public."
+      ]
+    }
+  },
+  "verification": {
+    "all_nonblank_nonheading_source_lines_preserved": true,
+    "runtime_acceptance": false
+  }
+}

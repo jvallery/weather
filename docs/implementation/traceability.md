@@ -133,3 +133,7 @@ The [sections 7–8 audit](media-clause-audit.md) preserves 44 source blocks and
 ## Telemetry/database-history audit
 
 The [sections 9–10 audit](history-clause-audit.md) preserves 39 source blocks and maps 52 grouped obligations, including complete packet-family and conceptual-entity tables. Independent receive/spool/commit/project semantics, retained detail, supported constraints, bounded complete-history queries and revisions remain separate acceptance surfaces. No runtime proof is inferred.
+
+## Storage/publication/retention audit
+
+The [section 11 audit](storage-clause-audit.md) preserves 24 source blocks and maps 29 grouped obligations, including every bucket class and authorization-table row. Gateway immutability, actual local durability, Barman compatibility and recovery/withdrawal mechanisms remain unqualified.

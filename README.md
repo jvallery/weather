@@ -46,6 +46,7 @@ The [planning closure inventory](docs/implementation/planning-closure.md) separa
 - [Private recovery candidates and verification receipts](docs/contracts/recovery-contract.md), with [recovery schemas](docs/contracts/recovery.schema.json), [canonical byte rules](docs/contracts/recovery-canonicalization.md), [golden vectors](docs/contracts/recovery-canonical-vectors.json) and a separate [recovery validation receipt](docs/contracts/recovery-validation-receipt.json).
 - [Private synthesis and grounding contract](docs/contracts/weather-narrative-contract.md), [schema](docs/contracts/weather-narrative.schema.json), exact prompt templates and [validation receipt](docs/contracts/narrative-validation-receipt.json).
 - [Private visual-model candidate schema](docs/contracts/visual-analysis.schema.json) and its [shape fixtures](docs/contracts/visual-analysis-fixtures.json); grounding remains a separate validation boundary.
+- [Storage/publication/retention audit](docs/implementation/storage-clause-audit.md), retaining all section 11 classes, role boundaries and deletion conditions.
 - [Telemetry/database-history audit](docs/implementation/history-clause-audit.md), preserving all packet-family and conceptual-entity obligations in sections 9–10.
 - [Rendering/GPU audit](docs/implementation/media-clause-audit.md), covering all 44 source blocks in sections 7–8 without merging CPU, interpolation and GPU gates.
 - [Acquisition audit](docs/implementation/capture-clause-audit.md), covering all 48 source blocks and 51 grouped obligations in requirements section 6.
