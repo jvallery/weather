@@ -10,6 +10,8 @@ Requirements and implementation planning for **[weather.vallery.net](https://wea
 2. Follow [Codex's first assignment](docs/codex-first-task.md): investigate the live estate, resolve the decisions, complete repository configuration, then file the implementation issues and their dependency graph.
 3. Use the [filed backlog](docs/implementation/backlog.md) and [machine-readable graph](docs/implementation/backlog.json). The [candidate graph](docs/implementation/backlog-candidate.json) is retained as the historical seed. Stable WX keys are distinct from GitHub issue numbers: 42 required initial-release items, two conditional GPU/CDN items, an accepted composite-video follow-on and a reserved visual-index investigation.
 
+The [planning closure inventory](docs/implementation/planning-closure.md) separates established decisions, material open research and subsequent implementation proof, with the next safe execution order.
+
 ## Shared implementation contracts
 
 - [Product configuration and private policy bindings](docs/contracts/configuration-contract.md), with strict shape validation and explicit remaining private-bundle work.
@@ -28,10 +30,14 @@ Requirements and implementation planning for **[weather.vallery.net](https://wea
 - [D09 CPU baseline and GPU admission](docs/decisions/D09-gpu-and-cpu-admission.md), with a verified nine-device census and explicit sharing limitations.
 - [D07 canonical storage durability and lifecycle](docs/decisions/D07-object-durability-and-lifecycle.md), with mounted runtime evidence and explicit cleanup qualification.
 - [D08 role-scoped object gateway](docs/decisions/D08-object-access-boundary.md), including the action matrix and independent archive/recovery boundary.
+- [D10 timestamp-aware media recipe](docs/decisions/D10-media-recipe-and-qualification.md), with exposure coverage, interpolation and deterministic keogram rules.
 - [D11 analysis execution and failure states](docs/decisions/D11-analysis-execution-and-failure.md), including persistent remote-call occupancy and bounded reanalysis; [latest API shape validation](docs/contracts/analysis-execution-validation.json).
 - [D12 embedding and search consistency](docs/decisions/D12-search-and-profile-consistency.md), with versioned profile/withdrawal rules and declarative integrity vectors.
+- [D13 UI and editor boundaries](docs/decisions/D13-ui-and-editor-boundaries.md), with live theme evidence, responsive composition and unresolved identity/font qualification.
 - [D14 public media transport](docs/decisions/D14-public-media-transport.md), with live zone/tunnel evidence and an explicit unresolved external-route decision.
 - [D15 custody/recovery design and open decisions](docs/decisions/D15-custody-and-recovery.md), grounded in [live central custody evidence](docs/research/custody-evidence.md).
+- [D16 product targets and pressure policy](docs/decisions/D16-service-targets-and-pressure.md), separating targets from admitted capacity and measured service behavior.
+- [Preview eligibility, current-display age and logical retention](docs/contracts/preview-policy-contract.md), with strict selected-policy schema and 12 shape fixtures.
 - [HTTP/API semantic contract](docs/contracts/api-contract.md), [OpenAPI](docs/contracts/openapi.json), [JSON Schema](docs/contracts/api.schema.json), and [synthetic schema fixtures](docs/contracts/schema-fixtures.json).
 - [Capture, chunk sealing and source-time assignment](docs/contracts/capture-contract.md), with [private capture schemas](docs/contracts/capture.schema.json).
 - [Private recovery candidates and verification receipts](docs/contracts/recovery-contract.md), with [recovery schemas](docs/contracts/recovery.schema.json), [canonical byte rules](docs/contracts/recovery-canonicalization.md), [golden vectors](docs/contracts/recovery-canonical-vectors.json) and a separate [recovery validation receipt](docs/contracts/recovery-validation-receipt.json).

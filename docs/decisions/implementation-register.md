@@ -1,6 +1,6 @@
 # Implementation decision register
 
-Status: research in progress, 2026-10-23. This register selects working designs and exposes the evidence still needed. It does not replace the required individual D01–D16 ADRs or qualify production. [WX-00](https://github.com/jvallery/weather/issues/1) tracks completion. Accepted product choices remain authoritative.
+Status: research in progress, 2026-10-23. This register selects working designs and exposes the evidence still needed. All sixteen individual ADRs now exist; their material open decisions and subsequent implementation proof are separated in the [planning closure inventory](../implementation/planning-closure.md). Their existence does not qualify production. [WX-00](https://github.com/jvallery/weather/issues/1) tracks completion. Accepted product choices remain authoritative.
 
 ## Evidence discipline
 
@@ -31,7 +31,7 @@ Status: research in progress, 2026-10-23. This register selects working designs 
 
 ## Framework tradeoff
 
-Astro plus a Python API is the working choice because the archive, about pages and shareable video routes benefit from server/static HTML while charts and live conditions need bounded interactive islands. Python can share timing, astronomy, telemetry, schema validation and worker contracts. The alternative is an integrated web framework with a separate media worker; it reduces frontend/API deployment units but does not eliminate worker, object-gateway or security boundaries. The final ADR must confirm existing build support and pin versions before treating this selection as closed.
+D13 selects Astro plus a Python API because the archive, about pages and shareable video routes benefit from server/static HTML while charts and live conditions need bounded interactive islands. Python can share timing, astronomy, telemetry, schema validation and worker contracts. The alternative is an integrated web framework with a separate media worker; it reduces frontend/API deployment units but does not eliminate worker, object-gateway or security boundaries. D13 records this selection; existing build support and compatible version pins remain unqualified.
 
 ## Resource and availability constraints
 

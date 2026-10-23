@@ -1,6 +1,6 @@
 # Requirements and acceptance traceability
 
-Status: initial mapping; detailed acceptance audit remains open under [WX-00](https://github.com/jvallery/weather/issues/1). No implementation requirement is accepted. WX-35 is deliberately excluded from the producer column so an umbrella cannot conceal missing implementation work.
+Status: initial mapping; detailed acceptance audit remains open under [WX-00](https://github.com/jvallery/weather/issues/1). The [planning closure inventory](planning-closure.md) lists material decision gaps and the remaining whole-document audit. No implementation requirement is accepted. WX-35 is deliberately excluded from the producer column so an umbrella cannot conceal missing implementation work.
 
 ## Core requirements
 
