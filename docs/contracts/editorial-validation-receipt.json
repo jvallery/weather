@@ -1,0 +1,19 @@
+{
+  "observed_at": "2026-10-23T21:12:14.822780+00:00",
+  "scope": "API schema metaschema and all 28 API shape fixtures, including 4 new editorial description boundaries",
+  "input_sha256": {
+    "api.schema.json": "c150bb6f31ac45ebdbc0a2d7608d14caf635a0ec89f397418dbaed51e9e0d788",
+    "schema-fixtures.json": "a2eb689b30dda86a2d6ca190d77c79ab29ddcc7bb804801ebc0e97de3edec151",
+    "api-contract.md": "16a4072bbd06bf7085f5223f1877dbe1a854bf6b67a9ee74eeb964bbfce2fc5d",
+    "openapi.json": "f062c8c1dddcf05be87b5a0ec921533e64f3e2e0cfa5e52bb1b40edd5b66c4a5"
+  },
+  "fixture_count": 28,
+  "all_fixture_expectations_matched": true,
+  "write_and_public_description_schema_identical": true,
+  "date_formats": "Explicit UTC/calendar parsers",
+  "limitations": [
+    "No new OpenAPI metaschema run; unchanged OpenAPI references the changed API schema",
+    "Not runtime authorization, CAS, evidence withdrawal, browser or recovery acceptance",
+    "Earlier aggregate validation receipt remains bound to its historical hashes"
+  ]
+}

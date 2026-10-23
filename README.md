@@ -28,7 +28,8 @@ Requirements and implementation planning for **[weather.vallery.net](https://wea
 - [Capture, chunk sealing and source-time assignment](docs/contracts/capture-contract.md), with [private capture schemas](docs/contracts/capture.schema.json).
 - [Private recovery candidates and verification receipts](docs/contracts/recovery-contract.md), with [recovery schemas](docs/contracts/recovery.schema.json), [canonical byte rules](docs/contracts/recovery-canonicalization.md), [golden vectors](docs/contracts/recovery-canonical-vectors.json) and a separate [recovery validation receipt](docs/contracts/recovery-validation-receipt.json).
 - [Private visual-model candidate schema](docs/contracts/visual-analysis.schema.json) and its [shape fixtures](docs/contracts/visual-analysis-fixtures.json); grounding remains a separate validation boundary.
-- [Production acceptance evidence matrix](docs/implementation/acceptance-matrix.md), [hash-bound contract validation](docs/contracts/validation-receipt.json), and [complete current dependency readback](docs/implementation/graph-verification.json).
+- [Clause-level acceptance audit for linked plots, editorial controls and embedding](docs/implementation/ui-clause-audit.md), covering requirements §§12.6–12.8 only.
+- [Production acceptance evidence matrix](docs/implementation/acceptance-matrix.md), [initial hash-bound contract validation](docs/contracts/validation-receipt.json) plus [current editorial/API validation](docs/contracts/editorial-validation-receipt.json), and [complete current dependency readback](docs/implementation/graph-verification.json).
 
 These are design contracts with mandatory implementation tests, not completed runtime qualification. The API/schema draft is published; remaining internal schemas, full contract coverage and design qualification are still in progress.
 

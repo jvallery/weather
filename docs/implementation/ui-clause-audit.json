@@ -1,0 +1,461 @@
+{
+  "schema_version": 1,
+  "scope": "Requirements sections 12.6-12.8 only; sentence-level clauses retain every conjunct; not whole-document coverage",
+  "requirements_sha256": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+  "sections": [
+    {
+      "section": "12.6",
+      "source_text_sha256": "77478eed50e65d4a273cf93a7014ccec69bf71becc111181fa76ca450f671850",
+      "sentence_count": 11
+    },
+    {
+      "section": "12.7",
+      "source_text_sha256": "6bf5d7eaee23fab35c879b204c356481034e4ef9620230e517aac01b1cde7bce",
+      "sentence_count": 18
+    },
+    {
+      "section": "12.8",
+      "source_text_sha256": "e512983b6f84a637929544ed93c5edae85b338d2ca6d406165c9d15ed6079d6d",
+      "sentence_count": 9
+    }
+  ],
+  "clauses": [
+    {
+      "id": "C12.6.01",
+      "section": "12.6",
+      "source_clause": "For an individual camera/segment, display relevant measured-weather plots aligned to the video's source interval.",
+      "producer": "WX-39",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Load each camera/segment and prove plot query bounds equal its owned source interval; do not substitute the calendar day.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.6.02",
+      "section": "12.6",
+      "source_clause": "Playback moves a UTC cursor; selecting a chart instant, keogram bin or event interval seeks the corresponding video position.",
+      "producer": "WX-39",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Play, click chart, click keogram and select event; assert the UTC cursor and player position agree in each direction.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.6.03",
+      "section": "12.6",
+      "source_clause": "Use the authoritative source-time map and rational frame boundaries, not percentage of retained frames or nearest telemetry array index.",
+      "producer": "WX-39",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Use nonuniform missing captures and rational frame centers; assert mapping follows the authoritative time map, not array percentage or nearest weather sample.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.6.04",
+      "section": "12.6",
+      "source_clause": "Clamp/select only within the owned interval and represent uncertainty/precision honestly.",
+      "producer": "WX-39",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Test before start, exact start, last frame and exact exclusive end; retain window-level uncertainty and reject adjacent-segment seeks.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.6.05",
+      "section": "12.6",
+      "source_clause": "Plots show units, metric-specific coverage, explicit gaps and the chosen aggregate resolution.",
+      "producer": "WX-39",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Inspect visible units, coverage, gaps and aggregate resolution for every plotted metric, including partial coverage.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.6.06",
+      "section": "12.6",
+      "source_clause": "A shared station value is not a separate camera measurement.",
+      "producer": "WX-39",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Compare the same UTC interval across cameras; station evidence identity/value remains shared and is labeled as measured station data.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.6.07",
+      "section": "12.6",
+      "source_clause": "The time cursor may move through a weather gap without inventing a value; missing video shows its partial/unavailable state instead of jumping over elapsed time.",
+      "producer": "WX-39",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Play across a telemetry gap and a partial/unavailable video; no interpolated measurement or hidden source-time jump is introduced.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.6.08",
+      "section": "12.6",
+      "source_clause": "Source-time zoom and UTC/offset-bearing labels must behave correctly overnight and across DST.",
+      "producer": "WX-39",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Zoom across midnight and both DST transitions; repeated local times display distinct offsets and stable UTC selection.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.6.09",
+      "section": "12.6",
+      "source_clause": "Shareable links preserve camera, segment and source-time selection.",
+      "producer": "WX-39",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Open copied links in a fresh browser; camera, segment and source selection round-trip including offset-bearing dates.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.6.10",
+      "section": "12.6",
+      "source_clause": "Keyboard controls and text summaries offer equivalent navigation; on mobile use one active player and bounded chart points.",
+      "producer": "WX-39",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Complete equivalent seeks using keyboard/text controls; mobile keeps one active player and enforces the admitted point bound.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.6.11",
+      "section": "12.6",
+      "source_clause": "Multi-camera simultaneous playback is not an initial requirement.",
+      "producer": "WX-39",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Confirm release acceptance never requires synchronized simultaneous multi-camera playback.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.01",
+      "section": "12.7",
+      "source_clause": "Publish valid AI descriptions automatically with clear AI/analysis-mode labels; do not make operator review a media/AI publication gate.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Publish a valid analysis with no operator session; retain explicit AI and native-video/sampled-frame labels without holding media publication.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.02",
+      "section": "12.7",
+      "source_clause": "Provide an authenticated private interface for description/event corrections, tags, favorites and poster selection.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Exercise authorized description/event changes, tags, favorites and poster selection; verify the private interface exposes all five functions.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.03",
+      "section": "12.7",
+      "source_clause": "D13 must use the qualified fleet identity/access pattern with explicit operator authorization, server-side checks on every write and read of private data, CSRF/session protections as applicable, and a separate least-privilege database role.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Deny unauthorized private reads and writes, invalid CSRF/session requests and spoofed actors; verify the editor DB role cannot perform unrelated administration.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.04",
+      "section": "12.7",
+      "source_clause": "No public account/subscription system is required.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Browse and play anonymously without account registration or subscription infrastructure.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.05",
+      "section": "12.7",
+      "source_clause": "Neither a hidden path nor LAN origin is sufficient authorization.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Repeat private read/write attempts from LAN and a discovered hidden URL without operator authority; both are denied.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.06",
+      "section": "12.7",
+      "source_clause": "Preserve the immutable validated automated revision and human editorial revisions separately.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Rerun AI and edit as a human; immutable automated and human histories remain separately retrievable to authorized operators.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.07",
+      "section": "12.7",
+      "source_clause": "Private raw model responses/validation diagnostics keep the short bounded lifecycle in \u00a713.7 rather than an indefinite editorial-retention requirement.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Expire private raw diagnostics at the qualified short lifecycle while preserving required validated editorial/audit revisions.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.08",
+      "section": "12.7",
+      "source_clause": "Record actor, timestamp, reason, old/new revision and input/media/evidence identities.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Read audit after each edit; actor, time, reason, old/new revision and input/media/evidence IDs are complete and server-controlled.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.09",
+      "section": "12.7",
+      "source_clause": "Writes use compare-and-set and reject stale edits.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Race two edits on one expected revision; exactly one commits and the other reports conflict without side effects.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.10",
+      "section": "12.7",
+      "source_clause": "An active human override remains active across routine analysis reruns against unchanged evidence.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Rerun analysis against unchanged evidence; an active human override and its attribution remain effective.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.11",
+      "section": "12.7",
+      "source_clause": "If bound media or measured evidence changes, retain the revision for review but invalidate dependent public/search claims until they are reconciled; unaffected text can remain current when its evidence binding still holds.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Change bound media and measured evidence separately; dependent public/search claims withdraw, old edits stay reviewable and unaffected evidence-bound text remains current.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.12",
+      "section": "12.7",
+      "source_clause": "Show new evidence for deliberate replace/rebase rather than silently treating an old correction as newly reviewed.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Rebase onto changed evidence explicitly; show old/new bindings and require a new audited decision rather than silent approval.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.13",
+      "section": "12.7",
+      "source_clause": "Do not present a human correction as an untouched AI output, or let free-form text overwrite measured station values.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Reject measured-value mutation through editor fields and event text; public human corrections retain human attribution distinct from validated AI history.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.14",
+      "section": "12.7",
+      "source_clause": "Corrections, explicitly published tags and poster choices atomically update active metadata via the outbox, generate a new sidecar/public revision, invalidate relevant caches and enqueue text reindexing.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Inject failure around the transaction and outbox dispatch; active metadata/audit/outbox commit atomically, and replay converges sidecar, cache and index to one revision.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.15",
+      "section": "12.7",
+      "source_clause": "Withdraw the outdated searchable text immediately; while reindexing, typed/lexical browsing follows the current public revision.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Hold reindexing and query lexical/vector/typed paths; no old text leaks and current typed/lexical results remain available under the current public revision.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.16",
+      "section": "12.7",
+      "source_clause": "Favorites and operator-only notes remain private by default and must not enter public search/sidecars.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Set private favorite/note then inspect public API, sidecar, cache, export and search; neither value nor private field appears.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.17",
+      "section": "12.7",
+      "source_clause": "Poster choices use \u00a711.4's genuine retained/decoded-source rules.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Select a genuine retained still or qualified decoded published-video frame; reject expired source, invented URL, adjacent-camera identity and unripe preview bypass.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.7.18",
+      "section": "12.7",
+      "source_clause": "Cover concurrent automated/human edits, revocation, rollback, audit visibility, model outage and restored revision state in acceptance tests.",
+      "producer": "WX-43",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Exercise automated/human races, revoked identity, rollback, authorized audit viewing, inference outage and isolated restore; preserve revision precedence and privacy.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.8.01",
+      "section": "12.8",
+      "source_clause": "Provide a small responsive card served by Weather and embedded on the existing `vallery.net` site.",
+      "producer": "WX-44",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Render the Weather card on the actual serving main site through the owner implementation; an isolated demo is insufficient.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.8.02",
+      "section": "12.8",
+      "source_clause": "Use a self-hosted iframe route as the starting design, with a narrow `frame-ancestors` allowlist for the actual approved main-site origins.",
+      "producer": "WX-44",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Test every approved parent origin and an unapproved origin against response CSP; only the card route permits the precise owner-approved ancestors.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.8.03",
+      "section": "12.8",
+      "source_clause": "Keep normal/private application routes protected against unwanted framing.",
+      "producer": "WX-44",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Attempt framing normal pages and private editor routes; neither inherits the card framing exception.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.8.04",
+      "section": "12.8",
+      "source_clause": "The parent site embedding change belongs to its existing owner/repository workflow and must be linked as an implementation prerequisite; Weather's public repository does not own unrelated main-site code.",
+      "producer": "WX-44",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Verify OWN-EMBED remains a native prerequisite and its parent-site change follows the serving WordPress owner, with source and live receipt.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.8.05",
+      "section": "12.8",
+      "source_clause": "The card reads the same sanitized current-weather contract, refreshes about every 15 seconds while visible, shows measured timestamps/staleness and links to the full site.",
+      "producer": "WX-44",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Compare card and main current-weather responses; visible polling is approximately 15 seconds and measured timestamps/staleness/link remain truthful.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.8.06",
+      "section": "12.8",
+      "source_clause": "Use bounded requests and pause unnecessary polling in hidden views.",
+      "producer": "WX-44",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Hide and restore the view; no overlapping poll accumulation, hidden polling stops where unnecessary and resumption refreshes without a retry burst.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.8.07",
+      "section": "12.8",
+      "source_clause": "It must work without third-party scripts/fonts/widgets, camera credentials, parent-page access, public visitor accounts or privileged cookies.",
+      "producer": "WX-44",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Load in a fresh cookie-free browser with third-party requests blocked; card works without parent DOM access, privileged cookies, accounts or camera credentials.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.8.08",
+      "section": "12.8",
+      "source_clause": "Its framing policy does not authorize arbitrary API CORS or admin embedding.",
+      "producer": "WX-44",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Attempt cross-origin API access and private-route framing from the allowed parent; card framing does not grant broader CORS or admin access.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    },
+    {
+      "id": "C12.8.09",
+      "section": "12.8",
+      "source_clause": "Test narrow mobile containers, unavailable data, reduced-motion/keyboard access and allowed/denied framing origins.",
+      "producer": "WX-44",
+      "integration_qualification": "WX-33",
+      "acceptance_case": "Test narrow containers, unavailable/stale data, keyboard and reduced motion, plus allowed and denied parent origins in real browsers.",
+      "planning_coverage": "explicit_case_mapped",
+      "runtime_acceptance": "not_implemented",
+      "evidence": []
+    }
+  ],
+  "open_design_dependencies": {
+    "12.6": [
+      "D02 source time qualification",
+      "D13 interaction wireframes",
+      "D16 bounded chart/query budgets"
+    ],
+    "12.7": [
+      "D13 live identity/operator role and session policy",
+      "D11 evidence binding",
+      "D12 search withdrawal",
+      "D16 diagnostic lifecycle and cache withdrawal bounds"
+    ],
+    "12.8": [
+      "OWN-EMBED actual origin allowlist and parent deployment",
+      "D13 identity/framing separation",
+      "D14 admitted public route",
+      "D16 polling/query bounds"
+    ]
+  }
+}

@@ -2395,7 +2395,8 @@
               "anyOf": [
                 {
                   "type": "string",
-                  "maxLength": 16384
+                  "maxLength": 8000,
+                  "minLength": 1
                 },
                 {
                   "type": "null"
