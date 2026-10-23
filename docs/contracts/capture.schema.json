@@ -151,7 +151,7 @@
           "const": "capture_attempt"
         },
         "attempt_id": {
-          "$ref": "#/$defs/Id"
+          "$ref": "#/$defs/AttemptId"
         },
         "camera": {
           "$ref": "#/$defs/Camera"
@@ -307,12 +307,13 @@
               "properties": {
                 "name": {
                   "type": "string",
-                  "pattern": "^frames/[A-Za-z0-9][A-Za-z0-9_-]{0,127}\\.jpg$"
+                  "pattern": "^frames/[A-Za-z0-9][A-Za-z0-9_-]{0,88}\\.jpg$"
                 },
                 "data_offset_bytes": {
                   "type": "integer",
-                  "minimum": 0,
-                  "maximum": 9007199254740991
+                  "minimum": 512,
+                  "maximum": 9007199254740991,
+                  "multipleOf": 512
                 },
                 "length_bytes": {
                   "type": "integer",
@@ -741,7 +742,7 @@
           "const": "selection_row"
         },
         "attempt_id": {
-          "$ref": "#/$defs/Id"
+          "$ref": "#/$defs/AttemptId"
         },
         "chunk_id": {
           "$ref": "#/$defs/Id"
@@ -824,6 +825,11 @@
           }
         }
       ]
+    },
+    "AttemptId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,88}$",
+      "description": "ASCII capture identity limited so frames/<id>.jpg fits the 100-byte USTAR name field without extensions or prefix splitting"
     }
   }
 }

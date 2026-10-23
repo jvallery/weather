@@ -365,6 +365,200 @@
         "reason": null,
         "source_interval": null
       }
+    },
+    {
+      "name": "89-byte attempt fits plain TAR name",
+      "valid": true,
+      "value": {
+        "schema_version": 1,
+        "record_type": "capture_attempt",
+        "attempt_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camera": "skycam_east",
+        "writer_epoch": "writer-a",
+        "clock_epoch": "clock-a",
+        "cadence_epoch_id": "cadence-a",
+        "slot_id": "slot-a",
+        "slot_at_utc": "2026-10-23T00:00:00Z",
+        "request_started_at_utc": "2026-10-23T00:00:00Z",
+        "response_completed_at_utc": "2026-10-23T00:00:00Z",
+        "monotonic_started_ns": "1000000000000000000",
+        "monotonic_completed_ns": "1000000000000000001",
+        "outcome": "captured",
+        "reason": null,
+        "source_at_utc": null,
+        "source_time_basis": null,
+        "uncertainty_ms": null,
+        "exposure_upper_bound": null,
+        "freshness": "unknown",
+        "freshness_evidence_id": null,
+        "quality_flags": [],
+        "member": {
+          "name": "frames/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg",
+          "data_offset_bytes": 512,
+          "length_bytes": 1024,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "width": 1920,
+          "height": 1080
+        }
+      }
+    },
+    {
+      "name": "90-byte attempt exceeds plain TAR contract",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "capture_attempt",
+        "attempt_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camera": "skycam_east",
+        "writer_epoch": "writer-a",
+        "clock_epoch": "clock-a",
+        "cadence_epoch_id": "cadence-a",
+        "slot_id": "slot-a",
+        "slot_at_utc": "2026-10-23T00:00:00Z",
+        "request_started_at_utc": "2026-10-23T00:00:00Z",
+        "response_completed_at_utc": "2026-10-23T00:00:00Z",
+        "monotonic_started_ns": "1000000000000000000",
+        "monotonic_completed_ns": "1000000000000000001",
+        "outcome": "captured",
+        "reason": null,
+        "source_at_utc": null,
+        "source_time_basis": null,
+        "uncertainty_ms": null,
+        "exposure_upper_bound": null,
+        "freshness": "unknown",
+        "freshness_evidence_id": null,
+        "quality_flags": [],
+        "member": {
+          "name": "frames/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg",
+          "data_offset_bytes": 512,
+          "length_bytes": 1024,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "width": 1920,
+          "height": 1080
+        }
+      }
+    },
+    {
+      "name": "128-byte legacy attempt rejected",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "capture_attempt",
+        "attempt_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camera": "skycam_east",
+        "writer_epoch": "writer-a",
+        "clock_epoch": "clock-a",
+        "cadence_epoch_id": "cadence-a",
+        "slot_id": "slot-a",
+        "slot_at_utc": "2026-10-23T00:00:00Z",
+        "request_started_at_utc": "2026-10-23T00:00:00Z",
+        "response_completed_at_utc": "2026-10-23T00:00:00Z",
+        "monotonic_started_ns": "1000000000000000000",
+        "monotonic_completed_ns": "1000000000000000001",
+        "outcome": "captured",
+        "reason": null,
+        "source_at_utc": null,
+        "source_time_basis": null,
+        "uncertainty_ms": null,
+        "exposure_upper_bound": null,
+        "freshness": "unknown",
+        "freshness_evidence_id": null,
+        "quality_flags": [],
+        "member": {
+          "name": "frames/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg",
+          "data_offset_bytes": 512,
+          "length_bytes": 1024,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "width": 1920,
+          "height": 1080
+        }
+      }
+    },
+    {
+      "name": "offset inside first header rejected",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "capture_attempt",
+        "attempt_id": "synthetic-attempt",
+        "camera": "skycam_east",
+        "writer_epoch": "writer-a",
+        "clock_epoch": "clock-a",
+        "cadence_epoch_id": "cadence-a",
+        "slot_id": "slot-a",
+        "slot_at_utc": "2026-10-23T00:00:00Z",
+        "request_started_at_utc": "2026-10-23T00:00:00Z",
+        "response_completed_at_utc": "2026-10-23T00:00:00Z",
+        "monotonic_started_ns": "1000000000000000000",
+        "monotonic_completed_ns": "1000000000000000001",
+        "outcome": "captured",
+        "reason": null,
+        "source_at_utc": null,
+        "source_time_basis": null,
+        "uncertainty_ms": null,
+        "exposure_upper_bound": null,
+        "freshness": "unknown",
+        "freshness_evidence_id": null,
+        "quality_flags": [],
+        "member": {
+          "name": "frames/synthetic-attempt.jpg",
+          "data_offset_bytes": 0,
+          "length_bytes": 1024,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "width": 1920,
+          "height": 1080
+        }
+      }
+    },
+    {
+      "name": "unaligned payload offset rejected",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "capture_attempt",
+        "attempt_id": "synthetic-attempt",
+        "camera": "skycam_east",
+        "writer_epoch": "writer-a",
+        "clock_epoch": "clock-a",
+        "cadence_epoch_id": "cadence-a",
+        "slot_id": "slot-a",
+        "slot_at_utc": "2026-10-23T00:00:00Z",
+        "request_started_at_utc": "2026-10-23T00:00:00Z",
+        "response_completed_at_utc": "2026-10-23T00:00:00Z",
+        "monotonic_started_ns": "1000000000000000000",
+        "monotonic_completed_ns": "1000000000000000001",
+        "outcome": "captured",
+        "reason": null,
+        "source_at_utc": null,
+        "source_time_basis": null,
+        "uncertainty_ms": null,
+        "exposure_upper_bound": null,
+        "freshness": "unknown",
+        "freshness_evidence_id": null,
+        "quality_flags": [],
+        "member": {
+          "name": "frames/synthetic-attempt.jpg",
+          "data_offset_bytes": 513,
+          "length_bytes": 1024,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "width": 1920,
+          "height": 1080
+        }
+      }
+    },
+    {
+      "name": "selection uses same bounded attempt identity",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "selection_row",
+        "attempt_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "chunk_id": "chunk-a",
+        "slot_id": "slot-a",
+        "disposition": "rejected",
+        "reason": "unqualified_source_time",
+        "source_interval": null
+      }
     }
   ]
 }

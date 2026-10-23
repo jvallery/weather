@@ -1,0 +1,21 @@
+{
+  "observed_at": "2026-10-23T21:57:22.570727+00:00",
+  "fixture_count": 19,
+  "all_expectations_matched": true,
+  "checks": [
+    "Draft 2020-12 metaschema",
+    "Explicit UTC calendar format assertions",
+    "89-character ID produces one USTAR member with empty prefix and payload offset 512",
+    "128-character legacy ID cannot encode as USTAR without extension"
+  ],
+  "input_sha256": {
+    "capture.schema.json": "76477870bbf2dfbeb90c3753efbfde6160ecc63d6028caa609c639a04d0391b0",
+    "capture-fixtures.json": "634c0c20addf902d6aabd475dd88684ab3f1229f458f19cd5dfcf0735ddb77bf",
+    "capture-contract.md": "97a1278dd25863bd62617ce02505dd1d2ca854f96aa5e6344d0be390c41721a5"
+  },
+  "limitations": [
+    "Synthetic 3-byte payload is not a JPEG test",
+    "No application archive writer, NFS, corruption recovery or camera test",
+    "Name-to-attempt equality and full archive bounds remain semantic obligations"
+  ]
+}
