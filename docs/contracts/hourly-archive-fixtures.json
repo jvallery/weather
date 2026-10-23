@@ -1,0 +1,746 @@
+{
+  "description": "Synthetic private receipt shape only; no real admission, object write or database transaction",
+  "cases": [
+    {
+      "name": "committed promoted original",
+      "valid": true,
+      "value": {
+        "schema_version": 1,
+        "record_type": "hourly_original_archive_commit",
+        "receipt_id": "receipt_demo",
+        "idempotency_key": "archive_demo",
+        "work_id": "work_demo",
+        "work_generation": 1,
+        "expected_selection_revision": 1,
+        "selection_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camera": "skycam_east",
+        "calendar_date": "2026-11-01",
+        "day_id": "day_demo",
+        "slot_id": "slot_fold_one",
+        "slot_interval": {
+          "start": "2026-11-01T08:00:00Z",
+          "end": "2026-11-01T09:00:00Z"
+        },
+        "slot_local_label": "2026-11-01 01:00 -07:00",
+        "capture_attempt_id": "capture_demo",
+        "source_interval": {
+          "start": "2026-11-01T08:29:59Z",
+          "end": "2026-11-01T08:30:01Z"
+        },
+        "source_selection_offset_seconds": 0,
+        "selection_policy_revision": "midpoint_v1",
+        "source_custody": {
+          "kind": "compact_promotion",
+          "record_id": "transfer_demo",
+          "pin_id": "pin_demo",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "original": {
+          "asset_id": "original_demo",
+          "object_locator_id": "locator_demo",
+          "asset_class": "hourly_original",
+          "visibility": "private",
+          "mime": "image/jpeg",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "width": 4096,
+          "height": 1856,
+          "content_verification_receipt_id": "verify_demo",
+          "local_durability_receipt_id": "durability_demo"
+        },
+        "catalog": {
+          "original_revision": 1,
+          "publication_generation": 1,
+          "database_commit_receipt_id": "commit_demo",
+          "fk_validation_revision": "fk_v1",
+          "retention_policy_id": "retention_demo",
+          "retention_policy_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "recovery_policy_id": "recovery_demo",
+          "recovery_policy_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "retention_anchor": "2026-11-01T08:30:00Z"
+        },
+        "committed_at": "2026-11-01T09:05:00Z"
+      }
+    },
+    {
+      "name": "direct sealed chunk remains supported",
+      "valid": true,
+      "value": {
+        "schema_version": 1,
+        "record_type": "hourly_original_archive_commit",
+        "receipt_id": "receipt_demo",
+        "idempotency_key": "archive_demo",
+        "work_id": "work_demo",
+        "work_generation": 1,
+        "expected_selection_revision": 1,
+        "selection_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camera": "skycam_east",
+        "calendar_date": "2026-11-01",
+        "day_id": "day_demo",
+        "slot_id": "slot_fold_one",
+        "slot_interval": {
+          "start": "2026-11-01T08:00:00Z",
+          "end": "2026-11-01T09:00:00Z"
+        },
+        "slot_local_label": "2026-11-01 01:00 -07:00",
+        "capture_attempt_id": "capture_demo",
+        "source_interval": {
+          "start": "2026-11-01T08:29:59Z",
+          "end": "2026-11-01T08:30:01Z"
+        },
+        "source_selection_offset_seconds": 0,
+        "selection_policy_revision": "midpoint_v1",
+        "source_custody": {
+          "kind": "sealed_capture_chunk",
+          "record_id": "transfer_demo",
+          "pin_id": "pin_demo",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "original": {
+          "asset_id": "original_demo",
+          "object_locator_id": "locator_demo",
+          "asset_class": "hourly_original",
+          "visibility": "private",
+          "mime": "image/jpeg",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "width": 4096,
+          "height": 1856,
+          "content_verification_receipt_id": "verify_demo",
+          "local_durability_receipt_id": "durability_demo"
+        },
+        "catalog": {
+          "original_revision": 1,
+          "publication_generation": 1,
+          "database_commit_receipt_id": "commit_demo",
+          "fk_validation_revision": "fk_v1",
+          "retention_policy_id": "retention_demo",
+          "retention_policy_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "recovery_policy_id": "recovery_demo",
+          "recovery_policy_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "retention_anchor": "2026-11-01T08:30:00Z"
+        },
+        "committed_at": "2026-11-01T09:05:00Z"
+      }
+    },
+    {
+      "name": "public original forbidden",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "hourly_original_archive_commit",
+        "receipt_id": "receipt_demo",
+        "idempotency_key": "archive_demo",
+        "work_id": "work_demo",
+        "work_generation": 1,
+        "expected_selection_revision": 1,
+        "selection_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camera": "skycam_east",
+        "calendar_date": "2026-11-01",
+        "day_id": "day_demo",
+        "slot_id": "slot_fold_one",
+        "slot_interval": {
+          "start": "2026-11-01T08:00:00Z",
+          "end": "2026-11-01T09:00:00Z"
+        },
+        "slot_local_label": "2026-11-01 01:00 -07:00",
+        "capture_attempt_id": "capture_demo",
+        "source_interval": {
+          "start": "2026-11-01T08:29:59Z",
+          "end": "2026-11-01T08:30:01Z"
+        },
+        "source_selection_offset_seconds": 0,
+        "selection_policy_revision": "midpoint_v1",
+        "source_custody": {
+          "kind": "compact_promotion",
+          "record_id": "transfer_demo",
+          "pin_id": "pin_demo",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "original": {
+          "asset_id": "original_demo",
+          "object_locator_id": "locator_demo",
+          "asset_class": "hourly_original",
+          "visibility": "public",
+          "mime": "image/jpeg",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "width": 4096,
+          "height": 1856,
+          "content_verification_receipt_id": "verify_demo",
+          "local_durability_receipt_id": "durability_demo"
+        },
+        "catalog": {
+          "original_revision": 1,
+          "publication_generation": 1,
+          "database_commit_receipt_id": "commit_demo",
+          "fk_validation_revision": "fk_v1",
+          "retention_policy_id": "retention_demo",
+          "retention_policy_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "recovery_policy_id": "recovery_demo",
+          "recovery_policy_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "retention_anchor": "2026-11-01T08:30:00Z"
+        },
+        "committed_at": "2026-11-01T09:05:00Z"
+      }
+    },
+    {
+      "name": "derivative class forbidden",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "hourly_original_archive_commit",
+        "receipt_id": "receipt_demo",
+        "idempotency_key": "archive_demo",
+        "work_id": "work_demo",
+        "work_generation": 1,
+        "expected_selection_revision": 1,
+        "selection_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camera": "skycam_east",
+        "calendar_date": "2026-11-01",
+        "day_id": "day_demo",
+        "slot_id": "slot_fold_one",
+        "slot_interval": {
+          "start": "2026-11-01T08:00:00Z",
+          "end": "2026-11-01T09:00:00Z"
+        },
+        "slot_local_label": "2026-11-01 01:00 -07:00",
+        "capture_attempt_id": "capture_demo",
+        "source_interval": {
+          "start": "2026-11-01T08:29:59Z",
+          "end": "2026-11-01T08:30:01Z"
+        },
+        "source_selection_offset_seconds": 0,
+        "selection_policy_revision": "midpoint_v1",
+        "source_custody": {
+          "kind": "compact_promotion",
+          "record_id": "transfer_demo",
+          "pin_id": "pin_demo",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "original": {
+          "asset_id": "original_demo",
+          "object_locator_id": "locator_demo",
+          "asset_class": "comparison",
+          "visibility": "private",
+          "mime": "image/jpeg",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "width": 4096,
+          "height": 1856,
+          "content_verification_receipt_id": "verify_demo",
+          "local_durability_receipt_id": "durability_demo"
+        },
+        "catalog": {
+          "original_revision": 1,
+          "publication_generation": 1,
+          "database_commit_receipt_id": "commit_demo",
+          "fk_validation_revision": "fk_v1",
+          "retention_policy_id": "retention_demo",
+          "retention_policy_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "recovery_policy_id": "recovery_demo",
+          "recovery_policy_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "retention_anchor": "2026-11-01T08:30:00Z"
+        },
+        "committed_at": "2026-11-01T09:05:00Z"
+      }
+    },
+    {
+      "name": "missing slot FK forbidden",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "hourly_original_archive_commit",
+        "receipt_id": "receipt_demo",
+        "idempotency_key": "archive_demo",
+        "work_id": "work_demo",
+        "work_generation": 1,
+        "expected_selection_revision": 1,
+        "selection_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camera": "skycam_east",
+        "calendar_date": "2026-11-01",
+        "day_id": "day_demo",
+        "slot_interval": {
+          "start": "2026-11-01T08:00:00Z",
+          "end": "2026-11-01T09:00:00Z"
+        },
+        "slot_local_label": "2026-11-01 01:00 -07:00",
+        "capture_attempt_id": "capture_demo",
+        "source_interval": {
+          "start": "2026-11-01T08:29:59Z",
+          "end": "2026-11-01T08:30:01Z"
+        },
+        "source_selection_offset_seconds": 0,
+        "selection_policy_revision": "midpoint_v1",
+        "source_custody": {
+          "kind": "compact_promotion",
+          "record_id": "transfer_demo",
+          "pin_id": "pin_demo",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "original": {
+          "asset_id": "original_demo",
+          "object_locator_id": "locator_demo",
+          "asset_class": "hourly_original",
+          "visibility": "private",
+          "mime": "image/jpeg",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "width": 4096,
+          "height": 1856,
+          "content_verification_receipt_id": "verify_demo",
+          "local_durability_receipt_id": "durability_demo"
+        },
+        "catalog": {
+          "original_revision": 1,
+          "publication_generation": 1,
+          "database_commit_receipt_id": "commit_demo",
+          "fk_validation_revision": "fk_v1",
+          "retention_policy_id": "retention_demo",
+          "retention_policy_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "recovery_policy_id": "recovery_demo",
+          "recovery_policy_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "retention_anchor": "2026-11-01T08:30:00Z"
+        },
+        "committed_at": "2026-11-01T09:05:00Z"
+      }
+    },
+    {
+      "name": "missing durability forbidden",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "hourly_original_archive_commit",
+        "receipt_id": "receipt_demo",
+        "idempotency_key": "archive_demo",
+        "work_id": "work_demo",
+        "work_generation": 1,
+        "expected_selection_revision": 1,
+        "selection_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camera": "skycam_east",
+        "calendar_date": "2026-11-01",
+        "day_id": "day_demo",
+        "slot_id": "slot_fold_one",
+        "slot_interval": {
+          "start": "2026-11-01T08:00:00Z",
+          "end": "2026-11-01T09:00:00Z"
+        },
+        "slot_local_label": "2026-11-01 01:00 -07:00",
+        "capture_attempt_id": "capture_demo",
+        "source_interval": {
+          "start": "2026-11-01T08:29:59Z",
+          "end": "2026-11-01T08:30:01Z"
+        },
+        "source_selection_offset_seconds": 0,
+        "selection_policy_revision": "midpoint_v1",
+        "source_custody": {
+          "kind": "compact_promotion",
+          "record_id": "transfer_demo",
+          "pin_id": "pin_demo",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "original": {
+          "asset_id": "original_demo",
+          "object_locator_id": "locator_demo",
+          "asset_class": "hourly_original",
+          "visibility": "private",
+          "mime": "image/jpeg",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "width": 4096,
+          "height": 1856,
+          "content_verification_receipt_id": "verify_demo"
+        },
+        "catalog": {
+          "original_revision": 1,
+          "publication_generation": 1,
+          "database_commit_receipt_id": "commit_demo",
+          "fk_validation_revision": "fk_v1",
+          "retention_policy_id": "retention_demo",
+          "retention_policy_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "recovery_policy_id": "recovery_demo",
+          "recovery_policy_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "retention_anchor": "2026-11-01T08:30:00Z"
+        },
+        "committed_at": "2026-11-01T09:05:00Z"
+      }
+    },
+    {
+      "name": "missing DB commit forbidden",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "hourly_original_archive_commit",
+        "receipt_id": "receipt_demo",
+        "idempotency_key": "archive_demo",
+        "work_id": "work_demo",
+        "work_generation": 1,
+        "expected_selection_revision": 1,
+        "selection_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camera": "skycam_east",
+        "calendar_date": "2026-11-01",
+        "day_id": "day_demo",
+        "slot_id": "slot_fold_one",
+        "slot_interval": {
+          "start": "2026-11-01T08:00:00Z",
+          "end": "2026-11-01T09:00:00Z"
+        },
+        "slot_local_label": "2026-11-01 01:00 -07:00",
+        "capture_attempt_id": "capture_demo",
+        "source_interval": {
+          "start": "2026-11-01T08:29:59Z",
+          "end": "2026-11-01T08:30:01Z"
+        },
+        "source_selection_offset_seconds": 0,
+        "selection_policy_revision": "midpoint_v1",
+        "source_custody": {
+          "kind": "compact_promotion",
+          "record_id": "transfer_demo",
+          "pin_id": "pin_demo",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "original": {
+          "asset_id": "original_demo",
+          "object_locator_id": "locator_demo",
+          "asset_class": "hourly_original",
+          "visibility": "private",
+          "mime": "image/jpeg",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "width": 4096,
+          "height": 1856,
+          "content_verification_receipt_id": "verify_demo",
+          "local_durability_receipt_id": "durability_demo"
+        },
+        "catalog": {
+          "original_revision": 1,
+          "publication_generation": 1,
+          "fk_validation_revision": "fk_v1",
+          "retention_policy_id": "retention_demo",
+          "retention_policy_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "recovery_policy_id": "recovery_demo",
+          "recovery_policy_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "retention_anchor": "2026-11-01T08:30:00Z"
+        },
+        "committed_at": "2026-11-01T09:05:00Z"
+      }
+    },
+    {
+      "name": "missing retention binding forbidden",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "hourly_original_archive_commit",
+        "receipt_id": "receipt_demo",
+        "idempotency_key": "archive_demo",
+        "work_id": "work_demo",
+        "work_generation": 1,
+        "expected_selection_revision": 1,
+        "selection_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camera": "skycam_east",
+        "calendar_date": "2026-11-01",
+        "day_id": "day_demo",
+        "slot_id": "slot_fold_one",
+        "slot_interval": {
+          "start": "2026-11-01T08:00:00Z",
+          "end": "2026-11-01T09:00:00Z"
+        },
+        "slot_local_label": "2026-11-01 01:00 -07:00",
+        "capture_attempt_id": "capture_demo",
+        "source_interval": {
+          "start": "2026-11-01T08:29:59Z",
+          "end": "2026-11-01T08:30:01Z"
+        },
+        "source_selection_offset_seconds": 0,
+        "selection_policy_revision": "midpoint_v1",
+        "source_custody": {
+          "kind": "compact_promotion",
+          "record_id": "transfer_demo",
+          "pin_id": "pin_demo",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "original": {
+          "asset_id": "original_demo",
+          "object_locator_id": "locator_demo",
+          "asset_class": "hourly_original",
+          "visibility": "private",
+          "mime": "image/jpeg",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "width": 4096,
+          "height": 1856,
+          "content_verification_receipt_id": "verify_demo",
+          "local_durability_receipt_id": "durability_demo"
+        },
+        "catalog": {
+          "original_revision": 1,
+          "publication_generation": 1,
+          "database_commit_receipt_id": "commit_demo",
+          "fk_validation_revision": "fk_v1",
+          "retention_policy_id": "retention_demo",
+          "recovery_policy_id": "recovery_demo",
+          "recovery_policy_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "retention_anchor": "2026-11-01T08:30:00Z"
+        },
+        "committed_at": "2026-11-01T09:05:00Z"
+      }
+    },
+    {
+      "name": "source credential field forbidden",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "hourly_original_archive_commit",
+        "receipt_id": "receipt_demo",
+        "idempotency_key": "archive_demo",
+        "work_id": "work_demo",
+        "work_generation": 1,
+        "expected_selection_revision": 1,
+        "selection_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camera": "skycam_east",
+        "calendar_date": "2026-11-01",
+        "day_id": "day_demo",
+        "slot_id": "slot_fold_one",
+        "slot_interval": {
+          "start": "2026-11-01T08:00:00Z",
+          "end": "2026-11-01T09:00:00Z"
+        },
+        "slot_local_label": "2026-11-01 01:00 -07:00",
+        "capture_attempt_id": "capture_demo",
+        "source_interval": {
+          "start": "2026-11-01T08:29:59Z",
+          "end": "2026-11-01T08:30:01Z"
+        },
+        "source_selection_offset_seconds": 0,
+        "selection_policy_revision": "midpoint_v1",
+        "source_custody": {
+          "kind": "compact_promotion",
+          "record_id": "transfer_demo",
+          "pin_id": "pin_demo",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "credential": "SYNTHETIC_NOT_A_SECRET"
+        },
+        "original": {
+          "asset_id": "original_demo",
+          "object_locator_id": "locator_demo",
+          "asset_class": "hourly_original",
+          "visibility": "private",
+          "mime": "image/jpeg",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "width": 4096,
+          "height": 1856,
+          "content_verification_receipt_id": "verify_demo",
+          "local_durability_receipt_id": "durability_demo"
+        },
+        "catalog": {
+          "original_revision": 1,
+          "publication_generation": 1,
+          "database_commit_receipt_id": "commit_demo",
+          "fk_validation_revision": "fk_v1",
+          "retention_policy_id": "retention_demo",
+          "retention_policy_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "recovery_policy_id": "recovery_demo",
+          "recovery_policy_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "retention_anchor": "2026-11-01T08:30:00Z"
+        },
+        "committed_at": "2026-11-01T09:05:00Z"
+      }
+    },
+    {
+      "name": "zero byte original forbidden",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "hourly_original_archive_commit",
+        "receipt_id": "receipt_demo",
+        "idempotency_key": "archive_demo",
+        "work_id": "work_demo",
+        "work_generation": 1,
+        "expected_selection_revision": 1,
+        "selection_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camera": "skycam_east",
+        "calendar_date": "2026-11-01",
+        "day_id": "day_demo",
+        "slot_id": "slot_fold_one",
+        "slot_interval": {
+          "start": "2026-11-01T08:00:00Z",
+          "end": "2026-11-01T09:00:00Z"
+        },
+        "slot_local_label": "2026-11-01 01:00 -07:00",
+        "capture_attempt_id": "capture_demo",
+        "source_interval": {
+          "start": "2026-11-01T08:29:59Z",
+          "end": "2026-11-01T08:30:01Z"
+        },
+        "source_selection_offset_seconds": 0,
+        "selection_policy_revision": "midpoint_v1",
+        "source_custody": {
+          "kind": "compact_promotion",
+          "record_id": "transfer_demo",
+          "pin_id": "pin_demo",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "original": {
+          "asset_id": "original_demo",
+          "object_locator_id": "locator_demo",
+          "asset_class": "hourly_original",
+          "visibility": "private",
+          "mime": "image/jpeg",
+          "bytes": 0,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "width": 4096,
+          "height": 1856,
+          "content_verification_receipt_id": "verify_demo",
+          "local_durability_receipt_id": "durability_demo"
+        },
+        "catalog": {
+          "original_revision": 1,
+          "publication_generation": 1,
+          "database_commit_receipt_id": "commit_demo",
+          "fk_validation_revision": "fk_v1",
+          "retention_policy_id": "retention_demo",
+          "retention_policy_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "recovery_policy_id": "recovery_demo",
+          "recovery_policy_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "retention_anchor": "2026-11-01T08:30:00Z"
+        },
+        "committed_at": "2026-11-01T09:05:00Z"
+      }
+    },
+    {
+      "name": "invalid calendar date forbidden",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "hourly_original_archive_commit",
+        "receipt_id": "receipt_demo",
+        "idempotency_key": "archive_demo",
+        "work_id": "work_demo",
+        "work_generation": 1,
+        "expected_selection_revision": 1,
+        "selection_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camera": "skycam_east",
+        "calendar_date": "2026-02-30",
+        "day_id": "day_demo",
+        "slot_id": "slot_fold_one",
+        "slot_interval": {
+          "start": "2026-11-01T08:00:00Z",
+          "end": "2026-11-01T09:00:00Z"
+        },
+        "slot_local_label": "2026-11-01 01:00 -07:00",
+        "capture_attempt_id": "capture_demo",
+        "source_interval": {
+          "start": "2026-11-01T08:29:59Z",
+          "end": "2026-11-01T08:30:01Z"
+        },
+        "source_selection_offset_seconds": 0,
+        "selection_policy_revision": "midpoint_v1",
+        "source_custody": {
+          "kind": "compact_promotion",
+          "record_id": "transfer_demo",
+          "pin_id": "pin_demo",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "original": {
+          "asset_id": "original_demo",
+          "object_locator_id": "locator_demo",
+          "asset_class": "hourly_original",
+          "visibility": "private",
+          "mime": "image/jpeg",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "width": 4096,
+          "height": 1856,
+          "content_verification_receipt_id": "verify_demo",
+          "local_durability_receipt_id": "durability_demo"
+        },
+        "catalog": {
+          "original_revision": 1,
+          "publication_generation": 1,
+          "database_commit_receipt_id": "commit_demo",
+          "fk_validation_revision": "fk_v1",
+          "retention_policy_id": "retention_demo",
+          "retention_policy_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "recovery_policy_id": "recovery_demo",
+          "recovery_policy_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "retention_anchor": "2026-11-01T08:30:00Z"
+        },
+        "committed_at": "2026-11-01T09:05:00Z"
+      }
+    },
+    {
+      "name": "staging transfer is not archive",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "compact_transfer_commit",
+        "receipt_id": "receipt_demo",
+        "idempotency_key": "archive_demo",
+        "work_id": "work_demo",
+        "work_generation": 1,
+        "expected_selection_revision": 1,
+        "selection_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "camera": "skycam_east",
+        "calendar_date": "2026-11-01",
+        "day_id": "day_demo",
+        "slot_id": "slot_fold_one",
+        "slot_interval": {
+          "start": "2026-11-01T08:00:00Z",
+          "end": "2026-11-01T09:00:00Z"
+        },
+        "slot_local_label": "2026-11-01 01:00 -07:00",
+        "capture_attempt_id": "capture_demo",
+        "source_interval": {
+          "start": "2026-11-01T08:29:59Z",
+          "end": "2026-11-01T08:30:01Z"
+        },
+        "source_selection_offset_seconds": 0,
+        "selection_policy_revision": "midpoint_v1",
+        "source_custody": {
+          "kind": "compact_promotion",
+          "record_id": "transfer_demo",
+          "pin_id": "pin_demo",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "original": {
+          "asset_id": "original_demo",
+          "object_locator_id": "locator_demo",
+          "asset_class": "hourly_original",
+          "visibility": "private",
+          "mime": "image/jpeg",
+          "bytes": 12345,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "width": 4096,
+          "height": 1856,
+          "content_verification_receipt_id": "verify_demo",
+          "local_durability_receipt_id": "durability_demo"
+        },
+        "catalog": {
+          "original_revision": 1,
+          "publication_generation": 1,
+          "database_commit_receipt_id": "commit_demo",
+          "fk_validation_revision": "fk_v1",
+          "retention_policy_id": "retention_demo",
+          "retention_policy_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "recovery_policy_id": "recovery_demo",
+          "recovery_policy_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "retention_anchor": "2026-11-01T08:30:00Z"
+        },
+        "committed_at": "2026-11-01T09:05:00Z"
+      }
+    }
+  ]
+}

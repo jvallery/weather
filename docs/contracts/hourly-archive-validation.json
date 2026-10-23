@@ -1,0 +1,16 @@
+{
+  "observed_at": "2026-10-23T22:34:25.827185+00:00",
+  "fixture_count": 12,
+  "all_shape_expectations_matched": true,
+  "scope": "Draft 2020-12 metaschema and receipt fixtures with explicit date/UTC assertions",
+  "input_sha256": {
+    "hourly-archive.schema.json": "8dfb932ce4fc77bb897c47dbd78aba9e055aadd9f881e34fb1a51f8ffc8c9b73",
+    "hourly-archive-fixtures.json": "ec4298b594105255dc99fa14c3cc39329c2e8fa738d227174c89208e0b701060",
+    "hourly-archive-contract.md": "69f6b622064dcd95cdf5ea9fca6fbff33c5c63251061277d7ebfe536e9363123"
+  },
+  "limits": [
+    "No Garage upload or durability test",
+    "No database transaction, FK, generation, pin or cleanup execution",
+    "Cross-record semantic acceptance remains unproven"
+  ]
+}

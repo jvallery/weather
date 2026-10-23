@@ -170,3 +170,7 @@ The [section 17 audit](../implementation/contracts-clause-audit.md) preserves th
 ## Live issue-body propagation reconciliation
 
 A full GitHub inventory returned exactly 47 Weather issues: the planning root plus 46 implementation/follow-on identities. Comparing every source-audit producer assignment (including time, sentence-level UI and route rows) to live bodies found 17 missing audit links across 13 producers. Those links were added with current-body concurrency checks and exact readback. A fresh [issue-body receipt](../implementation/issue-body-verification.json) records identity/body hashes, labels, required section/requirement-ID presence and assigned links for all 46 bodies. Native edges were not changed or re-read in this body-only pass. Presence checks are structural: final semantic review and consolidation of long issue bodies remain necessary.
+
+## Final hourly-original archival receipt specified
+
+The [private hourly archive contract](../contracts/hourly-archive-contract.md) resolves the formerly missing final receipt format separately from staging promotion. It binds exact native bytes, private destination, camera/day/hour/capture and selection/work identities, verified local durability, one transactional catalog/FK commit and retained policy versions. Lost acknowledgements and stale generations cannot release pins by inference. Twelve structural fixtures pass with explicit date/UTC assertions. Garage immutability/durability, actual database constraints, races and cleanup remain unqualified; no object/database mutation occurred.
