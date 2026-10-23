@@ -18,6 +18,7 @@ The [planning closure inventory](implementation/planning-closure.md) contains th
 
 Established choices and collateral:
 
+- Cloudflare Tunnel selected for video and downloads; do not reopen direct ingress or paid-provider investigation. Preserve required interpolation, descriptions and semantic search in the initial scope.
 - MIT for original code with compatible permissive reuse; separate review before copyleft imports. Do not re-ask the license questionnaire.
 - React + TypeScript / React Router SSR, separate Python API/workers, direct frontend/backend version and archive evidence, and 13 rendered responsive wireframes. Full lock/image/runtime qualification remains future work.
 - Dedicated CNPG, native time partitions and exact-vector baseline; source-time/civil-slot, capture/publication, search/editorial, preview and recovery contracts. Schemas/vectors specify behavior without proving runtime correctness.
@@ -25,7 +26,7 @@ Established choices and collateral:
 - Embed order is WX-44 card → OWN-EMBED WordPress integration → WX-33 combined acceptance. The current-weather card does not wait for camera previews. OWN-CUSTODY depends on OWN-OBJECT. Owner readiness is distinct from downstream application acceptance as specified in [owner prerequisites](implementation/owner-prerequisites.md).
 - E01's original bytes are retained and hash-verified in private OWN-CI, with sanitized public references. E02–E12 and subsequent source receipts have explicit evidence limits; old health/resource samples are not current grants.
 
-Remaining work is the existing P1–P7 scope, not another coverage inventory: supported candidate/integration admission; camera timing/privacy/cadence and storage/fencing/UDP grants; concrete immutable-write and local-loss policy; admitted CPU/model feasibility and budgets; permitted video transport/cache withdrawal and parent placement; independent recovery keys, ledgers/copy/capacity policy; and final issue consolidation/handoff. Backend direct pins, static wireframes, graph filing and E01 custody are completed inputs to that work.
+Remaining work is the existing P1–P7 scope, not another coverage inventory: supported candidate/integration admission; camera timing/privacy/cadence and storage/fencing/UDP grants; concrete immutable-write and local-loss policy; admitted CPU/model feasibility and budgets; selected Tunnel route configuration/cache withdrawal and parent placement; independent recovery keys, ledgers/copy/capacity policy; and final issue consolidation/handoff. Backend direct pins, static wireframes, graph filing and E01 custody are completed inputs to that work.
 
 **First ready implementation set: empty while WX-00 remains unresolved.** The first unblocked activity is planning/source investigation and consolidation under the active scope. After WX-00 closes, WX-01 and WX-02 are the initial Weather implementation roots, but only when OWN-CI's implemented/admitted interfaces are actually ready. Other owner issues may progress independently within their scoped authority; an open issue is not a running agent or pending job. Check current scheduler/grants before any approved intensive pilot. Do not wait for an unstarted owner task or claim a planned experiment is running.
 
