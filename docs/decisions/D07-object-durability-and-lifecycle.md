@@ -18,6 +18,32 @@ Admission must include every rendition/poster/sidecar, keogram/map, private hour
 
 Maintain per-class used/pending/pinned bytes and count independently of bucket-level totals. Apply admission/backpressure before exhausting the grant. Keep failed/partial products explicit; storage pressure cannot authorize deleting the last source required by a pending hourly original or keogram. Preview rolling history remains bounded and does not become a permanent camera archive.
 
+## Capacity envelope and sample-based scenarios
+
+Use a per-class ledger with logical retained bytes/count, transient pending/pinned bytes, physical replication/overhead, and offsite retained versions as separate columns. Required admission cannot be derived from a single bucket/PVC size. [Exact sample arithmetic](../research/capacity-scenarios.json) uses E06's one successful JPEG per camera; it is neither a p95 estimate nor an upper bound.
+
+| Scenario at those sample sizes | Logical payload only |
+|---|---:|
+| Combined dense capture at 1 Hz | 6,971,099 bytes/s |
+| One day of dense writes | 602,302,953,600 bytes (602.30 decimal GB) |
+| 48-hour dense backlog | 1,204,605,907,200 bytes (1.20 decimal TB) |
+| Same backlog with 30% margin, before scratch | 1,565,987,679,360 bytes (1.57 decimal TB) |
+| Hourly originals, one 365-day year | 26,280 objects / 61,066,827,240 bytes |
+| Hourly originals, five 365-day years | 131,400 objects / 305,334,136,200 bytes |
+
+The original requirements' 337 GB staging example assumes much smaller JPEGs and is not a valid Weather allocation based on E06. Real staging admission retains §6.8's `1.3 * (sum(camera_p95_bytes / interval_seconds) * maximum_unprocessed_seconds + maximum_render_scratch_bytes)` and adds separately measured active/sealed metadata, compact-promotion overlap, preview work, quarantine and deletion lag where not already counted. Count each physical file once; a second pin is not a second copy, while a verified compact extraction coexisting with dense input is. The 48-hour scenario is illustrative, not the selected backlog grant. Do not silently shorten retained evidence or lower cadence to fit it.
+
+Garage admission must separately calculate:
+
+- Six camera/segment video products per complete day, each with required native/web/mobile renditions: 18 rendition objects before posters, sidecars, maps and corrected revisions. Use measured per-rendition sizes/durations and their actual retention horizon, not JPEG size or a guessed bitrate.
+- One retained native original per actual elapsed local hour/camera plus its required sanitized comparison variants. Count UTC slots across the selected civil-year retention interval, including leap years and 23/25-hour days; the five-365-day table is only arithmetic context.
+- Both segment keograms/maps for every camera, and preview generation at the selected one-minute schedule. A full 24-hour horizon can contain up to 4,320 per-camera preview generations before derivative multiplicity; failed/missing capture is not guaranteed capacity relief. Use measured derivative sizes and account for pending/orphan revisions independently.
+- Database data/index growth separately from archived base/WAL/history; base retention and WAL generation/outage catch-up determine archive occupancy. Include verification shards/manifests, durable metadata revisions and multipart/orphan grace. No model output estimate substitutes for a DB/WAL measurement.
+
+For each physical tier, multiply by its actual replication/storage overhead rather than counting the metadata volume's replicas as object replicas. Offsite accounting uses provider versions and their protection/hide lifecycle, not only currently visible Garage keys: a 24-hour source preview horizon does not imply 24-hour B2 occupancy. D15 must budget copy and full-content verification I/O, initial seed, restart/catch-up and required recovery-held history. Compare aggregate admitted daily changes against the shared transfer window after other tenants and gates; its theoretical ceiling is not Weather's allocation.
+
+OWN-NFS/OBJECT/DB/CUSTODY supply measured inputs, free capacity/reservations and accepted loss/backlog objectives; Weather records the resulting versioned per-class envelope. Until those inputs exist, capacity remains unqualified. These calculations request no share scan, storage change or throughput experiment.
+
 ## Receipt levels and publication
 
 Separate these facts rather than overloading one uploaded flag:

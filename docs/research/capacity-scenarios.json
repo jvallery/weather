@@ -1,0 +1,30 @@
+{
+  "observed_at": "2026-10-23T23:48:25.329671+00:00",
+  "scope": "Exact arithmetic from E06 single JPEG samples; not p95, sustained throughput, compressed derivative sizes or a grant",
+  "source_evidence": "E06",
+  "camera_sample_bytes": {
+    "skycam_east": 2060757,
+    "skycam_west": 1614699,
+    "frontyard_1": 3295643
+  },
+  "assumed_capture_interval_seconds": 1,
+  "combined_sample_bytes_per_second": 6971099,
+  "dense_sample_bytes_per_day": 602302953600,
+  "dense_48_hour_sample_bytes": 1204605907200,
+  "dense_48_hour_with_30_percent_margin_before_scratch_bytes": 1565987679360,
+  "hourly_originals_per_365_day_year": 26280,
+  "sample_hourly_original_bytes_per_365_day_year": 61066827240,
+  "sample_hourly_original_bytes_per_five_365_day_years": 305334136200,
+  "exclusions": [
+    "Leap/calendar boundary hours",
+    "Public derivatives, video renditions, keograms/maps, sidecars/revisions",
+    "Render scratch, compact promotion overlap, quarantine, orphan/multipart residue",
+    "Database base/WAL/history, manifest/metadata overhead, actual storage replication",
+    "Offsite versions, protection/hide retention and catch-up overhead"
+  ],
+  "limitations": [
+    "Each camera has one successful sample, not a distribution",
+    "Do not use these figures as an upper bound or owner reservation",
+    "Real admission uses measured per-camera p95 and peak backlog/scratch plus all additional classes"
+  ]
+}
