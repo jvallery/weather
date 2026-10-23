@@ -1,6 +1,6 @@
 # Filed implementation backlog
 
-Status: filed; 114 native relationships read back and matched on 2026-10-23, including 13 edges to 11 owner prerequisites; research remains incomplete. [WX-00 / #1](https://github.com/jvallery/weather/issues/1) gates application implementation. The [decision register](../decisions/implementation-register.md) distinguishes working choices from unresolved evidence. [Audit findings](../research/adversarial-audit.md) explain the changes from the seed.
+Status: filed; 118 native relationships read back and matched on 2026-10-23, including 13 edges to 11 owner prerequisites; research remains incomplete. [WX-00 / #1](https://github.com/jvallery/weather/issues/1) gates application implementation. The [decision register](../decisions/implementation-register.md) distinguishes working choices from unresolved evidence. [Audit findings](../research/adversarial-audit.md) explain the changes from the seed.
 
 The [machine-readable graph](backlog.json) records real issue numbers and IDs. Requirement links refer to the normative [requirements](../requirements.md), not only issue titles. Individual issues contain implementation approach, targeted acceptance/failure cases and operations/rollback obligations. [Owner prerequisites](owner-prerequisites.md) are filed and linked natively. Detailed contracts and qualification remain incomplete; do not interpret filing as readiness.
 
@@ -73,7 +73,7 @@ Optional WX-15 (GPU) and WX-27 (CDN) do not block initial rollout unless explici
 | WX-29 | [#30](https://github.com/jvallery/weather/issues/30) | R17, R23, R28, R29, R30 | initial_release / required | WX-28 |
 | WX-30 | [#31](https://github.com/jvallery/weather/issues/31) | R19, R20, R23, R29, R30 | initial_release / required | WX-17, WX-29, WX-36, WX-37 |
 | WX-31 | [#32](https://github.com/jvallery/weather/issues/32) | R10, R15, R16, R26, R29, R30, R31 | initial_release / required | WX-13, WX-18, WX-25, WX-29, WX-38 |
-| WX-32 | [#33](https://github.com/jvallery/weather/issues/33) | R14, R16, R22, R23, R26, R29, R30, R31, R33, R36 | initial_release / required | WX-20, WX-24, WX-30, WX-31, WX-43 |
+| WX-32 | [#33](https://github.com/jvallery/weather/issues/33) | R11, R14, R16, R20, R21, R22, R23, R26, R29, R30, R31, R33, R34, R35, R36 | initial_release / required | WX-16, WX-20, WX-22, WX-24, WX-30, WX-31, WX-40, WX-41, WX-43 |
 | WX-33 | [#34](https://github.com/jvallery/weather/issues/34) | R03, R04, R05, R06, R08, R09, R11, R12, R13, R18, R21, R24, R27, R28, R29, R30, R31, R32, R33, R34, R35, R36, R37 | initial_release / required | WX-02, WX-18, WX-20, WX-21, WX-22, WX-26, WX-31, WX-36, WX-37, WX-38, WX-39, WX-40, WX-41, WX-42, WX-43, WX-44, WX-16 |
 | WX-34 | [#35](https://github.com/jvallery/weather/issues/35) | R02, R23, R24, R26, R27 | initial_release / required | WX-32, WX-33 |
 | WX-35 | [#36](https://github.com/jvallery/weather/issues/36) | R01, R02, R03, R04, R05, R06, R07, R08, R09, R10, R11, R12, R13, R14, R15, R16, R17, R18, R19, R20, R21, R22, R23, R24, R25, R26, R27, R28, R29, R30, R31, R32, R33, R34, R35, R36, R37 | initial_release / required | WX-32, WX-33, WX-34 |
@@ -200,6 +200,10 @@ flowchart TD
   WX30 --> WX32
   WX31 --> WX32
   WX43 --> WX32
+  WX16 --> WX32
+  WX22 --> WX32
+  WX40 --> WX32
+  WX41 --> WX32
   WX02 --> WX33
   WX18 --> WX33
   WX20 --> WX33

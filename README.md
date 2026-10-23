@@ -2,13 +2,21 @@
 
 Requirements and implementation planning for **[weather.vallery.net](https://weather.vallery.net)**: a public weather history and timelapse service using three security cameras, direct Tempest UDP telemetry, CNPG, Garage, and local inference.
 
-**Status:** planning audit in progress under [WX-00 / issue #1](https://github.com/jvallery/weather/issues/1). All 46 implementation/follow-on issues are [filed](docs/implementation/backlog.md), and their 101 native prerequisite relationships (including the planning gate) have been read back and matched. See the [adversarial audit](docs/research/adversarial-audit.md), [decision register](docs/decisions/implementation-register.md) and [traceability](docs/implementation/traceability.md). Material research and contract work remain; application implementation, cluster resources and CI/CD have not been built.
+**Status:** planning audit in progress under [WX-00 / issue #1](https://github.com/jvallery/weather/issues/1). All 46 implementation/follow-on issues are [filed](docs/implementation/backlog.md), and their 118 native prerequisite relationships (including the planning gate and 11 owner issues) have been read back and matched. See the [adversarial audit](docs/research/adversarial-audit.md), [decision register](docs/decisions/implementation-register.md) and [traceability](docs/implementation/traceability.md). Material research and contract work remain; application implementation, cluster resources and CI/CD have not been built.
 
 ## Start here
 
 1. Read [the v4.0 requirements and design research brief](docs/requirements.md) and the [accepted product decisions](docs/decisions/2026-10-23-product-scope.md).
 2. Follow [Codex's first assignment](docs/codex-first-task.md): investigate the live estate, resolve the decisions, complete repository configuration, then file the implementation issues and their dependency graph.
 3. Use the [filed backlog](docs/implementation/backlog.md) and [machine-readable graph](docs/implementation/backlog.json). The [candidate graph](docs/implementation/backlog-candidate.json) is retained as the historical seed. Stable WX keys are distinct from GitHub issue numbers: 42 required initial-release items, two conditional GPU/CDN items, an accepted composite-video follow-on and a reserved visual-index investigation.
+
+## Shared implementation contracts
+
+- [Publication, source pins, origin eligibility and joint recovery](docs/implementation/publication-recovery-contract.md).
+- [Database constraints, revision boundaries and migration sequence](docs/implementation/database-migration-contract.md).
+- [Owner prerequisites and admission boundaries](docs/implementation/owner-prerequisites.md).
+
+These are design contracts with mandatory implementation tests, not completed runtime qualification. Machine-readable schemas/OpenAPI and the remaining design research are still in progress.
 
 ## Open-source comparison and product choices
 
