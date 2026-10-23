@@ -98,7 +98,7 @@ These are planned behavioral cases, not executed application tests. Bound aggreg
 
 Downloads resolve the native asset through the same authorization and return attachment with sanitized filename for both full and partial content. No redirect leaves the Weather domain. Media buffering is bounded independently of object size.
 
-Current/catalog responses may use qualified short cache/conditional requests; private editor/raw routes never do. Image embargo/expiry/withdrawal checks occur before serving any alias, thumbnail, range or HEAD. A previously public cached image cannot be recalled by a database tombstone: D14/D16 must specify maximum revocation delay and purge policy before enabling such caches. Until qualified, do not enable CDN media caching. This does not resolve the separate public transport decision.
+Current/catalog responses may use qualified short cache/conditional requests; private editor/raw routes never do. Image embargo/expiry/withdrawal checks occur before serving any alias, thumbnail, range or HEAD. A previously public cached image cannot be recalled by a database tombstone: D14 selects an initial five-second maximum origin authorization lease and no-store media/pointer responses with edge bypass. Apply its in-flight renewal/cancellation contract; optional media caching requires a separately qualified exposure/invalidation policy. Cloudflare Tunnel is the selected transport.
 
 ## Acceptance ownership
 

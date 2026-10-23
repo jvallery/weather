@@ -911,7 +911,7 @@ Test current Safari/iOS, Chrome/Android, desktop Safari/Chrome/Firefox, seek nea
 
 ### 12.4 Caching and Cloudflare qualification
 
-Use long immutable caching for hashed public media/posters and short explicit caching/ETags for catalog, current weather and search as appropriate. Private backup/raw/admin routes are never CDN content. A media cache hit must not authorize access to an object that was never published. Use bounded caches and controlled withdrawal/purge semantics.
+Long immutable caching for hashed public media/posters is a conditional optimization, subject to D14 withdrawal qualification. The selected initial policy is no-store media and preview pointers with shared-cache bypass; hashed application JS/CSS can use long immutable caching. Use short explicit caching/ETags for catalog and current weather as appropriate, preserving the selected no-store search contract. Private backup/raw/admin routes are never CDN content. A media cache hit must not authorize access to an object that was never published. Use bounded caches and controlled withdrawal/purge semantics.
 
 Cloudflare Tunnel is the owner-selected public transport, including video playback and native downloads (see D14). Jason explicitly declined further provider/alternative-transport investigation. Optional CDN caching remains separately conditional on cache limits, privacy, ranges and withdrawal behavior; core playback must work with shared caching disabled. Preserve canonical Garage storage and same-origin delivery. Do not add direct ingress, R2/Stream or a paid product by assumption. Weather-specific browser, range and download verification remains required before launch. This owner decision supersedes the earlier provider-qualification planning gate. [S36], [S40]
 
