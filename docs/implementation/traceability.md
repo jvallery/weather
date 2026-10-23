@@ -113,3 +113,7 @@ The [standards mapping](standards-mapping.md) is published. The [production evid
 ## Focused clause audit
 
 The [§§12.6–12.8 audit](ui-clause-audit.md) maps all 38 source sentences to producer-specific acceptance cases; [exact clauses and source hash](ui-clause-audit.json) distinguish this partial scope from whole-document coverage. Playback, editorial and embed integration remains unaccepted. The pass corrected a write/public description length mismatch and added boundary fixtures. Remaining sections still require detailed review.
+
+## Configuration boundary
+
+[Public product configuration](../contracts/configuration-contract.md) covers §17.1 categories and rejects unresolved placeholder policies. Private bundle formats, semantic/admission checks and production startup remain incomplete; 13 synthetic shape fixtures do not close §17.

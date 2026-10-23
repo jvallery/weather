@@ -1,0 +1,2015 @@
+{
+  "description": "Synthetic shape-only examples; none is a usable production configuration or owner admission receipt",
+  "cases": [
+    {
+      "name": "synthetic complete product settings are shape-valid only",
+      "valid": true,
+      "value": {
+        "schema_version": 1,
+        "site": {
+          "public_origin": "https://weather.example.invalid",
+          "timezone": "Etc/UTC",
+          "location_source": "private_mounted_configuration"
+        },
+        "cameras": [
+          {
+            "id": "skycam_east"
+          },
+          {
+            "id": "skycam_west"
+          },
+          {
+            "id": "frontyard_1"
+          }
+        ],
+        "time": {
+          "boundary": "civil_twilight",
+          "solar_depression_degrees": 6,
+          "dawn_offset_seconds": 0,
+          "dusk_offset_seconds": 0,
+          "duration_policy": "cycle_total",
+          "cycle_budget_seconds": 120,
+          "output_fps": "60/1"
+        },
+        "capture": {
+          "source": "snapshot_api",
+          "default_interval_seconds": 1,
+          "staging_backend": "obsidian_nfs_pvc",
+          "chunk_seconds": 300,
+          "total_request_deadline_seconds": 5
+        },
+        "hourly_archive": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "slots": "actual_elapsed_local_hours",
+          "anchor": "hour_midpoint",
+          "fallback": "nearest_qualified_in_same_hour_with_offset_label",
+          "retain_original_bytes": true,
+          "originals_visibility": "private",
+          "retention_years": 5,
+          "enforce_camera_day_hour_foreign_keys": true,
+          "public_derivatives_only": true
+        },
+        "camera_previews": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "refresh_seconds": 60,
+          "minimum_publication_age_seconds": 600,
+          "timing_basis": "latest_plausible_exposure_time",
+          "retention": {
+            "id": "synthetic-camera_previews",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "queue_policy": "coalesce_to_newest_eligible"
+        },
+        "keograms": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "segments": [
+            "daytime",
+            "overnight"
+          ],
+          "axis": "elapsed_utc",
+          "source": "qualified_observed_captures",
+          "region_and_bins": {
+            "id": "synthetic-keograms",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        "render": {
+          "reference_profile": "observed_exposure",
+          "qualification_target": "motion_exposure_4x",
+          "optional_profile": "motion_exposure_8x",
+          "shutter_angle_degrees": 180,
+          "cpu_fallback_required": true
+        },
+        "weather": {
+          "source": "tempest_udp",
+          "preserve_original_datagrams": true,
+          "preserve_all_observation_rows": true,
+          "history_store": "cnpg",
+          "detailed_retention": "until_explicitly_changed_by_approved_policy",
+          "current_ui_refresh_seconds": 15,
+          "almanac": "local_observations_and_local_astronomy"
+        },
+        "media": {
+          "primary_store": "garage",
+          "isolated_bucket_count": 1,
+          "same_origin_delivery_required": true,
+          "poster_required": true
+        },
+        "backup": {
+          "database_method": "qualified_cnpg_barman_plugin",
+          "database_destination": "same_weather_garage_bucket_private_prefix",
+          "offsite_custody": "central_garage_to_b2_full_and_wal"
+        },
+        "analysis": {
+          "candidate_route": "llm.primary.longctx.mm",
+          "input": "completed_validated_video",
+          "asynchronous": true
+        },
+        "search": {
+          "candidate_embedding_route": "embed.main",
+          "store": "cnpg_pgvector",
+          "exact_search_baseline": true,
+          "measured_filters": "typed_parameterized_sql",
+          "image_embedding_model": "deferred_research_only"
+        },
+        "experience": {
+          "exploration": "per_camera_linked_video_and_weather",
+          "events": "bookmarks_daily_strip_and_in_site_feed",
+          "editor": "authenticated_operator_with_audited_revisions",
+          "ai_publication": "automatic_labeled",
+          "embed": {
+            "id": "synthetic-experience",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "combined_east_west_skycam": "follow_on_WX_45",
+          "product_scope": "fleet_first_with_documented_customization"
+        },
+        "bindings": {
+          "commissioning": {
+            "id": "synthetic-commissioning",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "private_deployment": {
+            "id": "synthetic-private_deployment",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "retention_and_recovery": {
+            "id": "synthetic-retention_and_recovery",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "resource_admission": {
+            "id": "synthetic-resource_admission",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        }
+      }
+    },
+    {
+      "name": "missing admission binding",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "site": {
+          "public_origin": "https://weather.example.invalid",
+          "timezone": "Etc/UTC",
+          "location_source": "private_mounted_configuration"
+        },
+        "cameras": [
+          {
+            "id": "skycam_east"
+          },
+          {
+            "id": "skycam_west"
+          },
+          {
+            "id": "frontyard_1"
+          }
+        ],
+        "time": {
+          "boundary": "civil_twilight",
+          "solar_depression_degrees": 6,
+          "dawn_offset_seconds": 0,
+          "dusk_offset_seconds": 0,
+          "duration_policy": "cycle_total",
+          "cycle_budget_seconds": 120,
+          "output_fps": "60/1"
+        },
+        "capture": {
+          "source": "snapshot_api",
+          "default_interval_seconds": 1,
+          "staging_backend": "obsidian_nfs_pvc",
+          "chunk_seconds": 300,
+          "total_request_deadline_seconds": 5
+        },
+        "hourly_archive": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "slots": "actual_elapsed_local_hours",
+          "anchor": "hour_midpoint",
+          "fallback": "nearest_qualified_in_same_hour_with_offset_label",
+          "retain_original_bytes": true,
+          "originals_visibility": "private",
+          "retention_years": 5,
+          "enforce_camera_day_hour_foreign_keys": true,
+          "public_derivatives_only": true
+        },
+        "camera_previews": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "refresh_seconds": 60,
+          "minimum_publication_age_seconds": 600,
+          "timing_basis": "latest_plausible_exposure_time",
+          "retention": {
+            "id": "synthetic-camera_previews",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "queue_policy": "coalesce_to_newest_eligible"
+        },
+        "keograms": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "segments": [
+            "daytime",
+            "overnight"
+          ],
+          "axis": "elapsed_utc",
+          "source": "qualified_observed_captures",
+          "region_and_bins": {
+            "id": "synthetic-keograms",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        "render": {
+          "reference_profile": "observed_exposure",
+          "qualification_target": "motion_exposure_4x",
+          "optional_profile": "motion_exposure_8x",
+          "shutter_angle_degrees": 180,
+          "cpu_fallback_required": true
+        },
+        "weather": {
+          "source": "tempest_udp",
+          "preserve_original_datagrams": true,
+          "preserve_all_observation_rows": true,
+          "history_store": "cnpg",
+          "detailed_retention": "until_explicitly_changed_by_approved_policy",
+          "current_ui_refresh_seconds": 15,
+          "almanac": "local_observations_and_local_astronomy"
+        },
+        "media": {
+          "primary_store": "garage",
+          "isolated_bucket_count": 1,
+          "same_origin_delivery_required": true,
+          "poster_required": true
+        },
+        "backup": {
+          "database_method": "qualified_cnpg_barman_plugin",
+          "database_destination": "same_weather_garage_bucket_private_prefix",
+          "offsite_custody": "central_garage_to_b2_full_and_wal"
+        },
+        "analysis": {
+          "candidate_route": "llm.primary.longctx.mm",
+          "input": "completed_validated_video",
+          "asynchronous": true
+        },
+        "search": {
+          "candidate_embedding_route": "embed.main",
+          "store": "cnpg_pgvector",
+          "exact_search_baseline": true,
+          "measured_filters": "typed_parameterized_sql",
+          "image_embedding_model": "deferred_research_only"
+        },
+        "experience": {
+          "exploration": "per_camera_linked_video_and_weather",
+          "events": "bookmarks_daily_strip_and_in_site_feed",
+          "editor": "authenticated_operator_with_audited_revisions",
+          "ai_publication": "automatic_labeled",
+          "embed": {
+            "id": "synthetic-experience",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "combined_east_west_skycam": "follow_on_WX_45",
+          "product_scope": "fleet_first_with_documented_customization"
+        },
+        "bindings": {
+          "commissioning": {
+            "id": "synthetic-commissioning",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "private_deployment": {
+            "id": "synthetic-private_deployment",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "retention_and_recovery": {
+            "id": "synthetic-retention_and_recovery",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        }
+      }
+    },
+    {
+      "name": "plaintext secret forbidden",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "site": {
+          "public_origin": "https://weather.example.invalid",
+          "timezone": "Etc/UTC",
+          "location_source": "private_mounted_configuration"
+        },
+        "cameras": [
+          {
+            "id": "skycam_east"
+          },
+          {
+            "id": "skycam_west"
+          },
+          {
+            "id": "frontyard_1"
+          }
+        ],
+        "time": {
+          "boundary": "civil_twilight",
+          "solar_depression_degrees": 6,
+          "dawn_offset_seconds": 0,
+          "dusk_offset_seconds": 0,
+          "duration_policy": "cycle_total",
+          "cycle_budget_seconds": 120,
+          "output_fps": "60/1"
+        },
+        "capture": {
+          "source": "snapshot_api",
+          "default_interval_seconds": 1,
+          "staging_backend": "obsidian_nfs_pvc",
+          "chunk_seconds": 300,
+          "total_request_deadline_seconds": 5,
+          "password": "synthetic-not-a-secret"
+        },
+        "hourly_archive": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "slots": "actual_elapsed_local_hours",
+          "anchor": "hour_midpoint",
+          "fallback": "nearest_qualified_in_same_hour_with_offset_label",
+          "retain_original_bytes": true,
+          "originals_visibility": "private",
+          "retention_years": 5,
+          "enforce_camera_day_hour_foreign_keys": true,
+          "public_derivatives_only": true
+        },
+        "camera_previews": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "refresh_seconds": 60,
+          "minimum_publication_age_seconds": 600,
+          "timing_basis": "latest_plausible_exposure_time",
+          "retention": {
+            "id": "synthetic-camera_previews",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "queue_policy": "coalesce_to_newest_eligible"
+        },
+        "keograms": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "segments": [
+            "daytime",
+            "overnight"
+          ],
+          "axis": "elapsed_utc",
+          "source": "qualified_observed_captures",
+          "region_and_bins": {
+            "id": "synthetic-keograms",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        "render": {
+          "reference_profile": "observed_exposure",
+          "qualification_target": "motion_exposure_4x",
+          "optional_profile": "motion_exposure_8x",
+          "shutter_angle_degrees": 180,
+          "cpu_fallback_required": true
+        },
+        "weather": {
+          "source": "tempest_udp",
+          "preserve_original_datagrams": true,
+          "preserve_all_observation_rows": true,
+          "history_store": "cnpg",
+          "detailed_retention": "until_explicitly_changed_by_approved_policy",
+          "current_ui_refresh_seconds": 15,
+          "almanac": "local_observations_and_local_astronomy"
+        },
+        "media": {
+          "primary_store": "garage",
+          "isolated_bucket_count": 1,
+          "same_origin_delivery_required": true,
+          "poster_required": true
+        },
+        "backup": {
+          "database_method": "qualified_cnpg_barman_plugin",
+          "database_destination": "same_weather_garage_bucket_private_prefix",
+          "offsite_custody": "central_garage_to_b2_full_and_wal"
+        },
+        "analysis": {
+          "candidate_route": "llm.primary.longctx.mm",
+          "input": "completed_validated_video",
+          "asynchronous": true
+        },
+        "search": {
+          "candidate_embedding_route": "embed.main",
+          "store": "cnpg_pgvector",
+          "exact_search_baseline": true,
+          "measured_filters": "typed_parameterized_sql",
+          "image_embedding_model": "deferred_research_only"
+        },
+        "experience": {
+          "exploration": "per_camera_linked_video_and_weather",
+          "events": "bookmarks_daily_strip_and_in_site_feed",
+          "editor": "authenticated_operator_with_audited_revisions",
+          "ai_publication": "automatic_labeled",
+          "embed": {
+            "id": "synthetic-experience",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "combined_east_west_skycam": "follow_on_WX_45",
+          "product_scope": "fleet_first_with_documented_customization"
+        },
+        "bindings": {
+          "commissioning": {
+            "id": "synthetic-commissioning",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "private_deployment": {
+            "id": "synthetic-private_deployment",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "retention_and_recovery": {
+            "id": "synthetic-retention_and_recovery",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "resource_admission": {
+            "id": "synthetic-resource_admission",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        }
+      }
+    },
+    {
+      "name": "private original made public",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "site": {
+          "public_origin": "https://weather.example.invalid",
+          "timezone": "Etc/UTC",
+          "location_source": "private_mounted_configuration"
+        },
+        "cameras": [
+          {
+            "id": "skycam_east"
+          },
+          {
+            "id": "skycam_west"
+          },
+          {
+            "id": "frontyard_1"
+          }
+        ],
+        "time": {
+          "boundary": "civil_twilight",
+          "solar_depression_degrees": 6,
+          "dawn_offset_seconds": 0,
+          "dusk_offset_seconds": 0,
+          "duration_policy": "cycle_total",
+          "cycle_budget_seconds": 120,
+          "output_fps": "60/1"
+        },
+        "capture": {
+          "source": "snapshot_api",
+          "default_interval_seconds": 1,
+          "staging_backend": "obsidian_nfs_pvc",
+          "chunk_seconds": 300,
+          "total_request_deadline_seconds": 5
+        },
+        "hourly_archive": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "slots": "actual_elapsed_local_hours",
+          "anchor": "hour_midpoint",
+          "fallback": "nearest_qualified_in_same_hour_with_offset_label",
+          "retain_original_bytes": true,
+          "originals_visibility": "public",
+          "retention_years": 5,
+          "enforce_camera_day_hour_foreign_keys": true,
+          "public_derivatives_only": true
+        },
+        "camera_previews": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "refresh_seconds": 60,
+          "minimum_publication_age_seconds": 600,
+          "timing_basis": "latest_plausible_exposure_time",
+          "retention": {
+            "id": "synthetic-camera_previews",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "queue_policy": "coalesce_to_newest_eligible"
+        },
+        "keograms": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "segments": [
+            "daytime",
+            "overnight"
+          ],
+          "axis": "elapsed_utc",
+          "source": "qualified_observed_captures",
+          "region_and_bins": {
+            "id": "synthetic-keograms",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        "render": {
+          "reference_profile": "observed_exposure",
+          "qualification_target": "motion_exposure_4x",
+          "optional_profile": "motion_exposure_8x",
+          "shutter_angle_degrees": 180,
+          "cpu_fallback_required": true
+        },
+        "weather": {
+          "source": "tempest_udp",
+          "preserve_original_datagrams": true,
+          "preserve_all_observation_rows": true,
+          "history_store": "cnpg",
+          "detailed_retention": "until_explicitly_changed_by_approved_policy",
+          "current_ui_refresh_seconds": 15,
+          "almanac": "local_observations_and_local_astronomy"
+        },
+        "media": {
+          "primary_store": "garage",
+          "isolated_bucket_count": 1,
+          "same_origin_delivery_required": true,
+          "poster_required": true
+        },
+        "backup": {
+          "database_method": "qualified_cnpg_barman_plugin",
+          "database_destination": "same_weather_garage_bucket_private_prefix",
+          "offsite_custody": "central_garage_to_b2_full_and_wal"
+        },
+        "analysis": {
+          "candidate_route": "llm.primary.longctx.mm",
+          "input": "completed_validated_video",
+          "asynchronous": true
+        },
+        "search": {
+          "candidate_embedding_route": "embed.main",
+          "store": "cnpg_pgvector",
+          "exact_search_baseline": true,
+          "measured_filters": "typed_parameterized_sql",
+          "image_embedding_model": "deferred_research_only"
+        },
+        "experience": {
+          "exploration": "per_camera_linked_video_and_weather",
+          "events": "bookmarks_daily_strip_and_in_site_feed",
+          "editor": "authenticated_operator_with_audited_revisions",
+          "ai_publication": "automatic_labeled",
+          "embed": {
+            "id": "synthetic-experience",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "combined_east_west_skycam": "follow_on_WX_45",
+          "product_scope": "fleet_first_with_documented_customization"
+        },
+        "bindings": {
+          "commissioning": {
+            "id": "synthetic-commissioning",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "private_deployment": {
+            "id": "synthetic-private_deployment",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "retention_and_recovery": {
+            "id": "synthetic-retention_and_recovery",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "resource_admission": {
+            "id": "synthetic-resource_admission",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        }
+      }
+    },
+    {
+      "name": "embargo reduced below ten minutes",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "site": {
+          "public_origin": "https://weather.example.invalid",
+          "timezone": "Etc/UTC",
+          "location_source": "private_mounted_configuration"
+        },
+        "cameras": [
+          {
+            "id": "skycam_east"
+          },
+          {
+            "id": "skycam_west"
+          },
+          {
+            "id": "frontyard_1"
+          }
+        ],
+        "time": {
+          "boundary": "civil_twilight",
+          "solar_depression_degrees": 6,
+          "dawn_offset_seconds": 0,
+          "dusk_offset_seconds": 0,
+          "duration_policy": "cycle_total",
+          "cycle_budget_seconds": 120,
+          "output_fps": "60/1"
+        },
+        "capture": {
+          "source": "snapshot_api",
+          "default_interval_seconds": 1,
+          "staging_backend": "obsidian_nfs_pvc",
+          "chunk_seconds": 300,
+          "total_request_deadline_seconds": 5
+        },
+        "hourly_archive": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "slots": "actual_elapsed_local_hours",
+          "anchor": "hour_midpoint",
+          "fallback": "nearest_qualified_in_same_hour_with_offset_label",
+          "retain_original_bytes": true,
+          "originals_visibility": "private",
+          "retention_years": 5,
+          "enforce_camera_day_hour_foreign_keys": true,
+          "public_derivatives_only": true
+        },
+        "camera_previews": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "refresh_seconds": 60,
+          "minimum_publication_age_seconds": 599,
+          "timing_basis": "latest_plausible_exposure_time",
+          "retention": {
+            "id": "synthetic-camera_previews",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "queue_policy": "coalesce_to_newest_eligible"
+        },
+        "keograms": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "segments": [
+            "daytime",
+            "overnight"
+          ],
+          "axis": "elapsed_utc",
+          "source": "qualified_observed_captures",
+          "region_and_bins": {
+            "id": "synthetic-keograms",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        "render": {
+          "reference_profile": "observed_exposure",
+          "qualification_target": "motion_exposure_4x",
+          "optional_profile": "motion_exposure_8x",
+          "shutter_angle_degrees": 180,
+          "cpu_fallback_required": true
+        },
+        "weather": {
+          "source": "tempest_udp",
+          "preserve_original_datagrams": true,
+          "preserve_all_observation_rows": true,
+          "history_store": "cnpg",
+          "detailed_retention": "until_explicitly_changed_by_approved_policy",
+          "current_ui_refresh_seconds": 15,
+          "almanac": "local_observations_and_local_astronomy"
+        },
+        "media": {
+          "primary_store": "garage",
+          "isolated_bucket_count": 1,
+          "same_origin_delivery_required": true,
+          "poster_required": true
+        },
+        "backup": {
+          "database_method": "qualified_cnpg_barman_plugin",
+          "database_destination": "same_weather_garage_bucket_private_prefix",
+          "offsite_custody": "central_garage_to_b2_full_and_wal"
+        },
+        "analysis": {
+          "candidate_route": "llm.primary.longctx.mm",
+          "input": "completed_validated_video",
+          "asynchronous": true
+        },
+        "search": {
+          "candidate_embedding_route": "embed.main",
+          "store": "cnpg_pgvector",
+          "exact_search_baseline": true,
+          "measured_filters": "typed_parameterized_sql",
+          "image_embedding_model": "deferred_research_only"
+        },
+        "experience": {
+          "exploration": "per_camera_linked_video_and_weather",
+          "events": "bookmarks_daily_strip_and_in_site_feed",
+          "editor": "authenticated_operator_with_audited_revisions",
+          "ai_publication": "automatic_labeled",
+          "embed": {
+            "id": "synthetic-experience",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "combined_east_west_skycam": "follow_on_WX_45",
+          "product_scope": "fleet_first_with_documented_customization"
+        },
+        "bindings": {
+          "commissioning": {
+            "id": "synthetic-commissioning",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "private_deployment": {
+            "id": "synthetic-private_deployment",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "retention_and_recovery": {
+            "id": "synthetic-retention_and_recovery",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "resource_admission": {
+            "id": "synthetic-resource_admission",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        }
+      }
+    },
+    {
+      "name": "CPU fallback disabled",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "site": {
+          "public_origin": "https://weather.example.invalid",
+          "timezone": "Etc/UTC",
+          "location_source": "private_mounted_configuration"
+        },
+        "cameras": [
+          {
+            "id": "skycam_east"
+          },
+          {
+            "id": "skycam_west"
+          },
+          {
+            "id": "frontyard_1"
+          }
+        ],
+        "time": {
+          "boundary": "civil_twilight",
+          "solar_depression_degrees": 6,
+          "dawn_offset_seconds": 0,
+          "dusk_offset_seconds": 0,
+          "duration_policy": "cycle_total",
+          "cycle_budget_seconds": 120,
+          "output_fps": "60/1"
+        },
+        "capture": {
+          "source": "snapshot_api",
+          "default_interval_seconds": 1,
+          "staging_backend": "obsidian_nfs_pvc",
+          "chunk_seconds": 300,
+          "total_request_deadline_seconds": 5
+        },
+        "hourly_archive": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "slots": "actual_elapsed_local_hours",
+          "anchor": "hour_midpoint",
+          "fallback": "nearest_qualified_in_same_hour_with_offset_label",
+          "retain_original_bytes": true,
+          "originals_visibility": "private",
+          "retention_years": 5,
+          "enforce_camera_day_hour_foreign_keys": true,
+          "public_derivatives_only": true
+        },
+        "camera_previews": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "refresh_seconds": 60,
+          "minimum_publication_age_seconds": 600,
+          "timing_basis": "latest_plausible_exposure_time",
+          "retention": {
+            "id": "synthetic-camera_previews",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "queue_policy": "coalesce_to_newest_eligible"
+        },
+        "keograms": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "segments": [
+            "daytime",
+            "overnight"
+          ],
+          "axis": "elapsed_utc",
+          "source": "qualified_observed_captures",
+          "region_and_bins": {
+            "id": "synthetic-keograms",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        "render": {
+          "reference_profile": "observed_exposure",
+          "qualification_target": "motion_exposure_4x",
+          "optional_profile": "motion_exposure_8x",
+          "shutter_angle_degrees": 180,
+          "cpu_fallback_required": false
+        },
+        "weather": {
+          "source": "tempest_udp",
+          "preserve_original_datagrams": true,
+          "preserve_all_observation_rows": true,
+          "history_store": "cnpg",
+          "detailed_retention": "until_explicitly_changed_by_approved_policy",
+          "current_ui_refresh_seconds": 15,
+          "almanac": "local_observations_and_local_astronomy"
+        },
+        "media": {
+          "primary_store": "garage",
+          "isolated_bucket_count": 1,
+          "same_origin_delivery_required": true,
+          "poster_required": true
+        },
+        "backup": {
+          "database_method": "qualified_cnpg_barman_plugin",
+          "database_destination": "same_weather_garage_bucket_private_prefix",
+          "offsite_custody": "central_garage_to_b2_full_and_wal"
+        },
+        "analysis": {
+          "candidate_route": "llm.primary.longctx.mm",
+          "input": "completed_validated_video",
+          "asynchronous": true
+        },
+        "search": {
+          "candidate_embedding_route": "embed.main",
+          "store": "cnpg_pgvector",
+          "exact_search_baseline": true,
+          "measured_filters": "typed_parameterized_sql",
+          "image_embedding_model": "deferred_research_only"
+        },
+        "experience": {
+          "exploration": "per_camera_linked_video_and_weather",
+          "events": "bookmarks_daily_strip_and_in_site_feed",
+          "editor": "authenticated_operator_with_audited_revisions",
+          "ai_publication": "automatic_labeled",
+          "embed": {
+            "id": "synthetic-experience",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "combined_east_west_skycam": "follow_on_WX_45",
+          "product_scope": "fleet_first_with_documented_customization"
+        },
+        "bindings": {
+          "commissioning": {
+            "id": "synthetic-commissioning",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "private_deployment": {
+            "id": "synthetic-private_deployment",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "retention_and_recovery": {
+            "id": "synthetic-retention_and_recovery",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "resource_admission": {
+            "id": "synthetic-resource_admission",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        }
+      }
+    },
+    {
+      "name": "raw datagrams dropped",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "site": {
+          "public_origin": "https://weather.example.invalid",
+          "timezone": "Etc/UTC",
+          "location_source": "private_mounted_configuration"
+        },
+        "cameras": [
+          {
+            "id": "skycam_east"
+          },
+          {
+            "id": "skycam_west"
+          },
+          {
+            "id": "frontyard_1"
+          }
+        ],
+        "time": {
+          "boundary": "civil_twilight",
+          "solar_depression_degrees": 6,
+          "dawn_offset_seconds": 0,
+          "dusk_offset_seconds": 0,
+          "duration_policy": "cycle_total",
+          "cycle_budget_seconds": 120,
+          "output_fps": "60/1"
+        },
+        "capture": {
+          "source": "snapshot_api",
+          "default_interval_seconds": 1,
+          "staging_backend": "obsidian_nfs_pvc",
+          "chunk_seconds": 300,
+          "total_request_deadline_seconds": 5
+        },
+        "hourly_archive": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "slots": "actual_elapsed_local_hours",
+          "anchor": "hour_midpoint",
+          "fallback": "nearest_qualified_in_same_hour_with_offset_label",
+          "retain_original_bytes": true,
+          "originals_visibility": "private",
+          "retention_years": 5,
+          "enforce_camera_day_hour_foreign_keys": true,
+          "public_derivatives_only": true
+        },
+        "camera_previews": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "refresh_seconds": 60,
+          "minimum_publication_age_seconds": 600,
+          "timing_basis": "latest_plausible_exposure_time",
+          "retention": {
+            "id": "synthetic-camera_previews",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "queue_policy": "coalesce_to_newest_eligible"
+        },
+        "keograms": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "segments": [
+            "daytime",
+            "overnight"
+          ],
+          "axis": "elapsed_utc",
+          "source": "qualified_observed_captures",
+          "region_and_bins": {
+            "id": "synthetic-keograms",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        "render": {
+          "reference_profile": "observed_exposure",
+          "qualification_target": "motion_exposure_4x",
+          "optional_profile": "motion_exposure_8x",
+          "shutter_angle_degrees": 180,
+          "cpu_fallback_required": true
+        },
+        "weather": {
+          "source": "tempest_udp",
+          "preserve_original_datagrams": false,
+          "preserve_all_observation_rows": true,
+          "history_store": "cnpg",
+          "detailed_retention": "until_explicitly_changed_by_approved_policy",
+          "current_ui_refresh_seconds": 15,
+          "almanac": "local_observations_and_local_astronomy"
+        },
+        "media": {
+          "primary_store": "garage",
+          "isolated_bucket_count": 1,
+          "same_origin_delivery_required": true,
+          "poster_required": true
+        },
+        "backup": {
+          "database_method": "qualified_cnpg_barman_plugin",
+          "database_destination": "same_weather_garage_bucket_private_prefix",
+          "offsite_custody": "central_garage_to_b2_full_and_wal"
+        },
+        "analysis": {
+          "candidate_route": "llm.primary.longctx.mm",
+          "input": "completed_validated_video",
+          "asynchronous": true
+        },
+        "search": {
+          "candidate_embedding_route": "embed.main",
+          "store": "cnpg_pgvector",
+          "exact_search_baseline": true,
+          "measured_filters": "typed_parameterized_sql",
+          "image_embedding_model": "deferred_research_only"
+        },
+        "experience": {
+          "exploration": "per_camera_linked_video_and_weather",
+          "events": "bookmarks_daily_strip_and_in_site_feed",
+          "editor": "authenticated_operator_with_audited_revisions",
+          "ai_publication": "automatic_labeled",
+          "embed": {
+            "id": "synthetic-experience",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "combined_east_west_skycam": "follow_on_WX_45",
+          "product_scope": "fleet_first_with_documented_customization"
+        },
+        "bindings": {
+          "commissioning": {
+            "id": "synthetic-commissioning",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "private_deployment": {
+            "id": "synthetic-private_deployment",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "retention_and_recovery": {
+            "id": "synthetic-retention_and_recovery",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "resource_admission": {
+            "id": "synthetic-resource_admission",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        }
+      }
+    },
+    {
+      "name": "placeholder retention rejected",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "site": {
+          "public_origin": "https://weather.example.invalid",
+          "timezone": "Etc/UTC",
+          "location_source": "private_mounted_configuration"
+        },
+        "cameras": [
+          {
+            "id": "skycam_east"
+          },
+          {
+            "id": "skycam_west"
+          },
+          {
+            "id": "frontyard_1"
+          }
+        ],
+        "time": {
+          "boundary": "civil_twilight",
+          "solar_depression_degrees": 6,
+          "dawn_offset_seconds": 0,
+          "dusk_offset_seconds": 0,
+          "duration_policy": "cycle_total",
+          "cycle_budget_seconds": 120,
+          "output_fps": "60/1"
+        },
+        "capture": {
+          "source": "snapshot_api",
+          "default_interval_seconds": 1,
+          "staging_backend": "obsidian_nfs_pvc",
+          "chunk_seconds": 300,
+          "total_request_deadline_seconds": 5
+        },
+        "hourly_archive": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "slots": "actual_elapsed_local_hours",
+          "anchor": "hour_midpoint",
+          "fallback": "nearest_qualified_in_same_hour_with_offset_label",
+          "retain_original_bytes": true,
+          "originals_visibility": "private",
+          "retention_years": 5,
+          "enforce_camera_day_hour_foreign_keys": true,
+          "public_derivatives_only": true
+        },
+        "camera_previews": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "refresh_seconds": 60,
+          "minimum_publication_age_seconds": 600,
+          "timing_basis": "latest_plausible_exposure_time",
+          "retention": "bounded_policy_selected_in_D16",
+          "queue_policy": "coalesce_to_newest_eligible"
+        },
+        "keograms": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "segments": [
+            "daytime",
+            "overnight"
+          ],
+          "axis": "elapsed_utc",
+          "source": "qualified_observed_captures",
+          "region_and_bins": {
+            "id": "synthetic-keograms",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        "render": {
+          "reference_profile": "observed_exposure",
+          "qualification_target": "motion_exposure_4x",
+          "optional_profile": "motion_exposure_8x",
+          "shutter_angle_degrees": 180,
+          "cpu_fallback_required": true
+        },
+        "weather": {
+          "source": "tempest_udp",
+          "preserve_original_datagrams": true,
+          "preserve_all_observation_rows": true,
+          "history_store": "cnpg",
+          "detailed_retention": "until_explicitly_changed_by_approved_policy",
+          "current_ui_refresh_seconds": 15,
+          "almanac": "local_observations_and_local_astronomy"
+        },
+        "media": {
+          "primary_store": "garage",
+          "isolated_bucket_count": 1,
+          "same_origin_delivery_required": true,
+          "poster_required": true
+        },
+        "backup": {
+          "database_method": "qualified_cnpg_barman_plugin",
+          "database_destination": "same_weather_garage_bucket_private_prefix",
+          "offsite_custody": "central_garage_to_b2_full_and_wal"
+        },
+        "analysis": {
+          "candidate_route": "llm.primary.longctx.mm",
+          "input": "completed_validated_video",
+          "asynchronous": true
+        },
+        "search": {
+          "candidate_embedding_route": "embed.main",
+          "store": "cnpg_pgvector",
+          "exact_search_baseline": true,
+          "measured_filters": "typed_parameterized_sql",
+          "image_embedding_model": "deferred_research_only"
+        },
+        "experience": {
+          "exploration": "per_camera_linked_video_and_weather",
+          "events": "bookmarks_daily_strip_and_in_site_feed",
+          "editor": "authenticated_operator_with_audited_revisions",
+          "ai_publication": "automatic_labeled",
+          "embed": {
+            "id": "synthetic-experience",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "combined_east_west_skycam": "follow_on_WX_45",
+          "product_scope": "fleet_first_with_documented_customization"
+        },
+        "bindings": {
+          "commissioning": {
+            "id": "synthetic-commissioning",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "private_deployment": {
+            "id": "synthetic-private_deployment",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "retention_and_recovery": {
+            "id": "synthetic-retention_and_recovery",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "resource_admission": {
+            "id": "synthetic-resource_admission",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        }
+      }
+    },
+    {
+      "name": "wrong fps rejected",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "site": {
+          "public_origin": "https://weather.example.invalid",
+          "timezone": "Etc/UTC",
+          "location_source": "private_mounted_configuration"
+        },
+        "cameras": [
+          {
+            "id": "skycam_east"
+          },
+          {
+            "id": "skycam_west"
+          },
+          {
+            "id": "frontyard_1"
+          }
+        ],
+        "time": {
+          "boundary": "civil_twilight",
+          "solar_depression_degrees": 6,
+          "dawn_offset_seconds": 0,
+          "dusk_offset_seconds": 0,
+          "duration_policy": "cycle_total",
+          "cycle_budget_seconds": 120,
+          "output_fps": "30/1"
+        },
+        "capture": {
+          "source": "snapshot_api",
+          "default_interval_seconds": 1,
+          "staging_backend": "obsidian_nfs_pvc",
+          "chunk_seconds": 300,
+          "total_request_deadline_seconds": 5
+        },
+        "hourly_archive": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "slots": "actual_elapsed_local_hours",
+          "anchor": "hour_midpoint",
+          "fallback": "nearest_qualified_in_same_hour_with_offset_label",
+          "retain_original_bytes": true,
+          "originals_visibility": "private",
+          "retention_years": 5,
+          "enforce_camera_day_hour_foreign_keys": true,
+          "public_derivatives_only": true
+        },
+        "camera_previews": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "refresh_seconds": 60,
+          "minimum_publication_age_seconds": 600,
+          "timing_basis": "latest_plausible_exposure_time",
+          "retention": {
+            "id": "synthetic-camera_previews",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "queue_policy": "coalesce_to_newest_eligible"
+        },
+        "keograms": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "segments": [
+            "daytime",
+            "overnight"
+          ],
+          "axis": "elapsed_utc",
+          "source": "qualified_observed_captures",
+          "region_and_bins": {
+            "id": "synthetic-keograms",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        "render": {
+          "reference_profile": "observed_exposure",
+          "qualification_target": "motion_exposure_4x",
+          "optional_profile": "motion_exposure_8x",
+          "shutter_angle_degrees": 180,
+          "cpu_fallback_required": true
+        },
+        "weather": {
+          "source": "tempest_udp",
+          "preserve_original_datagrams": true,
+          "preserve_all_observation_rows": true,
+          "history_store": "cnpg",
+          "detailed_retention": "until_explicitly_changed_by_approved_policy",
+          "current_ui_refresh_seconds": 15,
+          "almanac": "local_observations_and_local_astronomy"
+        },
+        "media": {
+          "primary_store": "garage",
+          "isolated_bucket_count": 1,
+          "same_origin_delivery_required": true,
+          "poster_required": true
+        },
+        "backup": {
+          "database_method": "qualified_cnpg_barman_plugin",
+          "database_destination": "same_weather_garage_bucket_private_prefix",
+          "offsite_custody": "central_garage_to_b2_full_and_wal"
+        },
+        "analysis": {
+          "candidate_route": "llm.primary.longctx.mm",
+          "input": "completed_validated_video",
+          "asynchronous": true
+        },
+        "search": {
+          "candidate_embedding_route": "embed.main",
+          "store": "cnpg_pgvector",
+          "exact_search_baseline": true,
+          "measured_filters": "typed_parameterized_sql",
+          "image_embedding_model": "deferred_research_only"
+        },
+        "experience": {
+          "exploration": "per_camera_linked_video_and_weather",
+          "events": "bookmarks_daily_strip_and_in_site_feed",
+          "editor": "authenticated_operator_with_audited_revisions",
+          "ai_publication": "automatic_labeled",
+          "embed": {
+            "id": "synthetic-experience",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "combined_east_west_skycam": "follow_on_WX_45",
+          "product_scope": "fleet_first_with_documented_customization"
+        },
+        "bindings": {
+          "commissioning": {
+            "id": "synthetic-commissioning",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "private_deployment": {
+            "id": "synthetic-private_deployment",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "retention_and_recovery": {
+            "id": "synthetic-retention_and_recovery",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "resource_admission": {
+            "id": "synthetic-resource_admission",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        }
+      }
+    },
+    {
+      "name": "second canonical bucket rejected",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "site": {
+          "public_origin": "https://weather.example.invalid",
+          "timezone": "Etc/UTC",
+          "location_source": "private_mounted_configuration"
+        },
+        "cameras": [
+          {
+            "id": "skycam_east"
+          },
+          {
+            "id": "skycam_west"
+          },
+          {
+            "id": "frontyard_1"
+          }
+        ],
+        "time": {
+          "boundary": "civil_twilight",
+          "solar_depression_degrees": 6,
+          "dawn_offset_seconds": 0,
+          "dusk_offset_seconds": 0,
+          "duration_policy": "cycle_total",
+          "cycle_budget_seconds": 120,
+          "output_fps": "60/1"
+        },
+        "capture": {
+          "source": "snapshot_api",
+          "default_interval_seconds": 1,
+          "staging_backend": "obsidian_nfs_pvc",
+          "chunk_seconds": 300,
+          "total_request_deadline_seconds": 5
+        },
+        "hourly_archive": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "slots": "actual_elapsed_local_hours",
+          "anchor": "hour_midpoint",
+          "fallback": "nearest_qualified_in_same_hour_with_offset_label",
+          "retain_original_bytes": true,
+          "originals_visibility": "private",
+          "retention_years": 5,
+          "enforce_camera_day_hour_foreign_keys": true,
+          "public_derivatives_only": true
+        },
+        "camera_previews": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "refresh_seconds": 60,
+          "minimum_publication_age_seconds": 600,
+          "timing_basis": "latest_plausible_exposure_time",
+          "retention": {
+            "id": "synthetic-camera_previews",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "queue_policy": "coalesce_to_newest_eligible"
+        },
+        "keograms": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "segments": [
+            "daytime",
+            "overnight"
+          ],
+          "axis": "elapsed_utc",
+          "source": "qualified_observed_captures",
+          "region_and_bins": {
+            "id": "synthetic-keograms",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        "render": {
+          "reference_profile": "observed_exposure",
+          "qualification_target": "motion_exposure_4x",
+          "optional_profile": "motion_exposure_8x",
+          "shutter_angle_degrees": 180,
+          "cpu_fallback_required": true
+        },
+        "weather": {
+          "source": "tempest_udp",
+          "preserve_original_datagrams": true,
+          "preserve_all_observation_rows": true,
+          "history_store": "cnpg",
+          "detailed_retention": "until_explicitly_changed_by_approved_policy",
+          "current_ui_refresh_seconds": 15,
+          "almanac": "local_observations_and_local_astronomy"
+        },
+        "media": {
+          "primary_store": "garage",
+          "isolated_bucket_count": 2,
+          "same_origin_delivery_required": true,
+          "poster_required": true
+        },
+        "backup": {
+          "database_method": "qualified_cnpg_barman_plugin",
+          "database_destination": "same_weather_garage_bucket_private_prefix",
+          "offsite_custody": "central_garage_to_b2_full_and_wal"
+        },
+        "analysis": {
+          "candidate_route": "llm.primary.longctx.mm",
+          "input": "completed_validated_video",
+          "asynchronous": true
+        },
+        "search": {
+          "candidate_embedding_route": "embed.main",
+          "store": "cnpg_pgvector",
+          "exact_search_baseline": true,
+          "measured_filters": "typed_parameterized_sql",
+          "image_embedding_model": "deferred_research_only"
+        },
+        "experience": {
+          "exploration": "per_camera_linked_video_and_weather",
+          "events": "bookmarks_daily_strip_and_in_site_feed",
+          "editor": "authenticated_operator_with_audited_revisions",
+          "ai_publication": "automatic_labeled",
+          "embed": {
+            "id": "synthetic-experience",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "combined_east_west_skycam": "follow_on_WX_45",
+          "product_scope": "fleet_first_with_documented_customization"
+        },
+        "bindings": {
+          "commissioning": {
+            "id": "synthetic-commissioning",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "private_deployment": {
+            "id": "synthetic-private_deployment",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "retention_and_recovery": {
+            "id": "synthetic-retention_and_recovery",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "resource_admission": {
+            "id": "synthetic-resource_admission",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        }
+      }
+    },
+    {
+      "name": "zero cadence rejected",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "site": {
+          "public_origin": "https://weather.example.invalid",
+          "timezone": "Etc/UTC",
+          "location_source": "private_mounted_configuration"
+        },
+        "cameras": [
+          {
+            "id": "skycam_east"
+          },
+          {
+            "id": "skycam_west"
+          },
+          {
+            "id": "frontyard_1"
+          }
+        ],
+        "time": {
+          "boundary": "civil_twilight",
+          "solar_depression_degrees": 6,
+          "dawn_offset_seconds": 0,
+          "dusk_offset_seconds": 0,
+          "duration_policy": "cycle_total",
+          "cycle_budget_seconds": 120,
+          "output_fps": "60/1"
+        },
+        "capture": {
+          "source": "snapshot_api",
+          "default_interval_seconds": 0,
+          "staging_backend": "obsidian_nfs_pvc",
+          "chunk_seconds": 300,
+          "total_request_deadline_seconds": 5
+        },
+        "hourly_archive": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "slots": "actual_elapsed_local_hours",
+          "anchor": "hour_midpoint",
+          "fallback": "nearest_qualified_in_same_hour_with_offset_label",
+          "retain_original_bytes": true,
+          "originals_visibility": "private",
+          "retention_years": 5,
+          "enforce_camera_day_hour_foreign_keys": true,
+          "public_derivatives_only": true
+        },
+        "camera_previews": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "refresh_seconds": 60,
+          "minimum_publication_age_seconds": 600,
+          "timing_basis": "latest_plausible_exposure_time",
+          "retention": {
+            "id": "synthetic-camera_previews",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "queue_policy": "coalesce_to_newest_eligible"
+        },
+        "keograms": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "segments": [
+            "daytime",
+            "overnight"
+          ],
+          "axis": "elapsed_utc",
+          "source": "qualified_observed_captures",
+          "region_and_bins": {
+            "id": "synthetic-keograms",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        "render": {
+          "reference_profile": "observed_exposure",
+          "qualification_target": "motion_exposure_4x",
+          "optional_profile": "motion_exposure_8x",
+          "shutter_angle_degrees": 180,
+          "cpu_fallback_required": true
+        },
+        "weather": {
+          "source": "tempest_udp",
+          "preserve_original_datagrams": true,
+          "preserve_all_observation_rows": true,
+          "history_store": "cnpg",
+          "detailed_retention": "until_explicitly_changed_by_approved_policy",
+          "current_ui_refresh_seconds": 15,
+          "almanac": "local_observations_and_local_astronomy"
+        },
+        "media": {
+          "primary_store": "garage",
+          "isolated_bucket_count": 1,
+          "same_origin_delivery_required": true,
+          "poster_required": true
+        },
+        "backup": {
+          "database_method": "qualified_cnpg_barman_plugin",
+          "database_destination": "same_weather_garage_bucket_private_prefix",
+          "offsite_custody": "central_garage_to_b2_full_and_wal"
+        },
+        "analysis": {
+          "candidate_route": "llm.primary.longctx.mm",
+          "input": "completed_validated_video",
+          "asynchronous": true
+        },
+        "search": {
+          "candidate_embedding_route": "embed.main",
+          "store": "cnpg_pgvector",
+          "exact_search_baseline": true,
+          "measured_filters": "typed_parameterized_sql",
+          "image_embedding_model": "deferred_research_only"
+        },
+        "experience": {
+          "exploration": "per_camera_linked_video_and_weather",
+          "events": "bookmarks_daily_strip_and_in_site_feed",
+          "editor": "authenticated_operator_with_audited_revisions",
+          "ai_publication": "automatic_labeled",
+          "embed": {
+            "id": "synthetic-experience",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "combined_east_west_skycam": "follow_on_WX_45",
+          "product_scope": "fleet_first_with_documented_customization"
+        },
+        "bindings": {
+          "commissioning": {
+            "id": "synthetic-commissioning",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "private_deployment": {
+            "id": "synthetic-private_deployment",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "retention_and_recovery": {
+            "id": "synthetic-retention_and_recovery",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "resource_admission": {
+            "id": "synthetic-resource_admission",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        }
+      }
+    },
+    {
+      "name": "unknown configuration key rejected",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "site": {
+          "public_origin": "https://weather.example.invalid",
+          "timezone": "Etc/UTC",
+          "location_source": "private_mounted_configuration"
+        },
+        "cameras": [
+          {
+            "id": "skycam_east"
+          },
+          {
+            "id": "skycam_west"
+          },
+          {
+            "id": "frontyard_1"
+          }
+        ],
+        "time": {
+          "boundary": "civil_twilight",
+          "solar_depression_degrees": 6,
+          "dawn_offset_seconds": 0,
+          "dusk_offset_seconds": 0,
+          "duration_policy": "cycle_total",
+          "cycle_budget_seconds": 120,
+          "output_fps": "60/1"
+        },
+        "capture": {
+          "source": "snapshot_api",
+          "default_interval_seconds": 1,
+          "staging_backend": "obsidian_nfs_pvc",
+          "chunk_seconds": 300,
+          "total_request_deadline_seconds": 5
+        },
+        "hourly_archive": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "slots": "actual_elapsed_local_hours",
+          "anchor": "hour_midpoint",
+          "fallback": "nearest_qualified_in_same_hour_with_offset_label",
+          "retain_original_bytes": true,
+          "originals_visibility": "private",
+          "retention_years": 5,
+          "enforce_camera_day_hour_foreign_keys": true,
+          "public_derivatives_only": true
+        },
+        "camera_previews": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "refresh_seconds": 60,
+          "minimum_publication_age_seconds": 600,
+          "timing_basis": "latest_plausible_exposure_time",
+          "retention": {
+            "id": "synthetic-camera_previews",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "queue_policy": "coalesce_to_newest_eligible"
+        },
+        "keograms": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "segments": [
+            "daytime",
+            "overnight"
+          ],
+          "axis": "elapsed_utc",
+          "source": "qualified_observed_captures",
+          "region_and_bins": {
+            "id": "synthetic-keograms",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        "render": {
+          "reference_profile": "observed_exposure",
+          "qualification_target": "motion_exposure_4x",
+          "optional_profile": "motion_exposure_8x",
+          "shutter_angle_degrees": 180,
+          "cpu_fallback_required": true
+        },
+        "weather": {
+          "source": "tempest_udp",
+          "preserve_original_datagrams": true,
+          "preserve_all_observation_rows": true,
+          "history_store": "cnpg",
+          "detailed_retention": "until_explicitly_changed_by_approved_policy",
+          "current_ui_refresh_seconds": 15,
+          "almanac": "local_observations_and_local_astronomy"
+        },
+        "media": {
+          "primary_store": "garage",
+          "isolated_bucket_count": 1,
+          "same_origin_delivery_required": true,
+          "poster_required": true
+        },
+        "backup": {
+          "database_method": "qualified_cnpg_barman_plugin",
+          "database_destination": "same_weather_garage_bucket_private_prefix",
+          "offsite_custody": "central_garage_to_b2_full_and_wal"
+        },
+        "analysis": {
+          "candidate_route": "llm.primary.longctx.mm",
+          "input": "completed_validated_video",
+          "asynchronous": true
+        },
+        "search": {
+          "candidate_embedding_route": "embed.main",
+          "store": "cnpg_pgvector",
+          "exact_search_baseline": true,
+          "measured_filters": "typed_parameterized_sql",
+          "image_embedding_model": "deferred_research_only"
+        },
+        "experience": {
+          "exploration": "per_camera_linked_video_and_weather",
+          "events": "bookmarks_daily_strip_and_in_site_feed",
+          "editor": "authenticated_operator_with_audited_revisions",
+          "ai_publication": "automatic_labeled",
+          "embed": {
+            "id": "synthetic-experience",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "combined_east_west_skycam": "follow_on_WX_45",
+          "product_scope": "fleet_first_with_documented_customization"
+        },
+        "bindings": {
+          "commissioning": {
+            "id": "synthetic-commissioning",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "private_deployment": {
+            "id": "synthetic-private_deployment",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "retention_and_recovery": {
+            "id": "synthetic-retention_and_recovery",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "resource_admission": {
+            "id": "synthetic-resource_admission",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        },
+        "allow_unsafe": true
+      }
+    },
+    {
+      "name": "credential URL rejected",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "site": {
+          "public_origin": "https://user:pass@example.invalid",
+          "timezone": "Etc/UTC",
+          "location_source": "private_mounted_configuration"
+        },
+        "cameras": [
+          {
+            "id": "skycam_east"
+          },
+          {
+            "id": "skycam_west"
+          },
+          {
+            "id": "frontyard_1"
+          }
+        ],
+        "time": {
+          "boundary": "civil_twilight",
+          "solar_depression_degrees": 6,
+          "dawn_offset_seconds": 0,
+          "dusk_offset_seconds": 0,
+          "duration_policy": "cycle_total",
+          "cycle_budget_seconds": 120,
+          "output_fps": "60/1"
+        },
+        "capture": {
+          "source": "snapshot_api",
+          "default_interval_seconds": 1,
+          "staging_backend": "obsidian_nfs_pvc",
+          "chunk_seconds": 300,
+          "total_request_deadline_seconds": 5
+        },
+        "hourly_archive": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "slots": "actual_elapsed_local_hours",
+          "anchor": "hour_midpoint",
+          "fallback": "nearest_qualified_in_same_hour_with_offset_label",
+          "retain_original_bytes": true,
+          "originals_visibility": "private",
+          "retention_years": 5,
+          "enforce_camera_day_hour_foreign_keys": true,
+          "public_derivatives_only": true
+        },
+        "camera_previews": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "refresh_seconds": 60,
+          "minimum_publication_age_seconds": 600,
+          "timing_basis": "latest_plausible_exposure_time",
+          "retention": {
+            "id": "synthetic-camera_previews",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "queue_policy": "coalesce_to_newest_eligible"
+        },
+        "keograms": {
+          "enabled_cameras": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "segments": [
+            "daytime",
+            "overnight"
+          ],
+          "axis": "elapsed_utc",
+          "source": "qualified_observed_captures",
+          "region_and_bins": {
+            "id": "synthetic-keograms",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        "render": {
+          "reference_profile": "observed_exposure",
+          "qualification_target": "motion_exposure_4x",
+          "optional_profile": "motion_exposure_8x",
+          "shutter_angle_degrees": 180,
+          "cpu_fallback_required": true
+        },
+        "weather": {
+          "source": "tempest_udp",
+          "preserve_original_datagrams": true,
+          "preserve_all_observation_rows": true,
+          "history_store": "cnpg",
+          "detailed_retention": "until_explicitly_changed_by_approved_policy",
+          "current_ui_refresh_seconds": 15,
+          "almanac": "local_observations_and_local_astronomy"
+        },
+        "media": {
+          "primary_store": "garage",
+          "isolated_bucket_count": 1,
+          "same_origin_delivery_required": true,
+          "poster_required": true
+        },
+        "backup": {
+          "database_method": "qualified_cnpg_barman_plugin",
+          "database_destination": "same_weather_garage_bucket_private_prefix",
+          "offsite_custody": "central_garage_to_b2_full_and_wal"
+        },
+        "analysis": {
+          "candidate_route": "llm.primary.longctx.mm",
+          "input": "completed_validated_video",
+          "asynchronous": true
+        },
+        "search": {
+          "candidate_embedding_route": "embed.main",
+          "store": "cnpg_pgvector",
+          "exact_search_baseline": true,
+          "measured_filters": "typed_parameterized_sql",
+          "image_embedding_model": "deferred_research_only"
+        },
+        "experience": {
+          "exploration": "per_camera_linked_video_and_weather",
+          "events": "bookmarks_daily_strip_and_in_site_feed",
+          "editor": "authenticated_operator_with_audited_revisions",
+          "ai_publication": "automatic_labeled",
+          "embed": {
+            "id": "synthetic-experience",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "combined_east_west_skycam": "follow_on_WX_45",
+          "product_scope": "fleet_first_with_documented_customization"
+        },
+        "bindings": {
+          "commissioning": {
+            "id": "synthetic-commissioning",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "private_deployment": {
+            "id": "synthetic-private_deployment",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "retention_and_recovery": {
+            "id": "synthetic-retention_and_recovery",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "resource_admission": {
+            "id": "synthetic-resource_admission",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        }
+      }
+    }
+  ]
+}

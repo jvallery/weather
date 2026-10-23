@@ -1,0 +1,16 @@
+{
+  "observed_at": "2026-10-23T21:30:06.372361+00:00",
+  "scope": "Public product-settings schema metaschema and 13 synthetic shape fixtures only",
+  "fixture_count": 13,
+  "all_expectations_matched": true,
+  "input_sha256": {
+    "configuration.schema.json": "91ad645a18f8f1b6833099c2ed11ffcc4ddf08578c09da7b850557861c44a10c",
+    "configuration-fixtures.json": "c7098a19553acbdc980150306f17b37e53e9d8d530b8709172df990720156b97",
+    "configuration-contract.md": "65ec639a6393fbef43f4355446588c3568220fa4f9fe71ad368bc00070d84760"
+  },
+  "limitations": [
+    "Private policy/bundle schemas and actual admission remain incomplete",
+    "No production configuration, startup or runtime test",
+    "Hash references are not qualification authority"
+  ]
+}

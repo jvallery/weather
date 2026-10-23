@@ -1,0 +1,531 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weather.vallery.net/contracts/configuration-v1.schema.json",
+  "title": "Public product configuration and private policy bindings; not deployment authority",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "site",
+    "cameras",
+    "time",
+    "capture",
+    "hourly_archive",
+    "camera_previews",
+    "keograms",
+    "render",
+    "weather",
+    "media",
+    "backup",
+    "analysis",
+    "search",
+    "experience",
+    "bindings"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "public_origin",
+        "timezone",
+        "location_source"
+      ],
+      "properties": {
+        "public_origin": {
+          "type": "string",
+          "pattern": "^https://[A-Za-z0-9.-]+(?::[0-9]{1,5})?$",
+          "maxLength": 253
+        },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "location_source": {
+          "const": "private_mounted_configuration"
+        }
+      }
+    },
+    "cameras": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "enum": [
+              "skycam_east",
+              "skycam_west",
+              "frontyard_1"
+            ]
+          }
+        }
+      }
+    },
+    "time": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "boundary",
+        "solar_depression_degrees",
+        "dawn_offset_seconds",
+        "dusk_offset_seconds",
+        "duration_policy",
+        "cycle_budget_seconds",
+        "output_fps"
+      ],
+      "properties": {
+        "boundary": {
+          "const": "civil_twilight"
+        },
+        "solar_depression_degrees": {
+          "const": 6
+        },
+        "dawn_offset_seconds": {
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 2147483647
+        },
+        "dusk_offset_seconds": {
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 2147483647
+        },
+        "duration_policy": {
+          "const": "cycle_total"
+        },
+        "cycle_budget_seconds": {
+          "const": 120
+        },
+        "output_fps": {
+          "const": "60/1"
+        }
+      }
+    },
+    "capture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "default_interval_seconds",
+        "staging_backend",
+        "chunk_seconds",
+        "total_request_deadline_seconds"
+      ],
+      "properties": {
+        "source": {
+          "const": "snapshot_api"
+        },
+        "default_interval_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "staging_backend": {
+          "const": "obsidian_nfs_pvc"
+        },
+        "chunk_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "total_request_deadline_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "hourly_archive": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled_cameras",
+        "slots",
+        "anchor",
+        "fallback",
+        "retain_original_bytes",
+        "originals_visibility",
+        "retention_years",
+        "enforce_camera_day_hour_foreign_keys",
+        "public_derivatives_only"
+      ],
+      "properties": {
+        "enabled_cameras": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "skycam_east",
+              "skycam_west",
+              "frontyard_1"
+            ]
+          }
+        },
+        "slots": {
+          "const": "actual_elapsed_local_hours"
+        },
+        "anchor": {
+          "const": "hour_midpoint"
+        },
+        "fallback": {
+          "const": "nearest_qualified_in_same_hour_with_offset_label"
+        },
+        "retain_original_bytes": {
+          "const": true
+        },
+        "originals_visibility": {
+          "const": "private"
+        },
+        "retention_years": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "enforce_camera_day_hour_foreign_keys": {
+          "const": true
+        },
+        "public_derivatives_only": {
+          "const": true
+        }
+      }
+    },
+    "camera_previews": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled_cameras",
+        "refresh_seconds",
+        "minimum_publication_age_seconds",
+        "timing_basis",
+        "retention",
+        "queue_policy"
+      ],
+      "properties": {
+        "enabled_cameras": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "skycam_east",
+              "skycam_west",
+              "frontyard_1"
+            ]
+          }
+        },
+        "refresh_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "minimum_publication_age_seconds": {
+          "type": "integer",
+          "minimum": 600,
+          "maximum": 2147483647
+        },
+        "timing_basis": {
+          "const": "latest_plausible_exposure_time"
+        },
+        "retention": {
+          "$ref": "#/$defs/PolicyReference"
+        },
+        "queue_policy": {
+          "const": "coalesce_to_newest_eligible"
+        }
+      }
+    },
+    "keograms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled_cameras",
+        "segments",
+        "axis",
+        "source",
+        "region_and_bins"
+      ],
+      "properties": {
+        "enabled_cameras": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "skycam_east",
+              "skycam_west",
+              "frontyard_1"
+            ]
+          }
+        },
+        "segments": {
+          "const": [
+            "daytime",
+            "overnight"
+          ]
+        },
+        "axis": {
+          "const": "elapsed_utc"
+        },
+        "source": {
+          "const": "qualified_observed_captures"
+        },
+        "region_and_bins": {
+          "$ref": "#/$defs/PolicyReference"
+        }
+      }
+    },
+    "render": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference_profile",
+        "qualification_target",
+        "optional_profile",
+        "shutter_angle_degrees",
+        "cpu_fallback_required"
+      ],
+      "properties": {
+        "reference_profile": {
+          "const": "observed_exposure"
+        },
+        "qualification_target": {
+          "const": "motion_exposure_4x"
+        },
+        "optional_profile": {
+          "const": "motion_exposure_8x"
+        },
+        "shutter_angle_degrees": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 360
+        },
+        "cpu_fallback_required": {
+          "const": true
+        }
+      }
+    },
+    "weather": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "preserve_original_datagrams",
+        "preserve_all_observation_rows",
+        "history_store",
+        "detailed_retention",
+        "current_ui_refresh_seconds",
+        "almanac"
+      ],
+      "properties": {
+        "source": {
+          "const": "tempest_udp"
+        },
+        "preserve_original_datagrams": {
+          "const": true
+        },
+        "preserve_all_observation_rows": {
+          "const": true
+        },
+        "history_store": {
+          "const": "cnpg"
+        },
+        "detailed_retention": {
+          "const": "until_explicitly_changed_by_approved_policy"
+        },
+        "current_ui_refresh_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "almanac": {
+          "const": "local_observations_and_local_astronomy"
+        }
+      }
+    },
+    "media": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primary_store",
+        "isolated_bucket_count",
+        "same_origin_delivery_required",
+        "poster_required"
+      ],
+      "properties": {
+        "primary_store": {
+          "const": "garage"
+        },
+        "isolated_bucket_count": {
+          "const": 1
+        },
+        "same_origin_delivery_required": {
+          "const": true
+        },
+        "poster_required": {
+          "const": true
+        }
+      }
+    },
+    "backup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "database_method",
+        "database_destination",
+        "offsite_custody"
+      ],
+      "properties": {
+        "database_method": {
+          "const": "qualified_cnpg_barman_plugin"
+        },
+        "database_destination": {
+          "const": "same_weather_garage_bucket_private_prefix"
+        },
+        "offsite_custody": {
+          "const": "central_garage_to_b2_full_and_wal"
+        }
+      }
+    },
+    "analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_route",
+        "input",
+        "asynchronous"
+      ],
+      "properties": {
+        "candidate_route": {
+          "const": "llm.primary.longctx.mm"
+        },
+        "input": {
+          "const": "completed_validated_video"
+        },
+        "asynchronous": {
+          "const": true
+        }
+      }
+    },
+    "search": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_embedding_route",
+        "store",
+        "exact_search_baseline",
+        "measured_filters",
+        "image_embedding_model"
+      ],
+      "properties": {
+        "candidate_embedding_route": {
+          "const": "embed.main"
+        },
+        "store": {
+          "const": "cnpg_pgvector"
+        },
+        "exact_search_baseline": {
+          "const": true
+        },
+        "measured_filters": {
+          "const": "typed_parameterized_sql"
+        },
+        "image_embedding_model": {
+          "const": "deferred_research_only"
+        }
+      }
+    },
+    "experience": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exploration",
+        "events",
+        "editor",
+        "ai_publication",
+        "embed",
+        "combined_east_west_skycam",
+        "product_scope"
+      ],
+      "properties": {
+        "exploration": {
+          "const": "per_camera_linked_video_and_weather"
+        },
+        "events": {
+          "const": "bookmarks_daily_strip_and_in_site_feed"
+        },
+        "editor": {
+          "const": "authenticated_operator_with_audited_revisions"
+        },
+        "ai_publication": {
+          "const": "automatic_labeled"
+        },
+        "embed": {
+          "$ref": "#/$defs/PolicyReference"
+        },
+        "combined_east_west_skycam": {
+          "const": "follow_on_WX_45"
+        },
+        "product_scope": {
+          "const": "fleet_first_with_documented_customization"
+        }
+      }
+    },
+    "bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commissioning",
+        "private_deployment",
+        "retention_and_recovery",
+        "resource_admission"
+      ],
+      "properties": {
+        "commissioning": {
+          "$ref": "#/$defs/PolicyReference"
+        },
+        "private_deployment": {
+          "$ref": "#/$defs/PolicyReference"
+        },
+        "retention_and_recovery": {
+          "$ref": "#/$defs/PolicyReference"
+        },
+        "resource_admission": {
+          "$ref": "#/$defs/PolicyReference"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "PolicyReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sha256"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    }
+  }
+}

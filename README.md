@@ -12,6 +12,8 @@ Requirements and implementation planning for **[weather.vallery.net](https://wea
 
 ## Shared implementation contracts
 
+- [Product configuration and private policy bindings](docs/contracts/configuration-contract.md), with strict shape validation and explicit remaining private-bundle work.
+
 - [D01 repository and delivery trust](docs/decisions/D01-repository-and-delivery-trust.md), with current GitHub/fleet admission evidence and unresolved isolated contribution execution.
 
 - [Publication, source pins, origin eligibility and joint recovery](docs/implementation/publication-recovery-contract.md).
