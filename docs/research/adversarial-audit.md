@@ -158,3 +158,7 @@ The [section 15 audit](../implementation/recovery-clause-audit.md) retains the c
 ## Delivery, synthetic execution and operational coverage
 
 The [section 16 and §18.1 audit](../implementation/delivery-clause-audit.md) preserves complete CI trust boundaries, runbook topics and operational-signal lists. Local development wording does not authorize intensive Mac workloads: synthetic database/object/model tests use the owner-admitted cluster path. Credentials/runbook rotation instructions are future operational procedures, not authorization to rotate during this audit. Actual fork isolation, Weather enrollment, private overlay placement and achievable SLO budgets remain unresolved.
+
+## Aggregate algorithm identity missing from public schema
+
+Section 17.2 requires weather aggregate algorithm/revision provenance. The draft `Aggregate` identified input evidence and the coverage algorithm, but lacked an independent computation recipe identity. Added required `algorithm_revision` and documented its distinction from `evidence_revision` and `coverage.algorithm_revision`. Formula/boundary-policy changes must invalidate dependent sidecar, search and almanac projections even when underlying evidence is unchanged. Updated three nested synthetic aggregate fixtures and added explicit present/missing/empty revision cases; all 60 API fixtures pass with explicit date/UTC assertions. This verifies shape only; actual recipe execution and invalidation remain implementation acceptance.

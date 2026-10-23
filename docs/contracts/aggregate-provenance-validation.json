@@ -1,0 +1,16 @@
+{
+  "observed_at": "2026-10-23T22:28:18.156644+00:00",
+  "fixture_count": 60,
+  "all_shape_expectations_matched": true,
+  "scope": "API metaschema and complete fixture collection with explicit date and UTC assertions; aggregate computation provenance is distinct from evidence and coverage algorithm identities",
+  "input_sha256": {
+    "api.schema.json": "791073df58ddb0ffa63a6ef4333a63c49e3eb9a0e7adc06c128e65a898656534",
+    "schema-fixtures.json": "0f9d8428fe4d1e2186369e59281bd73c68e68bc7626334232b6d7e4fc4b8e944",
+    "api-contract.md": "dc0ec74d41a074579d37fb9b4088e7c27a4cfa0658c722dbc0e2e79f791de9ef",
+    "weather-aggregation-contract.md": "bea8ecd91836ebcddfcc4e74e1087fc3ede373e4825b536a94d68eb0387f9e44"
+  },
+  "limits": [
+    "No metric computation, recipe resolution, projection invalidation or runtime test",
+    "Prior receipts apply only to recorded input hashes"
+  ]
+}

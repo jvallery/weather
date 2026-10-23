@@ -157,3 +157,7 @@ The [section 15 audit](recovery-clause-audit.md) preserves 20 source blocks, all
 ## Delivery and operational target coverage
 
 The [section 16 and §18.1 audit](delivery-clause-audit.md) preserves 13 source blocks and maps 20 grouped obligations, including all runbook topics and operational signals. Synthetic development follows the estate placement policy; source-side pipeline descriptions do not prove fork isolation, enrollment, deployment or product acceptance.
+
+## Aggregate computation provenance correction
+
+The §17.2 contract comparison found a missing standalone aggregate algorithm revision. `Aggregate.algorithm_revision` now identifies the computation separately from input evidence and coverage algorithm revisions. [Current shape-validation receipt](../contracts/aggregate-provenance-validation.json) covers 60 fixtures. WX-13/17/22/25/41/42 and WX-33 must preserve and verify recipe bindings across all consumer projections. The rest of section 17 still requires full source-bound review.

@@ -35,3 +35,7 @@ Comparisons show each window's actual dates, duration, coverage and missing days
 ## Acceptance and limits
 
 WX-13/41/42 test 359/1-degree wrap, opposing directions, unequal speed/duration, calm and missing direction, exact bin boundaries, overlapping support, repeated packets, zero support, DST days, rain conservation, integer lightning and delayed revisions. Check speed and direction coverage independently and prove wind-rose categories conserve the whole window. UI/text summaries, exports, measured filters and synthesis must consume the same effective evidence revision. The API fixtures prove structured-bin shape only; no parser, aggregation, query, chart or station calibration is qualified here.
+
+## Public computation identity
+
+Serialize the immutable metric/statistic recipe as `Aggregate.algorithm_revision`; retain input `evidence_revision` and `coverage.algorithm_revision` separately. Formula or boundary-policy changes require recomputation and a new computation revision with affected sidecar/search/almanac invalidation. Reusing unchanged support does not authorize reusing a stale computed value. The schema can require identities but cannot establish that the implementation used the claimed recipe.

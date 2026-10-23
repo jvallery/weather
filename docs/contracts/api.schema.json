@@ -923,6 +923,9 @@
         },
         "reason": {
           "$ref": "#/$defs/Reason"
+        },
+        "algorithm_revision": {
+          "$ref": "#/$defs/Id"
         }
       },
       "required": [
@@ -934,7 +937,8 @@
         "coverage",
         "evidence_ids",
         "evidence_revision",
-        "reason"
+        "reason",
+        "algorithm_revision"
       ]
     },
     "Seek": {

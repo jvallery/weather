@@ -896,7 +896,8 @@
               },
               "evidence_ids": [],
               "evidence_revision": "synthetic-revision",
-              "reason": null
+              "reason": null,
+              "algorithm_revision": "aggregate_recipe_demo_v1"
             },
             "comparison": null,
             "angle_start_degrees": 348.75,
@@ -954,7 +955,8 @@
               },
               "evidence_ids": [],
               "evidence_revision": "synthetic-revision",
-              "reason": null
+              "reason": null,
+              "algorithm_revision": "aggregate_recipe_demo_v1"
             },
             "comparison": null,
             "angle_start_degrees": 348.75,
@@ -1005,7 +1007,8 @@
               },
               "evidence_ids": [],
               "evidence_revision": "synthetic-revision",
-              "reason": null
+              "reason": null,
+              "algorithm_revision": "aggregate_recipe_demo_v1"
             },
             "comparison": null,
             "angle_start_degrees": 348.75,
@@ -1311,6 +1314,83 @@
           "clip_demo"
         ],
         "evidence_precision": "clip"
+      }
+    },
+    {
+      "name": "aggregate explicit computation provenance",
+      "schema": "Aggregate",
+      "valid": true,
+      "value": {
+        "metric": "wind_rose_fraction",
+        "statistic": "duration_fraction",
+        "value": 0.2,
+        "unit": "1",
+        "interval": {
+          "start": "2026-01-01T00:00:00Z",
+          "end": "2026-01-01T00:10:00Z"
+        },
+        "coverage": {
+          "fraction": 1,
+          "support_seconds": 600,
+          "expected_seconds": 600,
+          "algorithm_revision": "synthetic-algorithm",
+          "gaps": []
+        },
+        "evidence_ids": [],
+        "evidence_revision": "synthetic-revision",
+        "reason": null,
+        "algorithm_revision": "aggregate_recipe_demo_v1"
+      }
+    },
+    {
+      "name": "aggregate missing computation revision rejected",
+      "schema": "Aggregate",
+      "valid": false,
+      "value": {
+        "metric": "wind_rose_fraction",
+        "statistic": "duration_fraction",
+        "value": 0.2,
+        "unit": "1",
+        "interval": {
+          "start": "2026-01-01T00:00:00Z",
+          "end": "2026-01-01T00:10:00Z"
+        },
+        "coverage": {
+          "fraction": 1,
+          "support_seconds": 600,
+          "expected_seconds": 600,
+          "algorithm_revision": "synthetic-algorithm",
+          "gaps": []
+        },
+        "evidence_ids": [],
+        "evidence_revision": "synthetic-revision",
+        "reason": null
+      }
+    },
+    {
+      "name": "aggregate empty computation revision rejected",
+      "schema": "Aggregate",
+      "valid": false,
+      "value": {
+        "metric": "wind_rose_fraction",
+        "statistic": "duration_fraction",
+        "value": 0.2,
+        "unit": "1",
+        "interval": {
+          "start": "2026-01-01T00:00:00Z",
+          "end": "2026-01-01T00:10:00Z"
+        },
+        "coverage": {
+          "fraction": 1,
+          "support_seconds": 600,
+          "expected_seconds": 600,
+          "algorithm_revision": "synthetic-algorithm",
+          "gaps": []
+        },
+        "evidence_ids": [],
+        "evidence_revision": "synthetic-revision",
+        "reason": null,
+        "algorithm_revision": ""
       }
     }
   ]
