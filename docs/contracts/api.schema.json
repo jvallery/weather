@@ -1925,14 +1925,17 @@
           "items": {
             "$ref": "#/$defs/Id"
           },
-          "maxItems": 32
+          "maxItems": 32,
+          "minItems": 1,
+          "uniqueItems": true
         },
         "evidence_ids": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/Id"
           },
-          "maxItems": 100
+          "maxItems": 100,
+          "uniqueItems": true
         },
         "rule_revision": {
           "$ref": "#/$defs/Id"
@@ -2039,6 +2042,29 @@
             "properties": {
               "basis": {
                 "const": "inference"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "origin": {
+                "enum": [
+                  "measured",
+                  "visual",
+                  "synthesis"
+                ]
+              }
+            },
+            "required": [
+              "origin"
+            ]
+          },
+          "then": {
+            "properties": {
+              "evidence_ids": {
+                "minItems": 1
               }
             }
           }

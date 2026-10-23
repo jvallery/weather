@@ -73,3 +73,5 @@ Before closure, collect private full-payload evidence with authorization and adm
 ## Deterministic aggregate consumers
 
 The [aggregation contract](../contracts/weather-aggregation-contract.md) specifies shared metric support, vector direction, structured duration-based wind roses and the selected observed-history ranking threshold. Instrument calibration, per-metric hold and pressure endpoint policies remain qualification work.
+
+The [event rule contract](../contracts/weather-event-contract.md) selects canonical onset/lightning annotations and one observed daily gust maximum with stable correction identity. No heuristic nearby-event merge, inferred point onset or alert threshold is introduced; actual canonical identity/support qualification remains required.

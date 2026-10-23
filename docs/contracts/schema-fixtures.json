@@ -1022,6 +1022,164 @@
         ],
         "next_cursor": null
       }
+    },
+    {
+      "name": "event requires calendar membership",
+      "schema": "Event",
+      "valid": false,
+      "value": {
+        "event_id": "synthetic-event",
+        "revision": 1,
+        "origin": "synthesis",
+        "basis": "inference",
+        "title": "Possible clearing",
+        "description": "Evidence suggests clearing with gaps.",
+        "source_interval": {
+          "start": "2026-10-23T00:00:00Z",
+          "end": "2026-10-23T01:00:00Z"
+        },
+        "precision": "clip",
+        "camera": "skycam_east",
+        "calendar_day_ids": [],
+        "evidence_ids": [
+          "visual_1"
+        ],
+        "rule_revision": "synthetic-rule",
+        "video_links": []
+      }
+    },
+    {
+      "name": "event cannot duplicate day membership",
+      "schema": "Event",
+      "valid": false,
+      "value": {
+        "event_id": "synthetic-event",
+        "revision": 1,
+        "origin": "synthesis",
+        "basis": "inference",
+        "title": "Possible clearing",
+        "description": "Evidence suggests clearing with gaps.",
+        "source_interval": {
+          "start": "2026-10-23T00:00:00Z",
+          "end": "2026-10-23T01:00:00Z"
+        },
+        "precision": "clip",
+        "camera": "skycam_east",
+        "calendar_day_ids": [
+          "synthetic-day",
+          "synthetic-day"
+        ],
+        "evidence_ids": [
+          "visual_1"
+        ],
+        "rule_revision": "synthetic-rule",
+        "video_links": []
+      }
+    },
+    {
+      "name": "synthesis event requires evidence",
+      "schema": "Event",
+      "valid": false,
+      "value": {
+        "event_id": "synthetic-event",
+        "revision": 1,
+        "origin": "synthesis",
+        "basis": "inference",
+        "title": "Possible clearing",
+        "description": "Evidence suggests clearing with gaps.",
+        "source_interval": {
+          "start": "2026-10-23T00:00:00Z",
+          "end": "2026-10-23T01:00:00Z"
+        },
+        "precision": "clip",
+        "camera": "skycam_east",
+        "calendar_day_ids": [
+          "synthetic-day"
+        ],
+        "evidence_ids": [],
+        "rule_revision": "synthetic-rule",
+        "video_links": []
+      }
+    },
+    {
+      "name": "event cannot duplicate evidence IDs",
+      "schema": "Event",
+      "valid": false,
+      "value": {
+        "event_id": "synthetic-event",
+        "revision": 1,
+        "origin": "synthesis",
+        "basis": "inference",
+        "title": "Possible clearing",
+        "description": "Evidence suggests clearing with gaps.",
+        "source_interval": {
+          "start": "2026-10-23T00:00:00Z",
+          "end": "2026-10-23T01:00:00Z"
+        },
+        "precision": "clip",
+        "camera": "skycam_east",
+        "calendar_day_ids": [
+          "synthetic-day"
+        ],
+        "evidence_ids": [
+          "visual_1",
+          "visual_1"
+        ],
+        "rule_revision": "synthetic-rule",
+        "video_links": []
+      }
+    },
+    {
+      "name": "measured event with instrument evidence",
+      "schema": "Event",
+      "valid": true,
+      "value": {
+        "event_id": "synthetic-event",
+        "revision": 1,
+        "origin": "measured",
+        "basis": "instrument",
+        "title": "Possible clearing",
+        "description": "Evidence suggests clearing with gaps.",
+        "source_interval": {
+          "start": "2026-10-23T00:00:00Z",
+          "end": "2026-10-23T01:00:00Z"
+        },
+        "precision": "clip",
+        "camera": "skycam_east",
+        "calendar_day_ids": [
+          "synthetic-day"
+        ],
+        "evidence_ids": [
+          "metric_1"
+        ],
+        "rule_revision": "synthetic-rule",
+        "video_links": []
+      }
+    },
+    {
+      "name": "measured event without evidence rejected",
+      "schema": "Event",
+      "valid": false,
+      "value": {
+        "event_id": "synthetic-event",
+        "revision": 1,
+        "origin": "measured",
+        "basis": "instrument",
+        "title": "Possible clearing",
+        "description": "Evidence suggests clearing with gaps.",
+        "source_interval": {
+          "start": "2026-10-23T00:00:00Z",
+          "end": "2026-10-23T01:00:00Z"
+        },
+        "precision": "clip",
+        "camera": "skycam_east",
+        "calendar_day_ids": [
+          "synthetic-day"
+        ],
+        "evidence_ids": [],
+        "rule_revision": "synthetic-rule",
+        "video_links": []
+      }
     }
   ]
 }

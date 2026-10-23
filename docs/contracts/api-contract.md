@@ -113,3 +113,7 @@ The [section 5 audit](../implementation/time-clause-audit.md) binds civil schedu
 ## Wind-rose structure
 
 Almanac wind_rose_bin products require structured category/speed bounds/duration/denominator; other product kinds reject that metadata. The [aggregation contract](weather-aggregation-contract.md) defines whole-window denominators, north-wrap bins, calm/variable/missing distinctions and semantic conservation checks. Labels are presentation, not a parseable calculation contract.
+
+## Event identity and provenance
+
+The [event contract](weather-event-contract.md) defines initial onset/gust/lightning rules, stable logical identity and revision/withdrawal behavior. Public events require unique nonempty calendar membership; measured/visual/synthesis events additionally require unique nonempty evidence IDs. Private manual audit remains mandatory even when a standalone manual annotation has no prior instrument evidence. Schema presence is not proof of evidence validity or membership.

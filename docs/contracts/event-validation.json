@@ -1,0 +1,16 @@
+{
+  "observed_at": "2026-10-23T22:07:14.716978+00:00",
+  "fixture_count": 52,
+  "all_shape_expectations_matched": true,
+  "scope": "API metaschema and all fixtures with explicit calendar/UTC format assertions",
+  "input_sha256": {
+    "api.schema.json": "54f4bd6c95c237f20ac65158f0c36e0aa2d2bfad17679f0ba8c8923f2482451d",
+    "schema-fixtures.json": "be1cb4ba47dbd8063666c9138e45d49d240fa71f5500eb9b303a9c4d394680fd",
+    "api-contract.md": "3612753fc5af6361b5ba51b36f640941664736c0364bb183b05c9ec73698fdcf",
+    "weather-event-contract.md": "457f5f56113fc67f1c78ce152cf0b763a84ce2138b1e9754e19336ed5387f322"
+  },
+  "limits": [
+    "No evidence resolution, canonical deduplication, event generation or feed runtime test",
+    "Previous validation receipts apply only to their recorded inputs"
+  ]
+}

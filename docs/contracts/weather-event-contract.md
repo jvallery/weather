@@ -1,0 +1,37 @@
+# Weather events, identity and corrections
+
+Requirements §10.7, R33/R36; D05/D16; WX-40 owns annotation generation/feed, WX-12/13 provide canonical evidence, WX-43 owns manual changes and WX-33 integration. Events are searchable/bookmarkable annotations, not a second telemetry store or an additional video-render queue. Instrument parsing/canonicalization remains D05 qualification.
+
+## Initial measured rule set
+
+| Rule | Trigger and identity | Precision and correction |
+|---|---|---|
+| Instrument precipitation onset | One annotation for each qualified canonical `evt_precip` onset. Logical key = site/device epoch + canonical onset ID + rule family. No amount threshold, heuristic merge window or additional hysteresis; canonical duplicate receipts do not create another annotation. | Use the instrument timestamp's qualified resolution/uncertainty interval. It reports onset, not amount, snow depth or a visually confirmed event. Invalidated canonical onset withdraws the annotation. |
+| Observed daily gust maximum | After a local calendar day closes and its ordinary late-input processing can run, choose the maximum valid reported gust >0 m/s; break ties by earlier source time then canonical observation ID. One stable logical key per site/calendar day/rule family. No alert threshold or hysteresis: this is a daily observed maximum, not a high-wind alarm. | Use the winning observation's actual support/uncertainty. Label observed maximum and its metric coverage; no sample means no invented event. A later higher valid gust revises the same event and links, not a second daily maximum. |
+| Reported lightning | One annotation per qualified canonical lightning event when event records are the configured counting authority. Repeated receiver/transport receipts link to the same canonical identity. | Use known producer-time resolution/uncertainty; distance/energy are reported attributes, not proof a flash is visible. If interval counts are the selected authority, annotate the count interval instead of manufacturing individual strikes. Never add both authorities. |
+
+These are the selected initial measured annotations. No synthetic precipitation-onset timestamp is inferred merely from a positive accumulation spanning an interval. Such an interval remains measured evidence/summary; a future onset-detector rule requires a separate versioned support/threshold/hysteresis definition and regression cases. Likewise, no generic nearby-event clustering may discard legitimate repeated onsets or strikes. D05's actual canonical event identity must distinguish duplicates from distinct reports before enabling the rule.
+
+All time intervals are half-open and nonempty in the public contract. When a producer reports an integer-second instant, its time quantization can be represented as the corresponding one-second interval **only if** that timestamp interpretation is qualified; this does not mean the physical event lasted one second. Include any additional clock uncertainty. Unknown/boundless timing remains private unresolved evidence until a defensible public interval exists. A visual or synthesis clip interval is not sharpened to a measured second.
+
+## Revision and visibility state machine
+
+Persist an opaque logical event ID, canonical rule family, current rule revision, input/evidence revision, source interval/precision, calendar-day links, camera scope, visibility and producer/author provenance. The rule revision resolves thresholds/units and algorithm policy; labels never encode the only copy of those values. Source IDs and private station identity do not become public identifiers.
+
+A durable job claims the current input generation. In one transaction, lock the logical event, validate evidence/revision, write the immutable event revision, replace current day/video relationships, advance effective visibility and emit the outbox. Retry returns the same result only for identical input/rule/generation. Corrections retain prior revisions and bookmarks resolve the stable logical ID to current visibility. If evidence is invalid or withdrawn, remove the old public/search claim immediately; recomputation may later publish a new qualified revision. Do not leave stale text searchable while waiting for a model.
+
+A material rule-family change can create a replacement logical event with explicit supersession; routine rule/evidence corrections use revisions. Never key the gust event by its changing winning timestamp. Different accepted measured, manual and visual events can overlap in time without being deduplicated into a false single observation. Shared evidence is referenced, not counted again in totals.
+
+Station-wide events use null camera scope and may link to all three cameras by UTC overlap. A cross-midnight event retains one identity with every intersected calendar day; crossing dawn/dusk adds eligible links to each nonoverlapping segment. Intersect source intervals and derive seek bounds through the authoritative map. Missing footage leaves a weather-only annotation or explicit unavailable navigation, not a fabricated video link or extra capture retention. A link is navigational context, not a claim that the camera visibly recorded the event.
+
+## Manual and AI boundaries
+
+Visual/synthesis events require validated supplied evidence, basis/origin and model/rule revision, with precision inherited from the actual supplied clip. Measured events continue without inference. Public automatic events require nonempty unique evidence IDs and nonempty unique calendar-day membership; schema shape cannot prove these IDs exist or cover the event. Manual annotations require authenticated operator authorization, reason and immutable audit/author revision; standalone manual observations may have no pre-existing instrument/model evidence but must be labeled manual. They cannot rewrite station measurements or become unedited AI output.
+
+Human overrides remain active across routine reruns on unchanged evidence, following the editorial contract. Changed evidence invalidates dependent public/search claims until deliberate reconciliation; retain the old human revision for review. Public event responses expose effective current revisions only. Private notes/favorites stay outside the public feed and search.
+
+## Feed and acceptance
+
+Use bounded cursor pagination ordered by source interval start then stable event ID, with revision/snapshot policy that prevents duplicate pages during concurrent updates. Preserve filters and canonical event links. Backfills and late observations can add older events without changing their source timestamps. UI bookmarks/day strips/feed all use the same effective entity. No outgoing notifications, webhook, extra event clip, public account or extended dense-source retention is introduced.
+
+Required cases: duplicate receivers/retries; two legitimate same-second events; unknown timing; zero/missing gusts; equal gust tie; late higher gust revising the same ID; DST calendar day; cross-midnight/civil-boundary overlap; one unavailable camera; changed evidence during generation; manual override with unchanged/changed evidence; withdrawal while indexing; pagination under updates; restored event revision with inference unavailable. Test interval-count versus event lightning authority and preserve integer totals. These are unexecuted runtime obligations; schema fixtures only reject missing/duplicate public evidence/day references and incorrect attribution.
