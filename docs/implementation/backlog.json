@@ -1896,11 +1896,11 @@
     "url": "https://github.com/jvallery/weather/issues/1"
   },
   "native_verification": {
-    "observed_at": "2026-10-23T20:53:30.689012Z",
+    "observed_at": "2026-10-23T21:08:53.201789Z",
     "verified_nodes": 46,
     "verified_external_prerequisites": 14,
     "verified_edges": 122,
-    "method": "Prior complete 119-edge readback plus complete WX-05/WX-11 sets for OWN-DB and complete WX-10 set for OWN-CAM, all exact IDs"
+    "method": "Complete fresh GitHub REST readback of all 46 blocked_by sets, 47 Weather issue identities/bodies and 14 external identities; exact issue-ID set equality"
   },
   "external_prerequisites": [
     {

@@ -2,7 +2,7 @@
 
 Requirements and implementation planning for **[weather.vallery.net](https://weather.vallery.net)**: a public weather history and timelapse service using three security cameras, direct Tempest UDP telemetry, CNPG, Garage, and local inference.
 
-**Status:** planning audit in progress under [WX-00 / issue #1](https://github.com/jvallery/weather/issues/1). All 46 implementation/follow-on issues are [filed](docs/implementation/backlog.md), and their 122 native prerequisite relationships (including the planning gate and 14 owner issues) have been read back and matched through the initial full snapshot and subsequent exact changed-edge checks. See the [adversarial audit](docs/research/adversarial-audit.md), [decision register](docs/decisions/implementation-register.md) and [traceability](docs/implementation/traceability.md). Material research and contract work remain; application implementation, cluster resources and CI/CD have not been built.
+**Status:** planning audit in progress under [WX-00 / issue #1](https://github.com/jvallery/weather/issues/1). All 46 implementation/follow-on issues are [filed](docs/implementation/backlog.md), and their 122 native prerequisite relationships (including the planning gate and 14 owner issues) have been read back and matched in a fresh complete graph audit. See the [adversarial audit](docs/research/adversarial-audit.md), [decision register](docs/decisions/implementation-register.md) and [traceability](docs/implementation/traceability.md). Material research and contract work remain; application implementation, cluster resources and CI/CD have not been built.
 
 ## Start here
 
@@ -28,7 +28,7 @@ Requirements and implementation planning for **[weather.vallery.net](https://wea
 - [Capture, chunk sealing and source-time assignment](docs/contracts/capture-contract.md), with [private capture schemas](docs/contracts/capture.schema.json).
 - [Private recovery candidates and verification receipts](docs/contracts/recovery-contract.md), with [recovery schemas](docs/contracts/recovery.schema.json), [canonical byte rules](docs/contracts/recovery-canonicalization.md), [golden vectors](docs/contracts/recovery-canonical-vectors.json) and a separate [recovery validation receipt](docs/contracts/recovery-validation-receipt.json).
 - [Private visual-model candidate schema](docs/contracts/visual-analysis.schema.json) and its [shape fixtures](docs/contracts/visual-analysis-fixtures.json); grounding remains a separate validation boundary.
-- [Production acceptance evidence matrix](docs/implementation/acceptance-matrix.md), [hash-bound contract validation](docs/contracts/validation-receipt.json), and [historical full dependency readback](docs/implementation/graph-verification.json) (later owner-edge checks are recorded in the current backlog).
+- [Production acceptance evidence matrix](docs/implementation/acceptance-matrix.md), [hash-bound contract validation](docs/contracts/validation-receipt.json), and [complete current dependency readback](docs/implementation/graph-verification.json).
 
 These are design contracts with mandatory implementation tests, not completed runtime qualification. The API/schema draft is published; remaining internal schemas, full contract coverage and design qualification are still in progress.
 

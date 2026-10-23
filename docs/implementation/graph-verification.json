@@ -1,13 +1,15 @@
 {
   "schema_version": 1,
-  "observed_at": "2026-10-23T20:39:25.856215Z",
-  "backlog_sha256": "5ee192d4ac8e13c058f8563d02cd1ce639079060dd67d7082eaa698fa6e6a3b1",
-  "source": "GitHub REST issue and blocked_by APIs, all 46 implementation issues and 12 external prerequisite identities",
-  "verified_native_edges": 119,
+  "observed_at": "2026-10-23T21:08:53.201789Z",
+  "backlog_sha256": "f7dd991ef779408565eb5c0d8d0786b8f0a40f1f1ead7c079ae8d2f90a5911bb",
+  "source": "GitHub REST issue and blocked_by APIs; complete Weather inventory and all external prerequisite identities",
+  "verified_native_edges": 122,
   "topological_order_valid": true,
   "required_initial_count": 42,
   "required_initial_in_release_closure": true,
   "follow_on_and_deferred_excluded": true,
+  "planning_root_transitively_blocks_all_implementation": true,
+  "weather_issue_inventory_exact": true,
   "issues": [
     {
       "key": "WX-01",
@@ -17,7 +19,11 @@
         "WX-00",
         "OWN-CI"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "58067bff13abc4c60d9188547fe60d6006edbf641ebafe3d1b103ee81de0d506",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-02",
@@ -27,7 +33,11 @@
         "WX-00",
         "OWN-CI"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "959e6cc2f9c89ae050152fdc71e02fc5c9f61e8850ab3b20a8389ee2b187c586",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-03",
@@ -37,7 +47,11 @@
         "WX-01",
         "OWN-NFS"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "10e91c70c549d1ce84da4a668980eaf8d0b3f5eddfde2170efdee11889d90e89",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-04",
@@ -48,16 +62,25 @@
         "OWN-UDP",
         "OWN-L2"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "b49dce07d432e381bd19f2f2cf48f30fe3d9db136a9c24f7ba961e25c0de17e0",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-05",
       "number": 6,
       "state": "open",
       "prerequisites": [
-        "WX-01"
+        "WX-01",
+        "OWN-DB"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "f07d81d68e18fd9da5705278fdb2ca46d7bbeb5cb9be5b7979bdb3a37087bfaf",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-06",
@@ -67,7 +90,11 @@
         "WX-01",
         "OWN-OBJECT"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "562550853c16a4d389868df3a2354405f56206d40490700343a5836ce9a7a446",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-07",
@@ -77,7 +104,11 @@
         "WX-06",
         "OWN-GATEWAY"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "fcb0c832f674acbd8c788efa9d14ed18962eb1c97990c7abdf271e682cf2a464",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-08",
@@ -87,7 +118,11 @@
         "WX-02",
         "WX-05"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "2b0f3a9f98886c4919614c6b4809d61db2c5a311a58ee89a5a0ee30d21d4efad",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-09",
@@ -96,7 +131,11 @@
       "prerequisites": [
         "WX-08"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "66e9b267a7852387a17651a83abf4138b0a75e63199bad9d9b11c72207202979",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-10",
@@ -104,9 +143,14 @@
       "state": "open",
       "prerequisites": [
         "WX-03",
-        "WX-09"
+        "WX-09",
+        "OWN-CAM"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "1ec0076d5e91f8323ab442c9a84e4e9e448d90b0fd4b3cf30de443859caed552",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-11",
@@ -114,9 +158,14 @@
       "state": "open",
       "prerequisites": [
         "WX-04",
-        "WX-08"
+        "WX-08",
+        "OWN-DB"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "8d88f5ee9fd3195071ed77cd53d12655172ab80c323fcf52ab160518c5e63316",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-12",
@@ -125,7 +174,11 @@
       "prerequisites": [
         "WX-11"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "0b1064414d263a19e2d8dfd0e9a24085af21151cff7657d1773296d6b6bb1960",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-13",
@@ -134,7 +187,11 @@
       "prerequisites": [
         "WX-12"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "d25be3303824dd5f23d9ebde53130d8fb7531a59e76def4608b228f227f90cd6",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-14",
@@ -143,7 +200,11 @@
       "prerequisites": [
         "WX-10"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "6497155172b06a37421402cad7fa690edec803777275968a80635fe1e7a1d578",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-15",
@@ -153,7 +214,11 @@
         "WX-14",
         "OWN-GPU"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "28fafa7c7ebcaae35e007d531411b0cb83ac64b9e636123faeb0ffd7671cafae",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-16",
@@ -162,7 +227,11 @@
       "prerequisites": [
         "WX-14"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "3c66bf405b57d6866afe8accbeb285bf8dd59af71687b367929e28962add5175",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-17",
@@ -172,7 +241,11 @@
         "WX-07",
         "WX-08"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "c7171a114496c2b4d0bfc888101ef2fde7045761460042b34c746ced00f1d849",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-18",
@@ -185,7 +258,11 @@
         "WX-36",
         "WX-37"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "7598cfdb54feda9d99cffb884983e1b3e6b90b15196fa2ae73f8a0bf9cc9a084",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-19",
@@ -196,7 +273,11 @@
         "WX-17",
         "OWN-EDGE"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "a78e71c220133a2c51b39a77047b86f78ada50278d7e05159855ba62bb20d99e",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-20",
@@ -206,7 +287,11 @@
         "WX-13",
         "WX-19"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "e1fbb7f28540a963d9acd74918d7450262e4c15c14fbaa6e2ed04f93458db1a8",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-21",
@@ -216,7 +301,11 @@
         "WX-17",
         "OWN-MODELS"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "d2efc74da402e57723f1823c81ac60ae8ef9dcae3a6c6168ab1977a1d8dd5977",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-22",
@@ -226,7 +315,11 @@
         "WX-13",
         "WX-21"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "4a930612a40c3abb3222b9170dcb434a3ed436cad393abd467db4b6ba69c2a1a",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-23",
@@ -236,7 +329,11 @@
         "WX-08",
         "OWN-MODELS"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "c2abd59639295fc67d7c376d3f383b983d7163681b45d0fb620e089e890b0fda",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-24",
@@ -246,7 +343,11 @@
         "WX-17",
         "WX-23"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "2da1033e1a8ce18b5ded67ef435ef46c292d8be888dfb674abfef192b9e0b6d3",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-25",
@@ -256,7 +357,11 @@
         "WX-24",
         "WX-42"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "66ca0ae82cbd5e0f0ce01f8e0e7e71991f0da66cb5b94b2ef4124e7f6f206ed0",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-26",
@@ -266,7 +371,11 @@
         "WX-20",
         "WX-25"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "2d65e4fb52f5898f51fe69e5161a92b794c0be34678bec9d50e48e2f842dd19c",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-27",
@@ -275,7 +384,11 @@
       "prerequisites": [
         "WX-19"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "f76a37fae1f0ea2b7a1808ca7f16bcded74d79f9756fa43eb6a916efe13a132d",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-28",
@@ -285,7 +398,11 @@
         "WX-05",
         "WX-07"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "28aaa09edeefb2f5dd6eaa2b69c7d643c547b0a48e459d181ea5efc7c9af8311",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-29",
@@ -295,7 +412,11 @@
         "WX-28",
         "OWN-CUSTODY"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "9f947d26df1d319eeb42002a2c654e3a164831750f70af8c904a5b22e996d824",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-30",
@@ -307,7 +428,11 @@
         "WX-36",
         "WX-37"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "b1c4fceab0e9ac3aeeb1e2aab4a4bf65b39254f43eff831e5cb9cf004e7af750",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-31",
@@ -321,7 +446,11 @@
         "WX-38",
         "OWN-OBS"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "c4ce278e1416a0950e1b74b0db91457ff753355ea41906c45f121b8a4fcfa398",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-32",
@@ -338,7 +467,11 @@
         "WX-41",
         "WX-43"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "ee796b84dec0970719c9553197f40d2cac45cd4d0b28ddac370c9e167e53949b",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-33",
@@ -363,7 +496,11 @@
         "WX-44",
         "WX-16"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "f56656985d8d110d80fdbd574410400593ceed2781bbaeaf03b8ee80ed04637c",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-34",
@@ -373,7 +510,11 @@
         "WX-32",
         "WX-33"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "bfc319f7bed20b5b2c0b7136ffe115dd1e1b1b7ebbcfd1363a2e1d6e486774ce",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-35",
@@ -384,7 +525,11 @@
         "WX-33",
         "WX-34"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "29cf51d0c6f5d2ce15f5cd824ccab6c2c59f641d4a2194619f6dce0374099a70",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-36",
@@ -394,7 +539,11 @@
         "WX-10",
         "WX-17"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "b6e531dcb50d9cd93221bd88f174046f785cfca61e1a4a0f1d38439806537bd2",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-37",
@@ -404,7 +553,11 @@
         "WX-10",
         "WX-17"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "baec7891b5f7dc935ab78a26e0b62e49866ff1a4f97fb8bef133d6c6a4d610f4",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-38",
@@ -414,7 +567,11 @@
         "WX-10",
         "WX-19"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "84887c5cae1ffcaee6cbc3c2daabba88dc9fa35f816f6bcdd879fd8de8ebd93b",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-39",
@@ -424,7 +581,11 @@
         "WX-20",
         "WX-36"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "9b9d793392c08d3bf2a3386d7310740b625006c81529d1bd06124e01e45a07f7",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-40",
@@ -434,7 +595,11 @@
         "WX-13",
         "WX-20"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "73e915ee2b2c7d5e2c168f51d91709d813c12c8777575155d85569ac0e84cfd1",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-41",
@@ -444,7 +609,11 @@
         "WX-13",
         "WX-20"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "c1022e559098e1ba8f3e74d3625f357dc824da3f7b168d34dd96060b17cb01f6",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-42",
@@ -454,7 +623,11 @@
         "WX-08",
         "WX-13"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "6fa7995dd3b9da2eb993e0b273e3bea4fda981c4f3a98d4fe5dd8bbf11a606a0",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-43",
@@ -465,7 +638,11 @@
         "WX-24",
         "WX-37"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "a9d640a5f9c9a996444fb6387106fc7b029f875f0cfa3f0a8cf296ea78c70c1e",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-44",
@@ -476,7 +653,11 @@
         "WX-38",
         "OWN-EMBED"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "795ede08627fca99c71d2f3863f925dbfaf519b374e276e306cebd0b9f342d24",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-45",
@@ -485,7 +666,11 @@
       "prerequisites": [
         "WX-35"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "81d54c4660486344406e97952c0bec7033b531fbd2b710ac4fd26e67446ad1b2",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     },
     {
       "key": "WX-46",
@@ -494,73 +679,125 @@
       "prerequisites": [
         "WX-35"
       ],
-      "exact_id_match": true
+      "exact_id_match": true,
+      "body_sha256": "9f58543f52be6c20ab5ddc1219ce1d75a1569e58d4c1daf3f8cfbd7fbcd594e3",
+      "required_requirement_ids_present": true,
+      "required_body_sections_present": true,
+      "mapped_standard_ids_present": true
     }
   ],
   "external_prerequisites": [
     {
       "key": "OWN-CI",
+      "repository": "jvallery/agents",
+      "number": 5366,
       "state": "open",
-      "id_match": true
+      "exact_id_match": true
     },
     {
       "key": "OWN-NFS",
+      "repository": "jvallery/storage-infra",
+      "number": 1106,
       "state": "open",
-      "id_match": true
+      "exact_id_match": true
     },
     {
       "key": "OWN-OBJECT",
+      "repository": "jvallery/storage-infra",
+      "number": 1107,
       "state": "open",
-      "id_match": true
+      "exact_id_match": true
     },
     {
       "key": "OWN-GATEWAY",
+      "repository": "jvallery/storage-infra",
+      "number": 1108,
       "state": "open",
-      "id_match": true
+      "exact_id_match": true
     },
     {
       "key": "OWN-CUSTODY",
+      "repository": "jvallery/storage-infra",
+      "number": 1109,
       "state": "open",
-      "id_match": true
+      "exact_id_match": true
     },
     {
       "key": "OWN-UDP",
+      "repository": "jvallery/network-infra",
+      "number": 774,
       "state": "open",
-      "id_match": true
+      "exact_id_match": true
     },
     {
       "key": "OWN-EDGE",
+      "repository": "jvallery/network-infra",
+      "number": 775,
       "state": "open",
-      "id_match": true
+      "exact_id_match": true
     },
     {
       "key": "OWN-MODELS",
+      "repository": "jvallery/cortex-ai-compute",
+      "number": 402,
       "state": "open",
-      "id_match": true
+      "exact_id_match": true
     },
     {
       "key": "OWN-GPU",
+      "repository": "jvallery/cortex-ai-compute",
+      "number": 403,
       "state": "open",
-      "id_match": true
+      "exact_id_match": true
     },
     {
       "key": "OWN-OBS",
+      "repository": "jvallery/monitoring-stack",
+      "number": 1072,
       "state": "open",
-      "id_match": true
+      "exact_id_match": true
     },
     {
       "key": "OWN-EMBED",
+      "repository": "VerdifyConsultancy/wordpress",
+      "number": 242,
       "state": "open",
-      "id_match": true
+      "exact_id_match": true
     },
     {
       "key": "OWN-L2",
+      "repository": "jvallery/agents",
+      "number": 5368,
       "state": "open",
-      "id_match": true
+      "exact_id_match": true
+    },
+    {
+      "key": "OWN-DB",
+      "repository": "jvallery/storage-infra",
+      "number": 1112,
+      "state": "open",
+      "exact_id_match": true
+    },
+    {
+      "key": "OWN-CAM",
+      "repository": "jvallery/sentinel",
+      "number": 550,
+      "state": "open",
+      "exact_id_match": true
     }
   ],
-  "limits": [
-    "Exact graph/identity/state verification is not body completeness, platform admission or production acceptance.",
-    "Open owner issues do not prove their prerequisites exist; closed issues would still require evidence readback."
-  ]
+  "structural_body_findings": [],
+  "limitations": [
+    "Requirement ID mentions and section presence are structural checks, not clause-level design/acceptance coverage",
+    "Open owner issues do not establish admission",
+    "This graph receipt does not authorize application implementation or close WX-00"
+  ],
+  "body_section_checks": [
+    "Outcome and motivation",
+    "Implementation approach and contracts",
+    "Acceptance and validation",
+    "Prerequisites and readiness",
+    "Operations, rollout and rollback"
+  ],
+  "standards_check": "Applicable estate standards heading and every mapped standard ID required only for issues assigned standards in standards-mapping.json"
 }
