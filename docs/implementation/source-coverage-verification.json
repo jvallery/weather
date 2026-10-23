@@ -1,0 +1,992 @@
+{
+  "observed_at": "2026-10-23T22:41:17.417633+00:00",
+  "method": "For each nonblank, nonheading source line in sections 1-20, collapse whitespace and find identical text in concatenated retained source blocks/clauses or the acceptance-matrix source. This is lexical preservation, not a semantic entailment test.",
+  "scope": "Requirements sections 1-20; front metadata and contents navigation excluded",
+  "requirements_sha256": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+  "artifact_sha256": {
+    "analysis-clause-audit.json": "904b73d6a493732d0aade15d75e58b0d455030af56c929762b0460bc79b6b7bf",
+    "capture-clause-audit.json": "574dec5b57aa6b77ff857ebc0d9cc2da274bd6cb9b4dd3a375d440ccc6f099bd",
+    "contracts-clause-audit.json": "d442582bb790300d35ec78bec0e2e3bb08c4356783dee28c91791061f0f65170",
+    "delivery-clause-audit.json": "b4309743eed8d8b7f245173211f8552bd2bc04490c215420d16c9f44184ce463",
+    "evidence-clause-audit.json": "22579632ae7d3e56f37dbfd58601c25c325cd8323c34c00985fdbf43e95bcdc0",
+    "foundation-clause-audit.json": "b555bd2e1851d9126ee2ec169cd3f5b281ada68e775d7e97a57195dd06c3f023",
+    "history-clause-audit.json": "77713f44256224c492c317884c86e7043dda09b08fb50d95fc6d0d8232eb5924",
+    "media-clause-audit.json": "8e8eb3f5fb7985140075655649ae589939a79559e4d3682bca8099a3fece0c15",
+    "plan-clause-audit.json": "8f3bb3b2b04173c555707a1afbcf21d8dae70368b1bf0de844cc35f9e1911a29",
+    "recovery-clause-audit.json": "a5a97a274fd847d9b44f3bdadfea26efdf5889862a0362919eb60dbfb70c29e1",
+    "search-clause-audit.json": "c56fb5d08af01987e8d58317cb950a4b17fbc3eff8016a6a72c37f910a62dc12",
+    "storage-clause-audit.json": "1bd22b05eb2e681c60074b8baca83cc3a9d3acb0bf596f4e844090967b18ef64",
+    "time-clause-audit.json": "ac26d53307967574e0897be4861b985b55a755c47faf34271f688b65b0dd08eb",
+    "ui-clause-audit.json": "99d1fc848af1bc623550ab0b6bdfe5d13b9d5e3135088044b3001990dced09b4",
+    "web-clause-audit.json": "34e57283f780b474f684fcb50d6f3fa1fdb188825e0ec99a54131ab6058a9ce9",
+    "acceptance-matrix.json": "ded552dd2abaab5d67bdaa0e517852d80150524f016b90794da690a52655a88b"
+  },
+  "source_line_count": 1045,
+  "unmapped_line_numbers": [],
+  "sections": {
+    "1. Purpose, authority, and fixed requirements": {
+      "source_line_count": 5,
+      "matched_line_count": 5,
+      "artifacts": [
+        "foundation-clause-audit.json"
+      ]
+    },
+    "1.1 Amendments that supersede earlier versions": {
+      "source_line_count": 17,
+      "matched_line_count": 17,
+      "artifacts": [
+        "acceptance-matrix.json",
+        "capture-clause-audit.json",
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "history-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "recovery-clause-audit.json",
+        "storage-clause-audit.json",
+        "web-clause-audit.json"
+      ]
+    },
+    "1.2 Requirements register": {
+      "source_line_count": 41,
+      "matched_line_count": 41,
+      "artifacts": [
+        "acceptance-matrix.json",
+        "capture-clause-audit.json",
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "history-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "recovery-clause-audit.json",
+        "storage-clause-audit.json",
+        "web-clause-audit.json"
+      ]
+    },
+    "1.3 Scope boundaries": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "foundation-clause-audit.json"
+      ]
+    },
+    "2.1 Required working sequence": {
+      "source_line_count": 8,
+      "matched_line_count": 8,
+      "artifacts": [
+        "foundation-clause-audit.json"
+      ]
+    },
+    "2.2 Decision register": {
+      "source_line_count": 19,
+      "matched_line_count": 19,
+      "artifacts": [
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json"
+      ]
+    },
+    "2.3 Required research artifacts": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "foundation-clause-audit.json"
+      ]
+    },
+    "2.4 Useful reference findings to revalidate": {
+      "source_line_count": 6,
+      "matched_line_count": 6,
+      "artifacts": [
+        "foundation-clause-audit.json"
+      ]
+    },
+    "3. System architecture and service boundaries": {
+      "source_line_count": 26,
+      "matched_line_count": 26,
+      "artifacts": [
+        "analysis-clause-audit.json",
+        "capture-clause-audit.json",
+        "contracts-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "search-clause-audit.json",
+        "storage-clause-audit.json",
+        "time-clause-audit.json"
+      ]
+    },
+    "3.1 Required responsibilities": {
+      "source_line_count": 13,
+      "matched_line_count": 13,
+      "artifacts": [
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json"
+      ]
+    },
+    "3.2 Scheduling and job durability": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "foundation-clause-audit.json"
+      ]
+    },
+    "3.3 Reconciliation": {
+      "source_line_count": 2,
+      "matched_line_count": 2,
+      "artifacts": [
+        "foundation-clause-audit.json"
+      ]
+    },
+    "4.1 Camera isolation": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "foundation-clause-audit.json"
+      ]
+    },
+    "4.2 Other service policies": {
+      "source_line_count": 2,
+      "matched_line_count": 2,
+      "artifacts": [
+        "foundation-clause-audit.json"
+      ]
+    },
+    "4.3 Public delivery boundary": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "foundation-clause-audit.json"
+      ]
+    },
+    "5.1 Calendar and site configuration": {
+      "source_line_count": 15,
+      "matched_line_count": 15,
+      "artifacts": [
+        "analysis-clause-audit.json",
+        "capture-clause-audit.json",
+        "contracts-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "search-clause-audit.json",
+        "storage-clause-audit.json",
+        "time-clause-audit.json"
+      ]
+    },
+    "5.2 Date and publication semantics": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "time-clause-audit.json"
+      ]
+    },
+    "5.3 Two-minute allocation": {
+      "source_line_count": 22,
+      "matched_line_count": 22,
+      "artifacts": [
+        "analysis-clause-audit.json",
+        "capture-clause-audit.json",
+        "contracts-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "search-clause-audit.json",
+        "storage-clause-audit.json",
+        "time-clause-audit.json"
+      ]
+    },
+    "5.4 Boundary ownership and uncertainty": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "time-clause-audit.json"
+      ]
+    },
+    "5.5 Calendar days, hourly slots and cross-product time identity": {
+      "source_line_count": 4,
+      "matched_line_count": 4,
+      "artifacts": [
+        "time-clause-audit.json"
+      ]
+    },
+    "6.1 Camera adapter and native geometry": {
+      "source_line_count": 9,
+      "matched_line_count": 9,
+      "artifacts": [
+        "analysis-clause-audit.json",
+        "capture-clause-audit.json",
+        "contracts-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "search-clause-audit.json",
+        "storage-clause-audit.json",
+        "time-clause-audit.json"
+      ]
+    },
+    "6.2 Capture loop": {
+      "source_line_count": 9,
+      "matched_line_count": 9,
+      "artifacts": [
+        "capture-clause-audit.json"
+      ]
+    },
+    "6.3 Cadence commissioning": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "capture-clause-audit.json"
+      ]
+    },
+    "6.4 Timestamp and freshness contract": {
+      "source_line_count": 13,
+      "matched_line_count": 13,
+      "artifacts": [
+        "acceptance-matrix.json",
+        "capture-clause-audit.json",
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "history-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "recovery-clause-audit.json",
+        "storage-clause-audit.json",
+        "web-clause-audit.json"
+      ]
+    },
+    "6.5 Snapshot packaging and crash recovery": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "capture-clause-audit.json"
+      ]
+    },
+    "6.6 Segment sealing": {
+      "source_line_count": 2,
+      "matched_line_count": 2,
+      "artifacts": [
+        "capture-clause-audit.json"
+      ]
+    },
+    "6.7 Required Obsidian NFS staging and writer fencing": {
+      "source_line_count": 4,
+      "matched_line_count": 4,
+      "artifacts": [
+        "capture-clause-audit.json"
+      ]
+    },
+    "6.8 Write rate, capacity, and backpressure": {
+      "source_line_count": 19,
+      "matched_line_count": 19,
+      "artifacts": [
+        "analysis-clause-audit.json",
+        "capture-clause-audit.json",
+        "contracts-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "search-clause-audit.json",
+        "storage-clause-audit.json",
+        "time-clause-audit.json"
+      ]
+    },
+    "6.9 Raw cleanup contract": {
+      "source_line_count": 5,
+      "matched_line_count": 5,
+      "artifacts": [
+        "capture-clause-audit.json"
+      ]
+    },
+    "6.10 Sparse hourly-original archive": {
+      "source_line_count": 7,
+      "matched_line_count": 7,
+      "artifacts": [
+        "capture-clause-audit.json"
+      ]
+    },
+    "6.11 Delayed current camera previews": {
+      "source_line_count": 5,
+      "matched_line_count": 5,
+      "artifacts": [
+        "capture-clause-audit.json"
+      ]
+    },
+    "7.1 What smoothness means": {
+      "source_line_count": 2,
+      "matched_line_count": 2,
+      "artifacts": [
+        "media-clause-audit.json"
+      ]
+    },
+    "7.2 Temporal construction": {
+      "source_line_count": 8,
+      "matched_line_count": 8,
+      "artifacts": [
+        "analysis-clause-audit.json",
+        "capture-clause-audit.json",
+        "contracts-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "search-clause-audit.json",
+        "storage-clause-audit.json",
+        "time-clause-audit.json"
+      ]
+    },
+    "7.3 Processing profiles": {
+      "source_line_count": 9,
+      "matched_line_count": 9,
+      "artifacts": [
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json"
+      ]
+    },
+    "7.4 FFmpeg features and limits": {
+      "source_line_count": 16,
+      "matched_line_count": 16,
+      "artifacts": [
+        "acceptance-matrix.json",
+        "capture-clause-audit.json",
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "history-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "recovery-clause-audit.json",
+        "storage-clause-audit.json",
+        "web-clause-audit.json"
+      ]
+    },
+    "7.5 Geometry, exposure, gaps, and overlays": {
+      "source_line_count": 5,
+      "matched_line_count": 5,
+      "artifacts": [
+        "media-clause-audit.json"
+      ]
+    },
+    "7.6 Rendition contract": {
+      "source_line_count": 12,
+      "matched_line_count": 12,
+      "artifacts": [
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json"
+      ]
+    },
+    "7.7 Validation before publication": {
+      "source_line_count": 2,
+      "matched_line_count": 2,
+      "artifacts": [
+        "media-clause-audit.json"
+      ]
+    },
+    "7.8 Keograms for every camera and segment": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "media-clause-audit.json"
+      ]
+    },
+    "7.9 Deferred combined east/west skycam product": {
+      "source_line_count": 2,
+      "matched_line_count": 2,
+      "artifacts": [
+        "media-clause-audit.json"
+      ]
+    },
+    "8.1 Required inventory and decision": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "media-clause-audit.json"
+      ]
+    },
+    "8.2 Stages to evaluate independently": {
+      "source_line_count": 10,
+      "matched_line_count": 10,
+      "artifacts": [
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json"
+      ]
+    },
+    "8.3 Qualification and admission": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "media-clause-audit.json"
+      ]
+    },
+    "9.1 Reference design and network path": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "history-clause-audit.json"
+      ]
+    },
+    "9.2 Preserve all received data": {
+      "source_line_count": 11,
+      "matched_line_count": 11,
+      "artifacts": [
+        "acceptance-matrix.json",
+        "capture-clause-audit.json",
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "history-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "recovery-clause-audit.json",
+        "storage-clause-audit.json",
+        "web-clause-audit.json"
+      ]
+    },
+    "9.3 Receipt identity, replay and durable buffering": {
+      "source_line_count": 4,
+      "matched_line_count": 4,
+      "artifacts": [
+        "history-clause-audit.json"
+      ]
+    },
+    "9.4 Rate and coverage model": {
+      "source_line_count": 2,
+      "matched_line_count": 2,
+      "artifacts": [
+        "history-clause-audit.json"
+      ]
+    },
+    "10.1 Database deployment and availability": {
+      "source_line_count": 4,
+      "matched_line_count": 4,
+      "artifacts": [
+        "history-clause-audit.json"
+      ]
+    },
+    "10.2 Time-series choice and retention": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "history-clause-audit.json"
+      ]
+    },
+    "10.3 Conceptual data model": {
+      "source_line_count": 24,
+      "matched_line_count": 24,
+      "artifacts": [
+        "acceptance-matrix.json",
+        "capture-clause-audit.json",
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "history-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "recovery-clause-audit.json",
+        "storage-clause-audit.json",
+        "web-clause-audit.json"
+      ]
+    },
+    "10.4 Current conditions and historical query API": {
+      "source_line_count": 5,
+      "matched_line_count": 5,
+      "artifacts": [
+        "history-clause-audit.json"
+      ]
+    },
+    "10.5 Deterministic per-video weather summaries": {
+      "source_line_count": 12,
+      "matched_line_count": 12,
+      "artifacts": [
+        "acceptance-matrix.json",
+        "capture-clause-audit.json",
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "history-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "recovery-clause-audit.json",
+        "storage-clause-audit.json",
+        "web-clause-audit.json"
+      ]
+    },
+    "10.6 Local almanac and comparisons": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "history-clause-audit.json"
+      ]
+    },
+    "10.7 Weather event annotations and in-site feed": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "history-clause-audit.json"
+      ]
+    },
+    "11.1 One isolated bucket and an explicit tier decision": {
+      "source_line_count": 4,
+      "matched_line_count": 4,
+      "artifacts": [
+        "storage-clause-audit.json"
+      ]
+    },
+    "11.2 Keys, prefixes, and the required enforcing boundary": {
+      "source_line_count": 30,
+      "matched_line_count": 30,
+      "artifacts": [
+        "acceptance-matrix.json",
+        "analysis-clause-audit.json",
+        "capture-clause-audit.json",
+        "contracts-clause-audit.json",
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "history-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "recovery-clause-audit.json",
+        "search-clause-audit.json",
+        "storage-clause-audit.json",
+        "time-clause-audit.json",
+        "web-clause-audit.json"
+      ]
+    },
+    "11.3 Local durability and immutable publication": {
+      "source_line_count": 10,
+      "matched_line_count": 10,
+      "artifacts": [
+        "storage-clause-audit.json"
+      ]
+    },
+    "11.4 Posters and retention": {
+      "source_line_count": 5,
+      "matched_line_count": 5,
+      "artifacts": [
+        "storage-clause-audit.json"
+      ]
+    },
+    "12.1 Framework decision and visual design": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "web-clause-audit.json"
+      ]
+    },
+    "12.2 Required routes and experiences": {
+      "source_line_count": 22,
+      "matched_line_count": 22,
+      "artifacts": [
+        "acceptance-matrix.json",
+        "capture-clause-audit.json",
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "history-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "recovery-clause-audit.json",
+        "storage-clause-audit.json",
+        "web-clause-audit.json"
+      ]
+    },
+    "12.3 Playback and downloads": {
+      "source_line_count": 4,
+      "matched_line_count": 4,
+      "artifacts": [
+        "web-clause-audit.json"
+      ]
+    },
+    "12.4 Caching and Cloudflare qualification": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "web-clause-audit.json"
+      ]
+    },
+    "12.5 Accessibility and frontend security": {
+      "source_line_count": 2,
+      "matched_line_count": 2,
+      "artifacts": [
+        "web-clause-audit.json"
+      ]
+    },
+    "12.6 Linked video and measured-weather plots": {
+      "source_line_count": 2,
+      "matched_line_count": 2,
+      "artifacts": [
+        "ui-clause-audit.json"
+      ]
+    },
+    "12.7 Private editorial controls and automatic publication": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "ui-clause-audit.json"
+      ]
+    },
+    "12.8 Embeddable weather card": {
+      "source_line_count": 2,
+      "matched_line_count": 2,
+      "artifacts": [
+        "ui-clause-audit.json"
+      ]
+    },
+    "13.1 Use the actual local route and qualify video": {
+      "source_line_count": 10,
+      "matched_line_count": 10,
+      "artifacts": [
+        "analysis-clause-audit.json"
+      ]
+    },
+    "13.2 Analyze completed video in bounded windows": {
+      "source_line_count": 14,
+      "matched_line_count": 14,
+      "artifacts": [
+        "analysis-clause-audit.json",
+        "capture-clause-audit.json",
+        "contracts-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "search-clause-audit.json",
+        "storage-clause-audit.json",
+        "time-clause-audit.json"
+      ]
+    },
+    "13.3 Three-stage reasoning process": {
+      "source_line_count": 4,
+      "matched_line_count": 4,
+      "artifacts": [
+        "analysis-clause-audit.json"
+      ]
+    },
+    "13.4 Exact visual system prompt template": {
+      "source_line_count": 35,
+      "matched_line_count": 35,
+      "artifacts": [
+        "analysis-clause-audit.json",
+        "capture-clause-audit.json",
+        "contracts-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "search-clause-audit.json",
+        "storage-clause-audit.json",
+        "time-clause-audit.json"
+      ]
+    },
+    "13.5 Structured visual result": {
+      "source_line_count": 21,
+      "matched_line_count": 21,
+      "artifacts": [
+        "analysis-clause-audit.json",
+        "capture-clause-audit.json",
+        "contracts-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "search-clause-audit.json",
+        "storage-clause-audit.json",
+        "time-clause-audit.json"
+      ]
+    },
+    "13.6 Exact synthesis system prompt template": {
+      "source_line_count": 28,
+      "matched_line_count": 28,
+      "artifacts": [
+        "analysis-clause-audit.json",
+        "capture-clause-audit.json",
+        "contracts-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "search-clause-audit.json",
+        "storage-clause-audit.json",
+        "time-clause-audit.json"
+      ]
+    },
+    "13.7 Request controls, validation, and failure behavior": {
+      "source_line_count": 7,
+      "matched_line_count": 7,
+      "artifacts": [
+        "analysis-clause-audit.json"
+      ]
+    },
+    "14.1 Required behavior and embedding contract": {
+      "source_line_count": 9,
+      "matched_line_count": 9,
+      "artifacts": [
+        "analysis-clause-audit.json",
+        "capture-clause-audit.json",
+        "contracts-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "search-clause-audit.json",
+        "storage-clause-audit.json",
+        "time-clause-audit.json"
+      ]
+    },
+    "14.2 Search documents and versioning": {
+      "source_line_count": 13,
+      "matched_line_count": 13,
+      "artifacts": [
+        "analysis-clause-audit.json",
+        "capture-clause-audit.json",
+        "contracts-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "search-clause-audit.json",
+        "storage-clause-audit.json",
+        "time-clause-audit.json"
+      ]
+    },
+    "14.3 pgvector representation and index decision": {
+      "source_line_count": 15,
+      "matched_line_count": 15,
+      "artifacts": [
+        "analysis-clause-audit.json",
+        "capture-clause-audit.json",
+        "contracts-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "search-clause-audit.json",
+        "storage-clause-audit.json",
+        "time-clause-audit.json"
+      ]
+    },
+    "14.4 Public query and failure contract": {
+      "source_line_count": 4,
+      "matched_line_count": 4,
+      "artifacts": [
+        "search-clause-audit.json"
+      ]
+    },
+    "14.5 Measured-weather search predicates": {
+      "source_line_count": 4,
+      "matched_line_count": 4,
+      "artifacts": [
+        "search-clause-audit.json"
+      ]
+    },
+    "15.1 Required backup path": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "recovery-clause-audit.json"
+      ]
+    },
+    "15.2 Central custody enrollment": {
+      "source_line_count": 5,
+      "matched_line_count": 5,
+      "artifacts": [
+        "recovery-clause-audit.json"
+      ]
+    },
+    "15.3 Joint database/media recovery checkpoint": {
+      "source_line_count": 10,
+      "matched_line_count": 10,
+      "artifacts": [
+        "recovery-clause-audit.json"
+      ]
+    },
+    "15.4 Retention, credentials, and recovery independence": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "recovery-clause-audit.json"
+      ]
+    },
+    "15.5 Objectives and acceptance exercise": {
+      "source_line_count": 4,
+      "matched_line_count": 4,
+      "artifacts": [
+        "recovery-clause-audit.json"
+      ]
+    },
+    "15.6 Failure-domain contract": {
+      "source_line_count": 10,
+      "matched_line_count": 10,
+      "artifacts": [
+        "acceptance-matrix.json",
+        "capture-clause-audit.json",
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "history-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "recovery-clause-audit.json",
+        "storage-clause-audit.json",
+        "web-clause-audit.json"
+      ]
+    },
+    "16.1 Repository and ownership contract": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "delivery-clause-audit.json"
+      ]
+    },
+    "16.2 Pipeline requirements": {
+      "source_line_count": 4,
+      "matched_line_count": 4,
+      "artifacts": [
+        "delivery-clause-audit.json"
+      ]
+    },
+    "16.3 Configuration and documentation": {
+      "source_line_count": 2,
+      "matched_line_count": 2,
+      "artifacts": [
+        "delivery-clause-audit.json"
+      ]
+    },
+    "17. Data and configuration contracts for implementation": {
+      "source_line_count": 1,
+      "matched_line_count": 1,
+      "artifacts": [
+        "contracts-clause-audit.json"
+      ]
+    },
+    "17.1 Required configuration categories": {
+      "source_line_count": 90,
+      "matched_line_count": 90,
+      "artifacts": [
+        "analysis-clause-audit.json",
+        "capture-clause-audit.json",
+        "contracts-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "search-clause-audit.json",
+        "storage-clause-audit.json",
+        "time-clause-audit.json"
+      ]
+    },
+    "17.2 Video sidecar contract": {
+      "source_line_count": 12,
+      "matched_line_count": 12,
+      "artifacts": [
+        "contracts-clause-audit.json"
+      ]
+    },
+    "17.3 Current/history and search response contracts": {
+      "source_line_count": 2,
+      "matched_line_count": 2,
+      "artifacts": [
+        "contracts-clause-audit.json"
+      ]
+    },
+    "17.4 Image, event, almanac and editorial contracts": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "contracts-clause-audit.json"
+      ]
+    },
+    "18.1 Targets to finalize in Phase 1": {
+      "source_line_count": 4,
+      "matched_line_count": 4,
+      "artifacts": [
+        "delivery-clause-audit.json"
+      ]
+    },
+    "18.2 Required acceptance matrix": {
+      "source_line_count": 23,
+      "matched_line_count": 23,
+      "artifacts": [
+        "acceptance-matrix.json",
+        "capture-clause-audit.json",
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "history-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "recovery-clause-audit.json",
+        "storage-clause-audit.json",
+        "web-clause-audit.json"
+      ]
+    },
+    "19.1 First-pass filing requirements": {
+      "source_line_count": 9,
+      "matched_line_count": 9,
+      "artifacts": [
+        "plan-clause-audit.json"
+      ]
+    },
+    "19.2 Candidate catalog": {
+      "source_line_count": 51,
+      "matched_line_count": 51,
+      "artifacts": [
+        "plan-clause-audit.json"
+      ]
+    },
+    "19.3 Graph contract and readable views": {
+      "source_line_count": 34,
+      "matched_line_count": 34,
+      "artifacts": [
+        "analysis-clause-audit.json",
+        "capture-clause-audit.json",
+        "contracts-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "search-clause-audit.json",
+        "storage-clause-audit.json",
+        "time-clause-audit.json"
+      ]
+    },
+    "19.4 Definition of done for Codex's first pass": {
+      "source_line_count": 3,
+      "matched_line_count": 3,
+      "artifacts": [
+        "plan-clause-audit.json"
+      ]
+    },
+    "20. Research sources and evidence handling": {
+      "source_line_count": 2,
+      "matched_line_count": 2,
+      "artifacts": [
+        "evidence-clause-audit.json"
+      ]
+    },
+    "20.1 Selected implementation references, without an application fork": {
+      "source_line_count": 17,
+      "matched_line_count": 17,
+      "artifacts": [
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json"
+      ]
+    },
+    "20.2 Platform and protocol primary sources": {
+      "source_line_count": 67,
+      "matched_line_count": 67,
+      "artifacts": [
+        "acceptance-matrix.json",
+        "capture-clause-audit.json",
+        "evidence-clause-audit.json",
+        "foundation-clause-audit.json",
+        "history-clause-audit.json",
+        "media-clause-audit.json",
+        "plan-clause-audit.json",
+        "recovery-clause-audit.json",
+        "storage-clause-audit.json",
+        "web-clause-audit.json"
+      ]
+    }
+  },
+  "limits": [
+    "Repeated text may match more than one ledger; this does not establish unique producer ownership",
+    "Whitespace normalization does not validate executable example semantics",
+    "Preserved claims/URLs are not fresh external verification",
+    "Material design gaps and final semantic issue-body review remain incomplete",
+    "No runtime acceptance or goal completion"
+  ]
+}

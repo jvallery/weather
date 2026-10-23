@@ -182,3 +182,7 @@ The [section 19 audit](../implementation/plan-clause-audit.md) records why 12 se
 ## Foundational scope and role boundaries
 
 The [sections 1–4 audit](../implementation/foundation-clause-audit.md) preserves all R01–R38 and D01–D16 rows plus the complete role/security design. It distinguishes selected feasible interfaces with future implementation tests from unresolved material architecture. Collector camera-only pod policy, node/CSI NFS access, separate UDP workload authority and public/private/backup identities remain distinct acceptance surfaces. No deployed isolation or new admission is inferred from graph or schema coverage.
+
+## Evidence handling and complete source-text preservation
+
+The [section 20 audit](../implementation/evidence-clause-audit.md) preserves 13 implementation-reference rows, all 50 primary-source definitions and private/public evidence rules, under the accepted MIT/selective permissive policy. The whole-source scan found that §18.2’s closing meaningful-failure-test instruction was absent from the row-only ledger; it is now retained. All 1,045 nonblank/nonheading lines across sections 1–20 match retained source text after whitespace normalization. This is lexical coverage only, not semantic readiness or fresh upstream verification. No remaining architecture/evidence gap is closed by that count.

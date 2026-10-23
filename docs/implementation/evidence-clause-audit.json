@@ -1,0 +1,123 @@
+{
+  "scope": "Complete section 20 evidence handling, all 13 implementation reference rows and 50 primary-source definitions",
+  "requirements_sha256": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+  "source_blocks": [
+    {
+      "id": "E20.01",
+      "section": "20",
+      "source_text": "Research date: **2026-10-23**. Prefer the primary sources below, then pin and test the actual implementation versions. Development documentation can describe features absent from a stable binary; historical repository receipts can expire or describe a retired deployment. The requirements, schemas, prompts, capacity arithmetic and issue decomposition are design decisions, not claims that a system has already been deployed.",
+      "sha256": "593f6e9c080adaa6087cd37446fbf7504973471ec4075f50df22af8c1dcb00c8",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "E20.02",
+      "section": "20",
+      "source_text": "Public references are suitable for the public repository. Current estate readbacks, private configuration and unredacted receipts belong in the private evidence system identified during Phase 1. Read current owner-repository contracts directly; do not publish their contents or assume a historical commit grants weather admission. The Verdify links are public reference code/retirement context, not an instruction to change Verdify.",
+      "sha256": "a5abe3447f70de3905ab220967e3bf8e0cd0cfdcd15a7434f8fb4b69670eee09",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "E20.1.03",
+      "section": "20.1",
+      "source_text": "The [source-pinned landscape review](research/open-source-landscape.md#9-evidence-and-revision-ledger) records what was inspected and its limits. The owner selected an independent implementation. The following mapping tells Codex where those references are useful; it is not blanket permission to import source or inherit upstream defaults. Revalidate exact files and dependencies under D01's owner-selected license/reuse policy, document notices/provenance, and preserve Weather's own time/data/security/failure contracts.",
+      "sha256": "a7c1595b6c00c09d0e733642e464fefc43ea724ea10150ce531ae6a418f3b30c",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "E20.1.04",
+      "section": "20.1",
+      "source_text": "| Reference | Apply to Weather | Constraint to preserve / candidate work |\n|---|---|---|\n| [indi-allsky HTTP adapter](https://github.com/aaronwmorris/indi-allsky/blob/18b8407d31843f3df9c69f8b5b16443f7df65c82/indi_allsky/camera/pycurl_camera.py) and [archive architecture](https://github.com/aaronwmorris/indi-allsky/tree/18b8407d31843f3df9c69f8b5b16443f7df65c82) | Authenticated native-image acquisition, solar-segment archive and image-product concepts. | WX-09/10/36/37. Do not inherit redirect/TLS-verification defaults, persistence model or ordinal-frame timing; GPL reuse requires the explicit license decision. |\n| [Allsky](https://github.com/AllskyTeam/allsky/tree/2b2c7b1347d076a489df5e614acf27de450738fb) | Keogram generation and compact daily visual navigation. | WX-36. Adapt any file-index axis to fixed UTC bins with gaps and capture provenance; qualify all three camera regions, including frontyard. |\n| [ReoLapse](https://github.com/SeriesOfTubez/reolapse/tree/2ae0589f7449296340389ee6abfd0c15228513b8) | Temporary-output validation/promotion, sparse seasonal-image and event-navigation workflow ideas. | WX-17/37/40. Its camera-specific scheduler does not establish Weather's one-second fresh-image capability; preserve our exact timing, CNPG authority and private original classes. |\n| [ChronoSnap](https://github.com/kernelkaribou/chronosnap/tree/01b055cb102ce60d226ce9e0b8ba93ce102aae73) | Historical comparison, private job controls, favorites and management UI patterns. | WX-20/37/43. Do not replace native byte-preserving capture with screenshot re-encoding or assume its scheduling meets the target cadence. |\n| [pyweatherflowudp](https://github.com/natekspencer/pyweatherflowudp/tree/c89fa2aeade2f8d834aaabce3bd2cffa398012d6) | A possible narrowly scoped Tempest parser/protocol helper. | WX-11/12. Preserve exact raw datagrams before parsing and project every observation row; a convenience event API is not the complete archival contract. |\n| [Stormglass](https://github.com/jacaudi/stormglass/tree/ffa4b40f2472f8248660b4386910131128121ec5) | Local UDP, current-weather cards, metrics and selected collector/UI implementation ideas. | WX-11/13/20. Reviewed PostgreSQL writes and SQLite historical reader do not establish a full CNPG-backed service; retain all received data and durable spool/replay. No subsystem fork is selected. |\n| [WeeWX](https://github.com/weewx/weewx/tree/a5790be2d0d33da50440eb37e0a9e21499246920) and [Belchertown](https://github.com/poblabs/weewx-belchertown/tree/049f615952da8d9e0c779ccab9e6f64cf88fedf6) | Weather calculations, records, precipitation reporting, almanac and comparison presentation. | WX-13/41/42. Reconcile units, coverage and calendar semantics with raw CNPG history; do not inherit reduced archival resolution, third-party CDN assets or unreviewed chart-library licensing. |\n| [StormDesk current upstream](https://github.com/d4vid87/stormdesk/tree/0750136f59dfcd0594d20d7dcc548b3f71b25e4b) | Local weather dashboard/history/wind-rose interactions and selected modules. | WX-20/41. Use the reviewed upstream rather than assume an older WeatherDesk fork is current; its partial telemetry projection/auth model must not replace complete receipts or qualified operator access. |\n| [AviationWX](https://github.com/alexwitherspoon/aviationwx/tree/42eaf02b7cd311bc577b6f5771e0c6f9b6972c39) | Public weather/camera presentation, observed-versus-fetched freshness, image history and embeds. | WX-20/38/44. Use Weather's local UDP/CNPG backend, minimum disclosure delay and same-origin immutable publication; no provider REST dependency or direct camera proxy. |\n| [BreatheCam](https://github.com/CMU-CREATE-Lab/breathecam/tree/f6a83dd33eef9e74ec7c7696496d336bfd239b8e) / [Time Machine viewer](https://github.com/CMU-CREATE-Lab/timemachine-viewer/tree/d34f55968072a0b224dbfcfc04dfbd8d88e49891) | Shared UTC chart/video cursor and historical exploration ideas. | WX-39/45. BreatheCam application licensing was not established: interaction reference only unless resolved. No tiled-panorama platform or multi-player requirement is selected. |\n| [Frigate](https://github.com/blakeblackshear/frigate/releases/tag/v0.18.2) | Evidence cards, event bookmarks and search-to-timeline interaction. | WX-26/40. Keep the existing NVR independent; weather windows are not tracked security objects. No persistent RTSP or household-activity analysis is introduced. |\n| [Immich](https://github.com/immich-app/immich/releases/tag/v3.3.5) | Gallery/date navigation, rendition choices and later visual-search evaluation ideas. | WX-20/37; deferred WX-46. Preview-image embeddings are distinct from temporal video analysis and text embeddings; AGPL/source/dependency obligations require review before imports. |\n| [Glimpser](https://github.com/KristopherKubicki/glimpser/tree/9a62aba11f6aff2858e2794b1e9ff9ca4047e7a9) | Caption history, metadata editing and asynchronous presentation ideas. | WX-22/43. Its screenshot-caption/text-summary route and reviewed media defaults do not satisfy native 60-fps completed-video analysis; no application adaptation experiment is mandatory. |",
+      "sha256": "bf534afa3c8bc8a9bcc3bff9661dddd94990747dda5f1b3cd9b31eaece1c147c",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "E20.1.05",
+      "section": "20.1",
+      "source_text": "Smaller screened projects remain in the evidence ledger. The `snapshotr` README/license discrepancy and unlicensed `webcam-archives` material are not approved code sources. Reuse an idea through an independent implementation where code licensing is unestablished; do not treat public GitHub visibility as a license. D01 should propose a concrete project license and reuse policy, continue unblocked research, and obtain the owner's final choice before imports. Do not silently select a copyleft or permissive foundation on their behalf.",
+      "sha256": "f1e08157b77edbece3af0a239c5868f742addd010d3b0e1b920e507b1b73401e",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "E20.2.06",
+      "section": "20.2",
+      "source_text": "| References | Primary evidence |\n|---|---|\n| [S01] | Astral solar-event API and depression/elevation semantics. |\n| [S02], [S03] | Amcrest HTTP snapshot/API documentation. |\n| [S04]\u2013[S07] | FFmpeg stable release, motion-interpolation implementations and filter reference. |\n| [S08]\u2013[S12] | NVIDIA FFmpeg integration, browser codec formats, MP4 muxing, HTTP ranges and downloads. |\n| [S13], [S14] | Kubernetes network policy and persistent-volume semantics. |\n| [S15]\u2013[S18] | GPU sharing limits, NVENC resource use, optical-flow API support and nvJPEG backends. |\n| [S19], [S20] | Public Verdify ESP32 Tempest receiver and retired CNPG rehearsal context. |\n| [S21], [S22], [S48] | Official Tempest UDP protocol, power modes and reporting behavior. |\n| [S23]\u2013[S27] | CNPG storage/replication/images, PostgreSQL partitioning and Timescale licensing. |\n| [S28], [S29] | Garage permission/S3 compatibility and durability configuration. |\n| [S30], [S31] | pgvector representations/index limits and official Qwen embedding model usage. |\n| [S32]\u2013[S35] | Barman plugin, recovery-window retention, PostgreSQL WAL archiving and CNPG recovery. |\n| [S36]\u2013[S41], [S49] | Cloudflare video delivery, cache/range/browser constraints and GitHub issue dependencies. |\n| [S42], [S43] | GPUStack inference API and backend-specific vLLM multimodal inputs. |\n| [S44]\u2013[S47], [S50] | Astro deployment, K3s registry behavior, browser capability probing, GitHub dependency API and FFmpeg licensing. |",
+      "sha256": "eb7f877d8643700d32ef6997e4caa74e7969263ed2c603315ef0d78866f59a7b",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "E20.2.07",
+      "section": "20.2",
+      "source_text": "[S01]: https://astral.readthedocs.io/en/latest/package.html\n[S02]: https://s3.amazonaws.com/amcrest-files/AMCREST_HTTP_API_SDK_V2.10.pdf\n[S03]: https://support.amcrest.com/hc/en-us/articles/24338056319245-Amcrest-HTTP-API-SDK\n[S04]: https://ffmpeg.org/download.html\n[S05]: https://github.com/FFmpeg/FFmpeg/blob/master/libavfilter/vf_minterpolate.c\n[S06]: https://ffmpeg.org/doxygen/trunk/vf__fruc__vulkan_8c_source.html\n[S07]: https://ffmpeg.org/ffmpeg-filters.html\n[S08]: https://docs.nvidia.com/video-technologies/video-codec-sdk/13.0/ffmpeg-with-nvidia-gpu/index.html\n[S09]: https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Formats/Video_codecs\n[S10]: https://ffmpeg.org/ffmpeg-formats.html\n[S11]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Range_requests\n[S12]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Disposition\n[S13]: https://kubernetes.io/docs/concepts/services-networking/network-policies/\n[S14]: https://kubernetes.io/docs/concepts/storage/persistent-volumes/\n[S15]: https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/gpu-sharing.html\n[S16]: https://docs.nvidia.com/video-technologies/video-codec-sdk/13.0/nvenc-video-encoder-api-prog-guide/index.html\n[S17]: https://docs.nvidia.com/video-technologies/optical-flow-sdk/nvofa-application-note/index.html\n[S18]: https://docs.nvidia.com/cuda/nvjpeg/index.html\n[S19]: https://github.com/VerdifyConsultancy/verdify-platform/blob/dc07643b87bcf3495af1be5c665eeff741b2f48c/firmware/greenhouse/external_sensors.yaml\n[S20]: https://github.com/VerdifyConsultancy/verdify-platform/issues/992\n[S21]: https://weatherflow.github.io/Tempest/api/udp/v171/\n[S22]: https://help.tempest.earth/hc/en-us/articles/360048877194-Solar-Power-Rechargeable-Battery\n[S23]: https://cloudnative-pg.io/docs/1.29/storage/\n[S24]: https://cloudnative-pg.io/docs/1.29/replication/\n[S25]: https://cloudnative-pg.io/docs/1.29/container_images/\n[S26]: https://www.postgresql.org/docs/current/ddl-partitioning.html\n[S27]: https://github.com/timescale/timescaledb/blob/main/LICENSE\n[S28]: https://garagehq.deuxfleurs.fr/documentation/reference-manual/s3-compatibility/\n[S29]: https://garagehq.deuxfleurs.fr/documentation/reference-manual/configuration/\n[S30]: https://github.com/pgvector/pgvector\n[S31]: https://huggingface.co/Qwen/Qwen3-Embedding-4B\n[S32]: https://cloudnative-pg.io/plugin-barman-cloud/docs/usage/\n[S33]: https://cloudnative-pg.io/plugin-barman-cloud/docs/retention/\n[S34]: https://www.postgresql.org/docs/current/continuous-archiving.html\n[S35]: https://cloudnative-pg.io/docs/1.29/recovery/\n[S36]: https://developers.cloudflare.com/fundamentals/reference/policies-compliances/delivering-videos-with-cloudflare/\n[S37]: https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/creating-issue-dependencies\n[S38]: https://developers.cloudflare.com/cache/concepts/default-cache-behavior/\n[S39]: https://developers.cloudflare.com/cache/reference/range-requests/\n[S40]: https://developers.cloudflare.com/cloudflare-one/faq/cloudflare-tunnels-faq/\n[S41]: https://developers.cloudflare.com/cache/troubleshooting/mp4-videos-on-ios-and-safari/\n[S42]: https://docs.gpustack.ai/latest/integrations/inference-apis/\n[S43]: https://docs.vllm.ai/en/latest/features/multimodal_inputs/\n[S44]: https://docs.astro.build/en/guides/deploy/\n[S45]: https://docs.k3s.io/installation/private-registry\n[S46]: https://developer.mozilla.org/en-US/docs/Web/API/MediaCapabilities/decodingInfo\n[S47]: https://docs.github.com/en/rest/issues/issue-dependencies\n[S48]: https://help.tempest.earth/hc/en-us/articles/360052101413-Tempest-System-FAQs\n[S49]: https://developers.cloudflare.com/cache/concepts/retention-vs-freshness/\n[S50]: https://ffmpeg.org/legal.html",
+      "sha256": "9286c9e548d1a222a81335b63270e846de1e297bd805ef5e5cc3dde3a0f645f0",
+      "planning_owner": "WX-00"
+    }
+  ],
+  "planning_owner": "WX-00",
+  "obligations": [
+    "Prefer primary documentation but pin and qualify the actual installed binary; mutable latest/master documentation and historical receipts are not current capability proof.",
+    "Keep private source excerpts/configuration/raw estate probes in established private custody; use opaque IDs and sanitized summaries publicly. Historical commits do not grant capacity or authorize unrelated Verdify changes.",
+    "Preserve all 13 implementation-reference rows and their constraints: concepts may inform independent implementation but do not authorize wholesale fork/import or inherited security/time/data omissions.",
+    "Apply Jason\u2019s accepted MIT plus selective compatible permissive reuse policy. Copyleft imports require separate review; unlicensed/disputed references remain ideas only. The historical requirement to obtain the license choice is resolved, not an outstanding questionnaire.",
+    "For selected reuse record exact revision/files/license/dependencies/notices. Source availability, README badge, public visibility and observed deployed assets are not interchangeable evidence of permission.",
+    "Retain all 50 source identifiers and precise URLs for reproducibility; sources support only their actual scope. Recheck relevant changing claims during qualification rather than treating reference-list presence as validation."
+  ],
+  "primary_reference_inventory": {
+    "S01": "https://astral.readthedocs.io/en/latest/package.html",
+    "S02": "https://s3.amazonaws.com/amcrest-files/AMCREST_HTTP_API_SDK_V2.10.pdf",
+    "S03": "https://support.amcrest.com/hc/en-us/articles/24338056319245-Amcrest-HTTP-API-SDK",
+    "S04": "https://ffmpeg.org/download.html",
+    "S05": "https://github.com/FFmpeg/FFmpeg/blob/master/libavfilter/vf_minterpolate.c",
+    "S06": "https://ffmpeg.org/doxygen/trunk/vf__fruc__vulkan_8c_source.html",
+    "S07": "https://ffmpeg.org/ffmpeg-filters.html",
+    "S08": "https://docs.nvidia.com/video-technologies/video-codec-sdk/13.0/ffmpeg-with-nvidia-gpu/index.html",
+    "S09": "https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Formats/Video_codecs",
+    "S10": "https://ffmpeg.org/ffmpeg-formats.html",
+    "S11": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Range_requests",
+    "S12": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Disposition",
+    "S13": "https://kubernetes.io/docs/concepts/services-networking/network-policies/",
+    "S14": "https://kubernetes.io/docs/concepts/storage/persistent-volumes/",
+    "S15": "https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/gpu-sharing.html",
+    "S16": "https://docs.nvidia.com/video-technologies/video-codec-sdk/13.0/nvenc-video-encoder-api-prog-guide/index.html",
+    "S17": "https://docs.nvidia.com/video-technologies/optical-flow-sdk/nvofa-application-note/index.html",
+    "S18": "https://docs.nvidia.com/cuda/nvjpeg/index.html",
+    "S19": "https://github.com/VerdifyConsultancy/verdify-platform/blob/dc07643b87bcf3495af1be5c665eeff741b2f48c/firmware/greenhouse/external_sensors.yaml",
+    "S20": "https://github.com/VerdifyConsultancy/verdify-platform/issues/992",
+    "S21": "https://weatherflow.github.io/Tempest/api/udp/v171/",
+    "S22": "https://help.tempest.earth/hc/en-us/articles/360048877194-Solar-Power-Rechargeable-Battery",
+    "S23": "https://cloudnative-pg.io/docs/1.29/storage/",
+    "S24": "https://cloudnative-pg.io/docs/1.29/replication/",
+    "S25": "https://cloudnative-pg.io/docs/1.29/container_images/",
+    "S26": "https://www.postgresql.org/docs/current/ddl-partitioning.html",
+    "S27": "https://github.com/timescale/timescaledb/blob/main/LICENSE",
+    "S28": "https://garagehq.deuxfleurs.fr/documentation/reference-manual/s3-compatibility/",
+    "S29": "https://garagehq.deuxfleurs.fr/documentation/reference-manual/configuration/",
+    "S30": "https://github.com/pgvector/pgvector",
+    "S31": "https://huggingface.co/Qwen/Qwen3-Embedding-4B",
+    "S32": "https://cloudnative-pg.io/plugin-barman-cloud/docs/usage/",
+    "S33": "https://cloudnative-pg.io/plugin-barman-cloud/docs/retention/",
+    "S34": "https://www.postgresql.org/docs/current/continuous-archiving.html",
+    "S35": "https://cloudnative-pg.io/docs/1.29/recovery/",
+    "S36": "https://developers.cloudflare.com/fundamentals/reference/policies-compliances/delivering-videos-with-cloudflare/",
+    "S37": "https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/creating-issue-dependencies",
+    "S38": "https://developers.cloudflare.com/cache/concepts/default-cache-behavior/",
+    "S39": "https://developers.cloudflare.com/cache/reference/range-requests/",
+    "S40": "https://developers.cloudflare.com/cloudflare-one/faq/cloudflare-tunnels-faq/",
+    "S41": "https://developers.cloudflare.com/cache/troubleshooting/mp4-videos-on-ios-and-safari/",
+    "S42": "https://docs.gpustack.ai/latest/integrations/inference-apis/",
+    "S43": "https://docs.vllm.ai/en/latest/features/multimodal_inputs/",
+    "S44": "https://docs.astro.build/en/guides/deploy/",
+    "S45": "https://docs.k3s.io/installation/private-registry",
+    "S46": "https://developer.mozilla.org/en-US/docs/Web/API/MediaCapabilities/decodingInfo",
+    "S47": "https://docs.github.com/en/rest/issues/issue-dependencies",
+    "S48": "https://help.tempest.earth/hc/en-us/articles/360052101413-Tempest-System-FAQs",
+    "S49": "https://developers.cloudflare.com/cache/concepts/retention-vs-freshness/",
+    "S50": "https://ffmpeg.org/legal.html"
+  },
+  "verification": {
+    "all_nonblank_nonheading_source_lines_preserved": true,
+    "implementation_reference_rows": 13,
+    "primary_reference_definitions": 50,
+    "upstream_sources_refetched_this_pass": false,
+    "runtime_acceptance": false
+  }
+}

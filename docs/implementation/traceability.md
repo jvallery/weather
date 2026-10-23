@@ -177,3 +177,7 @@ The [section 19 audit](plan-clause-audit.md) preserves all 46 seed rows and comp
 ## Foundational requirements and authority
 
 The [sections 1–4 audit](foundation-clause-audit.md) preserves every source block, amendment, register row, role and diagram with 32 grouped obligations. Primary owners coordinate planning, canonical jobs, independent roles, reconciliation and network/public boundaries; detailed domain audits retain their producer assignments. All 38 R-IDs have filed coverage, but presence is not acceptance.
+
+## Whole-source preservation check
+
+The [coverage receipt](source-coverage-verification.json) finds all 1,045 nonblank/nonheading source lines in sections 1–20 after whitespace normalization. The evidence audit preserves all section 20 reference/handling instructions; the acceptance matrix now also retains its closing failure-test instruction. This bounded check detects omitted text, not semantic completeness, unique ownership, current external truth or implementation readiness.
