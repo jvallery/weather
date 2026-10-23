@@ -66,6 +66,6 @@ Namespace/PVC/bucket/provider-client creation, application CI runs, end-to-end b
 
 ### Execution order and completion boundary
 
-Resolve P1's actual submission interface first so any needed pilots have a safe path. In parallel with read-only owner research, finish the code-independent choices in P2–P6. Consolidate affected issues as choices settle instead of appending more historical acceptance sections. P7 is the final pass, not a recurring full-graph scan after each prose edit.
+Resolve P1's actual submission interface first so any needed pilots have a safe path. In parallel with read-only owner research, finish the code-independent choices in P2–P6. Consolidate affected issues as choices settle instead of appending more historical acceptance sections. P7 is the final pass, not a recurring full-graph scan after each prose edit. The planning root and WX-01/WX-02 now have consolidated operative bodies; their prior bodies are preserved in private operator custody. Remaining work issues still require consolidation against final decisions.
 
 Planning ends when all seven packages have either a supported selected design with explicit implementation proof or a precise acknowledged external blocker, and the complete first-pass handoff is published. Material unresolved architecture means the requested work is still partial; do not mark this goal complete merely because blockers are documented. A wall-clock estimate is not supportable until the current submission/owner evidence is resolved. No additional approval process is introduced.
