@@ -4,7 +4,7 @@ The [source-bound ledger](web-clause-audit.json) retains every source block and 
 
 ## §12.1 — WX-20, WX-26
 
-- Use the selected Astro server-rendered shells and bounded islands with same-origin Python projections; prove observations and a new video do not rebuild the complete site/archive.
+- Use the owner-approved React/TypeScript and React Router server-rendered pages/client navigation with same-origin Python projections; prove observations and a new video do not rebuild the complete site/archive.
 - Cache immutable assets independently from dynamic projections; framework/runtime and adapter compatibility require exact admitted build pins.
 - Match the source-verified theme and preserve font provenance/notices; use the contrast-qualified focus role rather than copying low-contrast gold blindly. Do not import unrelated main-site content.
 - Provide compact Weather identity, main-site link and all five navigation entries; wide three-camera grid becomes a mobile stack with reachable date/segment controls.

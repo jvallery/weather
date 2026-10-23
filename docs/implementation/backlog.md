@@ -4,7 +4,7 @@ Status: filed; 122 native relationships read back and matched on 2026-10-23, inc
 
 The [machine-readable graph](backlog.json) records real issue numbers and IDs. Requirement links refer to the normative [requirements](../requirements.md), not only issue titles. Individual issues contain implementation approach, targeted acceptance/failure cases and operations/rollback obligations. [Owner prerequisites](owner-prerequisites.md) are filed and linked natively. Detailed contracts and qualification remain incomplete; do not interpret filing as readiness.
 
-The [complete graph readback receipt](graph-verification.json) now binds the current backlog hash and a fresh exact-ID comparison of all 122 native edges, 47 Weather issue identities and 14 owner identities. All 46 implementation issues contain their mapped requirement IDs and the five common design/acceptance/operations headings, plus the standards section wherever the standards matrix assigns obligations. Every implementation node is transitively held by WX-00; the release closure contains all 42 required initial items and excludes deferred WX-45/46. These structural checks do not establish clause-level body completeness, owner admission or live product acceptance.
+The [complete graph readback receipt](graph-verification.json) records its historical backlog hash and an exact-ID comparison of all 122 native edges, 47 Weather issue identities and 14 owner identities. All 46 implementation issues contain their mapped requirement IDs and the five common design/acceptance/operations headings, plus the standards section wherever the standards matrix assigns obligations. Every implementation node is transitively held by WX-00; the release closure contains all 42 required initial items and excludes deferred WX-45/46. Later acceptance-only edits, including the owner-approved React refactor, change the backlog/body hashes without changing those edges; final closure must refresh the receipt. These structural checks do not establish clause-level body completeness, owner admission or live product acceptance.
 
 ## Scope and sequence
 
@@ -15,6 +15,8 @@ Shared immutable asset publication no longer waits for the video renderer. Image
 No implementation task is ready **now**: WX-00 is open. After planning closure and scoped owner admission, the first independent foundation tasks are WX-01 and WX-02. Ready work is the set whose native prerequisites are complete, whose decisions are closed, and whose resource/access prerequisites are met. Recompute after each result; skip blocked branches and continue unrelated ready work. Never treat issue priority or an old closed prerequisite as live admission.
 
 Use one task per coherent change, preserve unrelated work in isolated checkouts, run the cheapest meaningful check, deliver through its owner, and attach authoritative evidence before closing. Re-read current runtime/admission before an experiment or rollout. A failed qualification returns a precise blocked state with evidence and owner; it does not authorize changing shared infrastructure incidentally or weakening requirements.
+
+The selected frontend is React + TypeScript with React Router Framework Mode, SSR initial pages and client navigation, as specified by D13. WX-20 owns the reusable UI/data lifecycle; feature issues consume it. The framework change adds no dependency edge or implementation task and preserves all existing route/product acceptance.
 
 ## Dependency depth
 

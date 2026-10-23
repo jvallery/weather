@@ -86,6 +86,9 @@
       "native_depends_on": [
         "WX-00",
         "OWN-CI"
+      ],
+      "additional_acceptance": [
+        "Build the D13 React/TypeScript Router SSR frontend with pinned Node, React/React DOM, Router, Vite, TypeScript and Query lockfile; no Astro runtime or public runtime downloads. Qualify compatible route/assets/API artifacts."
       ]
     },
     {
@@ -707,7 +710,8 @@
       "phase": "initial_release",
       "release_gate": "required",
       "additional_acceptance": [
-        "Calendar-day stills and solar-cycle videos are visibly distinct; one active player is the mobile default."
+        "Calendar-day stills and solar-cycle videos are visibly distinct; one active player is the mobile default.",
+        "Implement D13 React Router SSR/client navigation, typed API loaders and assigned TanStack Query polling; preserve no-JavaScript public reading, request-local hydration isolation, single polling ownership and meaningful API/hydration failure states."
       ],
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
@@ -906,6 +910,9 @@
       "native_depends_on": [
         "WX-20",
         "WX-25"
+      ],
+      "additional_acceptance": [
+        "React route/fetcher owns URL-bound search and transient responses; cancel obsolete requests, ignore late responses, restore back/forward filters and honor D12 no-result-cache/no-automatic-model-retry policy."
       ]
     },
     {
@@ -1237,6 +1244,9 @@
         "WX-43",
         "WX-44",
         "WX-16"
+      ],
+      "additional_acceptance": [
+        "Verify React SSR/hydration request isolation, deep links/no-JavaScript reading, stale response and duplicate-effect races, focus/scroll restoration, editor draft protection and old-tab behavior during web/API rollout."
       ]
     },
     {
@@ -1269,7 +1279,8 @@
       "release_gate": "required",
       "additional_acceptance": [
         "Document customization and synthetic local development without requiring a generic installer, broad camera platform or multi-tenancy.",
-        "Record the owner-selected license/reuse policy and exact notices for imported code/assets/models."
+        "Record the owner-selected license/reuse policy and exact notices for imported code/assets/models.",
+        "Deliver the React Router Node web image through E12; retain compatible HTML/route manifests/hashed assets/API schema across rollout and rollback, with controlled old-tab reload and no private-source leakage."
       ],
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
@@ -1530,6 +1541,9 @@
       "native_depends_on": [
         "WX-20",
         "WX-36"
+      ],
+      "additional_acceptance": [
+        "One route-local React playback controller coordinates native video, authoritative source-time map, keogram/events and charts; no per-frame API polling, feedback seek loops or multiple active players."
       ]
     },
     {
@@ -1699,6 +1713,9 @@
         "WX-20",
         "WX-24",
         "WX-37"
+      ],
+      "additional_acceptance": [
+        "React editor holds private drafts in memory and uses Python-authenticated CSRF/CAS writes; no private SSR hydration, second Node auth authority, automatic mutation retries or optimistic public publication."
       ]
     },
     {
@@ -1740,6 +1757,9 @@
         "WX-20",
         "WX-38",
         "OWN-EMBED"
+      ],
+      "additional_acceptance": [
+        "Render a small React SSR embed with the existing parent-origin/CSP contract, independent public polling and no editor/player bundle, private hydration or privileged cookie dependency."
       ]
     },
     {
