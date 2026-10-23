@@ -101,3 +101,7 @@ The subsequent [hash-bound validation receipt](validation-receipt.json) records 
 ## Analysis execution versus available data
 
 [D11](../decisions/D11-analysis-execution-and-failure.md) separates `Analysis.execution_state` and sanitized `reason` from data `state`, mode and coverage. Failed/unsupported execution with no usable evidence has unavailable data; partial validated evidence can survive a failed run. Invalidated claims never become current merely because their producing run completed. Sampled-frame fallback remains degraded and cannot satisfy native-video commissioning. Cross-field validity and remote termination require semantic/runtime checks.
+
+## Preview expiry clarification
+
+`Image.expires_at` is logical derivative expiry, not current-preview freshness or permission to delete storage. The [preview policy contract](preview-policy-contract.md) distinguishes earliest publication, conservative current-display age and retention/recovery. A latest-preview response above its current-age cutoff is unavailable with no assets even while a historical direct asset is still eligible. Clients must age already-received current previews during failed polling. Origin authorization checks logical expiry/withdrawal before conditional 304, HEAD and range responses.

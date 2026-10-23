@@ -1,0 +1,422 @@
+{
+  "description": "Synthetic shape fixtures only; no reference is an admission grant",
+  "cases": [
+    {
+      "name": "selected v1 shape with synthetic references only",
+      "valid": true,
+      "value": {
+        "schema_version": 1,
+        "recipe": "preview-policy-v1",
+        "minimum_publication_age_seconds": 600,
+        "refresh_seconds": 60,
+        "fresh_max_source_age_seconds": 1200,
+        "current_max_source_age_seconds": 1800,
+        "pointer_cache_max_seconds": 15,
+        "derivative_logical_retention_seconds": 86400,
+        "maximum_pending_per_camera": 1,
+        "maximum_publications_per_camera_per_minute": 1,
+        "source_handoff": "committed_sealed_input",
+        "queue_policy": "coalesce_to_newest_eligible",
+        "unknown_timing": "unavailable",
+        "retention_clock": "source_time",
+        "physical_delete_requires_recovery_clearance": true,
+        "refresh_preserves_source_time": true,
+        "policy_id": "synthetic-preview-v1",
+        "clock_qualification": {
+          "id": "synthetic-clock_qualification",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "retention_and_recovery": {
+          "id": "synthetic-retention_and_recovery",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "resource_admission": {
+          "id": "synthetic-resource_admission",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "name": "embargo weakened",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "recipe": "preview-policy-v1",
+        "minimum_publication_age_seconds": 599,
+        "refresh_seconds": 60,
+        "fresh_max_source_age_seconds": 1200,
+        "current_max_source_age_seconds": 1800,
+        "pointer_cache_max_seconds": 15,
+        "derivative_logical_retention_seconds": 86400,
+        "maximum_pending_per_camera": 1,
+        "maximum_publications_per_camera_per_minute": 1,
+        "source_handoff": "committed_sealed_input",
+        "queue_policy": "coalesce_to_newest_eligible",
+        "unknown_timing": "unavailable",
+        "retention_clock": "source_time",
+        "physical_delete_requires_recovery_clearance": true,
+        "refresh_preserves_source_time": true,
+        "policy_id": "synthetic-preview-v1",
+        "clock_qualification": {
+          "id": "synthetic-clock_qualification",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "retention_and_recovery": {
+          "id": "synthetic-retention_and_recovery",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "resource_admission": {
+          "id": "synthetic-resource_admission",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "name": "current cutoff confused with retention",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "recipe": "preview-policy-v1",
+        "minimum_publication_age_seconds": 600,
+        "refresh_seconds": 60,
+        "fresh_max_source_age_seconds": 1200,
+        "current_max_source_age_seconds": 86400,
+        "pointer_cache_max_seconds": 15,
+        "derivative_logical_retention_seconds": 86400,
+        "maximum_pending_per_camera": 1,
+        "maximum_publications_per_camera_per_minute": 1,
+        "source_handoff": "committed_sealed_input",
+        "queue_policy": "coalesce_to_newest_eligible",
+        "unknown_timing": "unavailable",
+        "retention_clock": "source_time",
+        "physical_delete_requires_recovery_clearance": true,
+        "refresh_preserves_source_time": true,
+        "policy_id": "synthetic-preview-v1",
+        "clock_qualification": {
+          "id": "synthetic-clock_qualification",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "retention_and_recovery": {
+          "id": "synthetic-retention_and_recovery",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "resource_admission": {
+          "id": "synthetic-resource_admission",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "name": "refresh resets age",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "recipe": "preview-policy-v1",
+        "minimum_publication_age_seconds": 600,
+        "refresh_seconds": 60,
+        "fresh_max_source_age_seconds": 1200,
+        "current_max_source_age_seconds": 1800,
+        "pointer_cache_max_seconds": 15,
+        "derivative_logical_retention_seconds": 86400,
+        "maximum_pending_per_camera": 1,
+        "maximum_publications_per_camera_per_minute": 1,
+        "source_handoff": "committed_sealed_input",
+        "queue_policy": "coalesce_to_newest_eligible",
+        "unknown_timing": "unavailable",
+        "retention_clock": "source_time",
+        "physical_delete_requires_recovery_clearance": true,
+        "refresh_preserves_source_time": false,
+        "policy_id": "synthetic-preview-v1",
+        "clock_qualification": {
+          "id": "synthetic-clock_qualification",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "retention_and_recovery": {
+          "id": "synthetic-retention_and_recovery",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "resource_admission": {
+          "id": "synthetic-resource_admission",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "name": "retention deletes without clearance",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "recipe": "preview-policy-v1",
+        "minimum_publication_age_seconds": 600,
+        "refresh_seconds": 60,
+        "fresh_max_source_age_seconds": 1200,
+        "current_max_source_age_seconds": 1800,
+        "pointer_cache_max_seconds": 15,
+        "derivative_logical_retention_seconds": 86400,
+        "maximum_pending_per_camera": 1,
+        "maximum_publications_per_camera_per_minute": 1,
+        "source_handoff": "committed_sealed_input",
+        "queue_policy": "coalesce_to_newest_eligible",
+        "unknown_timing": "unavailable",
+        "retention_clock": "source_time",
+        "physical_delete_requires_recovery_clearance": false,
+        "refresh_preserves_source_time": true,
+        "policy_id": "synthetic-preview-v1",
+        "clock_qualification": {
+          "id": "synthetic-clock_qualification",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "retention_and_recovery": {
+          "id": "synthetic-retention_and_recovery",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "resource_admission": {
+          "id": "synthetic-resource_admission",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "name": "mutable tail handoff",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "recipe": "preview-policy-v1",
+        "minimum_publication_age_seconds": 600,
+        "refresh_seconds": 60,
+        "fresh_max_source_age_seconds": 1200,
+        "current_max_source_age_seconds": 1800,
+        "pointer_cache_max_seconds": 15,
+        "derivative_logical_retention_seconds": 86400,
+        "maximum_pending_per_camera": 1,
+        "maximum_publications_per_camera_per_minute": 1,
+        "source_handoff": "active_tar",
+        "queue_policy": "coalesce_to_newest_eligible",
+        "unknown_timing": "unavailable",
+        "retention_clock": "source_time",
+        "physical_delete_requires_recovery_clearance": true,
+        "refresh_preserves_source_time": true,
+        "policy_id": "synthetic-preview-v1",
+        "clock_qualification": {
+          "id": "synthetic-clock_qualification",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "retention_and_recovery": {
+          "id": "synthetic-retention_and_recovery",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "resource_admission": {
+          "id": "synthetic-resource_admission",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "name": "unbounded backlog",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "recipe": "preview-policy-v1",
+        "minimum_publication_age_seconds": 600,
+        "refresh_seconds": 60,
+        "fresh_max_source_age_seconds": 1200,
+        "current_max_source_age_seconds": 1800,
+        "pointer_cache_max_seconds": 15,
+        "derivative_logical_retention_seconds": 86400,
+        "maximum_pending_per_camera": 0,
+        "maximum_publications_per_camera_per_minute": 1,
+        "source_handoff": "committed_sealed_input",
+        "queue_policy": "coalesce_to_newest_eligible",
+        "unknown_timing": "unavailable",
+        "retention_clock": "source_time",
+        "physical_delete_requires_recovery_clearance": true,
+        "refresh_preserves_source_time": true,
+        "policy_id": "synthetic-preview-v1",
+        "clock_qualification": {
+          "id": "synthetic-clock_qualification",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "retention_and_recovery": {
+          "id": "synthetic-retention_and_recovery",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "resource_admission": {
+          "id": "synthetic-resource_admission",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "name": "long pointer cache",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "recipe": "preview-policy-v1",
+        "minimum_publication_age_seconds": 600,
+        "refresh_seconds": 60,
+        "fresh_max_source_age_seconds": 1200,
+        "current_max_source_age_seconds": 1800,
+        "pointer_cache_max_seconds": 60,
+        "derivative_logical_retention_seconds": 86400,
+        "maximum_pending_per_camera": 1,
+        "maximum_publications_per_camera_per_minute": 1,
+        "source_handoff": "committed_sealed_input",
+        "queue_policy": "coalesce_to_newest_eligible",
+        "unknown_timing": "unavailable",
+        "retention_clock": "source_time",
+        "physical_delete_requires_recovery_clearance": true,
+        "refresh_preserves_source_time": true,
+        "policy_id": "synthetic-preview-v1",
+        "clock_qualification": {
+          "id": "synthetic-clock_qualification",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "retention_and_recovery": {
+          "id": "synthetic-retention_and_recovery",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "resource_admission": {
+          "id": "synthetic-resource_admission",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "name": "unknown timing treated fresh",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "recipe": "preview-policy-v1",
+        "minimum_publication_age_seconds": 600,
+        "refresh_seconds": 60,
+        "fresh_max_source_age_seconds": 1200,
+        "current_max_source_age_seconds": 1800,
+        "pointer_cache_max_seconds": 15,
+        "derivative_logical_retention_seconds": 86400,
+        "maximum_pending_per_camera": 1,
+        "maximum_publications_per_camera_per_minute": 1,
+        "source_handoff": "committed_sealed_input",
+        "queue_policy": "coalesce_to_newest_eligible",
+        "unknown_timing": "fresh",
+        "retention_clock": "source_time",
+        "physical_delete_requires_recovery_clearance": true,
+        "refresh_preserves_source_time": true,
+        "policy_id": "synthetic-preview-v1",
+        "clock_qualification": {
+          "id": "synthetic-clock_qualification",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "retention_and_recovery": {
+          "id": "synthetic-retention_and_recovery",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "resource_admission": {
+          "id": "synthetic-resource_admission",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "name": "retention based on response",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "recipe": "preview-policy-v1",
+        "minimum_publication_age_seconds": 600,
+        "refresh_seconds": 60,
+        "fresh_max_source_age_seconds": 1200,
+        "current_max_source_age_seconds": 1800,
+        "pointer_cache_max_seconds": 15,
+        "derivative_logical_retention_seconds": 86400,
+        "maximum_pending_per_camera": 1,
+        "maximum_publications_per_camera_per_minute": 1,
+        "source_handoff": "committed_sealed_input",
+        "queue_policy": "coalesce_to_newest_eligible",
+        "unknown_timing": "unavailable",
+        "retention_clock": "response_time",
+        "physical_delete_requires_recovery_clearance": true,
+        "refresh_preserves_source_time": true,
+        "policy_id": "synthetic-preview-v1",
+        "clock_qualification": {
+          "id": "synthetic-clock_qualification",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "retention_and_recovery": {
+          "id": "synthetic-retention_and_recovery",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "resource_admission": {
+          "id": "synthetic-resource_admission",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "name": "missing timing qualification reference",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "recipe": "preview-policy-v1",
+        "minimum_publication_age_seconds": 600,
+        "refresh_seconds": 60,
+        "fresh_max_source_age_seconds": 1200,
+        "current_max_source_age_seconds": 1800,
+        "pointer_cache_max_seconds": 15,
+        "derivative_logical_retention_seconds": 86400,
+        "maximum_pending_per_camera": 1,
+        "maximum_publications_per_camera_per_minute": 1,
+        "source_handoff": "committed_sealed_input",
+        "queue_policy": "coalesce_to_newest_eligible",
+        "unknown_timing": "unavailable",
+        "retention_clock": "source_time",
+        "physical_delete_requires_recovery_clearance": true,
+        "refresh_preserves_source_time": true,
+        "policy_id": "synthetic-preview-v1",
+        "retention_and_recovery": {
+          "id": "synthetic-retention_and_recovery",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "resource_admission": {
+          "id": "synthetic-resource_admission",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "name": "unrelated credential field rejected",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "recipe": "preview-policy-v1",
+        "minimum_publication_age_seconds": 600,
+        "refresh_seconds": 60,
+        "fresh_max_source_age_seconds": 1200,
+        "current_max_source_age_seconds": 1800,
+        "pointer_cache_max_seconds": 15,
+        "derivative_logical_retention_seconds": 86400,
+        "maximum_pending_per_camera": 1,
+        "maximum_publications_per_camera_per_minute": 1,
+        "source_handoff": "committed_sealed_input",
+        "queue_policy": "coalesce_to_newest_eligible",
+        "unknown_timing": "unavailable",
+        "retention_clock": "source_time",
+        "physical_delete_requires_recovery_clearance": true,
+        "refresh_preserves_source_time": true,
+        "policy_id": "synthetic-preview-v1",
+        "clock_qualification": {
+          "id": "synthetic-clock_qualification",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "retention_and_recovery": {
+          "id": "synthetic-retention_and_recovery",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "resource_admission": {
+          "id": "synthetic-resource_admission",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "camera_password": "not-a-secret"
+      }
+    }
+  ]
+}

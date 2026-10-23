@@ -1,0 +1,17 @@
+{
+  "observed_at": "2026-10-23T21:46:37.606665+00:00",
+  "scope": "Preview policy metaschema and synthetic shape validation only",
+  "fixture_count": 12,
+  "all_expectations_matched": true,
+  "input_sha256": {
+    "preview-policy.schema.json": "af08e9edbd6b35f6db68795e3f5094a709daec7eacf4ab5af9e967bae7639c2d",
+    "preview-policy-fixtures.json": "5f5ac7c60d3e33e87e2728cf95b11a4cc4bfc7519538fab727bae0961733831b",
+    "preview-policy-contract.md": "d800a2893edfdbadc7f4229b4bbe0276b89a50ad3808c407487f6db35ddf743e",
+    "configuration-contract.md": "095ca97e88003e6516beb6fc52cab08551df94b1f4519226164c08b4c4456278",
+    "api-contract.md": "882d01bb27eba46a128bfa8b4a28ee119ff966b1915e1e8133d8b28c1ae37f6b"
+  },
+  "limitations": [
+    "No reference resolution, owner admission, runtime timing or deletion test",
+    "Earlier API/configuration validation receipts remain historical hash-bound observations"
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weather.vallery.net/contracts/preview-policy-v1.schema.json",
+  "title": "Selected preview policy v1; shape is not admission",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "policy_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "recipe": {
+      "const": "preview-policy-v1"
+    },
+    "minimum_publication_age_seconds": {
+      "const": 600
+    },
+    "refresh_seconds": {
+      "const": 60
+    },
+    "fresh_max_source_age_seconds": {
+      "const": 1200
+    },
+    "current_max_source_age_seconds": {
+      "const": 1800
+    },
+    "pointer_cache_max_seconds": {
+      "const": 15
+    },
+    "derivative_logical_retention_seconds": {
+      "const": 86400
+    },
+    "maximum_pending_per_camera": {
+      "const": 1
+    },
+    "maximum_publications_per_camera_per_minute": {
+      "const": 1
+    },
+    "source_handoff": {
+      "const": "committed_sealed_input"
+    },
+    "queue_policy": {
+      "const": "coalesce_to_newest_eligible"
+    },
+    "unknown_timing": {
+      "const": "unavailable"
+    },
+    "retention_clock": {
+      "const": "source_time"
+    },
+    "physical_delete_requires_recovery_clearance": {
+      "const": true
+    },
+    "refresh_preserves_source_time": {
+      "const": true
+    },
+    "clock_qualification": {
+      "$ref": "#/$defs/Reference"
+    },
+    "retention_and_recovery": {
+      "$ref": "#/$defs/Reference"
+    },
+    "resource_admission": {
+      "$ref": "#/$defs/Reference"
+    }
+  },
+  "required": [
+    "schema_version",
+    "policy_id",
+    "recipe",
+    "minimum_publication_age_seconds",
+    "refresh_seconds",
+    "fresh_max_source_age_seconds",
+    "current_max_source_age_seconds",
+    "pointer_cache_max_seconds",
+    "derivative_logical_retention_seconds",
+    "maximum_pending_per_camera",
+    "maximum_publications_per_camera_per_minute",
+    "source_handoff",
+    "queue_policy",
+    "unknown_timing",
+    "retention_clock",
+    "physical_delete_requires_recovery_clearance",
+    "refresh_preserves_source_time",
+    "clock_qualification",
+    "retention_and_recovery",
+    "resource_admission"
+  ],
+  "$defs": {
+    "Reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sha256"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    }
+  }
+}
