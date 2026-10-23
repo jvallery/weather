@@ -360,7 +360,8 @@
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
         "WX-03",
-        "WX-09"
+        "WX-09",
+        "OWN-CAM"
       ]
     },
     {
@@ -1874,7 +1875,7 @@
     "planning_issue_count": 1,
     "direct_edge_count": 103,
     "planning_edge_count": 2,
-    "native_edge_count": 121,
+    "native_edge_count": 122,
     "conditional_edge_count": 2,
     "conditional_edges_active": false,
     "required_initial_count": 42,
@@ -1885,8 +1886,8 @@
     "deferred_research_keys": [
       "WX-46"
     ],
-    "external_prerequisite_count": 13,
-    "external_edge_count": 16
+    "external_prerequisite_count": 14,
+    "external_edge_count": 17
   },
   "audit_issue": {
     "key": "WX-00",
@@ -1895,11 +1896,11 @@
     "url": "https://github.com/jvallery/weather/issues/1"
   },
   "native_verification": {
-    "observed_at": "2026-10-23T20:47:28.875572Z",
+    "observed_at": "2026-10-23T20:53:30.689012Z",
     "verified_nodes": 46,
-    "verified_external_prerequisites": 13,
-    "verified_edges": 121,
-    "method": "Prior complete 119-edge readback plus exact complete prerequisite-set readback for WX-05 and WX-11 after adding OWN-DB"
+    "verified_external_prerequisites": 14,
+    "verified_edges": 122,
+    "method": "Prior complete 119-edge readback plus complete WX-05/WX-11 sets for OWN-DB and complete WX-10 set for OWN-CAM, all exact IDs"
   },
   "external_prerequisites": [
     {
@@ -2086,6 +2087,20 @@
       ],
       "status": "open",
       "scope": "Dedicated CNPG storage and independent bounded telemetry spool admission; no reuse of unrelated R1 grants"
+    },
+    {
+      "key": "OWN-CAM",
+      "repository": "jvallery/sentinel",
+      "github_issue": {
+        "number": 550,
+        "id": 6005269862,
+        "url": "https://github.com/jvallery/sentinel/issues/550"
+      },
+      "consumers": [
+        "WX-10"
+      ],
+      "status": "open",
+      "scope": "Native snapshot source, bounded cadence/NVR impact, source-time calibration and image privacy qualification"
     }
   ]
 }

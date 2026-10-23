@@ -7,6 +7,7 @@ These are actual owner issues, not placeholders. Weather's public graph records 
 | OWN-CI | [jvallery/agents#5366](https://github.com/jvallery/agents/issues/5366) | WX-01, WX-02 | Scoped CI/GitOps/secret delivery and untrusted contribution path |
 | OWN-NFS | [jvallery/storage-infra#1106](https://github.com/jvallery/storage-infra/issues/1106) | WX-03 | NFS grant, capacity and fencing qualification |
 | OWN-DB | [jvallery/storage-infra#1112](https://github.com/jvallery/storage-infra/issues/1112) | WX-05, WX-11 | Dedicated CNPG block storage and separate bounded telemetry spool admission, capacity, fencing and retained-volume recovery |
+| OWN-CAM | [jvallery/sentinel#550](https://github.com/jvallery/sentinel/issues/550) | WX-10 | Three native snapshot sources, bounded cadence/NVR impact, exposure-time calibration and versioned image privacy/region policy |
 | OWN-OBJECT | [jvallery/storage-infra#1107](https://github.com/jvallery/storage-infra/issues/1107) | WX-06 | Private object bucket and measured durability boundary |
 | OWN-GATEWAY | [jvallery/storage-infra#1108](https://github.com/jvallery/storage-infra/issues/1108) | WX-07 | Enforced media/archive authorization with independent recovery access |
 | OWN-CUSTODY | [jvallery/storage-infra#1109](https://github.com/jvallery/storage-infra/issues/1109) | WX-29 | Central full/WAL custody and joint independent restore |
