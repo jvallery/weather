@@ -2145,6 +2145,9 @@
                     "type": "null"
                   }
                 ]
+              },
+              "wind_rose": {
+                "$ref": "#/$defs/WindRoseBin"
               }
             },
             "required": [
@@ -2155,6 +2158,29 @@
               "angle_start_degrees",
               "angle_end_degrees",
               "instant"
+            ],
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "wind_rose_bin"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "wind_rose"
+                  ]
+                },
+                "else": {
+                  "not": {
+                    "required": [
+                      "wind_rose"
+                    ]
+                  }
+                }
+              }
             ]
           },
           "maxItems": 5000
@@ -3033,6 +3059,78 @@
         "generated_at",
         "items",
         "next_cursor"
+      ]
+    },
+    "WindRoseBin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "category",
+        "speed_min_mps",
+        "speed_max_mps",
+        "duration_seconds",
+        "denominator_seconds"
+      ],
+      "properties": {
+        "category": {
+          "enum": [
+            "directional",
+            "calm",
+            "variable",
+            "missing"
+          ]
+        },
+        "speed_min_mps": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "speed_max_mps": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "duration_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "denominator_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "category": {
+                "const": "directional"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "speed_min_mps": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "speed_min_mps": {
+                "type": "null"
+              },
+              "speed_max_mps": {
+                "type": "null"
+              }
+            }
+          }
+        }
       ]
     }
   }

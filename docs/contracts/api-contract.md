@@ -109,3 +109,7 @@ The subsequent [hash-bound validation receipt](validation-receipt.json) records 
 ## Exact time ownership
 
 The [section 5 audit](../implementation/time-clause-audit.md) binds civil schedules, calendar/hour identities and frame ownership. Interval ordering and membership are semantic, not JSON Schema guarantees. Derive seeks from validated rational source/frame maps; decimal browser seek values never define capture/clip ownership. Exclusive endpoints and explicit UI clamping must not introduce an adjacent-segment sample.
+
+## Wind-rose structure
+
+Almanac wind_rose_bin products require structured category/speed bounds/duration/denominator; other product kinds reject that metadata. The [aggregation contract](weather-aggregation-contract.md) defines whole-window denominators, north-wrap bins, calm/variable/missing distinctions and semantic conservation checks. Labels are presentation, not a parseable calculation contract.

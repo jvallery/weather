@@ -1,0 +1,16 @@
+{
+  "observed_at": "2026-10-23T22:04:43.779744+00:00",
+  "fixture_count": 46,
+  "all_shape_expectations_matched": true,
+  "scope": "API metaschema and all current fixtures with explicit date/time assertions",
+  "input_sha256": {
+    "api.schema.json": "97f9e21c09b7999840b2e60faff8c68c2697354a9714adbce8710829fd013969",
+    "schema-fixtures.json": "4e385976e081dc835570e7eb5f1e4e236614929216cc3fd5a9b7f87a7edbfbf0",
+    "api-contract.md": "e35cdd3519ac0733852e4728e0787b78457bb48383e63c4a6b4fbc65faa2bf2e",
+    "weather-aggregation-contract.md": "414ffdf5da8dba56a88228dbc438b15306c09d46d6a74aab228db7bdf9b03d6c"
+  },
+  "limits": [
+    "No weather aggregation, station calibration, API runtime or browser proof",
+    "Previous receipts remain historical hash-bound observations"
+  ]
+}

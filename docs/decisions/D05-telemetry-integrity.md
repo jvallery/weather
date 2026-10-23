@@ -69,3 +69,7 @@ Canonical changes atomically create a new evidence revision and enqueue affected
 The [adversarial vectors](../contracts/telemetry-vectors.json) define synthetic expected behavior for implementation tests. They are specification inputs, not passing parser tests. WX-11 owns receive/spool crashes and loss accounting; WX-12 owns full-family projection and deduplication; WX-13 owns support/freshness/formulas; WX-40/41/42 own event/almanac/search revision propagation. WX-08 enforces schema/identity constraints.
 
 Before closure, collect private full-payload evidence with authorization and admitted storage, measure family/cadence/clock/power-mode behavior, select byte/hold/clock budgets, and qualify both receiver spools, source conflicts, fsync/fencing, DB acknowledgement and recovery throughput. Public fixtures contain synthetic identities only. All raw provenance, source endpoints and receipt routes require private operator authorization; none are public API output.
+
+## Deterministic aggregate consumers
+
+The [aggregation contract](../contracts/weather-aggregation-contract.md) specifies shared metric support, vector direction, structured duration-based wind roses and the selected observed-history ranking threshold. Instrument calibration, per-metric hold and pressure endpoint policies remain qualification work.
