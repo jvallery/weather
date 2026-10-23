@@ -33,7 +33,7 @@ The [planning closure inventory](docs/implementation/planning-closure.md) separa
 - [D10 timestamp-aware media recipe](docs/decisions/D10-media-recipe-and-qualification.md), with exposure coverage, interpolation and deterministic keogram rules.
 - [D11 analysis execution and failure states](docs/decisions/D11-analysis-execution-and-failure.md), including persistent remote-call occupancy and bounded reanalysis; [latest API shape validation](docs/contracts/analysis-execution-validation.json).
 - [D12 embedding and search consistency](docs/decisions/D12-search-and-profile-consistency.md), with versioned profile/withdrawal rules and declarative integrity vectors.
-- [D13 UI and editor boundaries](docs/decisions/D13-ui-and-editor-boundaries.md), with live theme evidence, responsive composition and unresolved identity/font qualification.
+- [D13 UI and editor boundaries](docs/decisions/D13-ui-and-editor-boundaries.md), with live theme evidence, responsive composition and verified [font reuse provenance](docs/decisions/font-reuse-review.md) and unresolved identity qualification.
 - [D14 public media transport](docs/decisions/D14-public-media-transport.md), with live zone/tunnel evidence and an explicit unresolved external-route decision.
 - [D15 custody/recovery design and open decisions](docs/decisions/D15-custody-and-recovery.md), grounded in [live central custody evidence](docs/research/custody-evidence.md).
 - [D16 product targets and pressure policy](docs/decisions/D16-service-targets-and-pressure.md), separating targets from admitted capacity and measured service behavior.

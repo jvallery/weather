@@ -1,0 +1,44 @@
+{
+  "observed_at": "2026-10-23T21:50:12.450333+00:00",
+  "historical_source_revision": "b125a47c4440b3e16551b369c3b9f34014124f37",
+  "packages": [
+    {
+      "name": "@fontsource-variable/ibm-plex-sans",
+      "version": "5.3.0",
+      "archive_url": "https://registry.npmjs.org/@fontsource-variable/ibm-plex-sans/-/ibm-plex-sans-5.3.0.tgz",
+      "archive_bytes": 1394120,
+      "archive_integrity": "sha512-agG8tXFEo0hD9+J7npa4vbbWult52eMLVaQ6WQRlhs/iCAojrMAoejru85W9HTVXHfyUj96KM7gp/KGAS87XaQ==",
+      "integrity_verified": true,
+      "font_member": "package/files/ibm-plex-sans-latin-wght-normal.woff2",
+      "font_sha256": "e2291e842cf5af167122a22881a740c7f2dda7716f1e8cd76680264f4a859470",
+      "matches_live_source_receipt": true,
+      "license_member": "package/LICENSE",
+      "license_sha256": "d0283623ef57e722fd0eb688a8041589670c608ab780cd3612d06ba6f153d3fd",
+      "declared_license": "OFL-1.1",
+      "upstream_repository": {
+        "type": "git",
+        "url": "git+https://github.com/fontsource/font-files.git",
+        "directory": "fonts/variable/ibm-plex-sans"
+      }
+    },
+    {
+      "name": "@fontsource/ibm-plex-mono",
+      "version": "5.3.0",
+      "archive_url": "https://registry.npmjs.org/@fontsource/ibm-plex-mono/-/ibm-plex-mono-5.3.0.tgz",
+      "archive_bytes": 1344435,
+      "archive_integrity": "sha512-eTgnZjZEGk1QtD3ZstF+Vclo2HLAni8YMy34/DxllwZvyz1lR/1RF/xTiAquOBO7MvqBx8D2Ig2WCPMVfdZu7Q==",
+      "integrity_verified": true,
+      "font_member": "package/files/ibm-plex-mono-latin-400-normal.woff2",
+      "font_sha256": "08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7",
+      "matches_live_source_receipt": true,
+      "license_member": "package/LICENSE",
+      "license_sha256": "23b0a9d0c6d3f140a0b77e483c5cfa6bba574325ef5cb189ed9f2fec4884533f",
+      "declared_license": "OFL-1.1",
+      "upstream_repository": {
+        "type": "git",
+        "url": "git+https://github.com/fontsource/font-files.git",
+        "directory": "fonts/google/ibm-plex-mono"
+      }
+    }
+  ]
+}
