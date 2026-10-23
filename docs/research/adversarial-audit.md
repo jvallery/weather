@@ -150,3 +150,7 @@ The [section 13 audit](../implementation/analysis-clause-audit.md) preserves eve
 ## Search evidence precision and full section 14 coverage
 
 The [search audit](../implementation/search-clause-audit.md) preserves all source blocks and assigns 25 grouped obligations. It found that `SearchHit` exposed required precision only through nullable `seek`. The draft now requires independent `evidence_precision`, preserving temporal scope even without playable media; semantic agreement with any seek and separate whole-video numeric scope remain mandatory. Five new fixtures plus the existing suite pass (57 total) with explicit calendar/UTC checking. This does not validate retrieval or model behavior. Live profile/resource qualification and representative relevance evidence remain open.
+
+## Recovery requirements and complete failure coverage
+
+The [section 15 audit](../implementation/recovery-clause-audit.md) retains the complete checkpoint inventory and eight failure scenarios. The selected preview policy clears transient pointers on restore while protecting durable hourly/keogram assets. A complete recovery claim still needs trusted base/WAL/bootstrap discovery, independently recoverable access/config/images, exact-version complete verification, admitted capacity and measured objectives. A generic mirror receipt, available WAL or schema-valid manifest does not establish those facts. No backup/provider workload or policy changed.

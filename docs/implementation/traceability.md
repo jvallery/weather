@@ -149,3 +149,7 @@ The [section 13 audit](analysis-clause-audit.md) preserves 35 source blocks with
 ## Search requirements and precision
 
 The [section 14 audit](search-clause-audit.md) preserves all 24 source blocks and 25 grouped obligations, including transform/document/SQL examples. It found and corrected missing standalone evidence precision on nonplayable search hits; 57 API fixtures now match expected shape outcomes. Retrieval, profile and restore qualification remain unproven.
+
+## Recovery requirements coverage
+
+The [section 15 audit](recovery-clause-audit.md) preserves 20 source blocks, all eight failure-domain rows and 27 grouped obligations. It distinguishes obsolete preview exclusion from mandatory durable image/media closure and assigns independent bootstrap, complete verification and isolated restore acceptance without claiming current recovery capability.

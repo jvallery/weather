@@ -46,6 +46,7 @@ The [planning closure inventory](docs/implementation/planning-closure.md) separa
 - [Private recovery candidates and verification receipts](docs/contracts/recovery-contract.md), with [recovery schemas](docs/contracts/recovery.schema.json), [canonical byte rules](docs/contracts/recovery-canonicalization.md), [golden vectors](docs/contracts/recovery-canonical-vectors.json) and a separate [recovery validation receipt](docs/contracts/recovery-validation-receipt.json).
 - [Private synthesis and grounding contract](docs/contracts/weather-narrative-contract.md), [schema](docs/contracts/weather-narrative.schema.json), exact prompt templates and [validation receipt](docs/contracts/narrative-validation-receipt.json).
 - [Private visual-model candidate schema](docs/contracts/visual-analysis.schema.json) and its [shape fixtures](docs/contracts/visual-analysis-fixtures.json); grounding remains a separate validation boundary.
+- [Backup/custody/recovery audit](docs/implementation/recovery-clause-audit.md), preserving section 15 checkpoint inventory and all eight failure-domain rows.
 - [Semantic/measured search audit](docs/implementation/search-clause-audit.md), preserving section 14 and correcting search-hit precision independent of playback.
 - [Automated-analysis requirements audit](docs/implementation/analysis-clause-audit.md), preserving all section 13 prompts, boundaries and bounded failure behavior.
 - [Website, route, playback and cache audit](docs/implementation/web-clause-audit.md), preserving §§12.1–12.5 and assigning all 19 route surfaces.

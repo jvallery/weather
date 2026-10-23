@@ -1,0 +1,346 @@
+{
+  "scope": "Every section 15 source block including complete checkpoint inventory and eight failure-domain rows; grouped acceptance, not recovery qualification",
+  "requirements_sha256": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+  "section_sha256": "dc8fb8de0b860ef0fedf0e6abbc1fd768d6bc9f56c7e312185af23636a68b8ed",
+  "source_blocks": [
+    {
+      "id": "B15.1.01",
+      "section": "15.1",
+      "source_text": "Use the estate's installed and qualified CNPG **Barman Cloud Plugin** pattern for physical base backups and continuous WAL archiving into the private database hierarchy of the weather Garage bucket. Define a weather-specific `ObjectStore`, credentials, archive identity, schedule, recovery-window retention and monitoring. Pin compatible operator/plugin/PG/extension versions; do not copy legacy in-tree backup syntax without checking the installed version. Current plugin guidance puts `serverName` in the Cluster's plugin parameters, not the retained compatibility field in `ObjectStore`. [S32]",
+      "sha256": "ae20de0a045d92765966b5f20ee6ff269d246b919aa13eef86093cc4954b992d",
+      "producers": [
+        "WX-28",
+        "WX-32"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.1.02",
+      "section": "15.1",
+      "source_text": "Logical exports may help portability, but `pg_dump` does not replace the physical base/WAL chain needed for PITR. Retention must preserve a usable base backup plus contiguous WAL through each supported target. Size and monitor archive throughput/lag, failed archives, base age, free WAL space and the duration of an archive outage the primary can tolerate. Never delete unarchived WAL manually to clear a full disk. [S33], [S34]",
+      "sha256": "58a74f62ae6b1ecc9f950da389fbc6b181a5214688dd67498c31d6a85684a3ef",
+      "producers": [
+        "WX-28",
+        "WX-32"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.1.03",
+      "section": "15.1",
+      "source_text": "Assign a new archive identity to each cluster incarnation. A restored cluster must not overwrite its predecessor's WAL namespace or bypass the archive-empty safety check. Recovery creates a separate target cluster, initially isolated from public traffic and background jobs. Suspend restored application/retention workers until recovery validation is complete; restored retention jobs must not delete the evidence being tested. [S35]",
+      "sha256": "133d8ad0731c66302423747ce99573a2fad839577c1fefb14a4fb56d6065c715",
+      "producers": [
+        "WX-28",
+        "WX-32"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.2.01",
+      "section": "15.2",
+      "source_text": "The central Garage-to-B2 path supersedes a separate weather NAS media export and direct B2 uploader. Codex must create/manage the bucket and credentials through the owning infrastructure workflow and enroll the shared bucket in **both** relevant custody profiles:",
+      "sha256": "fe05bd41e22638a312952c8f79666cac51100ceb3a4a85c84a507ddf32627491",
+      "producers": [
+        "WX-29"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.2.02",
+      "section": "15.2",
+      "source_text": "- **Full profile:** videos, posters, keograms and their maps/manifests, private hourly originals (`images/originals`), sanitized comparison images (`images/public`), retained preview objects under their bounded lifecycle, immutable metadata, release/recovery manifests and database base backups. The inspected central implementation runs daily and excludes declared WAL prefixes; enrollment must cover all required new asset classes rather than reuse an obsolete media-prefix allowlist.\n- **WAL profile:** the exact `<database-path>/<archive-server>/wals/` hierarchy, with the installed frequent schedule; the examined source uses 15-minute runs with bounded transfer budgets.",
+      "sha256": "7f03caa842f0e29d357426472d48faac9a64285354971a0199f2ad9072fc972b",
+      "producers": [
+        "WX-29"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.2.03",
+      "section": "15.2",
+      "source_text": "These are source observations to revalidate and admit, not a promise of weather coverage before enrollment. A new archive-server/incarnation name requires updating the frequent-prefix enrollment. Record expected daily bytes/object counts, base/WAL growth, budgets, lifecycle, independent verification, owner and restore authority. Central custody owns B2 credentials; the public application does not receive them.",
+      "sha256": "de0c6a88078e7f1960f7ce22a9cb19d8939ca3b43671d79f89487efee1a42d02",
+      "producers": [
+        "WX-29"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.2.04",
+      "section": "15.2",
+      "source_text": "A successful generic mirror receipt does not prove complete weather recovery. Establish what the current verifier actually checks (for example size plus a bounded content sample) and add application-specific hash/closure verification. Backup failures alert but do not block ordinary media publishing until an explicit capacity or local-durability policy requires it.",
+      "sha256": "c3611f7a6f860a2243851b05146d2cecb1efafc3e4b4157210e6e4ded90ec201",
+      "producers": [
+        "WX-29"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.3.01",
+      "section": "15.3",
+      "source_text": "Database and object copies become durable at different times. A newer database backup/WAL target can reference media that has not reached B2. Therefore define a **jointly verified application checkpoint**, not just independent \u201cbackup succeeded\u201d flags.",
+      "sha256": "c368a139ca941ea3c65d931261538f9e88867a8378f439cbe9702006ed3a595b",
+      "producers": [
+        "WX-30",
+        "WX-32"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.3.02",
+      "section": "15.3",
+      "source_text": "Each checkpoint must identify:",
+      "sha256": "eda5ce28ef62bd2bc05bf5bd71ec700124fcc1159ad327cd15c8c9d53c4865ec",
+      "producers": [
+        "WX-30",
+        "WX-32"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.3.03",
+      "section": "15.3",
+      "source_text": "- Database system/cluster incarnation, base-backup ID, timeline and an unambiguous recovery target such as a qualified LSN/named PITR point.\n- A transactionally defined catalog/publication generation at that target.\n- The complete immutable video/poster/keogram/sidecar and hourly-original/comparison-derivative object identity and hash closure referenced by that generation, including required historical metadata, calendar-day/hour FKs and effective editorial/event revisions.\n- Application/schema, PostgreSQL/extension and embedding-profile/generation versions.\n- Required recovery configuration/secret identities, without exposing their values.\n- Destination object/version identities, verification time, custody evidence and incomplete/missing items.",
+      "sha256": "0e2d3237e56fc458174e212446cb7b4f39a644a9b17f35cf8fc6627e49eecaaa",
+      "producers": [
+        "WX-30",
+        "WX-32"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.3.04",
+      "section": "15.3",
+      "source_text": "Mark it offsite-recoverable only after a valid base, contiguous WAL through the target, **every referenced required object**, and the manifest itself are verified offsite. Implement a practical binding between the DB transaction/recovery target and catalog generation; a wall-clock timestamp sampled independently on another worker is not an atomic checkpoint. Store the recoverable manifest where it can be obtained without the original database, Garage or NAS.",
+      "sha256": "144ba7c29e3c6e134876f48c3d5e157a9630f0db309cc6060a2f11cbd419a65d",
+      "producers": [
+        "WX-30",
+        "WX-32"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.3.05",
+      "section": "15.3",
+      "source_text": "Restore the highest verified common checkpoint for a complete service. A later DB-only restore may recover newer weather telemetry, but missing media must be explicitly reconciled and withheld; it is not a claim of the same joint application RPO. Track **database-only**, **media**, and **joint application** recovery ages separately. Frequent WAL copying does not reduce media RPO below its actual copy/verification cadence.",
+      "sha256": "9ece10fcc078d2536620598642ecb29771e3994fa053dd80a40ac62d9c7c056a",
+      "producers": [
+        "WX-30",
+        "WX-32"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.4.01",
+      "section": "15.4",
+      "source_text": "Coordinate media garbage collection with the supported PITR window and offsite lifecycle. An older database target may still reference media tombstoned today; retain or identify the appropriate recoverable object version for all supported targets. A B2 historical version is useful only if the recovery manifest and procedure can find/read it. Do not assume Garage itself supplies versioning or object lock.",
+      "sha256": "519eb9486f4e8d5d870545bb5f950ab310ed553949b1798ed07fa191d097011d",
+      "producers": [
+        "WX-28",
+        "WX-29",
+        "WX-30",
+        "WX-32"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.4.02",
+      "section": "15.4",
+      "source_text": "Restore requires independently available configuration, images, credentials and secrets as well as data. Record where those are escrowed under existing estate practice, who can use them, and how to recover the broker/backup authorization without querying the failed weather database. Protect recovery identities and DB backups from media-serving identities. Any encryption keys required for archive recovery must have their own tested recovery path.",
+      "sha256": "180dcd121abf0c6d7b420ac47a6baeaa7131b06ff3b674e9c4c4a1e57c048757",
+      "producers": [
+        "WX-28",
+        "WX-29",
+        "WX-30",
+        "WX-32"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.4.03",
+      "section": "15.4",
+      "source_text": "CNPG recovery includes canonical observations/receipts, metadata/narratives, stored vectors, embedding profiles and active generation, jobs/outbox, visibility tombstones and media hashes. Restore pgvector and other extensions before application validation. ANN indexes may be rebuilt from restored vectors; re-running AI or obtaining an old embedding model must not be necessary for recovery.",
+      "sha256": "068cf0a77e72778c1b20ff9a6ff73307411c35b5b56ebb5018023f6cced444ae",
+      "producers": [
+        "WX-28",
+        "WX-29",
+        "WX-30",
+        "WX-32"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.5.01",
+      "section": "15.5",
+      "source_text": "Finalize numeric RPO/RTO in D15 from admitted topology, archive timeout/cadence, central job budgets and measured restore throughput. Distinguish synchronous database durability, local object-loss window, offsite telemetry RPO, media RPO and whole-service RTO. Initial planning targets may be a database offsite recovery age under 30 minutes and media/joint-checkpoint age under 36 hours with the existing schedules, but these are **proposals**, not accepted SLOs or current guarantees. A fresh WAL copy without a usable base cannot meet even the database target.",
+      "sha256": "ed29acaa1ea2d18fd033e0d036aa464cc0ba82760354825054c68d9887b40f6e",
+      "producers": [
+        "WX-29",
+        "WX-30",
+        "WX-32",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.5.02",
+      "section": "15.5",
+      "source_text": "The required recovery exercise uses an isolated target with no access to the original CNPG cluster, Garage instance or Obsidian. Read data from B2 through an independent identity. Restore the database, media/sidecars/posters, metadata visibility, weather queries, vectors/profile identity and application configuration; verify hashes and actual playback. Keep inference unavailable during the core recovery test. Assign the new cluster an independent archive identity before normal operations.",
+      "sha256": "5336bb6e0cd7088a9b884296c565a04dac20928fbc5fc3e3eda6c3568016e055",
+      "producers": [
+        "WX-29",
+        "WX-30",
+        "WX-32",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.5.03",
+      "section": "15.5",
+      "source_text": "Include deliberate mismatch cases: newer WAL than copied media, one absent media object, one missing WAL segment, a tombstoned-but-PITR-required asset, and an expired model route. A checkpoint with missing prerequisites must remain incomplete. Record measured RPO/RTO, recovery constraints and the exact validated application/image/schema generation.",
+      "sha256": "a94c6979a657308375316ef996b7d1fab7734b6d71b2159b48cfb243a2b4e92f",
+      "producers": [
+        "WX-29",
+        "WX-30",
+        "WX-32",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.5.04",
+      "section": "15.5",
+      "source_text": "Extend the exercise to a missing selected original, mismatched still/day/hour FK, public/private asset confusion, a corrected human revision with pending embeddings and a video expired before its five-year still. Restore originals byte-for-byte and prove private access remains denied to the public origin. Current previews have a bounded, explicitly reconstructible lifecycle: D15 must define their checkpoint exclusion/expiry policy, restore them only as eligible stale state or clear their pointers, and resume from a newly eligible capture. Do not require obsolete minute previews for historical recovery or silently omit durable hourly/keogram assets from the closure. Central full-bucket custody still accounts for preview churn and retention cost.",
+      "sha256": "c40f2d7ebe050642bd4a081da0037c5ad07489d3c0d6a2b25d6f647b46a63ca9",
+      "producers": [
+        "WX-29",
+        "WX-30",
+        "WX-32",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    },
+    {
+      "id": "B15.6.01",
+      "section": "15.6",
+      "source_text": "| Failure | Required behavior |\n|---|---|\n| One API/worker pod or eligible node fails | Reconcile durable jobs and serve through remaining admitted replicas where available; do not double-publish. |\n| CNPG primary fails | Follow qualified failover policy and report measured recovery; spool telemetry; new publication waits for a safe DB transaction. |\n| Obsidian/NFS staging fails | Capture cannot persist new JPEGs; record visible gaps; input-dependent rendering pauses/fails boundedly. |\n| NAS-backed Garage object blocks fail | Upload/uncached playback can fail even while Garage metadata health is green. Show unavailable media without losing DB history. |\n| Database archive path fails | Track WAL backlog/free space and protect the database within the approved outage budget. |\n| Inference/embedding route fails | Continue weather, media publication and typed browsing; analysis/search show explicit degraded state. |\n| B2/central copy fails | Primary service continues while offsite protection ages; alert and respect custody-aware retention/capacity. |\n| Entire local site fails | Recover from the latest independently verified B2 checkpoint and recovered configuration/secrets. |",
+      "sha256": "bc2fe4744e2473e9ce3a97435fc259ee2efdd08693d07ad3a76a8bf2ff87c1b4",
+      "producers": [
+        "WX-31",
+        "WX-32",
+        "WX-33",
+        "WX-34"
+      ],
+      "integration": "WX-33",
+      "state": "mapped_runtime_unproven"
+    }
+  ],
+  "acceptance": {
+    "15.1": {
+      "producers": [
+        "WX-28",
+        "WX-32"
+      ],
+      "obligations": [
+        "Use installed compatible CNPG Barman Cloud Plugin with Weather-specific ObjectStore, archive identity, credentials, schedule, recovery window and monitoring; qualify version-specific serverName placement, not copied legacy syntax.",
+        "Preserve usable physical base plus contiguous WAL through each supported target. Logical exports are supplemental; monitor throughput/lag/errors/base age/WAL free space and admitted archive outage budget, never manually delete unarchived WAL.",
+        "Give each new/restored cluster a new archive identity; preserve archive-empty safety and isolate restore from public traffic and all application/retention jobs until validation."
+      ]
+    },
+    "15.2": {
+      "producers": [
+        "WX-29"
+      ],
+      "obligations": [
+        "Enroll the one Weather Garage bucket through storage-owner workflows in both full and exact-WAL custody; no separate application B2 uploader or NAS media export.",
+        "Full coverage includes videos/posters/keograms/maps/manifests, private hourly originals, sanitized comparison images, retained previews, immutable metadata/release/recovery records and bases. Frequent WAL enrollment follows each exact archive-server incarnation.",
+        "Revalidate actual schedules/caps and admit daily bytes/object counts/base/WAL growth/listing/verification/backlog/lifecycle budgets and restore authority; historical schedules do not confer Weather coverage.",
+        "Keep B2 credentials in central custody. Generic size/sample mirror checks cannot prove complete Weather closure; supplement with full application hash/identity verification.",
+        "Backup failures alert and age protection while ordinary publication continues unless an explicit capacity/local-durability policy requires stopping."
+      ]
+    },
+    "15.3": {
+      "producers": [
+        "WX-30",
+        "WX-32"
+      ],
+      "obligations": [
+        "Bind checkpoint to DB incarnation/base/timeline/unambiguous replay target and transactionally captured catalog generation; independent worker wall clocks are not atomic binding.",
+        "Enumerate every retained referenced immutable object/hash including media/poster/keogram/sidecar/hourly/comparison, historical metadata, day/hour FKs and editorial/event revisions; exact set equality, not counts alone.",
+        "Bind application/schema/PG/extensions and embedding profile/generation, secret/config identities without values, destination versions, verification time/custody and missing items.",
+        "Offsite-recoverable requires usable base, contiguous WAL, every required exact-version object and manifest independently verified. Discover manifest without original DB/Garage/NAS.",
+        "Restore highest verified common checkpoint; newer DB-only telemetry may be recovered only with missing media explicitly withheld/reconciled. Track DB-only, media and joint ages separately; frequent WAL does not improve uncopied media RPO."
+      ]
+    },
+    "15.4": {
+      "producers": [
+        "WX-28",
+        "WX-29",
+        "WX-30",
+        "WX-32"
+      ],
+      "obligations": [
+        "Retention protects all supported PITR references, including currently tombstoned objects and discoverable/readable B2 versions. Do not assume Garage versioning/object lock.",
+        "Independently recover config/images/credentials/secrets/decryption keys and broker authorization through existing custody without querying failed Weather DB; Secret names alone are not recoverable credentials.",
+        "Media-serving authority cannot read backup/recovery identities or DB archives. Test independent recovery access and encryption dependencies without exposing secret values.",
+        "Restore observations/receipts, narratives/metadata, full vectors/profiles/generation, jobs/outbox, tombstones and hashes with extensions installed; ANN rebuild may use restored vectors, never require AI or historical model availability."
+      ]
+    },
+    "15.5": {
+      "producers": [
+        "WX-29",
+        "WX-30",
+        "WX-32",
+        "WX-34"
+      ],
+      "obligations": [
+        "Finalize numeric objectives from admitted topology/cadence/budgets and measured restore throughput; distinguish synchronous DB durability, local object loss, offsite telemetry/media ages and whole-service RTO. Under-30-minute DB and under-36-hour media/joint figures remain proposals.",
+        "Perform isolated B2-only restore with independent identity and no original CNPG/Garage/Obsidian access; restore DB/media/sidecars/posters/visibility/weather/vectors/profiles/config and verify hashes plus actual playback, with inference unavailable.",
+        "Assign restored cluster new archive identity before operation; record measured RPO/RTO, limits and exact app/image/schema generation.",
+        "Inject newer WAL than media, absent media, missing WAL, PITR-required tombstone and expired model route; incomplete checkpoints cannot be selected as successful.",
+        "Inject missing hourly original, mismatched still/day/hour FK, private/public confusion, corrected human text with pending embeddings and video expiry before five-year still expiry. Restore original bytes and prove public origin denial.",
+        "Exclude obsolete minute previews from historical closure under the selected D15 policy, clear restored pointers and resume only newly eligible captures. Never omit durable hourly/keogram assets; central full custody still budgets preview churn."
+      ]
+    },
+    "15.6": {
+      "producers": [
+        "WX-31",
+        "WX-32",
+        "WX-33",
+        "WX-34"
+      ],
+      "obligations": [
+        "Pod/node failure reconciles durable jobs without duplicate publication and uses only remaining admitted replicas; CNPG failover spools telemetry and publication waits for safe transaction.",
+        "NFS failure produces visible capture gaps and bounded input-dependent render failure; NAS-backed Garage block failure shows unavailable uncached media even if metadata health is green, preserving DB history.",
+        "Archive failure tracks backlog/free space and protects DB within approved outage budget; inference failure preserves weather/media/typed browsing with explicit analysis/search degradation.",
+        "B2 failure ages offsite protection while primary service continues under retention/capacity policy; entire-site loss recovers latest independently verified checkpoint plus configuration/secrets."
+      ]
+    }
+  },
+  "verification": {
+    "all_nonblank_nonheading_source_lines_preserved": true,
+    "failure_domain_rows": 8,
+    "runtime_acceptance": false
+  }
+}
