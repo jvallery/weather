@@ -174,3 +174,7 @@ A full GitHub inventory returned exactly 47 Weather issues: the planning root pl
 ## Final hourly-original archival receipt specified
 
 The [private hourly archive contract](../contracts/hourly-archive-contract.md) resolves the formerly missing final receipt format separately from staging promotion. It binds exact native bytes, private destination, camera/day/hour/capture and selection/work identities, verified local durability, one transactional catalog/FK commit and retained policy versions. Lost acknowledgements and stale generations cannot release pins by inference. Twelve structural fixtures pass with explicit date/UTC assertions. Garage immutability/durability, actual database constraints, races and cleanup remain unqualified; no object/database mutation occurred.
+
+## Seed-to-filed dependency reconciliation
+
+The [section 19 audit](../implementation/plan-clause-audit.md) records why 12 seed nodes changed prerequisites. The filed graph contains 103 internal/122 total assigned edges, remains acyclic and includes all 42 required initial items in rollout while excluding WX-45/WX-46. Every implementation item remains transitively gated by planning. This source-only recalculation does not refresh live endpoint observations or declare the incomplete first-pass handoff finished.

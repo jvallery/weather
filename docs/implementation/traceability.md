@@ -169,3 +169,7 @@ The [contract audit](contracts-clause-audit.md) preserves all 11 source blocks, 
 ## Live producer-assignment propagation
 
 The [issue-body verification](issue-body-verification.json) checks every producer assignment from the current source-bound audits, including time, UI clauses and route rows, against live GitHub bodies. Seventeen missing links were repaired across 13 issues; all 46 implementation/follow-on bodies now carry required sections, mapped R-IDs and assigned audit links. This is structural coverage, not complete requirement semantics or runtime proof.
+
+## Filed-plan requirements
+
+The [section 19 audit](plan-clause-audit.md) preserves all 46 seed rows and complete filing/graph/handoff instructions. It explains 12 seed-node dependency changes and recalculates acyclicity, stored order, 42 required initial items in rollout closure and deferred exclusion. WX-00 owns planning completion; native endpoint and semantic acceptance remain separate evidence.

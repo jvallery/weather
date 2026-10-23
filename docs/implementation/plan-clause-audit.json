@@ -1,0 +1,271 @@
+{
+  "scope": "Section 19 source and seed-to-filed internal dependency reconciliation; planning ownership WX-00",
+  "requirements_sha256": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+  "backlog_sha256": "f7dd991ef779408565eb5c0d8d0786b8f0a40f1f1ead7c079ae8d2f90a5911bb",
+  "seed_sha256": "b293be85c0f1fe0e91738bede9d8d0b2138b9587682eafeeade98af8a37b5329",
+  "source_blocks": [
+    {
+      "id": "P19.1.01",
+      "section": "19.1",
+      "source_text": "The catalog below is a **candidate decomposition**, not a claim that these GitHub issues exist or that Phase 1 research is complete. Codex must revise it after D01\u2013D16, file all necessary issues in `jvallery/weather`, and reconcile owner-repository prerequisites through the existing process. Do not invent issue numbers. If a candidate is unnecessary under the selected design, record why; if an omitted task is necessary, add it. Keep workload isolation while linking shared-provider changes to their real owners.",
+      "sha256": "4b2c83c62f8ff38602fef092f4d69c9c7fa80c7d64bce5bf1c6330561f47f8f2",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "P19.1.02",
+      "section": "19.1",
+      "source_text": "Every issue must contain:",
+      "sha256": "f74368037bb05ad815ddfa36147d607f8f1a5c6e01b3212ae2b6689c9b5f5823",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "P19.1.03",
+      "section": "19.1",
+      "source_text": "1. A concrete problem/outcome and applicable requirement/ADR IDs.\n2. Scope, relevant interface/data contracts, and explicit owner/infrastructure prerequisites.\n3. Acceptance criteria that can be demonstrated, including failure/privacy/durability cases where relevant.\n4. Validation method and required evidence; distinguish synthetic CI from private integration tests.\n5. Operational implications, observability, rollout/rollback and any irreversible migration/retention effects.\n6. Native \u201cblocked by\u201d links plus readable issue URLs and a stable machine key.",
+      "sha256": "2e42b254393562d53459ce95a5c1769a126483687b7bbacfac812bbb5b5f8886",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "P19.1.04",
+      "section": "19.1",
+      "source_text": "Create labels for area, type, priority and readiness as useful; do not confuse priority with dependency. A parent epic checklist is not a dependency graph. GitHub's dependency API uses actual issue identities, so resolve IDs from returned/read-back objects rather than assuming an issue number is an API object ID. [S37], [S47]",
+      "sha256": "29e3d8aa30ec389fd9108f52dd6a9a3af6d83f244e7fd7e569b19e9d477788a1",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "P19.2.01",
+      "section": "19.2",
+      "source_text": "The seed contains **46 candidates**, preserving WX-01\u2013WX-35 and adding WX-36\u2013WX-46: **42 required initial-release candidates**, **two conditional initial GPU/CDN candidates**, one accepted composite-product follow-on and one reserved visual-index research item. It has **90 direct edges plus two conditional rollout edges**. All candidates depend on the relevant completed Phase-1 decisions. The table lists direct implementation prerequisites; transitive dependencies need not be repeated. Optional GPU/CDN work blocks production only if enabled. Implementation ordering does not create a runtime dependency on AI or a playable video for current previews, hourly stills, measured events or numeric search.",
+      "sha256": "f28297cecbe2248e9947ad0ae8b309c2b59060336f5dd2dabbe1e6f0ad6c20a9",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "P19.2.02",
+      "section": "19.2",
+      "source_text": "| Key | Implementation outcome and principal acceptance | Direct prerequisites | Requirement IDs |\n|---|---|---|---|\n| WX-01 | Independent namespace, ownership, RBAC, quotas and secret delivery; no inherited Sentinel privileges. | Phase 1 | R02, R08, R16, R27, R28 |\n| WX-02 | Local reproducible build/registry/promotion pipeline; isolated untrusted PR execution and pinned images. | WX-01 | R02, R24, R27 |\n| WX-03 | Owner-managed Obsidian NFS grant/PVC, capacity and qualified writer-transfer contract. | WX-01 | R07, R08, R26, R28 |\n| WX-04 | Approved Tempest UDP network attachment/relay and source filtering, with real packet reception. | WX-01 | R13, R27, R28 |\n| WX-05 | Admitted HA CNPG/storage/image/extension deployment and least-privilege database roles. | WX-01 | R14, R16, R22, R28 |\n| WX-06 | Isolated Garage bucket/tier, quotas, keys and verified local durability contract. | WX-01 | R17, R23, R26, R28, R29, R30, R31 |\n| WX-07 | Shared-bucket authorization boundary, independent backup/restore credentials and Barman-compatible prefix enforcement. | WX-06 | R17, R18, R23, R27, R30, R31 |\n| WX-08 | Canonical schemas, calendar-day/hour FKs, typed asset visibility, event/editorial revisions, job leases and outbox. | WX-02, WX-05 | R14, R19, R20, R22, R29, R30, R31, R33, R36 |\n| WX-09 | Solar schedule and calendar-day/hour identities, cycle allocation, source-time mapping and DST/boundary fixtures. | WX-08 | R03, R04, R05, R30, R32, R34 |\n| WX-10 | Snapshot collectors, total HTTP deadlines, time/freshness ledger, atomic chunks and NFS writer fencing. | WX-03, WX-09 | R03, R06, R07, R08 |\n| WX-11 | Complete UDP receipt capture and independent durable spool with idempotent commit/replay. | WX-04, WX-08 | R13, R14, R15 |\n| WX-12 | All-field/row normalization, event deduplication, timeseries partitions/history and coverage. | WX-11 | R14, R15, R20 |\n| WX-13 | Current/history/aggregate APIs with approximately 15-second UI freshness, exports, coverage and reusable interval evidence. | WX-12 | R14, R15, R20, R26, R34, R35 |\n| WX-14 | CPU render pipeline and high-interpolation implementation; jitter-aware shutter/exposure, gaps and deadline. | WX-10 | R05, R09, R26 |\n| WX-15 | **Conditional:** If admitted: optional GPU stage/co-tenancy configuration and resident-SLO/CPU-fallback qualification. | WX-14 | R09, R10, R28 |\n| WX-16 | Native/web/mobile encodes, both MP4 timescales, posters, checksums and full validation. | WX-14 | R05, R11, R20 |\n| WX-17 | Typed immutable artifact uploads, private-original catalog commits, publication transaction/outbox, sidecars and reconciliation. | WX-07, WX-08, WX-16 | R03, R17, R19, R20, R29, R30, R31, R36 |\n| WX-18 | Qualified readback, source-product pins, durable hourly promotion, safe raw cleanup and staging backpressure. | WX-10, WX-17, WX-19, WX-36, WX-37 | R07, R19, R26, R29, R30 |\n| WX-19 | Same-origin typed media/image/download origin, range semantics, private-original denial and preview eligibility. | WX-07, WX-17 | R11, R18, R25, R27, R29, R30, R31 |\n| WX-20 | Responsive themed Today/archive/day/video/history UI with 15-second conditions, camera products and accessible navigation. | WX-13, WX-19 | R11, R12, R15, R20, R29, R30, R31, R32 |\n| WX-21 | Qualified completed-video adapter, temporal control tests, clip mapping and bounded inference capability handling. | WX-17 | R21, R28 |\n| WX-22 | Versioned visual/synthesis prompts, strict evidence schemas, measured/visual distinction and asynchronous metadata CAS. | WX-13, WX-21 | R19, R20, R21 |\n| WX-23 | Text-embedding profile/extension/storage and exact baseline; compatible ANN only if justified; reserve visual profile boundary. | WX-08 | R22, R24 |\n| WX-24 | Effective public search documents, editorial-aware outbox/revision checks and embedding generation lifecycle. | WX-22, WX-23 | R19, R20, R22, R36 |\n| WX-25 | Bounded hybrid semantic/lexical API with exact measured predicates, numeric-only mode, recall and outage behavior. | WX-24, WX-42 | R22, R26, R27, R35 |\n| WX-26 | Search UI, typed measured filter URLs, result evidence/coverage and validated video seeks. | WX-20, WX-25 | R12, R20, R22, R35 |\n| WX-27 | **Conditional:** If selected: plan-compliant Cloudflare routing/cache, object-size/range/Safari tests and purge controls. | WX-19 | R11, R18, R25 |\n| WX-28 | Barman physical base/WAL archives, unique identities, retention and real gateway backup/restore qualification. | WX-05, WX-07 | R16, R17, R23 |\n| WX-29 | Central full and exact-WAL custody enrollment, budgets, monitoring and independently checked receipts. | WX-28 | R17, R23, R28, R29, R30 |\n| WX-30 | Joint checkpoint closure and recovery-aware GC including keograms, hourly originals/day FKs and public/private assets. | WX-17, WX-29, WX-36, WX-37 | R19, R20, R23, R29, R30 |\n| WX-31 | Integrated operational dashboards/alerts, SLOs, capacity and dependency-failure visibility. | WX-13, WX-18, WX-25, WX-29, WX-38 | R10, R15, R16, R26, R29, R30, R31 |\n| WX-32 | B2-only joint restore and outage/replay tests including private originals, day FKs, editorial state and inference-offline search. | WX-20, WX-24, WX-30, WX-31, WX-43 | R14, R16, R22, R23, R26, R29, R30, R31, R33, R36 |\n| WX-33 | Integrated security/browser/accessibility/quality acceptance for all selected initial features and privacy boundaries. | WX-02, WX-18, WX-20, WX-22, WX-26, WX-31, WX-41, WX-43, WX-44 | R03, R04, R05, R06, R08, R09, R11, R12, R13, R18, R21, R24, R27, R28, R29, R30, R31, R32, R33, R34, R35, R36, R37 |\n| WX-34 | Fleet deployment, customization, upgrades, capacity and recovery runbooks; selected upstream provenance and licenses. | WX-32, WX-33 | R02, R23, R24, R26, R27 |\n| WX-35 | Controlled initial production rollout with R01-R37 evidence, operational handoff and rollback; deferred products remain separate. | WX-32, WX-33, WX-34; add WX-15/WX-27 if enabled | R01\u2013R37 |\n| WX-36 | Observed UTC-axis keograms for all three cameras and both civil segments. | WX-19 | R29, R04, R19, R20 |\n| WX-37 | Hourly private native originals in Garage, calendar-day FKs and sanitized still comparison archive. | WX-19 | R30, R07, R17, R18, R19, R23 |\n| WX-38 | Delayed current preview publication for all three cameras with bounded freshness work. | WX-19 | R31, R08, R18, R19 |\n| WX-39 | Per-camera bidirectional video, keogram and measured-weather plot exploration. | WX-20, WX-36 | R32, R12, R20 |\n| WX-40 | Provenance-aware weather bookmarks, daily event strip and bounded in-site feed. | WX-22, WX-39 | R33, R14, R20, R21 |\n| WX-41 | Local records, precipitation calendar, wind rose, sun/moon context and historical comparisons. | WX-20, WX-37 | R34, R14, R15, R24 |\n| WX-42 | Typed measured-weather search predicates and bounded source-interval evidence queries. | WX-13, WX-17 | R35, R14, R20, R22 |\n| WX-43 | Authenticated private corrections, tags, favorites and poster selection with audit and reindexing. | WX-24, WX-37, WX-40 | R36, R19, R20, R21, R22, R27 |\n| WX-44 | Responsive self-hosted weather card for the approved vallery.net embedding origin. | WX-20, WX-38 | R37, R12, R15, R24, R27 |\n| WX-45 | **Deferred:** Follow-on: single composite skycam product containing east and west views. | WX-35 | R38, R04, R05, R11, R19, R20, R23 |\n| WX-46 | **Deferred:** Deferred research: value and feasibility of a separate local visual-search index. | WX-35 | R22, R10, R24, R27 |",
+      "sha256": "84d796dbb958496f43e450b8f1ffa14d551d0de189ff089e81616bd4d1b3b3ab",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "P19.2.03",
+      "section": "19.2",
+      "source_text": "R01 also requires the first-pass research/repository/issue-filing deliverables themselves; it is not deferred until production. Native-video capability must remain an explicit rollout gate if only sampled-frame fallback is available. Optional GPU/CDN candidates may be filed as deferred with a recorded decision; their absence does not excuse required CPU/browser functionality.",
+      "sha256": "f85145098ce6396c8017af8913710a217cbdc14eddc5c48deee1d0d13d29a371",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "P19.2.04",
+      "section": "19.2",
+      "source_text": "WX-36\u2013WX-44 are selected initial-release work and must be in WX-35's prerequisite closure. **WX-45 is the accepted combined east/west skycam follow-on; WX-46 is deferred visual-index research.** File and label both during the first assignment, but neither may be an initial-rollout prerequisite. R38 is covered by a concrete filed follow-on issue with design/acceptance/dependencies; it does not claim that composite videos are deployed at initial launch. Follow-on layout/model details can be resolved in their scheduled work without making the initial architecture decision incomplete.",
+      "sha256": "3df29542e6fb8307b217f09b35213523ebc4e032a0602527360fb390b745dbe0",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "P19.3.01",
+      "section": "19.3",
+      "source_text": "The accompanying `backlog-candidate.json` is a seed with stable keys, requirement mapping and dependencies. It has **no fabricated GitHub issue numbers**. After research, Codex must emit the authoritative filed graph with actual repository, issue number, issue ID, URL, decision references, readiness state and direct `depends_on` keys. A blocked research item records owner/evidence needed; an implementation prerequisite records the linked owner issue.",
+      "sha256": "d25a2f351c932b3eb8225a6f57eebf2b9b9a988050000fcf73a20d1e81c89c1e",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "P19.3.02",
+      "section": "19.3",
+      "source_text": "Schema version 2 adds `phase` (`initial_release`, `follow_on`, `deferred_research`) and `release_gate` (`required`, `conditional`, `none`) to each candidate. These fields distinguish an admitted acceleration option from an accepted later product or a reserved investigation. Preserve the activation conditions of WX-15/WX-27, and regenerate topological order after all edges change. Validate the full graph and the selected initial-release closure independently; all required initial work must precede WX-35, and WX-45/WX-46 must be outside that closure.",
+      "sha256": "02396be495c86ef0e5bd5f9da47167e10ade14c285548c1a78468f4232ed53ea",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "P19.3.03",
+      "section": "19.3",
+      "source_text": "Use native blocked-by relationships as well as the committed graph. Verify they agree. Validate that every edge resolves, no issue depends on itself, the graph is acyclic, optional paths are handled correctly, each requirement is covered, and critical production gates have incoming prerequisites. On retries, reconcile stable keys to existing issues rather than creating duplicates. Record creation/update results and read them back.",
+      "sha256": "1dbdfe1b6778a35a54bdc2ce897de595d11cbb4537db2b220ce47dc603269791",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "P19.3.04",
+      "section": "19.3",
+      "source_text": "These compact views explain the main branches; the machine-readable graph contains all direct edges:",
+      "sha256": "9a7464b0a33f4de93b2312568415e9935f9ca129636999f11f397b7b8972abd8",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "P19.3.05",
+      "section": "19.3",
+      "source_text": "```mermaid\nflowchart TD\n  P[\"Phase 1 decisions and filed backlog\"] --> F[\"Namespace and local CI\"]\n  F --> N[\"NFS and capture\"]\n  F --> O[\"Garage and authorization\"]\n  F --> D[\"CNPG and schemas\"]\n  N --> R[\"Render and validate\"]\n  O --> U[\"Durable publication\"]\n  D --> U\n  R --> U\n  N --> I[\"Keograms and hourly originals\"]\n  O --> I\n  U --> W[\"Origin and archive UI\"]\n  U --> C[\"Safe raw cleanup\"]\n  I --> C\n  I --> W\n```",
+      "sha256": "deb9b060b7aaee0b614c3aa99f0706642affa572d40e98bb35e5697f9338e8d9",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "P19.3.06",
+      "section": "19.3",
+      "source_text": "```mermaid\nflowchart TD\n  T[\"UDP path and full receipts\"] --> H[\"History and measured aggregates\"]\n  V[\"Published validated video\"] --> A[\"Qualified visual analysis\"]\n  H --> S[\"Grounded metadata synthesis\"]\n  A --> S\n  S --> E[\"Versioned embeddings\"]\n  E --> Q[\"Filtered search API and UI\"]\n  B[\"Database base and WAL custody\"] --> J[\"Joint media/database checkpoint\"]\n  V --> J\n  J --> X[\"B2-only restore acceptance\"]\n  Q --> X\n```",
+      "sha256": "083f54251f2f87e8c0c6a710ab3bc536af2cb0eef4f6e157a91bbacf0fad1f7f",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "P19.4.01",
+      "section": "19.4",
+      "source_text": "The first pass is complete only when the repository configuration relevant to planning is in place, D01\u2013D16 have evidence-backed decisions or explicitly acknowledged research blockers, the full selected implementation backlog is filed with actual URLs/native dependencies, the committed DAG/coverage validation passes, and the owner receives a clear report separating **decisions complete**, **research blocked**, and **implementation pending**. If material research blockers remain, report the pass as partial/blocked, while retaining every completed artifact and issue.",
+      "sha256": "589e5de48e85e67402553559105e082ec12e47b55ce714f5ab1df71fbdd348ff",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "P19.4.02",
+      "section": "19.4",
+      "source_text": "The handoff report must include the chosen architecture, GPU co-tenancy proposal or qualified CPU path, UDP/network design, database/time-series/search design, shared-bucket authorization/durability decision, framework/CDN decision, recovery objectives, critical path and first ready implementation issues. It must not imply that the website, ingestion, cluster resources or backups are deployed merely because the planning repository is populated.",
+      "sha256": "21c2669cfc947531b879e6411b862320aa8ce54c5497429ffeaf4b55d4a7edb1",
+      "planning_owner": "WX-00"
+    },
+    {
+      "id": "P19.4.03",
+      "section": "19.4",
+      "source_text": "Include Q01\u2013Q16-to-requirement/ADR/issue traceability, the initial-versus-follow-on milestone split, the selected original/preview lifecycle and disclosure policy, and the linked owner prerequisite for embedding on `vallery.net`. The original questionnaire is answered; only evidence-backed implementation decisions and the owner's concrete license/reuse selection remain to be completed during Phase 1.",
+      "sha256": "abbad26299d4133c9ee715aed808974ba94df623d4adffdf49f7201360205599",
+      "planning_owner": "WX-00"
+    }
+  ],
+  "dependency_changes": [
+    {
+      "key": "WX-02",
+      "added": [],
+      "removed": [
+        "WX-01"
+      ],
+      "reason": "Independent CI admission need not wait for application namespace; both retain planning/owner prerequisites."
+    },
+    {
+      "key": "WX-17",
+      "added": [],
+      "removed": [
+        "WX-16"
+      ],
+      "reason": "Shared publication interfaces can be built against contracts without finished video encoding; integrated media acceptance remains gated."
+    },
+    {
+      "key": "WX-24",
+      "added": [
+        "WX-17"
+      ],
+      "removed": [
+        "WX-22"
+      ],
+      "reason": "Index effective public revisions through publication/outbox contracts without requiring completed AI before independent typed/lexical work."
+    },
+    {
+      "key": "WX-32",
+      "added": [
+        "WX-16",
+        "WX-22",
+        "WX-40",
+        "WX-41"
+      ],
+      "removed": [],
+      "reason": "Full recovery must exercise actual encoded media, analysis, events and almanac in addition to the prior recovery inputs."
+    },
+    {
+      "key": "WX-33",
+      "added": [
+        "WX-16",
+        "WX-21",
+        "WX-36",
+        "WX-37",
+        "WX-38",
+        "WX-39",
+        "WX-40",
+        "WX-42"
+      ],
+      "removed": [],
+      "reason": "Integrated qualification requires every initial product and native-video capability, not only a partial UI path."
+    },
+    {
+      "key": "WX-36",
+      "added": [
+        "WX-10",
+        "WX-17"
+      ],
+      "removed": [
+        "WX-19"
+      ],
+      "reason": "Observed keograms depend on capture and shared publication interfaces rather than completed origin/UI."
+    },
+    {
+      "key": "WX-37",
+      "added": [
+        "WX-10",
+        "WX-17"
+      ],
+      "removed": [
+        "WX-19"
+      ],
+      "reason": "Hourly originals depend on capture and shared publication interfaces rather than completed origin/UI."
+    },
+    {
+      "key": "WX-38",
+      "added": [
+        "WX-10"
+      ],
+      "removed": [],
+      "reason": "Delayed preview production requires actual capture input independently of playable videos."
+    },
+    {
+      "key": "WX-40",
+      "added": [
+        "WX-13",
+        "WX-20"
+      ],
+      "removed": [
+        "WX-22",
+        "WX-39"
+      ],
+      "reason": "Measured events use deterministic weather and UI contracts without an AI/linked-plot runtime prerequisite."
+    },
+    {
+      "key": "WX-41",
+      "added": [
+        "WX-13"
+      ],
+      "removed": [
+        "WX-37"
+      ],
+      "reason": "Almanac depends on deterministic weather, not hourly image browsing."
+    },
+    {
+      "key": "WX-42",
+      "added": [
+        "WX-08"
+      ],
+      "removed": [
+        "WX-17"
+      ],
+      "reason": "Typed numeric predicates depend on canonical schemas and weather, not media publication."
+    },
+    {
+      "key": "WX-43",
+      "added": [
+        "WX-20"
+      ],
+      "removed": [
+        "WX-40"
+      ],
+      "reason": "Editor UI depends on public interface and revision contracts; measured event implementation need not serialize editor foundation."
+    }
+  ],
+  "checks": {
+    "filed_nodes": 46,
+    "seed_internal_edges": 90,
+    "filed_internal_edges": 103,
+    "native_edges_in_committed_plan": 122,
+    "required_initial_count": 42,
+    "all_required_initial_in_rollout_closure": true,
+    "follow_on_and_research_excluded": true,
+    "all_implementation_transitively_blocked_by_planning": true,
+    "acyclic": true,
+    "stored_topological_order_valid": true,
+    "live_native_edges_refreshed_this_pass": false
+  },
+  "limits": [
+    "Graph structure and issue-body presence are not semantic or runtime acceptance",
+    "Live native graph receipt remains separately dated",
+    "No implementation ready while WX-00 and material planning dependencies remain unresolved"
+  ]
+}
