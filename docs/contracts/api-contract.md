@@ -93,3 +93,7 @@ The subsequent [hash-bound validation receipt](validation-receipt.json) records 
 ## Editorial description write/public parity
 
 `EditorWrite.changes.description` and the effective public description share a 1–8,000-character non-null limit. Reject an empty or over-limit write; never accept and silently truncate it on publication. Omission means no description change. Explicit null clears the human description override, exposing only a currently eligible validated automated description, or null if none is eligible. Clearing is an audited CAS mutation and must not resurrect invalidated evidence. Private notes retain their separate private limit and never supply a public fallback. Boundary shape fixtures do not prove CAS, attribution or withdrawal.
+
+## Synthesis attribution
+
+[WeatherNarrative](weather-narrative-contract.md) is a private untrusted candidate, not a public API payload. Public Claim/Event require evidence `basis` (visual/instrument/inference) separately from `origin`; inferred automated records use origin `synthesis`. Measured/visual origins require matching instrument/visual basis. Human/manual origins retain explicit evidence basis and attribution. Application-assigned interval/precision and seeks come from validated evidence, never model timestamps. Every consumer, sidecar and search projection must preserve that distinction.

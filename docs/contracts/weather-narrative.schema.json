@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weather.vallery.net/contracts/weather-narrative-v1.schema.json",
+  "title": "Private untrusted synthesis candidate before grounding and publication",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "summary_claims",
+    "events",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "summary_claims": {
+      "type": "array",
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "text",
+          "basis",
+          "evidence_ids"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "basis": {
+            "enum": [
+              "visual",
+              "instrument",
+              "inference"
+            ]
+          },
+          "evidence_ids": {
+            "$ref": "#/$defs/EvidenceIds"
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "category",
+          "basis",
+          "evidence_ids",
+          "confidence"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "category": {
+            "type": "string",
+            "pattern": "^[a-z][a-z_]{0,63}$"
+          },
+          "basis": {
+            "enum": [
+              "visual",
+              "instrument",
+              "inference"
+            ]
+          },
+          "evidence_ids": {
+            "$ref": "#/$defs/EvidenceIds"
+          },
+          "confidence": {
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 240
+      }
+    }
+  },
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+    },
+    "EvidenceIds": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Id"
+      }
+    }
+  }
+}

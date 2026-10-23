@@ -1,0 +1,25 @@
+{
+  "observed_at": "2026-10-23T21:21:25.516434+00:00",
+  "scope": "2 metaschemas, 33 API fixtures, 13 narrative fixtures and exact requirements prompt extraction",
+  "fixtures": {
+    "schema-fixtures.json": 33,
+    "weather-narrative-fixtures.json": 13
+  },
+  "all_expectations_matched": true,
+  "input_sha256": {
+    "api.schema.json": "b6e36d26abb47ba621c0907e51fec19c778be0d2b7d449ce7e49fdc3b0a70795",
+    "schema-fixtures.json": "e3906d88818c4be2d8ca91bc279fafbe94ed342be61fd2efc222e45986b95b6f",
+    "weather-narrative.schema.json": "63e7e54ed741ddd0c94eac111fe5da60e7b2effc688a88db6c68407d58bc7fc4",
+    "weather-narrative-fixtures.json": "027da625ac9376e9876112b457f94bb59400fb6c19600be1a3e2f66d8acd2d2c",
+    "weather-narrative-contract.md": "a642fe72a4b893cfb9133fd010917222c99aa87e385e4ec037dc4cf3e901e737",
+    "prompts/visual-system.txt": "7029c22a48793eb21d9531eef3d8e775f1ad7c54f5687362d1f5c723404bf49a",
+    "prompts/narrative-system.txt": "63c0e5ea6d9bc98ac9b78110de8c5b93be5a39370864fdc474d70effd1a23a32"
+  },
+  "requirements_sha256": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+  "semantic_scenarios_not_executed": 12,
+  "limitations": [
+    "No runtime grounding, inference, HTTP or publication test",
+    "Earlier API receipts remain historical exact-hash observations",
+    "No new OpenAPI structure changes or metaschema run"
+  ]
+}

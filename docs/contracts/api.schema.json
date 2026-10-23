@@ -984,7 +984,8 @@
           "enum": [
             "visual",
             "measured",
-            "human"
+            "human",
+            "synthesis"
           ]
         },
         "source_interval": {
@@ -1014,6 +1015,13 @@
               "type": "null"
             }
           ]
+        },
+        "basis": {
+          "enum": [
+            "visual",
+            "instrument",
+            "inference"
+          ]
         }
       },
       "required": [
@@ -1023,7 +1031,67 @@
         "source_interval",
         "precision",
         "evidence_ids",
-        "seek"
+        "seek",
+        "basis"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "origin": {
+                "const": "visual"
+              }
+            },
+            "required": [
+              "origin"
+            ]
+          },
+          "then": {
+            "properties": {
+              "basis": {
+                "const": "visual"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "origin": {
+                "const": "measured"
+              }
+            },
+            "required": [
+              "origin"
+            ]
+          },
+          "then": {
+            "properties": {
+              "basis": {
+                "const": "instrument"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "origin": {
+                "const": "synthesis"
+              }
+            },
+            "required": [
+              "origin"
+            ]
+          },
+          "then": {
+            "properties": {
+              "basis": {
+                "const": "inference"
+              }
+            }
+          }
+        }
       ]
     },
     "Analysis": {
@@ -1802,7 +1870,8 @@
           "enum": [
             "measured",
             "visual",
-            "manual"
+            "manual",
+            "synthesis"
           ]
         },
         "title": {
@@ -1877,6 +1946,13 @@
             ]
           },
           "maxItems": 16
+        },
+        "basis": {
+          "enum": [
+            "visual",
+            "instrument",
+            "inference"
+          ]
         }
       },
       "required": [
@@ -1891,7 +1967,67 @@
         "calendar_day_ids",
         "evidence_ids",
         "rule_revision",
-        "video_links"
+        "video_links",
+        "basis"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "origin": {
+                "const": "visual"
+              }
+            },
+            "required": [
+              "origin"
+            ]
+          },
+          "then": {
+            "properties": {
+              "basis": {
+                "const": "visual"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "origin": {
+                "const": "measured"
+              }
+            },
+            "required": [
+              "origin"
+            ]
+          },
+          "then": {
+            "properties": {
+              "basis": {
+                "const": "instrument"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "origin": {
+                "const": "synthesis"
+              }
+            },
+            "required": [
+              "origin"
+            ]
+          },
+          "then": {
+            "properties": {
+              "basis": {
+                "const": "inference"
+              }
+            }
+          }
+        }
       ]
     },
     "Almanac": {
