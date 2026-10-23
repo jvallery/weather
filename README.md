@@ -21,6 +21,7 @@ Requirements and implementation planning for **[weather.vallery.net](https://wea
 - [D05 receipt durability, canonical measurements and coverage](docs/decisions/D05-telemetry-integrity.md), with [adversarial telemetry vectors](docs/contracts/telemetry-vectors.json).
 - [D06 dedicated PostgreSQL and storage admission](docs/decisions/D06-database-and-storage.md), with live extension/replication evidence and explicit storage prerequisites.
 - [D09 CPU baseline and GPU admission](docs/decisions/D09-gpu-and-cpu-admission.md), with a verified nine-device census and explicit sharing limitations.
+- [D08 role-scoped object gateway](docs/decisions/D08-object-access-boundary.md), including the action matrix and independent archive/recovery boundary.
 - [D15 custody/recovery design and open decisions](docs/decisions/D15-custody-and-recovery.md), grounded in [live central custody evidence](docs/research/custody-evidence.md).
 - [HTTP/API semantic contract](docs/contracts/api-contract.md), [OpenAPI](docs/contracts/openapi.json), [JSON Schema](docs/contracts/api.schema.json), and [synthetic schema fixtures](docs/contracts/schema-fixtures.json).
 - [Capture, chunk sealing and source-time assignment](docs/contracts/capture-contract.md), with [private capture schemas](docs/contracts/capture.schema.json).
