@@ -1327,6 +1327,33 @@
               "type": "string",
               "maxLength": 1024
             }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Evaluated only after public eligibility; RFC 9110 section 13.2.2 precedence. See the semantic HTTP contract."
+          },
+          {
+            "name": "If-Unmodified-Since",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Evaluated only after public eligibility; RFC 9110 section 13.2.2 precedence. See the semantic HTTP contract."
+          },
+          {
+            "name": "If-Modified-Since",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Evaluated only after public eligibility; RFC 9110 section 13.2.2 precedence. See the semantic HTTP contract."
           }
         ],
         "responses": {
@@ -1475,6 +1502,9 @@
                 }
               }
             }
+          },
+          "412": {
+            "description": "Authorized representation failed a request precondition; no media body. Cache-Control: no-store."
           }
         }
       },
@@ -1496,7 +1526,8 @@
             "schema": {
               "type": "string",
               "maxLength": 256
-            }
+            },
+            "description": "Ignored on HEAD; never produces a partial response or range error."
           },
           {
             "name": "If-Range",
@@ -1504,7 +1535,8 @@
             "schema": {
               "type": "string",
               "maxLength": 256
-            }
+            },
+            "description": "Ignored on HEAD; never produces a partial response or range error."
           },
           {
             "name": "If-None-Match",
@@ -1513,6 +1545,33 @@
               "type": "string",
               "maxLength": 1024
             }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Evaluated only after public eligibility; RFC 9110 section 13.2.2 precedence. See the semantic HTTP contract."
+          },
+          {
+            "name": "If-Unmodified-Since",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Evaluated only after public eligibility; RFC 9110 section 13.2.2 precedence. See the semantic HTTP contract."
+          },
+          {
+            "name": "If-Modified-Since",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Evaluated only after public eligibility; RFC 9110 section 13.2.2 precedence. See the semantic HTTP contract."
           }
         ],
         "responses": {
@@ -1580,16 +1639,6 @@
               }
             }
           },
-          "416": {
-            "description": "Unsatisfiable range",
-            "headers": {
-              "Content-Range": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
           "429": {
             "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
             "content": {
@@ -1609,6 +1658,9 @@
                 }
               }
             }
+          },
+          "412": {
+            "description": "Authorized representation failed a request precondition; no media body. Cache-Control: no-store."
           }
         }
       }
@@ -1649,6 +1701,33 @@
               "type": "string",
               "maxLength": 1024
             }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Evaluated only after public eligibility; RFC 9110 section 13.2.2 precedence. See the semantic HTTP contract."
+          },
+          {
+            "name": "If-Unmodified-Since",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Evaluated only after public eligibility; RFC 9110 section 13.2.2 precedence. See the semantic HTTP contract."
+          },
+          {
+            "name": "If-Modified-Since",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Evaluated only after public eligibility; RFC 9110 section 13.2.2 precedence. See the semantic HTTP contract."
           }
         ],
         "responses": {
@@ -1801,6 +1880,9 @@
                 }
               }
             }
+          },
+          "412": {
+            "description": "Authorized representation failed a request precondition; no media body. Cache-Control: no-store."
           }
         }
       },
@@ -1822,7 +1904,8 @@
             "schema": {
               "type": "string",
               "maxLength": 256
-            }
+            },
+            "description": "Ignored on HEAD; never produces a partial response or range error."
           },
           {
             "name": "If-Range",
@@ -1830,7 +1913,8 @@
             "schema": {
               "type": "string",
               "maxLength": 256
-            }
+            },
+            "description": "Ignored on HEAD; never produces a partial response or range error."
           },
           {
             "name": "If-None-Match",
@@ -1839,6 +1923,33 @@
               "type": "string",
               "maxLength": 1024
             }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Evaluated only after public eligibility; RFC 9110 section 13.2.2 precedence. See the semantic HTTP contract."
+          },
+          {
+            "name": "If-Unmodified-Since",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Evaluated only after public eligibility; RFC 9110 section 13.2.2 precedence. See the semantic HTTP contract."
+          },
+          {
+            "name": "If-Modified-Since",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Evaluated only after public eligibility; RFC 9110 section 13.2.2 precedence. See the semantic HTTP contract."
           }
         ],
         "responses": {
@@ -1912,16 +2023,6 @@
               }
             }
           },
-          "416": {
-            "description": "Unsatisfiable range",
-            "headers": {
-              "Content-Range": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
           "429": {
             "description": "Bounded sanitized error; no internal endpoint, object key, SQL or raw model output.",
             "content": {
@@ -1941,6 +2042,9 @@
                 }
               }
             }
+          },
+          "412": {
+            "description": "Authorized representation failed a request precondition; no media body. Cache-Control: no-store."
           }
         }
       }

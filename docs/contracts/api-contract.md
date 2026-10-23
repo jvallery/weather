@@ -73,6 +73,29 @@ Search uses [D12's selected lexical and request policy](../decisions/D12-search-
 
 GET/HEAD authorize before ETag evaluation. HEAD has the corresponding authorized representation headers but no body; ignore Range on HEAD. GET supports one closed, open-ended or suffix byte range and correct 206/Content-Range/length. Unsatisfiable ranges return 416 with total representation length. Deliberately reject multiple ranges with bounded 400 handling. If-Range mismatch yields the full authorized representation. Strong ETags bind exact immutable bytes.
 
+### Selected precondition and range policy
+
+Apply [RFC 9110 §13.2.2](https://www.rfc-editor.org/rfc/rfc9110.html#section-13.2.2) after eligibility. Evaluate If-Match first (failure 412); otherwise If-Unmodified-Since (failure 412). Then evaluate If-None-Match (match 304 for GET/HEAD); otherwise If-Modified-Since (not modified 304). Strong comparison applies to If-Match; weak comparison to If-None-Match. Invalid dates are ignored. Publish a stable Last-Modified timestamp for the representation, never request time.
+
+Only a remaining GET 200 candidate evaluates Range/If-Range. A weak, invalid or nonmatching If-Range falls back to full 200; a date is usable only as a strong validator. Unknown range units are ignored. Weather selects 400 for malformed byte syntax, reversed endpoints or multiple byte ranges, and 416 for a valid unsatisfiable single range (including zero-length suffix). Clamp an oversized end to the final byte; an oversized positive suffix returns the whole representation as 206. HEAD ignores Range/If-Range entirely, including malformed values.
+
+Weather-specific acceptance examples (synthetic 100-byte asset, eligible unless stated):
+
+| Input | Expected |
+|---|---|
+| HEAD with `bytes=100-` or multiple ranges | 200, full length 100, no body/Content-Range |
+| GET `bytes=0-0` | 206, bytes 0–0/100, length 1 |
+| GET `bytes=90-999` | 206, bytes 90–99/100, length 10 |
+| GET `bytes=-200` | 206, bytes 0–99/100, length 100 |
+| GET `bytes=100-` or `bytes=-0` | 416, `Content-Range: bytes */100` |
+| GET reversed endpoints or two byte ranges | 400, no media body |
+| Matching If-None-Match plus unsatisfiable Range | 304, no body/Content-Range |
+| Failed If-Match plus matching If-None-Match | 412, no media body |
+| Nonmatching If-Range plus unsatisfiable Range | 200, full length 100 |
+| Withdrawn/embargoed asset plus matching validators | Existing eligibility denial; never 304/206 or object metadata |
+
+These are planned behavioral cases, not executed application tests. Bound aggregate header size and integer parsing before evaluating user input; never allocate from a supplied offset. Generic header-size rejection precedes semantic handling. 304 omits Content-Length and carries the applicable ETag/cache policy. Errors use no-store; HEAD suppresses error bodies too. A 412 is not an authorization denial and must not expose a private representation. Pin catalog visibility and byte revision consistently through response start; D14 still owns post-start withdrawal and cache bounds.
+
 Downloads resolve the native asset through the same authorization and return attachment with sanitized filename for both full and partial content. No redirect leaves the Weather domain. Media buffering is bounded independently of object size.
 
 Current/catalog responses may use qualified short cache/conditional requests; private editor/raw routes never do. Image embargo/expiry/withdrawal checks occur before serving any alias, thumbnail, range or HEAD. A previously public cached image cannot be recalled by a database tombstone: D14/D16 must specify maximum revocation delay and purge policy before enabling such caches. Until qualified, do not enable CDN media caching. This does not resolve the separate public transport decision.
