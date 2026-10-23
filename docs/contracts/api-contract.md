@@ -4,7 +4,7 @@ Status: machine-readable design draft for Phase 1; not deployed and not yet a co
 
 Use [OpenAPI 3.1.1](https://spec.openapis.org/oas/v3.1.1.html) and [JSON Schema 2020-12](https://json-schema.org/draft/2020-12/json-schema-core), reviewed 2026-10-23. Validation must enable date/time format assertion and resolve references locally; production must not fetch schema URLs on requests. Schema URLs identify versions, not required runtime network dependencies.
 
-Consumers: WX-08/13/17/19/20/24/25/26/36/37/38/39/40/41/42/43/44. Internal capture/index, deployment configuration and private recovery-manifest schemas remain separate outstanding Phase-1 artifacts. The private candidate [visual-model schema](visual-analysis.schema.json) now implements §13.5's shape; its semantic checks are specified below.
+Consumers: WX-08/13/17/19/20/24/25/26/36/37/38/39/40/41/42/43/44. The private [capture/index and seal contract](capture-contract.md) is now separate from public serializers. Deployment configuration and private archival/recovery-manifest schemas remain outstanding Phase-1 artifacts. The private candidate [visual-model schema](visual-analysis.schema.json) implements §13.5's shape; its semantic checks are specified below.
 
 ## Effective editorial content and analysis coverage
 
