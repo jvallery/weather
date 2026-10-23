@@ -1,0 +1,566 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-10-23T20:39:25.856215Z",
+  "backlog_sha256": "5ee192d4ac8e13c058f8563d02cd1ce639079060dd67d7082eaa698fa6e6a3b1",
+  "source": "GitHub REST issue and blocked_by APIs, all 46 implementation issues and 12 external prerequisite identities",
+  "verified_native_edges": 119,
+  "topological_order_valid": true,
+  "required_initial_count": 42,
+  "required_initial_in_release_closure": true,
+  "follow_on_and_deferred_excluded": true,
+  "issues": [
+    {
+      "key": "WX-01",
+      "number": 2,
+      "state": "open",
+      "prerequisites": [
+        "WX-00",
+        "OWN-CI"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-02",
+      "number": 3,
+      "state": "open",
+      "prerequisites": [
+        "WX-00",
+        "OWN-CI"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-03",
+      "number": 4,
+      "state": "open",
+      "prerequisites": [
+        "WX-01",
+        "OWN-NFS"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-04",
+      "number": 5,
+      "state": "open",
+      "prerequisites": [
+        "WX-01",
+        "OWN-UDP",
+        "OWN-L2"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-05",
+      "number": 6,
+      "state": "open",
+      "prerequisites": [
+        "WX-01"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-06",
+      "number": 7,
+      "state": "open",
+      "prerequisites": [
+        "WX-01",
+        "OWN-OBJECT"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-07",
+      "number": 8,
+      "state": "open",
+      "prerequisites": [
+        "WX-06",
+        "OWN-GATEWAY"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-08",
+      "number": 9,
+      "state": "open",
+      "prerequisites": [
+        "WX-02",
+        "WX-05"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-09",
+      "number": 10,
+      "state": "open",
+      "prerequisites": [
+        "WX-08"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-10",
+      "number": 11,
+      "state": "open",
+      "prerequisites": [
+        "WX-03",
+        "WX-09"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-11",
+      "number": 12,
+      "state": "open",
+      "prerequisites": [
+        "WX-04",
+        "WX-08"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-12",
+      "number": 13,
+      "state": "open",
+      "prerequisites": [
+        "WX-11"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-13",
+      "number": 14,
+      "state": "open",
+      "prerequisites": [
+        "WX-12"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-14",
+      "number": 15,
+      "state": "open",
+      "prerequisites": [
+        "WX-10"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-15",
+      "number": 16,
+      "state": "open",
+      "prerequisites": [
+        "WX-14",
+        "OWN-GPU"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-16",
+      "number": 17,
+      "state": "open",
+      "prerequisites": [
+        "WX-14"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-17",
+      "number": 18,
+      "state": "open",
+      "prerequisites": [
+        "WX-07",
+        "WX-08"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-18",
+      "number": 19,
+      "state": "open",
+      "prerequisites": [
+        "WX-10",
+        "WX-17",
+        "WX-19",
+        "WX-36",
+        "WX-37"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-19",
+      "number": 20,
+      "state": "open",
+      "prerequisites": [
+        "WX-07",
+        "WX-17",
+        "OWN-EDGE"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-20",
+      "number": 21,
+      "state": "open",
+      "prerequisites": [
+        "WX-13",
+        "WX-19"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-21",
+      "number": 22,
+      "state": "open",
+      "prerequisites": [
+        "WX-17",
+        "OWN-MODELS"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-22",
+      "number": 23,
+      "state": "open",
+      "prerequisites": [
+        "WX-13",
+        "WX-21"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-23",
+      "number": 24,
+      "state": "open",
+      "prerequisites": [
+        "WX-08",
+        "OWN-MODELS"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-24",
+      "number": 25,
+      "state": "open",
+      "prerequisites": [
+        "WX-17",
+        "WX-23"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-25",
+      "number": 26,
+      "state": "open",
+      "prerequisites": [
+        "WX-24",
+        "WX-42"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-26",
+      "number": 27,
+      "state": "open",
+      "prerequisites": [
+        "WX-20",
+        "WX-25"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-27",
+      "number": 28,
+      "state": "open",
+      "prerequisites": [
+        "WX-19"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-28",
+      "number": 29,
+      "state": "open",
+      "prerequisites": [
+        "WX-05",
+        "WX-07"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-29",
+      "number": 30,
+      "state": "open",
+      "prerequisites": [
+        "WX-28",
+        "OWN-CUSTODY"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-30",
+      "number": 31,
+      "state": "open",
+      "prerequisites": [
+        "WX-17",
+        "WX-29",
+        "WX-36",
+        "WX-37"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-31",
+      "number": 32,
+      "state": "open",
+      "prerequisites": [
+        "WX-13",
+        "WX-18",
+        "WX-25",
+        "WX-29",
+        "WX-38",
+        "OWN-OBS"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-32",
+      "number": 33,
+      "state": "open",
+      "prerequisites": [
+        "WX-16",
+        "WX-20",
+        "WX-22",
+        "WX-24",
+        "WX-30",
+        "WX-31",
+        "WX-40",
+        "WX-41",
+        "WX-43"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-33",
+      "number": 34,
+      "state": "open",
+      "prerequisites": [
+        "WX-02",
+        "WX-18",
+        "WX-20",
+        "WX-21",
+        "WX-22",
+        "WX-26",
+        "WX-31",
+        "WX-36",
+        "WX-37",
+        "WX-38",
+        "WX-39",
+        "WX-40",
+        "WX-41",
+        "WX-42",
+        "WX-43",
+        "WX-44",
+        "WX-16"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-34",
+      "number": 35,
+      "state": "open",
+      "prerequisites": [
+        "WX-32",
+        "WX-33"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-35",
+      "number": 36,
+      "state": "open",
+      "prerequisites": [
+        "WX-32",
+        "WX-33",
+        "WX-34"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-36",
+      "number": 37,
+      "state": "open",
+      "prerequisites": [
+        "WX-10",
+        "WX-17"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-37",
+      "number": 38,
+      "state": "open",
+      "prerequisites": [
+        "WX-10",
+        "WX-17"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-38",
+      "number": 39,
+      "state": "open",
+      "prerequisites": [
+        "WX-10",
+        "WX-19"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-39",
+      "number": 40,
+      "state": "open",
+      "prerequisites": [
+        "WX-20",
+        "WX-36"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-40",
+      "number": 41,
+      "state": "open",
+      "prerequisites": [
+        "WX-13",
+        "WX-20"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-41",
+      "number": 42,
+      "state": "open",
+      "prerequisites": [
+        "WX-13",
+        "WX-20"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-42",
+      "number": 43,
+      "state": "open",
+      "prerequisites": [
+        "WX-08",
+        "WX-13"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-43",
+      "number": 44,
+      "state": "open",
+      "prerequisites": [
+        "WX-20",
+        "WX-24",
+        "WX-37"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-44",
+      "number": 45,
+      "state": "open",
+      "prerequisites": [
+        "WX-20",
+        "WX-38",
+        "OWN-EMBED"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-45",
+      "number": 46,
+      "state": "open",
+      "prerequisites": [
+        "WX-35"
+      ],
+      "exact_id_match": true
+    },
+    {
+      "key": "WX-46",
+      "number": 47,
+      "state": "open",
+      "prerequisites": [
+        "WX-35"
+      ],
+      "exact_id_match": true
+    }
+  ],
+  "external_prerequisites": [
+    {
+      "key": "OWN-CI",
+      "state": "open",
+      "id_match": true
+    },
+    {
+      "key": "OWN-NFS",
+      "state": "open",
+      "id_match": true
+    },
+    {
+      "key": "OWN-OBJECT",
+      "state": "open",
+      "id_match": true
+    },
+    {
+      "key": "OWN-GATEWAY",
+      "state": "open",
+      "id_match": true
+    },
+    {
+      "key": "OWN-CUSTODY",
+      "state": "open",
+      "id_match": true
+    },
+    {
+      "key": "OWN-UDP",
+      "state": "open",
+      "id_match": true
+    },
+    {
+      "key": "OWN-EDGE",
+      "state": "open",
+      "id_match": true
+    },
+    {
+      "key": "OWN-MODELS",
+      "state": "open",
+      "id_match": true
+    },
+    {
+      "key": "OWN-GPU",
+      "state": "open",
+      "id_match": true
+    },
+    {
+      "key": "OWN-OBS",
+      "state": "open",
+      "id_match": true
+    },
+    {
+      "key": "OWN-EMBED",
+      "state": "open",
+      "id_match": true
+    },
+    {
+      "key": "OWN-L2",
+      "state": "open",
+      "id_match": true
+    }
+  ],
+  "limits": [
+    "Exact graph/identity/state verification is not body completeness, platform admission or production acceptance.",
+    "Open owner issues do not prove their prerequisites exist; closed issues would still require evidence readback."
+  ]
+}

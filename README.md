@@ -17,8 +17,13 @@ Requirements and implementation planning for **[weather.vallery.net](https://wea
 - [Owner prerequisites and admission boundaries](docs/implementation/owner-prerequisites.md).
 - [Estate standards applicability and evidence](docs/implementation/standards-mapping.md), with a [machine-readable matrix](docs/implementation/standards-mapping.json).
 - [D04 direct Tempest attachment design](docs/decisions/D04-tempest-network.md), based on bounded live packet evidence.
+- [D05 receipt durability, canonical measurements and coverage](docs/decisions/D05-telemetry-integrity.md), with [adversarial telemetry vectors](docs/contracts/telemetry-vectors.json).
 - [D15 custody/recovery design and open decisions](docs/decisions/D15-custody-and-recovery.md), grounded in [live central custody evidence](docs/research/custody-evidence.md).
 - [HTTP/API semantic contract](docs/contracts/api-contract.md), [OpenAPI](docs/contracts/openapi.json), [JSON Schema](docs/contracts/api.schema.json), and [synthetic schema fixtures](docs/contracts/schema-fixtures.json).
+- [Capture, chunk sealing and source-time assignment](docs/contracts/capture-contract.md), with [private capture schemas](docs/contracts/capture.schema.json).
+- [Private recovery candidates and verification receipts](docs/contracts/recovery-contract.md), with [recovery schemas](docs/contracts/recovery.schema.json).
+- [Private visual-model candidate schema](docs/contracts/visual-analysis.schema.json) and its [shape fixtures](docs/contracts/visual-analysis-fixtures.json); grounding remains a separate validation boundary.
+- [Production acceptance evidence matrix](docs/implementation/acceptance-matrix.md), [hash-bound contract validation](docs/contracts/validation-receipt.json), and [complete live dependency readback](docs/implementation/graph-verification.json).
 
 These are design contracts with mandatory implementation tests, not completed runtime qualification. The API/schema draft is published; remaining internal schemas, full contract coverage and design qualification are still in progress.
 

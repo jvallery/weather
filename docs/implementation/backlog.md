@@ -4,6 +4,8 @@ Status: filed; 119 native relationships read back and matched on 2026-10-23, inc
 
 The [machine-readable graph](backlog.json) records real issue numbers and IDs. Requirement links refer to the normative [requirements](../requirements.md), not only issue titles. Individual issues contain implementation approach, targeted acceptance/failure cases and operations/rollback obligations. [Owner prerequisites](owner-prerequisites.md) are filed and linked natively. Detailed contracts and qualification remain incomplete; do not interpret filing as readiness.
 
+The latest [complete graph readback receipt](graph-verification.json) independently checks all 46 implementation issue identities and prerequisite sets, all 119 native edges, and all 12 external prerequisite identities/states. It also verifies the stored topological order and all 42 required initial items in the WX-35 dependency closure, with WX-45/46 excluded. All owner prerequisites were open at this observation. The receipt is bound to the exact backlog hash; it does not establish body completeness, owner admission or live product acceptance.
+
 ## Scope and sequence
 
 The product is an independent observational weather archive: three-camera civil-segment timelapses, complete received local station history, private sparse originals, public delayed derivatives and evidence-grounded exploration. Exact source-time maps and durable provenance make comparisons useful without inventing measurements or hiding gaps. Local services, isolated identities and independent recovery preserve household systems and data.
