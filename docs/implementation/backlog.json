@@ -1729,8 +1729,7 @@
         "url": "https://github.com/jvallery/weather/issues/45"
       },
       "depends_on": [
-        "WX-20",
-        "WX-38"
+        "WX-20"
       ],
       "requirements": [
         "R37",
@@ -1755,8 +1754,7 @@
       ],
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
-        "WX-20",
-        "WX-38"
+        "WX-20"
       ],
       "additional_acceptance": [
         "Render a small React SSR embed with the existing parent-origin/CSP contract, independent public polling and no editor/player bundle, private hydration or privileged cookie dependency."
@@ -1893,9 +1891,9 @@
   "summary": {
     "filed_implementation_count": 46,
     "planning_issue_count": 1,
-    "direct_edge_count": 103,
+    "direct_edge_count": 102,
     "planning_edge_count": 2,
-    "native_edge_count": 124,
+    "native_edge_count": 123,
     "conditional_edge_count": 2,
     "conditional_edges_active": false,
     "required_initial_count": 42,
@@ -1908,7 +1906,7 @@
     ],
     "external_prerequisite_count": 14,
     "external_edge_count": 17,
-    "weather_native_edge_count": 122,
+    "weather_native_edge_count": 121,
     "owner_native_edge_count": 2
   },
   "audit_issue": {
@@ -1918,10 +1916,10 @@
     "url": "https://github.com/jvallery/weather/issues/1"
   },
   "native_verification": {
-    "observed_at": "2026-10-23T23:39:55.049966+00:00",
+    "observed_at": "2026-10-23T23:45:05.456861+00:00",
     "verified_nodes": 46,
     "verified_external_prerequisites": 14,
-    "verified_edges": 124,
+    "verified_edges": 123,
     "method": "Exact native ID-set readback for Weather and owner-side prerequisites; no issue-body completeness claim",
     "receipt": "docs/implementation/embed-order-graph-verification.json",
     "scope": "Exact native edges including owner-side prerequisites; body/semantic completion remains pending"

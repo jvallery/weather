@@ -345,10 +345,11 @@
       "source_clause": "Provide a small responsive card served by Weather and embedded on the existing `vallery.net` site.",
       "producer": "WX-44",
       "integration_qualification": "WX-33",
-      "acceptance_case": "Render the Weather card on the actual serving main site through the owner implementation; an isolated demo is insufficient.",
+      "acceptance_case": "WX-44 qualifies the Weather card with a controlled parent fixture; OWN-EMBED then delivers the actual main-site embed, and WX-33 verifies that live integration. An isolated demo cannot close integrated acceptance.",
       "planning_coverage": "explicit_case_mapped",
       "runtime_acceptance": "not_implemented",
-      "evidence": []
+      "evidence": [],
+      "owner_integration": "OWN-EMBED"
     },
     {
       "id": "C12.8.02",
@@ -378,10 +379,11 @@
       "source_clause": "The parent site embedding change belongs to its existing owner/repository workflow and must be linked as an implementation prerequisite; Weather's public repository does not own unrelated main-site code.",
       "producer": "WX-44",
       "integration_qualification": "WX-33",
-      "acceptance_case": "Verify OWN-EMBED remains a native prerequisite and its parent-site change follows the serving WordPress owner, with source and live receipt.",
+      "acceptance_case": "Verify native order WX-44 \u2192 OWN-EMBED \u2192 WX-33; the WordPress owner supplies parent source/live evidence before integrated acceptance. Parent delivery is not a prerequisite for constructing its card.",
       "planning_coverage": "explicit_case_mapped",
       "runtime_acceptance": "not_implemented",
-      "evidence": []
+      "evidence": [],
+      "owner_integration": "OWN-EMBED"
     },
     {
       "id": "C12.8.05",

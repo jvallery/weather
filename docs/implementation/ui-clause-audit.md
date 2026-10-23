@@ -35,16 +35,16 @@ The audit found an editorial write/public-description length mismatch: writes ac
 | C12.7.16 | WX-43 | Set private favorite/note then inspect public API, sidecar, cache, export and search; neither value nor private field appears. |
 | C12.7.17 | WX-43 | Select a genuine retained still or qualified decoded published-video frame; reject expired source, invented URL, adjacent-camera identity and unripe preview bypass. |
 | C12.7.18 | WX-43 | Exercise automated/human races, revoked identity, rollback, authorized audit viewing, inference outage and isolated restore; preserve revision precedence and privacy. |
-| C12.8.01 | WX-44 | Render the Weather card on the actual serving main site through the owner implementation; an isolated demo is insufficient. |
+| C12.8.01 | WX-44 / OWN-EMBED / WX-33 | WX-44 qualifies the Weather card with a controlled parent fixture; OWN-EMBED then delivers the actual main-site embed, and WX-33 verifies that live integration. An isolated demo cannot close integrated acceptance. |
 | C12.8.02 | WX-44 | Test every approved parent origin and an unapproved origin against response CSP; only the card route permits the precise owner-approved ancestors. |
 | C12.8.03 | WX-44 | Attempt framing normal pages and private editor routes; neither inherits the card framing exception. |
-| C12.8.04 | WX-44 | Verify OWN-EMBED remains a native prerequisite and its parent-site change follows the serving WordPress owner, with source and live receipt. |
+| C12.8.04 | WX-44 / OWN-EMBED / WX-33 | Verify native order WX-44 → OWN-EMBED → WX-33; the WordPress owner supplies parent source/live evidence before integrated acceptance. Parent delivery is not a prerequisite for constructing its card. |
 | C12.8.05 | WX-44 | Compare card and main current-weather responses; visible polling is approximately 15 seconds and measured timestamps/staleness/link remain truthful. |
 | C12.8.06 | WX-44 | Hide and restore the view; no overlapping poll accumulation, hidden polling stops where unnecessary and resumption refreshes without a retry burst. |
 | C12.8.07 | WX-44 | Load in a fresh cookie-free browser with third-party requests blocked; card works without parent DOM access, privileged cookies, accounts or camera credentials. |
 | C12.8.08 | WX-44 | Attempt cross-origin API access and private-route framing from the allowed parent; card framing does not grant broader CORS or admin access. |
 | C12.8.09 | WX-44 | Test narrow containers, unavailable/stale data, keyboard and reduced motion, plus allowed and denied parent origins in real browsers. |
 
-All rows remain unimplemented. WX-33 owns integrated qualification; producer issues own implementation and focused evidence. D02/D11/D12/D13/D14/D16 and OWN-EMBED dependencies remain as listed in the ledger. In particular, exact identity/session policy, approved embedding origins, resource limits and rendered wireframes are not established by this audit.
+All rows remain unimplemented. WX-33 owns integrated qualification; producer issues own implementation and focused evidence. D02/D11/D12/D13/D14/D16 and OWN-EMBED dependencies remain as listed in the ledger. D13 now supplies selected session/framing policy and rendered wireframes; actual provider enrollment, parent delivery, resource admission and browser behavior remain unqualified.
 
-The existing graph already gates these producers and integrated acceptance; no new dependency edge is necessary. Issue body hashes in the prior graph receipt remain historical observations after these acceptance additions; the native graph itself is unchanged.
+The corrected graph separates card production from owner parent delivery and combined acceptance; the current-weather-only card does not depend on WX-38 camera previews. Issue body hashes in the prior graph receipt remain historical observations after these acceptance additions; the native graph itself is unchanged.

@@ -1,8 +1,8 @@
 {
-  "observed_at": "2026-10-23T23:39:55.051767+00:00",
-  "backlog_sha256": "bd309d4fd6b8297d2be27c37ba5df1ed3c0258bf9f282f97caaf92333aca02b2",
+  "observed_at": "2026-10-23T23:45:05.458522+00:00",
+  "backlog_sha256": "734a856cf5fa79b76eb395c7a0ca76f5231660f7cf9e7f1f8c12aaab99ba1564",
   "scope": "All 46 Weather work issues and 14 owner prerequisite native dependency sets, including owner-side edges",
-  "verified_native_edges": 124,
+  "verified_native_edges": 123,
   "acyclic": true,
   "required_initial_count": 42,
   "required_initial_in_release_closure": true,
@@ -495,8 +495,7 @@
       "key": "WX-44",
       "id": 6004122801,
       "prerequisites": [
-        "WX-20",
-        "WX-38"
+        "WX-20"
       ],
       "exact_id_match": true
     },

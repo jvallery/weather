@@ -1,10 +1,10 @@
 # Filed implementation backlog
 
-Status: filed; 124 native relationships read back and matched on 2026-10-23: 122 Weather-side edges (including 17 to owner issues) and two owner-side edges across 14 owner issues; research remains incomplete. [WX-00 / #1](https://github.com/jvallery/weather/issues/1) gates application implementation. The [decision register](../decisions/implementation-register.md) distinguishes working choices from unresolved evidence. [Audit findings](../research/adversarial-audit.md) explain the changes from the seed.
+Status: filed; 123 native relationships read back and matched on 2026-10-23: 121 Weather-side edges (including 17 to owner issues) and two owner-side edges across 14 owner issues; research remains incomplete. [WX-00 / #1](https://github.com/jvallery/weather/issues/1) gates application implementation. The [decision register](../decisions/implementation-register.md) distinguishes working choices from unresolved evidence. [Audit findings](../research/adversarial-audit.md) explain the changes from the seed.
 
 The [machine-readable graph](backlog.json) records real issue numbers and IDs. Requirement links refer to the normative [requirements](../requirements.md), not only issue titles. Individual issues contain implementation approach, targeted acceptance/failure cases and operations/rollback obligations. [Owner prerequisites](owner-prerequisites.md) are filed and linked natively. Detailed contracts and qualification remain incomplete; do not interpret filing as readiness.
 
-The [complete graph readback receipt](graph-verification.json) records its historical backlog hash and an exact-ID comparison of all 122 native edges, 47 Weather issue identities and 14 owner identities. All 46 implementation issues contain their mapped requirement IDs and the five common design/acceptance/operations headings, plus the standards section wherever the standards matrix assigns obligations. Every implementation node is transitively held by WX-00; the release closure contains all 42 required initial items and excludes deferred WX-45/46. That receipt is historical. The [combined graph readback](embed-order-graph-verification.json) supersedes its edge proof: WX-44 → OWN-EMBED → WX-33 removes a semantic execution loop, and the pre-existing OWN-OBJECT → OWN-CUSTODY edge is now represented. It verifies all 124 combined edges, acyclicity and release closure, but does not refresh issue-body completeness. These structural checks do not establish clause-level body completeness, owner admission or live product acceptance.
+The [complete graph readback receipt](graph-verification.json) records its historical backlog hash and an exact-ID comparison of all 122 native edges, 47 Weather issue identities and 14 owner identities. All 46 implementation issues contain their mapped requirement IDs and the five common design/acceptance/operations headings, plus the standards section wherever the standards matrix assigns obligations. Every implementation node is transitively held by WX-00; the release closure contains all 42 required initial items and excludes deferred WX-45/46. That receipt is historical. The [combined graph readback](embed-order-graph-verification.json) supersedes its edge proof: WX-44 → OWN-EMBED → WX-33 removes a semantic execution loop, and the pre-existing OWN-OBJECT → OWN-CUSTODY edge is now represented. It verifies all 123 combined edges, acyclicity and release closure, but does not refresh issue-body completeness. These structural checks do not establish clause-level body completeness, owner admission or live product acceptance.
 
 ## Scope and sequence
 
@@ -89,7 +89,7 @@ Optional WX-15 (GPU) and WX-27 (CDN) do not block initial rollout unless explici
 | WX-41 | [#42](https://github.com/jvallery/weather/issues/42) | R34, R14, R15, R24 | initial_release / required | WX-13, WX-20 |
 | WX-42 | [#43](https://github.com/jvallery/weather/issues/43) | R35, R14, R20, R22 | initial_release / required | WX-08, WX-13 |
 | WX-43 | [#44](https://github.com/jvallery/weather/issues/44) | R36, R19, R20, R21, R22, R27 | initial_release / required | WX-20, WX-24, WX-37 |
-| WX-44 | [#45](https://github.com/jvallery/weather/issues/45) | R37, R12, R15, R24, R27 | initial_release / required | WX-20, WX-38 |
+| WX-44 | [#45](https://github.com/jvallery/weather/issues/45) | R37, R12, R15, R24, R27 | initial_release / required | WX-20 |
 | WX-45 | [#46](https://github.com/jvallery/weather/issues/46) | R38, R04, R05, R11, R19, R20, R23 | follow_on / none | WX-35 |
 | WX-46 | [#47](https://github.com/jvallery/weather/issues/47) | R22, R10, R24, R27 | deferred_research / none | WX-35 |
 
@@ -250,7 +250,8 @@ flowchart TD
   WX24 --> WX43
   WX37 --> WX43
   WX20 --> WX44
-  WX38 --> WX44
   WX35 --> WX45
   WX35 --> WX46
 ```
+
+The §12.8 card uses current-weather measurements only. Removing WX-38 from WX-44 eliminates an unnecessary camera-preview prerequisite; WX-38 remains required through operational/integrated rollout closure. The combined graph was read back after this change.
