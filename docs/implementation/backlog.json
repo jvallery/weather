@@ -144,7 +144,8 @@
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
         "WX-01",
-        "OWN-UDP"
+        "OWN-UDP",
+        "OWN-L2"
       ]
     },
     {
@@ -1871,7 +1872,7 @@
     "planning_issue_count": 1,
     "direct_edge_count": 103,
     "planning_edge_count": 2,
-    "native_edge_count": 118,
+    "native_edge_count": 119,
     "conditional_edge_count": 2,
     "conditional_edges_active": false,
     "required_initial_count": 42,
@@ -1882,8 +1883,8 @@
     "deferred_research_keys": [
       "WX-46"
     ],
-    "external_prerequisite_count": 11,
-    "external_edge_count": 13
+    "external_prerequisite_count": 12,
+    "external_edge_count": 14
   },
   "audit_issue": {
     "key": "WX-00",
@@ -1892,11 +1893,11 @@
     "url": "https://github.com/jvallery/weather/issues/1"
   },
   "native_verification": {
-    "observed_at": "2026-10-23T19:47:54.481Z",
+    "observed_at": "2026-10-23T20:16:51.031Z",
     "verified_nodes": 46,
-    "verified_external_prerequisites": 11,
-    "verified_edges": 118,
-    "method": "Complete GitHub REST blocked_by exact-ID readback and exact full-body readback for all implementation issues"
+    "verified_external_prerequisites": 12,
+    "verified_edges": 119,
+    "method": "Prior complete 118-edge exact-ID readback plus exact readback of all WX-04 prerequisites after adding OWN-L2"
   },
   "external_prerequisites": [
     {
@@ -2054,6 +2055,20 @@
       ],
       "status": "open",
       "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+    },
+    {
+      "key": "OWN-L2",
+      "repository": "jvallery/agents",
+      "github_issue": {
+        "number": 5368,
+        "id": 6004789310,
+        "url": "https://github.com/jvallery/agents/issues/5368"
+      },
+      "consumers": [
+        "WX-04"
+      ],
+      "status": "open",
+      "scope": "Owner qualification and implementation of isolated secondary VLAN attachments; no new infrastructure installed during planning"
     }
   ]
 }

@@ -255,7 +255,8 @@
         "WX-33"
       ],
       "owner_prerequisites": [
-        "OWN-CI"
+        "OWN-CI",
+        "OWN-L2"
       ],
       "required_evidence": "Restricted namespace/default seccomp and workload security checks; audit logging is inherited owner evidence, not a new Weather cluster-admin permission.",
       "status": "unverified"
@@ -270,7 +271,8 @@
       ],
       "owner_prerequisites": [
         "OWN-CI",
-        "OWN-GATEWAY"
+        "OWN-GATEWAY",
+        "OWN-L2"
       ],
       "required_evidence": "Least-privilege roles and no automatic API token where unnecessary; negative can-i/access tests, no broad Secret listing or long-lived service-account tokens.",
       "status": "unverified"
@@ -287,7 +289,8 @@
       "owner_prerequisites": [
         "OWN-CI",
         "OWN-UDP",
-        "OWN-GPU"
+        "OWN-GPU",
+        "OWN-L2"
       ],
       "required_evidence": "Nonroot/unprivileged pods; any UDP/GPU host attachment requires exact supported owner exception and isolation qualification, not blanket hostNetwork.",
       "status": "unverified"
@@ -303,7 +306,8 @@
       ],
       "owner_prerequisites": [
         "OWN-CI",
-        "OWN-UDP"
+        "OWN-UDP",
+        "OWN-L2"
       ],
       "required_evidence": "Default-deny ingress and explicit bounded egress; collector can contact only assigned camera. Node-managed NFS is separately documented and tested.",
       "status": "unverified"
@@ -680,7 +684,8 @@
         "OWN-UDP",
         "OWN-EDGE",
         "OWN-OBS",
-        "OWN-EMBED"
+        "OWN-EMBED",
+        "OWN-L2"
       ],
       "required_evidence": "One current owner per resource, one secret lane, central record plus owner inventory, scoped routes/certs and actual monitoring renderer; reconcile archived site owner before embed.",
       "status": "unverified"

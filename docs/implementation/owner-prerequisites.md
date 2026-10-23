@@ -15,6 +15,7 @@ These are actual owner issues, not placeholders. Weather's public graph records 
 | OWN-GPU | [jvallery/cortex-ai-compute#403](https://github.com/jvallery/cortex-ai-compute/issues/403) | WX-15 | All-device ownership and bounded GPU or CPU admission |
 | OWN-OBS | [jvallery/monitoring-stack#1072](https://github.com/jvallery/monitoring-stack/issues/1072) | WX-31 | Delivered freshness, capacity and recovery signals |
 | OWN-EMBED | [VerdifyConsultancy/wordpress#242](https://github.com/VerdifyConsultancy/wordpress/issues/242) | WX-44 | Embed delivered through the actual serving site |
+| OWN-L2 | [jvallery/agents#5368](https://github.com/jvallery/agents/issues/5368) | WX-04 | Pinned VLAN CNI, owner-admitted secondary attachment and fail-closed per-namespace isolation; qualify native pod reception on existing observed trunks |
 
 ## Findings that change implementation
 
