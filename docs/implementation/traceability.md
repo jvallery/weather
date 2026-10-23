@@ -125,3 +125,7 @@ The [§§5.1–5.5 audit](time-clause-audit.md) preserves all paragraphs/fenced 
 ## Acquisition paragraph audit
 
 The [§§6.1–6.11 audit](capture-clause-audit.md) preserves every source block and maps 51 grouped acceptance obligations across capture, fencing, capacity, cleanup, hourly custody and delayed previews. It verifies source coverage, not runtime behavior or complete-document clause closure.
+
+## Rendering and GPU audit
+
+The [sections 7–8 audit](media-clause-audit.md) preserves 44 source blocks and maps 47 grouped acceptance obligations. Required CPU/high-interpolation work, optional GPU execution and follow-on composite release scope remain distinct. Source coverage is verified; actual build, media quality, performance and co-tenancy are unproven.

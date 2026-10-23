@@ -1,0 +1,657 @@
+{
+  "scope": "All source blocks of requirements sections 7 and 8; grouped acceptance, not whole-document closure",
+  "requirements_sha256": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+  "section_sha256": "3629f1e0294b166644529bef0def029d6d8970d643c7fae71dd6d45fcb551ac6",
+  "source_blocks": [
+    {
+      "id": "M7.1.01",
+      "section": "7.1",
+      "source_text": "The target is a 60 fps presentation with reduced judder, stable exposure, and plausible motion blur. At roughly 720\u00d7 speed, a 30-second real event occupies about 2.5 output frames. No filter can guarantee continuous visibility of every fast object or recover a bird/car that passed between snapshots.",
+      "sha256": "eda42e0d131e7fe445e56864c330ebc6ca6c0fc66923dc166609db4bbdfafe3a",
+      "producers": [
+        "WX-14"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.1.02",
+      "section": "7.1",
+      "source_text": "The full daytime/overnight intervals are preserved in the time map. A 180\u00b0 shutter samples only the central half of each output frame's source interval; this is normal synthetic shutter behavior. A 360\u00b0 shutter gives every assigned source instant a temporal integration position, at the cost of stronger blur. Neither statement means every physical event was captured at 1 Hz.",
+      "sha256": "7d949a8d2e277cf3072006b4ba79d33e00e107ad335bd850b7d81ba254803a04",
+      "producers": [
+        "WX-14"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.2.01",
+      "section": "7.2",
+      "source_text": "For each output frame, use the `source_center` and `source_step` from \u00a75.3. Let `theta` be the shutter angle:",
+      "sha256": "27e4c6a5aa12e259c32c62753656edf82af33c7e276e634cc5e293a07321e369",
+      "producers": [
+        "WX-14"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.2.02",
+      "section": "7.2",
+      "source_text": "```text\nexposure_width = source_step * theta / 360\nexposure       = [source_center - exposure_width/2,\n                  source_center + exposure_width/2)\n```",
+      "sha256": "778ac5d6d172182e49e6ba512edec3b93d4fc4892edf8925b15b4ef8829c5791",
+      "producers": [
+        "WX-14"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.2.03",
+      "section": "7.2",
+      "source_text": "Default `theta=180`; evaluate 270 and 360 in scene-quality commissioning. Integrate in linear light with float accumulation, normalize by valid temporal weight, and convert to the declared output transfer function. Do not average gamma-encoded JPEG values as if they were linear intensity.",
+      "sha256": "a0ba3441d4006949aafde8cc9c7dace2b6367ef516a9eea46d7f52cc3a2d74a5",
+      "producers": [
+        "WX-14"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.2.04",
+      "section": "7.2",
+      "source_text": "Observed samples receive bounded temporal support using actual timestamps, approximately the midpoint cells between neighboring observations. Cap support by the commissioned cadence/gap rule; a last frame cannot stand in for an hour of lost capture. Intersect that support with the exposure window. Use actual overlap weights, not an assumption that every frame is uniformly spaced. Record valid exposure weight divided by intended shutter width per output frame. D10 must set a minimum usable exposure-coverage threshold and gap/partial treatment; renormalizing one surviving sample must not conceal a mostly missing shutter. Below the threshold, render the declared gap treatment rather than presenting normal full-exposure footage.",
+      "sha256": "d9dffd5849cca7dc96b6b27e854b558570d164ef86823a2072836d830cf25e57",
+      "producers": [
+        "WX-14"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.3.01",
+      "section": "7.3",
+      "source_text": "| Profile | Behavior | Use |\n|---|---|---|\n| `observed_exposure` | Timestamp-weighted integration of observed 1 Hz snapshots; optional conservative spatial cleanup. | Always-available reference and CPU fallback; preserves higher processing precision. |\n| `motion_exposure_4x` | Reconstruct between adjacent, valid snapshots at four samples per real second, then integrate the intended shutter. | Initial high-interpolation qualification target. |\n| `motion_exposure_8x` | Eight reconstructed samples per real second, followed by the same shutter integration. | Optional quality profile if it visibly improves output and meets the deadline. |",
+      "sha256": "dddeedc4f660b0d6e12a1d61ce71998b6ef0f846cabf49187891258ecd4afe00",
+      "producers": [
+        "WX-14"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.3.02",
+      "section": "7.3",
+      "source_text": "Interpolation must happen **before** the exposure average. Do not apply another full exposure blur to already integrated frames. Work on nearby 1 Hz observations, not only retained 6- or 12-second anchors. Four/eight times interpolation here describes real-time reconstruction density within a shutter, not merely doubling the final 60 fps playback rate.",
+      "sha256": "ad026fdebf931276afe4553f4f1e4496408d37a2b21924e4ae14645ac8065b19",
+      "producers": [
+        "WX-14"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.3.03",
+      "section": "7.3",
+      "source_text": "The profile names denote absolute reconstruction density: four/eight samples per real second. At optional 2 Hz acquisition, these correspond to 2\u00d7/4\u00d7 the observed cadence; do not accidentally double the intended reconstruction density. Anchor the reconstruction grid to the segment's UTC origin and preserve its phase across chunks. Evaluate a sample at its real timestamp using the actual neighboring exposure-time estimates, for example `alpha = (t - t_i) / (t_next - t_i)`. Loading a JPEG sequence at nominal 1 fps must not erase capture jitter, skipped slots or source uncertainty. Preserve the same grid and weighting through chunk stitching.",
+      "sha256": "78f7eb30e8fb72f1458a6fcda0c9f96c6ed9274228edf42baae980067a308062",
+      "producers": [
+        "WX-14"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.3.04",
+      "section": "7.3",
+      "source_text": "Process bounded chunks with in-segment lookaround. Reuse overlapping decode/flow work where possible; do not launch one FFmpeg process per output frame. Do not materialize a 24-hour synthetic high-frame-rate movie on disk. Stream reconstructed frames through memory/pipes into the accumulator, then stream completed output frames to the encoder. Bound queue depth and RSS.",
+      "sha256": "83e4abd95635dba8a4e8e75b8c124260415f37e349ccf8b8bbc723fb4f48e878",
+      "producers": [
+        "WX-14"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.3.05",
+      "section": "7.3",
+      "source_text": "A qualified high-interpolation implementation is required; its default enablement is contingent on a recorded comparison for clouds, foliage, stitched-lens boundaries, precipitation, twilight, and night noise. If CPU flow cannot finish within the publication SLO or produces visible warping, publish `observed_exposure` with the actual recipe recorded. Do not miss a daily publication waiting for an unavailable GPU.",
+      "sha256": "190dd29215458255bf062768aeae614e86e1c5fad2898ca8145d101eef42b820",
+      "producers": [
+        "WX-14"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.4.01",
+      "section": "7.4",
+      "source_text": "As researched, the latest stable FFmpeg release is **9.0.2**, released 2026-09-18. Recheck the current stable release during Phase 1, then pin the exact release/build; do not use a floating `latest` image. Online filter documentation may describe development features newer than a release binary. [S04]",
+      "sha256": "7691e6d41c7234933b38bbe2bfd0ba449651515fb77fcfca53e986ab55ea0c50",
+      "producers": [
+        "WX-14",
+        "WX-16"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.4.02",
+      "section": "7.4",
+      "source_text": "| Capability | Design use and qualification |\n|---|---|\n| `minterpolate` | CPU motion-compensated interpolation reference. Inspect available options and pixel formats. It is not accelerated by adding `-hwaccel cuda` or selecting NVENC. The examined implementation accepts software 8-bit planar YUV/gray, so retain the high-precision observed baseline. [S05] |\n| `fruc_vulkan` | Optional NVIDIA Vulkan optical-flow path when the exact build/device exposes it. Development source requires relevant Vulkan features including `VK_NV_optical_flow` and `VK_KHR_maintenance9`; qualify extensions and queue support. Do not assume availability in stable 9.0.2. [S06] |\n| `frc_amf` | Optional AMD/compatible-platform path; current documented DirectX engine constraints make it unsuitable as the baseline Linux implementation. [S07] |\n| `zscale` / `format` | Explicit color, range, transfer, and working-format conversion. Metadata tags do not transform pixel values. |\n| `tmix` | Weighted averaging only when sample spacing, window, and phase are known. For arbitrary source-time windows, use the timestamp-aware accumulator rather than an unverified fixed filter chain. |\n| `fps`, `setpts`, `trim` | Exact final cadence/count and segment time mapping. `fps` alone duplicates/drops; it does not infer motion. |\n| `deflicker` | Optional nuisance-flicker correction over a declared real-time window; avoid flattening dawn, dusk, or cloud-driven lighting. |\n| `hqdn3d`, `nlmeans`, related spatial/temporal filters | Conservative noise reduction only after comparison; strong temporal denoising creates trails. |\n| `vidstab`, `deshake` | Optional correction for measured mount vibration using stable structures; do not stabilize away cloud motion or change the full field of view silently. |\n| `libplacebo` | Optional Vulkan scaling, debanding, and color processing. Temporal kernel mixing is not optical flow. |\n| NVENC / NVDEC | Encoder/decoder acceleration where supported; separate from flow and exposure processing. Snapshot JPEG input does not imply an NVDEC pipeline. [S08] |",
+      "sha256": "28b6fbcbf22640d78a8aaf6f741f2633a4fef08e0c493cd0a21a69808aa1ae94",
+      "producers": [
+        "WX-14",
+        "WX-16"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.4.03",
+      "section": "7.4",
+      "source_text": "The remaining filter roles are documented in the FFmpeg filter reference; enable only processing that helps the measured camera output. [S07] External neural interpolation such as RIFE is optional and requires a separately pinned backend/model, co-tenancy admission, and measured quality benefit; do not describe it as a native FFmpeg filter.",
+      "sha256": "b6b979a4ec3508f54c1e75b589907856429d45b60ded4b617eaf696501a55692",
+      "producers": [
+        "WX-14",
+        "WX-16"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.4.04",
+      "section": "7.4",
+      "source_text": "Record `ffmpeg -version`, `-buildconf`, available filters/encoders/hardware accelerators, relevant `-h filter=...` / `-h encoder=...` output, and a small real encode/filter probe. Feature detection must lead to an actual successful operation, not merely a name appearing in `-filters`.",
+      "sha256": "543e6190018d1bec24e3bb24b6a8fc8ed1a310ed629d49c543307a6e813c1119",
+      "producers": [
+        "WX-14",
+        "WX-16"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.5.01",
+      "section": "7.5",
+      "source_text": "Preserve the complete discovered native panorama and square-pixel aspect ratio; **4096 \u00d7 1856** is the current planning geometry. Do not force 16:9, unstitch the image, crop to 3840 pixels, or upscale and label it native. Detect geometry changes as a new source epoch and stop automatic mixing until a deterministic handling rule is recorded.",
+      "sha256": "78ceb79256e75339559f6a9aae4b7d5e25f368dfa04a4b07d0eee322cea8d6c8",
+      "producers": [
+        "WX-14"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.5.02",
+      "section": "7.5",
+      "source_text": "Processing order is: decode/validate \u2192 declared geometry and color normalization \u2192 conservative noise/exposure correction \u2192 motion reconstruction if qualified \u2192 linear-light exposure integration \u2192 final scale/debanding \u2192 minimal overlays \u2192 encode. Avoid global histogram normalization, aggressive sharpening, or invented HDR from an 8-bit source. Preserve real lighting and existing camera OSD unless an explicitly recorded mask/crop removes it.",
+      "sha256": "11c5d84a9c43e9a26a1d9fd7b4aef056c6fc65167b12e7e607e533aa25a7a9c5",
+      "producers": [
+        "WX-14"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.5.03",
+      "section": "7.5",
+      "source_text": "Disable motion interpolation across capture gaps, timestamp jumps, camera profile/IR transitions, PTZ/crop changes, and scene discontinuities. A starting maximum interpolation bracket is two expected capture intervals; tune with evidence. At a gap, preserve the global time map and render a subtle \u201cCapture unavailable\u201d slate/overlay. Never accelerate neighboring footage to hide the missing interval.",
+      "sha256": "cb4620a380b32008995254e55686edff77bb50ca3cee4c2c35a278c481d4c71d",
+      "producers": [
+        "WX-14"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.5.04",
+      "section": "7.5",
+      "source_text": "Coverage thresholds are implementation defaults, not scientific guarantees: at least 99% expected slots is normal; 90\u201399% is partial; below 90% requires an obvious partial label, and below 50% defaults to an unavailable record instead of a misleading normal video. Exposure-weight coverage and slot coverage are separate metrics. These defaults may be adjusted after reviewing real failure cases.",
+      "sha256": "a8d1b37ae0f8bc58dc0997d602ab5b4e0bd89160f80d62f0bc5f16930638d7bd",
+      "producers": [
+        "WX-14"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.5.05",
+      "section": "7.5",
+      "source_text": "Source-clock overlays are computed from the time map, including timezone/offset when useful. Historical weather overlays use observations at that **source time**, not the current conditions at render time. Keep most weather detail in the page/sidecar to preserve the video image. No audio track is required.",
+      "sha256": "78d8bbbb2af1ae1f5dedd4b0f6d56408a61e24d57ed4ec45442dd89164211b33",
+      "producers": [
+        "WX-14"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.6.01",
+      "section": "7.6",
+      "source_text": "Mandatory outputs for each successfully rendered video:",
+      "sha256": "05111cb69abc29412f4ba64aef5fa16e5a258d4e45a8b99c6314078eeb346bcd",
+      "producers": [
+        "WX-16",
+        "WX-19"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.6.02",
+      "section": "7.6",
+      "source_text": "| Rendition | Expected size for current cameras | Encoding/use |\n|---|---|---|\n| `native` | 4096 \u00d7 1856 at 60 fps | H.264 High, 8-bit `yuv420p`, MP4; full-resolution download and optional inline selection. Validate appropriate level, expected 5.2. |\n| `web` | 1920 \u00d7 870 at 60 fps | H.264, MP4; default desktop/mobile playback, expected level 4.2. |\n| `mobile` | 1280 \u00d7 580 at 60 fps | H.264, MP4; reduced bandwidth/device load, expected level 3.2. |\n| `poster` | Responsive still sizes from a real representative output frame | Local JPEG/WebP; no generative thumbnail. |",
+      "sha256": "bf0428ffd94012a5cd702dc5385c6dd5a73852826bbfda0bad4bd75a66bc580f",
+      "producers": [
+        "WX-16",
+        "WX-19"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.6.03",
+      "section": "7.6",
+      "source_text": "Scale to even dimensions while preserving aspect ratio and never upscale a lower-resolution source. Native dimensions are discovered, not permanently assumed. Levels must be valid for actual dimensions, frame rate, bitrate, and reference-frame settings; do not force a level that the encoded stream exceeds. H.264/MP4 is broadly compatible, but full-resolution 60 fps support depends on the device. The smaller renditions are part of the compatibility requirement. [S09]",
+      "sha256": "cb27abcc7fdaf94c1606d7da86ef12b51774f8285904d7eddc6b66eb6ddb2369",
+      "producers": [
+        "WX-16",
+        "WX-19"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.6.04",
+      "section": "7.6",
+      "source_text": "Initial CPU settings: `libx264`, preset `slow` or a benchmarked faster preset, CRF 18\u201320 native and 20\u201322 smaller outputs, scene-appropriate VBV limits, and a roughly two-second GOP. NVENC uses separately measured settings; equal numeric CRF/CQ values are not a cross-encoder quality equivalence. Prefer one normalized frame pipeline feeding the rendition encoders to avoid recomputing temporal reconstruction.",
+      "sha256": "36c2757d2b3d4c01d9e603c885e0ed426d8b53b17a35f78a53a3a86d0c2325cb",
+      "producers": [
+        "WX-16",
+        "WX-19"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.6.05",
+      "section": "7.6",
+      "source_text": "Use `-an`, `-movflags +faststart`, CFR, exactly `N` frames, explicit BT.709 conversion/tags when appropriate to the calibrated input, `setsar=1`, and both `-video_track_timescale 60000 -movie_timescale 60000`. `faststart` moves the MP4 index to the beginning; byte-range support enables efficient seek/progressive playback. [S10], [S11]",
+      "sha256": "841e1c995a1140acb63c623fe4111179849f0cd5ed271fad4af179214ea43631",
+      "producers": [
+        "WX-16",
+        "WX-19"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.6.06",
+      "section": "7.6",
+      "source_text": "Publish immutable `.mp4` URLs with `Content-Type: video/mp4`, working `HEAD`/`Range`/`206`/`416`, correct `Content-Length` and validators. A same-origin download route serves the native bytes with `Content-Disposition: attachment` and a sanitized descriptive filename. Do not depend solely on the HTML `download` attribute. [S12]",
+      "sha256": "d6002afe9c138c625b23de43d673a017759cfd137319ef57ea45ccbc178eb1a7",
+      "producers": [
+        "WX-16",
+        "WX-19"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.6.07",
+      "section": "7.6",
+      "source_text": "HLS/DASH, HEVC, and AV1 are optional later optimizations. The initial two-minute-or-shorter clips need no streaming service, transmuxer, or third-party player/CDN. If adding HLS, preserve the MP4 fallback and use only self-hosted player code.",
+      "sha256": "095b39424bebb49d9f83803cac01a3a70d2d375418a61e914dd4e6d1c8812f64",
+      "producers": [
+        "WX-16",
+        "WX-19"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.7.01",
+      "section": "7.7",
+      "source_text": "Decode each rendition and verify no errors, exact intended frame count, exact 60/1 cadence, start PTS zero, rational duration `N/60` including terminal sample/movie timing (not equality of rounded decimal strings), native dimensions/aspect ratio, pixel format, codec/profile/level, declared color metadata, readable first/middle/last frames, and checksum. Verify all renditions map to the same source interval. A full decode is appropriate for six short daily outputs.",
+      "sha256": "b442b7307de64759c1446b159f9e358f3446299dc2bdee7d783f25a573ee5aa7",
+      "producers": [
+        "WX-16",
+        "WX-33"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.7.02",
+      "section": "7.7",
+      "source_text": "Use deterministic synthetic fixtures to test time mapping, fractional shutter edges, weighting in linear light, dropped samples, segment boundaries, and chunk stitching. A real-camera quality pilot must separately assess judder, flicker, sky banding, foliage ghosts, and panoramic seam artifacts; passing frame-count tests is not a visual-quality result.",
+      "sha256": "40c712206879b06b1a4f91fe3dd5f05ebb028959dba4be5283a3fdd852ff07ab",
+      "producers": [
+        "WX-16",
+        "WX-33"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.8.01",
+      "section": "7.8",
+      "source_text": "Generate a daytime and overnight keogram for **`skycam_east`, `skycam_west` and `frontyard_1`**: six products for a complete cycle, alongside the six videos. A keogram is a time-axis image assembled from a fixed spatial slice or narrow region of observed snapshots. D02/D10 must choose and version an appropriate region for each camera; a useful front-yard region is required rather than assuming it has the same sky geometry as the east/west views. Preserve orientation, crop/mask configuration and source-image lineage.",
+      "sha256": "fd7a4aca0138b34f4b730c9f759a73ca66af300f34baf3b900cf6df08153c1b6",
+      "producers": [
+        "WX-36"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.8.02",
+      "section": "7.8",
+      "source_text": "Use fixed elapsed-UTC bins over the exact source segment. Pixel positions map to recorded time-bin intervals, not ordinal file positions. D10 selects bounded bin count/resolution and a deterministic per-bin sampling/composition policy. Record the selected observed capture IDs, coverage and recipe; mark unavailable bins visibly and in metadata. Do not stretch neighboring columns across a missing hour or derive a purported observation from AI/interpolated content. Honor half-open boundary ownership and use no adjacent-segment samples.",
+      "sha256": "1e3d63e3fd75cea9bb1784a613ea1eeea67f11d2267dfb4aa822d601cae2f4c9",
+      "producers": [
+        "WX-36"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.8.03",
+      "section": "7.8",
+      "source_text": "Publish the image, thumbnail and axis/gap metadata as first-class versioned Garage assets. Clicking or keyboard-selecting a bin opens/seeks its camera's corresponding video via the source-time map; show bin precision and partial coverage. Compute/extract required slices while raw inputs exist, with bounded durable jobs and the cleanup barrier in \u00a76.9. Keogram failure leaves the video available with an explicit product status. Required keograms must be completed or visibly accounted for under the accepted outage policy, rather than silently omitted from a successful cycle.",
+      "sha256": "0b38f5503bafdf69bb918ffc57a17118b5b05d470e2279671d24a33dc03c5109",
+      "producers": [
+        "WX-36"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required"
+    },
+    {
+      "id": "M7.9.01",
+      "section": "7.9",
+      "source_text": "R38/WX-45 is a **filed follow-on backlog requirement**, not a prerequisite for the initial site. Its output is one encoded composite view containing both sky cameras for a chosen solar segment. Preserve the three original camera products; use a distinct product identity with source-camera relationships rather than reassigning a real camera's identity. Apply the same day/night partition and combined 120-second/7,200-frame cycle budget unless a subsequent owner decision changes it.",
+      "sha256": "64a8c28c98f3c1d53bb9f6ef164afa7ac63acfcc9b6d5829f972abd7c389c1a0",
+      "producers": [
+        "WX-45"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "follow_on"
+    },
+    {
+      "id": "M7.9.02",
+      "section": "7.9",
+      "source_text": "Codex must research labeled side-by-side versus stacked composition, readable browser/mobile renditions, native composite dimensions, acquisition uncertainty, matched output timestamps, unequal camera gaps, missing-view presentation, compute/storage cost and privacy masks. Both views must correspond to the same source-time interval through their actual manifests/time maps. Never hide a missing view with a different time or stretch one camera's footage to fill it. Geometric stitching is only a candidate if calibrated overlap supports it; a blended panorama is not assumed. Initial per-camera linked charts do not require this renderer, synchronized multi-player playback or multiple native decoders on a phone.",
+      "sha256": "0aeb018ed62f92a06bad49b614dd3e9241362520cc1b69d7b3af5332709c8cbc",
+      "producers": [
+        "WX-45"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "follow_on"
+    },
+    {
+      "id": "M8.1.01",
+      "section": "8.1",
+      "source_text": "Inventory **all nine physical GPUs**, including the camera-processing device, with model, memory, supported encoder/decoder/optical-flow APIs, driver/runtime versions, physical host, current owners, device-plugin allocation, model parallelism, peak memory, and relevant service SLOs. Keep actual UUIDs and private placement in private evidence. Existing dedicated camera-processing allocations remain protected. Do not displace a model, reduce its context/KV allocation, change tensor parallelism, or borrow a Frigate device as an incidental weather setup step.",
+      "sha256": "d60038c4de3b475a3cf98d1ba22252de86f4808f7d78b8eef003e41795a83bfb",
+      "producers": [
+        "WX-15"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required_qualification_with_conditional_gpu_execution"
+    },
+    {
+      "id": "M8.1.02",
+      "section": "8.1",
+      "source_text": "The question is whether a particular stage can safely **co-tenant** under the current or a deliberately qualified allocation mechanism. Distinguish physical inventory, desired placement, live Kubernetes admission, runtime visibility, and actual utilization. An idle encoder engine does not give an ordinary pod access to an exclusively allocated card. An old resource name or manually patched node capacity is not a supported sharing mechanism.",
+      "sha256": "eccf8cba4e8b4233b8d5c12a893196acc89a8d6f92964175ec8e20600b59be05",
+      "producers": [
+        "WX-15"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required_qualification_with_conditional_gpu_execution"
+    },
+    {
+      "id": "M8.1.03",
+      "section": "8.1",
+      "source_text": "D09 must produce a candidate and operating envelope, or an evidence-backed CPU decision with a future qualification issue. It must not reject all assigned cards without investigating sharing; it must not enable global sharing merely to fit one job. NVIDIA time slicing permits oversubscription but supplies neither memory nor fault isolation and does not promise proportional compute from extra replicas. Its observability limitations must also be considered. [S15]",
+      "sha256": "623adb9db36ef75629a087301699b27ff111a51d4992f1e19cf6b65ae904259a",
+      "producers": [
+        "WX-15"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required_qualification_with_conditional_gpu_execution"
+    },
+    {
+      "id": "M8.2.01",
+      "section": "8.2",
+      "source_text": "| Stage/profile | Research hypothesis | Required measurements |\n|---|---|---|\n| CPU decode, interpolation/exposure and encoding | Portable reference without GPU contention. | Native-resolution wall time, CPU/RAM/I/O, resident-service host-resource contention, six-output deadline and visual quality. |\n| CPU temporal work + NVENC | Likely the least competing GPU option; encoding engine is partly independent of SM inference. | Actual encoder support, frame-upload cost, surfaces, VRAM, memory bandwidth and resident-service latency. |\n| Qualified NVOFA/Vulkan interpolation + encoding | Dedicated flow hardware may help, with shared memory/warping overhead. | Exact API/extension support, end-to-end speed/quality, queue contention and working set. |\n| Accelerated JPEG decoding | May remove a measured CPU bottleneck. | Actual backend and format support, batching/pinned memory, transfer cost and end-to-end gain. |\n| Optional neural interpolation | Potential quality improvement with greater compute/VRAM contention. | A visible benefit sufficient to justify the model and sharing cost; pinned weights/backend and rollback. |",
+      "sha256": "3e983c84fbc97f8ad544906bf9f61d60712c5fe3b3dea3079113e06e40db7599",
+      "producers": [
+        "WX-14",
+        "WX-15"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required_qualification_with_conditional_gpu_execution"
+    },
+    {
+      "id": "M8.2.02",
+      "section": "8.2",
+      "source_text": "NVENC look-ahead, adaptive quantization and two-pass modes use CUDA; references, B-frames, temporal filtering and related quality options also consume memory. Compare a bounded encode-only configuration with higher-quality settings under realistic resident load. \u201cNVENC\u201d is not equivalent to \u201czero impact on inference.\u201d [S16]",
+      "sha256": "dd235e3f377265c3b0cdfb79f2b4d4a79d0dd3f6183f2e8fa961ed2dbca7b5cd",
+      "producers": [
+        "WX-14",
+        "WX-15"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required_qualification_with_conditional_gpu_execution"
+    },
+    {
+      "id": "M8.2.03",
+      "section": "8.2",
+      "source_text": "NVIDIA's optical-flow documentation says Vulkan optical flow is unsupported on Turing. Thus an RTX 2080 is not a `fruc_vulkan` candidate merely because it contains an optical-flow accelerator; NVENC or a separately qualified non-Vulkan path may still be relevant. Current nvJPEG documentation describes hardware backends on supported architectures, including Ada/Blackwell, but ordinary FFmpeg JPEG input does not automatically use them. Query/prove the actual backend instead of inferring it from the card name. [S17], [S18]",
+      "sha256": "422901f9513ae679904c18b49cbe726c37a09ba184ea5ee69d48be77f507b06f",
+      "producers": [
+        "WX-14",
+        "WX-15"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required_qualification_with_conditional_gpu_execution"
+    },
+    {
+      "id": "M8.2.04",
+      "section": "8.2",
+      "source_text": "For the planning geometry 4096 \u00d7 1856, one unpadded NV12 surface is 10.875 MiB, P010 is 21.75 MiB, RGBA8 is 29 MiB, and float32 RGB is 87 MiB. These derived sizes are only image-buffer lower bounds. Add concurrent surfaces, flow fields, intermediates, encoder reference/look-ahead buffers, runtime contexts and temporary allocations. Bound queue depth; do not assume an arbitrary \u201c1 GB GPU budget\u201d without measuring peak use.",
+      "sha256": "7973a6c1bafcc3897887fbede3cdac8a9ad71c6fc1e4d8b5eb7cedf183cfd033",
+      "producers": [
+        "WX-14",
+        "WX-15"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required_qualification_with_conditional_gpu_execution"
+    },
+    {
+      "id": "M8.3.01",
+      "section": "8.3",
+      "source_text": "Compare existing workloads alone, the candidate render stage alone, and both together. Include realistic peak inference context/KV demand, warm-up, bursts, steady state and worker restart. Record render throughput; host RAM/pinned memory; peak/free VRAM; SM, encoder, memory and PCIe utilization where available; throttling/Xid/errors; and affected service queue time, p95/p99 latency, throughput and errors.",
+      "sha256": "5f8a17aea5a6b65d51c5c6a840e89e42ea95575a67a76b2c7e130f01b3bf0725",
+      "producers": [
+        "WX-15",
+        "WX-31",
+        "WX-33"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required_qualification_with_conditional_gpu_execution"
+    },
+    {
+      "id": "M8.3.02",
+      "section": "8.3",
+      "source_text": "Use the resident service's accepted SLO and owner-approved stop conditions. Do not invent a universal percentage of safe degradation. Start with one weather GPU job and bounded surfaces, and increase only with evidence. Decide scheduling windows, concurrency, reservations, priority/eviction behavior and monitoring. The selected mechanism must be enforced by supported admission/runtime configuration; no fake node capacity, hidden device passthrough or unaccounted `CUDA_VISIBLE_DEVICES` escape.",
+      "sha256": "46997f6abc30ad3d2e02ce6a63839925215d1c5661e7671db23cbfc92b1017d4",
+      "producers": [
+        "WX-15",
+        "WX-31",
+        "WX-33"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required_qualification_with_conditional_gpu_execution"
+    },
+    {
+      "id": "M8.3.03",
+      "section": "8.3",
+      "source_text": "CPU fallback is operational, not merely a build option. It must meet the agreed publication deadline with an explicitly reported recipe; if high-flow quality cannot meet the deadline, the observed-exposure profile may publish while the high-interpolation gate remains visible. Requalify after material changes to drivers, renderer/FFmpeg, models, GPU mappings or resource policy.",
+      "sha256": "cd7a80c071f8825dbaad7d0a6639daa65d4980e1f642bc13ee6dfcc0a335a2d6",
+      "producers": [
+        "WX-15",
+        "WX-31",
+        "WX-33"
+      ],
+      "state": "mapped_runtime_unproven",
+      "release_scope": "initial_required_qualification_with_conditional_gpu_execution"
+    }
+  ],
+  "acceptance": {
+    "7.1": {
+      "producers": [
+        "WX-14"
+      ],
+      "obligations": [
+        "Preserve full source-time intervals while distinguishing shutter support from acquisition coverage.",
+        "60 fps/synthetic blur cannot recover unobserved fast events; 180/360-degree shutter claims must not imply complete physical capture."
+      ]
+    },
+    "7.2": {
+      "producers": [
+        "WX-14"
+      ],
+      "obligations": [
+        "Derive shutter edges from exact source center/step; default 180 degrees and compare 270/360 under commissioning.",
+        "Linear-light float accumulation and actual overlap weights; no gamma-space intensity averaging.",
+        "Bound observed temporal support across cadence gaps; track intended-versus-valid exposure weight and apply D10 0.90 cutoff without hiding sparse exposure."
+      ]
+    },
+    "7.3": {
+      "producers": [
+        "WX-14"
+      ],
+      "obligations": [
+        "Always implement observed reference/CPU fallback and required high-interpolation qualification; 8 Hz remains optional.",
+        "Reconstruct at absolute 4/8 samples per real second before exposure averaging, from nearby actual capture times; 2 Hz capture does not double the target grid.",
+        "Preserve UTC-origin grid phase and jitter/missing slots through bounded chunks; reuse overlap, stream reconstruction and bound queues/RSS without full-day synthetic files or per-frame processes.",
+        "Compare clouds/foliage/seams/precipitation/twilight/night; publish honest observed fallback on deadline/quality failure without declaring high-interpolation complete."
+      ]
+    },
+    "7.4": {
+      "producers": [
+        "WX-14",
+        "WX-16"
+      ],
+      "obligations": [
+        "Pin verified current stable source and exact executable build; release filter availability must be probed rather than inferred from development docs.",
+        "CPU minterpolate has software/pixel-format constraints; hwaccel/NVENC does not accelerate its flow. Qualify Vulkan features and platform limits separately for optional fruc_vulkan/frc_amf.",
+        "Use explicit color/format transformations; tmix needs known spacing/window/phase; fps duplication is not motion inference.",
+        "Enable deflicker/denoise/stabilization only with demonstrated benefit and full-field preservation; libplacebo mixing is not optical flow.",
+        "NVENC/NVDEC and JPEG decode are distinct; external neural interpolation needs pinned backend/model/license and measured benefit.",
+        "Record version/buildconf/filter/encoder/hardware listings and relevant help plus actual successful operation."
+      ]
+    },
+    "7.5": {
+      "producers": [
+        "WX-14"
+      ],
+      "obligations": [
+        "Preserve complete discovered native geometry/SAR; no 16:9 or 3840 crop, unstitch or false-native upscale; new geometry means source epoch and explicit handling.",
+        "Follow normalization/noise/reconstruction/linear integration/scale/overlay/encode order; preserve genuine lighting and OSD unless recorded mask policy.",
+        "No interpolation over gaps, clock/profile/IR/PTZ/crop/scene changes; bracket bound and unavailable frame keep original global time map.",
+        "Slot coverage and exposure coverage remain separate; explicit normal/partial/obvious-partial/unavailable defaults cannot be silently relaxed.",
+        "Overlays use source-time historical weather/clock, not render-time current data; audio not required."
+      ]
+    },
+    "7.6": {
+      "producers": [
+        "WX-16",
+        "WX-19"
+      ],
+      "obligations": [
+        "Mandatory native/web/mobile and genuine representative-frame posters; discover dimensions, even-size aspect-preserving scaling and no upscale.",
+        "Qualify H.264 profile/level against actual macroblocks/rate/bitrate/references; smaller renditions preserve device compatibility.",
+        "CPU libx264 preset/CRF/VBV/GOP commissioning distinct from NVENC quality settings; share normalized frames.",
+        "Exactly N CFR frames, no audio, faststart, correct color transform/tags/SAR and both timescales 60000.",
+        "Immutable same-origin MP4 HEAD/range/206/416/length/validators and native attachment bytes/filename; HTML download alone insufficient.",
+        "HLS/DASH/new codecs remain optional later; no mandatory external player or streaming service."
+      ]
+    },
+    "7.7": {
+      "producers": [
+        "WX-16",
+        "WX-33"
+      ],
+      "obligations": [
+        "Full-decode every rendition: count, 60/1 cadence, zero PTS, rational duration including terminal sample/movie, geometry/SAR/format/codec/profile/level/color and checksum.",
+        "Inspect readable first/middle/last frames and identical source mapping across renditions.",
+        "Synthetic fractional shutter/linear weighting/gap/boundary/chunk tests are distinct from real judder/flicker/banding/ghost/seam visual pilot."
+      ]
+    },
+    "7.8": {
+      "producers": [
+        "WX-36"
+      ],
+      "obligations": [
+        "All three cameras/day-night produce six observed keograms with independently chosen versioned regions, especially front yard; retain orientation/masks/lineage.",
+        "Fixed elapsed-UTC bins, bounded resolution and deterministic observed selection; visible missing bins, no stretch/AI/interpolation or adjacent-segment input.",
+        "Versioned image/thumbnail/axis/gap assets and keyboard/click source-time seeks with precision/coverage.",
+        "Compact extraction while inputs exist, durable pins and cleanup barrier; failed keogram remains explicit without withdrawing valid video."
+      ]
+    },
+    "7.9": {
+      "producers": [
+        "WX-45"
+      ],
+      "obligations": [
+        "Follow-on only: one encoded east/west composite with distinct product/source relationships; preserve original products and cycle duration/partition.",
+        "Research side-by-side/stacked layout, readable mobile/native geometry, synchronized source timing, unequal gaps, masks and compute/storage.",
+        "No hidden missing view/time stretch; stitching requires calibrated overlap; initial linked charts need neither composite nor multiple native decoders."
+      ]
+    },
+    "8.1": {
+      "producers": [
+        "WX-15"
+      ],
+      "obligations": [
+        "Inventory all nine physical devices, versions/APIs/owners/allocations/model parallelism/peak memory/SLOs privately, including protected camera device.",
+        "Separate inventory, desired placement, scheduler admission, runtime visibility and utilization; no model/context/pairing displacement or camera borrowing.",
+        "Investigate supported sharing and candidate envelope or evidence-backed CPU disposition; assigned/idle/shared labels are not admission and time slicing lacks memory/fault isolation."
+      ]
+    },
+    "8.2": {
+      "producers": [
+        "WX-14",
+        "WX-15"
+      ],
+      "obligations": [
+        "Compare CPU, CPU+encode, optical-flow, JPEG-decode and optional neural stages independently with required performance/quality/resource measurements.",
+        "Encoder features consume CUDA/memory; upload/reference/lookahead costs and resident demand remain in budget.",
+        "Actual API/platform feature probes required; RTX2080 optical-flow hardware alone does not imply Vulkan support, nor JPEG input nvJPEG acceleration.",
+        "Image surface arithmetic is a lower bound; add flow/intermediates/contexts/queue surfaces and measure peak, not assumed fixed budget."
+      ]
+    },
+    "8.3": {
+      "producers": [
+        "WX-15",
+        "WX-31",
+        "WX-33"
+      ],
+      "obligations": [
+        "Compare resident alone/candidate alone/together at peak context, warmup/burst/steady/restart; collect latency/throughput/errors, host/pinned/GPU memory, engine/PCIe/thermal/Xid where available.",
+        "Use actual resident SLO/abort conditions, start concurrency one, supported allocator/reservations/priority/monitoring; no fake capacity or hidden passthrough.",
+        "CPU fallback must meet publication deadline with actual recipe; high-flow quality and optional GPU enablement are separate gates.",
+        "Requalify after driver/build/model/mapping/resource changes; actual process termination and preserved resident service required on abort."
+      ]
+    }
+  },
+  "verification": {
+    "all_nonblank_nonheading_source_lines_preserved": true,
+    "runtime_acceptance": false
+  }
+}
