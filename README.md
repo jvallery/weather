@@ -26,7 +26,7 @@ Requirements and implementation planning for **[weather.vallery.net](https://wea
 - [D15 custody/recovery design and open decisions](docs/decisions/D15-custody-and-recovery.md), grounded in [live central custody evidence](docs/research/custody-evidence.md).
 - [HTTP/API semantic contract](docs/contracts/api-contract.md), [OpenAPI](docs/contracts/openapi.json), [JSON Schema](docs/contracts/api.schema.json), and [synthetic schema fixtures](docs/contracts/schema-fixtures.json).
 - [Capture, chunk sealing and source-time assignment](docs/contracts/capture-contract.md), with [private capture schemas](docs/contracts/capture.schema.json).
-- [Private recovery candidates and verification receipts](docs/contracts/recovery-contract.md), with [recovery schemas](docs/contracts/recovery.schema.json).
+- [Private recovery candidates and verification receipts](docs/contracts/recovery-contract.md), with [recovery schemas](docs/contracts/recovery.schema.json), [canonical byte rules](docs/contracts/recovery-canonicalization.md), [golden vectors](docs/contracts/recovery-canonical-vectors.json) and a separate [recovery validation receipt](docs/contracts/recovery-validation-receipt.json).
 - [Private visual-model candidate schema](docs/contracts/visual-analysis.schema.json) and its [shape fixtures](docs/contracts/visual-analysis-fixtures.json); grounding remains a separate validation boundary.
 - [Production acceptance evidence matrix](docs/implementation/acceptance-matrix.md), [hash-bound contract validation](docs/contracts/validation-receipt.json), and [historical full dependency readback](docs/implementation/graph-verification.json) (later owner-edge checks are recorded in the current backlog).
 

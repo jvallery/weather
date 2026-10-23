@@ -1,0 +1,20 @@
+{
+  "checked_at": "2026-10-23T21:07:10.437282+00:00",
+  "scope": "Recovery contract only; shape and restricted canonical byte vectors; not runtime custody or restore",
+  "files": {
+    "recovery.schema.json": "66e9b5ad6ecc5a5396e03145c03986edbd33a722b7244086d9d45a6cc0eed873",
+    "recovery-fixtures.json": "987adf8127e97488c359b02de598dd2e73129cf94eceac9cb8d2a857e15131da",
+    "recovery-canonical-vectors.json": "3ec0bff1a02c57edac35619994eb65d29363ae45f0dfd68d42ba80753596bcfa",
+    "recovery-canonicalization.md": "99c3f227fbe532d8a74f8aeef41248d239b004a9b5714e2053ad0394cb3849cf"
+  },
+  "shape_cases": 15,
+  "closure_vectors_independently_recomputed_python_javascript": 4,
+  "database_target_vectors": 1,
+  "declarative_negative_vectors_not_executed": 12,
+  "date_time_format_check": "Explicit UTC parser plus calendar validation; impossible date fixture rejected",
+  "limitations": [
+    "Not general-purpose JCS conformance",
+    "No 4096/4097 runtime partition or duplicate-key parser tests",
+    "No catalog completeness, provider trust, archive continuity, custody or restore qualification"
+  ]
+}

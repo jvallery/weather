@@ -64,3 +64,7 @@ Rollback of enrollment/configuration must retain every already-written offsite v
 
 E01: private initial fleet/operator baseline, evidence limits in the decision register. E02: current central provider metadata and pinned source verifier/custody review, retained in the private owner issue with a public receipt hash. Neither is a Weather restore receipt. The service has not been deployed; all implementation gates above remain pending.
 
+
+## Canonical closure contract
+
+[Recovery byte contract v1](../contracts/recovery-canonicalization.md) defines deterministic rows, shards, root and target hashes. Cross-language synthetic vectors and candidate shape fixtures have a [separate validation receipt](../contracts/recovery-validation-receipt.json). This closes the byte-format ambiguity, not central ledger integration, trusted discovery, copy coverage, independent bootstrap or real restore qualification.

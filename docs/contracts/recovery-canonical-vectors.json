@@ -1,0 +1,217 @@
+{
+  "policy": "weather-closure-jcs-v1",
+  "description": "Synthetic canonical byte vectors, not real assets or recovery evidence. Negative cases are implementation obligations, not executed tests.",
+  "closure_vectors": [
+    {
+      "name": "empty",
+      "input_rows": [],
+      "shard_texts": [],
+      "root": {
+        "closure_policy_revision": "weather-closure-jcs-v1",
+        "closure_object_count": 0,
+        "closure_total_bytes": 0,
+        "closure_shards": []
+      },
+      "root_preimage": "weather-recovery-closure-v1\n{\"closure_object_count\":0,\"closure_policy_revision\":\"weather-closure-jcs-v1\",\"closure_shards\":[],\"closure_total_bytes\":0}",
+      "catalog_closure_digest": "3401860761d0999dd96aa33ee8d2655c07487c698de3b77da83ae681dc3d0770"
+    },
+    {
+      "name": "ordinary",
+      "input_rows": [
+        {
+          "object_id": "b",
+          "class": "metadata",
+          "private_source_locator_id": "synthetic:b",
+          "bytes": 3,
+          "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        },
+        {
+          "object_id": "a",
+          "class": "metadata",
+          "private_source_locator_id": "synthetic:a",
+          "bytes": 3,
+          "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        }
+      ],
+      "shard_texts": [
+        "{\"bytes\":3,\"class\":\"metadata\",\"object_id\":\"a\",\"private_source_locator_id\":\"synthetic:a\",\"sha256\":\"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\"}\n{\"bytes\":3,\"class\":\"metadata\",\"object_id\":\"b\",\"private_source_locator_id\":\"synthetic:b\",\"sha256\":\"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\"}\n"
+      ],
+      "root": {
+        "closure_policy_revision": "weather-closure-jcs-v1",
+        "closure_object_count": 2,
+        "closure_total_bytes": 6,
+        "closure_shards": [
+          {
+            "shard_id": "closure-000000",
+            "row_count": 2,
+            "bytes": 330,
+            "sha256": "ee7f66a4a2a3a6d79bdcffcd1d4fdd0e879f10e1c5fd48c86bb443ded53f4647",
+            "private_locator_id": "synthetic:shard:0"
+          }
+        ]
+      },
+      "root_preimage": "weather-recovery-closure-v1\n{\"closure_object_count\":2,\"closure_policy_revision\":\"weather-closure-jcs-v1\",\"closure_shards\":[{\"bytes\":330,\"private_locator_id\":\"synthetic:shard:0\",\"row_count\":2,\"sha256\":\"ee7f66a4a2a3a6d79bdcffcd1d4fdd0e879f10e1c5fd48c86bb443ded53f4647\",\"shard_id\":\"closure-000000\"}],\"closure_total_bytes\":6}",
+      "catalog_closure_digest": "eb5ebbf939c409390585822eb2cf43fdacb2336324ca3af3621f6c1098798a48"
+    },
+    {
+      "name": "unicode-order",
+      "input_rows": [
+        {
+          "object_id": "𐀀",
+          "class": "metadata",
+          "private_source_locator_id": "synthetic:𐀀",
+          "bytes": 3,
+          "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        },
+        {
+          "object_id": "",
+          "class": "metadata",
+          "private_source_locator_id": "synthetic:",
+          "bytes": 3,
+          "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        },
+        {
+          "object_id": "é",
+          "class": "metadata",
+          "private_source_locator_id": "synthetic:é",
+          "bytes": 3,
+          "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        },
+        {
+          "object_id": "é",
+          "class": "metadata",
+          "private_source_locator_id": "synthetic:é",
+          "bytes": 3,
+          "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        }
+      ],
+      "shard_texts": [
+        "{\"bytes\":3,\"class\":\"metadata\",\"object_id\":\"é\",\"private_source_locator_id\":\"synthetic:é\",\"sha256\":\"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\"}\n{\"bytes\":3,\"class\":\"metadata\",\"object_id\":\"é\",\"private_source_locator_id\":\"synthetic:é\",\"sha256\":\"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\"}\n{\"bytes\":3,\"class\":\"metadata\",\"object_id\":\"\",\"private_source_locator_id\":\"synthetic:\",\"sha256\":\"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\"}\n{\"bytes\":3,\"class\":\"metadata\",\"object_id\":\"𐀀\",\"private_source_locator_id\":\"synthetic:𐀀\",\"sha256\":\"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\"}\n"
+      ],
+      "root": {
+        "closure_policy_revision": "weather-closure-jcs-v1",
+        "closure_object_count": 4,
+        "closure_total_bytes": 12,
+        "closure_shards": [
+          {
+            "shard_id": "closure-000000",
+            "row_count": 4,
+            "bytes": 676,
+            "sha256": "3c8c965df57e4243f6c44bf80ff02d6d215dc020219021c7a18fa9fbdb32802d",
+            "private_locator_id": "synthetic:shard:0"
+          }
+        ]
+      },
+      "root_preimage": "weather-recovery-closure-v1\n{\"closure_object_count\":4,\"closure_policy_revision\":\"weather-closure-jcs-v1\",\"closure_shards\":[{\"bytes\":676,\"private_locator_id\":\"synthetic:shard:0\",\"row_count\":4,\"sha256\":\"3c8c965df57e4243f6c44bf80ff02d6d215dc020219021c7a18fa9fbdb32802d\",\"shard_id\":\"closure-000000\"}],\"closure_total_bytes\":12}",
+      "catalog_closure_digest": "b74c48ea3f9d52ec0a06bfc34f71542519931dd6f69a53361436ea47554efa63"
+    },
+    {
+      "name": "safe-integer-limit",
+      "input_rows": [
+        {
+          "object_id": "large",
+          "class": "metadata",
+          "private_source_locator_id": "synthetic:large",
+          "bytes": 9007199254740991,
+          "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        }
+      ],
+      "shard_texts": [
+        "{\"bytes\":9007199254740991,\"class\":\"metadata\",\"object_id\":\"large\",\"private_source_locator_id\":\"synthetic:large\",\"sha256\":\"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\"}\n"
+      ],
+      "root": {
+        "closure_policy_revision": "weather-closure-jcs-v1",
+        "closure_object_count": 1,
+        "closure_total_bytes": 9007199254740991,
+        "closure_shards": [
+          {
+            "shard_id": "closure-000000",
+            "row_count": 1,
+            "bytes": 188,
+            "sha256": "c1a43e0861084c59b05d86aa0da395e4c6c2dadcf0182e38922c31a8cb3a6ac3",
+            "private_locator_id": "synthetic:shard:0"
+          }
+        ]
+      },
+      "root_preimage": "weather-recovery-closure-v1\n{\"closure_object_count\":1,\"closure_policy_revision\":\"weather-closure-jcs-v1\",\"closure_shards\":[{\"bytes\":188,\"private_locator_id\":\"synthetic:shard:0\",\"row_count\":1,\"sha256\":\"c1a43e0861084c59b05d86aa0da395e4c6c2dadcf0182e38922c31a8cb3a6ac3\",\"shard_id\":\"closure-000000\"}],\"closure_total_bytes\":9007199254740991}",
+      "catalog_closure_digest": "376b04169bdf9c63bcfd70da357bc5812218fd1ac1450015267fe0d16f409b54"
+    }
+  ],
+  "database_target": {
+    "value": {
+      "cluster_incarnation": "synthetic-db",
+      "system_identifier": "18446744073709551615",
+      "timeline": 1,
+      "base_backup_id": "synthetic-base",
+      "base_manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "restore_point_name": "synthetic-marker",
+      "restore_lsn": "0/1000000",
+      "target_inclusive": true,
+      "archive_identity": "synthetic-archive"
+    },
+    "canonical_text": "{\"archive_identity\":\"synthetic-archive\",\"base_backup_id\":\"synthetic-base\",\"base_manifest_sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"cluster_incarnation\":\"synthetic-db\",\"restore_lsn\":\"0/1000000\",\"restore_point_name\":\"synthetic-marker\",\"system_identifier\":\"18446744073709551615\",\"target_inclusive\":true,\"timeline\":1}",
+    "sha256": "998105be35438a0060d30e4b192e6c0b09b6c24e4f5a29c7d8933be6608b171e"
+  },
+  "negative_vectors": [
+    {
+      "name": "duplicate-id",
+      "expected": "reject",
+      "reason": "Duplicate identical or conflicting object IDs must not collapse"
+    },
+    {
+      "name": "wrong-row-order",
+      "expected": "reject",
+      "reason": "UTF-16 or locale sorting is not UTF-8 row sorting"
+    },
+    {
+      "name": "crlf-or-missing-final-lf",
+      "expected": "reject",
+      "reason": "Stored shard bytes must equal canonical JSONL"
+    },
+    {
+      "name": "duplicate-json-property",
+      "expected": "reject",
+      "reason": "Reject before ordinary parsing discards a property"
+    },
+    {
+      "name": "lone-surrogate",
+      "expected": "reject",
+      "reason": "Invalid Unicode is not a valid identity"
+    },
+    {
+      "name": "unsafe-integer",
+      "expected": "reject",
+      "reason": "Reject values above 9007199254740991 before conversion"
+    },
+    {
+      "name": "sum-overflow",
+      "expected": "reject",
+      "reason": "Individually valid sizes may overflow total bytes"
+    },
+    {
+      "name": "empty-shard",
+      "expected": "reject",
+      "reason": "Empty closure uses no descriptors"
+    },
+    {
+      "name": "wrong-class",
+      "expected": "reject",
+      "reason": "Database/backup/config records are not catalog media"
+    },
+    {
+      "name": "wrong-partition",
+      "expected": "reject",
+      "reason": "4097 rows require 4096 rows then one row"
+    },
+    {
+      "name": "unknown-policy",
+      "expected": "reject",
+      "reason": "Do not reinterpret a future policy as v1"
+    },
+    {
+      "name": "locator-change-old-root",
+      "expected": "reject",
+      "reason": "Locator identity is included in descriptor hashing"
+    }
+  ]
+}
