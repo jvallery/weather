@@ -1,6 +1,6 @@
 # D13 — UI, theme and editorial boundaries
 
-Status: owner-approved React/TypeScript framework/layout and theme policy selected; direct frontend pins selected, full lock/image/build qualification, identity integration and rendered responsive wireframes remain open; exact font provenance is resolved by the separate review. Requirements R14/R24/R25/R30–R37, §§12.1–12.8; consumers WX-20/26/39/40/41/43/44 and integration WX-33. This is design collateral, not an application implementation or evidence of a deployed Weather UI.
+Status: owner-approved React/TypeScript framework/layout and theme policy selected; direct frontend pins selected, full lock/image/build qualification, identity integration and implemented responsive/browser behavior remain open; static wireframes are rendered; exact font provenance is resolved by the separate review. Requirements R14/R24/R25/R30–R37, §§12.1–12.8; consumers WX-20/26/39/40/41/43/44 and integration WX-33. This is design collateral, not an application implementation or evidence of a deployed Weather UI.
 
 ## Architecture and why
 
@@ -65,7 +65,7 @@ Use the official Express adapter with an explicit minimal server entrypoint, not
 
 WX-02 must resolve and commit the complete package lock and trusted native artifact closure under the admitted build path. TypeScript 7 includes platform-specific compiler packages; the checked Linux x64 archive is not permission to download binaries at runtime or assume another architecture works. Preserve exact compatible Router package versions, verify build-only dependency pruning, and pin the final mirrored Node/base/runtime image digests. Optional RSC and Cloudflare peers are unselected. Third-party fonts and all runtime assets remain locally served under their existing provenance contract.
 
-Before release, run dependency/license/security review against the complete lock/SBOM, verify upstream provenance under the estate policy, and execute SSR/hydration/build/negative-header/offline/rolling-upgrade acceptance. Direct metadata licenses are MIT or Apache-2.0 for this selected set, but that is not a transitive license clearance. A discovered incompatibility or advisory requires a recorded replacement/version decision and relevant requalification, not floating latest or disabled checks. Rendered responsive wireframes and Python/OIDC pins are separate remaining planning work.
+Before release, run dependency/license/security review against the complete lock/SBOM, verify upstream provenance under the estate policy, and execute SSR/hydration/build/negative-header/offline/rolling-upgrade acceptance. Direct metadata licenses are MIT or Apache-2.0 for this selected set, but that is not a transitive license clearance. A discovered incompatibility or advisory requires a recorded replacement/version decision and relevant requalification, not floating latest or disabled checks. Responsive wireframes are now rendered in the linked design set; Python/OIDC pins remain separate planning work.
 
 ## Live theme evidence and token roles
 
@@ -79,7 +79,7 @@ Use an 80-rem maximum shell, 1-rem minimum mobile gutters, restrained 0.375/0.62
 
 ## Responsive composition contract
 
-These are wireframe specifications to render and inspect in the implementation collateral; they are not completed visual wireframes. Test 320, 390, 768 and 1440 CSS-pixel viewports, 200% zoom, long content and keyboard operation.
+The [rendered wireframe set](../design/wireframes/README.md) covers all eleven public route groups, private editor and cross-route states. Thirteen static views were checked at 320, 390, 768 and 1440 CSS pixels, with 26 desktop/mobile PNGs. This establishes reviewable layout collateral, not implemented React behavior. Implementation still tests 200% zoom, long real content, keyboard operation and the required browser matrix.
 
 | Surface | Wide layout and reading order | Narrow layout and essential states |
 |---|---|---|
@@ -111,4 +111,4 @@ Self-host scripts, icons, fonts and player assets. Render narrative/editorial va
 
 ## Completion evidence still required
 
-WX-20/26 must supply pinned build/runtime compatibility, route/schema integration and rendered responsive wireframes. WX-39/40/41/43/44 retain the detailed [38-clause UI audit](../implementation/ui-clause-audit.md) in addition to this layout policy. Verify all required §12.2 surfaces, no-JavaScript navigation, all lifecycle/error states, native panorama and lazy loading, text equivalents, focus/contrast/zoom, source-time linking and private/public separation. The separate font review resolves upstream provenance and license obligations; neither it nor live asset hashes prove correct artifact distribution or pixel-level visual acceptance. Identity integration and actual parent embed delivery remain material open decisions. No D13 completion is claimed from this document.
+WX-20/26 must implement the linked rendered wireframes and prove pinned build/runtime compatibility and route/schema integration. WX-39/40/41/43/44 retain the detailed [38-clause UI audit](../implementation/ui-clause-audit.md) in addition to this layout policy. Verify all required §12.2 surfaces, no-JavaScript navigation, all lifecycle/error states, native panorama and lazy loading, text equivalents, focus/contrast/zoom, source-time linking and private/public separation. The separate font review resolves upstream provenance and license obligations; neither it nor live asset hashes prove correct artifact distribution or pixel-level visual acceptance. Identity integration and actual parent embed delivery remain material open decisions. No D13 completion is claimed from this document.

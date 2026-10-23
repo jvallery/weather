@@ -1,0 +1,603 @@
+{
+  "status": "static_design_render_not_application_acceptance",
+  "observed_at": "2026-10-23T23:25:55.135098+00:00",
+  "source_sha256": "4088b541a25c85587df39d6da6a3326a037686fe22e4acb7e476558642e80f57",
+  "browser": "Headless Google Chrome 155.0.8059.85",
+  "views": [
+    {
+      "id": "today",
+      "title": "Today",
+      "route": "/"
+    },
+    {
+      "id": "archive",
+      "title": "Explore the archive",
+      "route": "/archive/ and month views"
+    },
+    {
+      "id": "day",
+      "title": "Solar cycle \u00b7 October 23",
+      "route": "/day/YYYY-MM-DD/"
+    },
+    {
+      "id": "player",
+      "title": "East sky \u00b7 daytime",
+      "route": "/timelapses/<camera>/<date>/<segment>/"
+    },
+    {
+      "id": "stills",
+      "title": "Hourly observations",
+      "route": "/stills/ and camera/date views"
+    },
+    {
+      "id": "history",
+      "title": "Measured weather history",
+      "route": "/weather/history/"
+    },
+    {
+      "id": "almanac",
+      "title": "Local almanac",
+      "route": "/weather/almanac/"
+    },
+    {
+      "id": "events",
+      "title": "Weather events",
+      "route": "/events/"
+    },
+    {
+      "id": "search",
+      "title": "Find recorded weather",
+      "route": "/search/"
+    },
+    {
+      "id": "embed",
+      "title": "Weather card",
+      "route": "/embed/weather/"
+    },
+    {
+      "id": "about",
+      "title": "About these observations",
+      "route": "/about/"
+    },
+    {
+      "id": "editor",
+      "title": "Private editorial workspace",
+      "route": "Private editorial UI/API"
+    },
+    {
+      "id": "states",
+      "title": "Failure and lifecycle states",
+      "route": "Cross-route acceptance"
+    }
+  ],
+  "checks": [
+    {
+      "view": "today",
+      "viewport_width": 320,
+      "width": 320,
+      "scrollWidth": 320,
+      "height": 3058.171875
+    },
+    {
+      "view": "archive",
+      "viewport_width": 320,
+      "width": 320,
+      "scrollWidth": 320,
+      "height": 1428.234375
+    },
+    {
+      "view": "day",
+      "viewport_width": 320,
+      "width": 320,
+      "scrollWidth": 320,
+      "height": 3250.640625
+    },
+    {
+      "view": "player",
+      "viewport_width": 320,
+      "width": 320,
+      "scrollWidth": 320,
+      "height": 1968.046875
+    },
+    {
+      "view": "stills",
+      "viewport_width": 320,
+      "width": 320,
+      "scrollWidth": 320,
+      "height": 1780.984375
+    },
+    {
+      "view": "history",
+      "viewport_width": 320,
+      "width": 320,
+      "scrollWidth": 320,
+      "height": 1461.71875
+    },
+    {
+      "view": "almanac",
+      "viewport_width": 320,
+      "width": 320,
+      "scrollWidth": 320,
+      "height": 2230.515625
+    },
+    {
+      "view": "events",
+      "viewport_width": 320,
+      "width": 320,
+      "scrollWidth": 320,
+      "height": 1109.203125
+    },
+    {
+      "view": "search",
+      "viewport_width": 320,
+      "width": 320,
+      "scrollWidth": 320,
+      "height": 1773.25
+    },
+    {
+      "view": "embed",
+      "viewport_width": 320,
+      "width": 320,
+      "scrollWidth": 320,
+      "height": 1051.3125
+    },
+    {
+      "view": "about",
+      "viewport_width": 320,
+      "width": 320,
+      "scrollWidth": 320,
+      "height": 1296.8125
+    },
+    {
+      "view": "editor",
+      "viewport_width": 320,
+      "width": 320,
+      "scrollWidth": 320,
+      "height": 2382.8125
+    },
+    {
+      "view": "states",
+      "viewport_width": 320,
+      "width": 320,
+      "scrollWidth": 320,
+      "height": 2061.0625
+    },
+    {
+      "view": "today",
+      "viewport_width": 390,
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 2752.984375
+    },
+    {
+      "view": "archive",
+      "viewport_width": 390,
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1198.703125
+    },
+    {
+      "view": "day",
+      "viewport_width": 390,
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 3125.765625
+    },
+    {
+      "view": "player",
+      "viewport_width": 390,
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1862.359375
+    },
+    {
+      "view": "stills",
+      "viewport_width": 390,
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1576.453125
+    },
+    {
+      "view": "history",
+      "viewport_width": 390,
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1236.734375
+    },
+    {
+      "view": "almanac",
+      "viewport_width": 390,
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 2038.53125
+    },
+    {
+      "view": "events",
+      "viewport_width": 390,
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 941.21875
+    },
+    {
+      "view": "search",
+      "viewport_width": 390,
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1460.578125
+    },
+    {
+      "view": "embed",
+      "viewport_width": 390,
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1029.703125
+    },
+    {
+      "view": "about",
+      "viewport_width": 390,
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1096.734375
+    },
+    {
+      "view": "editor",
+      "viewport_width": 390,
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 2177.703125
+    },
+    {
+      "view": "states",
+      "viewport_width": 390,
+      "width": 390,
+      "scrollWidth": 390,
+      "height": 1916.171875
+    },
+    {
+      "view": "today",
+      "viewport_width": 768,
+      "width": 768,
+      "scrollWidth": 768,
+      "height": 1843.953125
+    },
+    {
+      "view": "archive",
+      "viewport_width": 768,
+      "width": 768,
+      "scrollWidth": 768,
+      "height": 924.34375
+    },
+    {
+      "view": "day",
+      "viewport_width": 768,
+      "width": 768,
+      "scrollWidth": 768,
+      "height": 2074.328125
+    },
+    {
+      "view": "player",
+      "viewport_width": 768,
+      "width": 768,
+      "scrollWidth": 768,
+      "height": 1764.71875
+    },
+    {
+      "view": "stills",
+      "viewport_width": 768,
+      "width": 768,
+      "scrollWidth": 768,
+      "height": 1027.359375
+    },
+    {
+      "view": "history",
+      "viewport_width": 768,
+      "width": 768,
+      "scrollWidth": 768,
+      "height": 1022.796875
+    },
+    {
+      "view": "almanac",
+      "viewport_width": 768,
+      "width": 768,
+      "scrollWidth": 768,
+      "height": 1248.359375
+    },
+    {
+      "view": "events",
+      "viewport_width": 768,
+      "width": 768,
+      "scrollWidth": 768,
+      "height": 678.703125
+    },
+    {
+      "view": "search",
+      "viewport_width": 768,
+      "width": 768,
+      "scrollWidth": 768,
+      "height": 1301.515625
+    },
+    {
+      "view": "embed",
+      "viewport_width": 768,
+      "width": 768,
+      "scrollWidth": 768,
+      "height": 712.984375
+    },
+    {
+      "view": "about",
+      "viewport_width": 768,
+      "width": 768,
+      "scrollWidth": 768,
+      "height": 824.75
+    },
+    {
+      "view": "editor",
+      "viewport_width": 768,
+      "width": 768,
+      "scrollWidth": 768,
+      "height": 1557.078125
+    },
+    {
+      "view": "states",
+      "viewport_width": 768,
+      "width": 768,
+      "scrollWidth": 768,
+      "height": 1180.28125
+    },
+    {
+      "view": "today",
+      "viewport_width": 1440,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1266.984375
+    },
+    {
+      "view": "archive",
+      "viewport_width": 1440,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 730.5
+    },
+    {
+      "view": "day",
+      "viewport_width": 1440,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1323.453125
+    },
+    {
+      "view": "player",
+      "viewport_width": 1440,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 2262.203125
+    },
+    {
+      "view": "stills",
+      "viewport_width": 1440,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1145.546875
+    },
+    {
+      "view": "history",
+      "viewport_width": 1440,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1097.359375
+    },
+    {
+      "view": "almanac",
+      "viewport_width": 1440,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1054.515625
+    },
+    {
+      "view": "events",
+      "viewport_width": 1440,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 695.25
+    },
+    {
+      "view": "search",
+      "viewport_width": 1440,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1497.34375
+    },
+    {
+      "view": "embed",
+      "viewport_width": 1440,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 729.53125
+    },
+    {
+      "view": "about",
+      "viewport_width": 1440,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 841.296875
+    },
+    {
+      "view": "editor",
+      "viewport_width": 1440,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 1492.515625
+    },
+    {
+      "view": "states",
+      "viewport_width": 1440,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "height": 844.875
+    }
+  ],
+  "screenshots": [
+    {
+      "view": "today",
+      "viewport_width": 320,
+      "path": "renders/today-320.png",
+      "sha256": "81a4f39273e12841759380196aeb35a806f939b51af1ec2a4954c07f7d899ccd"
+    },
+    {
+      "view": "archive",
+      "viewport_width": 320,
+      "path": "renders/archive-320.png",
+      "sha256": "a1c9199c10fa11ff55d3e0780d5fdcbef689c24cc7dc507f6269210a8b8fbf60"
+    },
+    {
+      "view": "day",
+      "viewport_width": 320,
+      "path": "renders/day-320.png",
+      "sha256": "f74f10984f5fcebba1646b5ae3ccecca6ca0bbd2df4a6861541490b8d874f1bd"
+    },
+    {
+      "view": "player",
+      "viewport_width": 320,
+      "path": "renders/player-320.png",
+      "sha256": "05d23aff83e4a6dce7b9c1c8c727c065daef6a198332840d3c62ab83b0c0c47d"
+    },
+    {
+      "view": "stills",
+      "viewport_width": 320,
+      "path": "renders/stills-320.png",
+      "sha256": "a0f363ef400bd68ba1a347a081e36e90daaa20d884911ae67cfbc9c5c0a1c29a"
+    },
+    {
+      "view": "history",
+      "viewport_width": 320,
+      "path": "renders/history-320.png",
+      "sha256": "d97ad922065c88e9a13846f8051b28bbc9462b251a28168ec3be68e73cf27fa3"
+    },
+    {
+      "view": "almanac",
+      "viewport_width": 320,
+      "path": "renders/almanac-320.png",
+      "sha256": "428e8af322b04a3d01636b5bf4291f4ae41b8314178288dbc572e37803c55adb"
+    },
+    {
+      "view": "events",
+      "viewport_width": 320,
+      "path": "renders/events-320.png",
+      "sha256": "c035ffb0addd5a7201e35f5fefe2716bc5eb06832398fa80526c7e4549a1d611"
+    },
+    {
+      "view": "search",
+      "viewport_width": 320,
+      "path": "renders/search-320.png",
+      "sha256": "656857c350b7127936c3c61c28cef8100dd6c9646a82234405aaa10ebc17af70"
+    },
+    {
+      "view": "embed",
+      "viewport_width": 320,
+      "path": "renders/embed-320.png",
+      "sha256": "8615fc87cc2f757cc32ea8f40d9f08bb1571e1e807081d50a99722b363f87e1f"
+    },
+    {
+      "view": "about",
+      "viewport_width": 320,
+      "path": "renders/about-320.png",
+      "sha256": "f7e117e0714d71c4dba48d41dcb09a79be4d5703fe861deed85bc1592f6b1968"
+    },
+    {
+      "view": "editor",
+      "viewport_width": 320,
+      "path": "renders/editor-320.png",
+      "sha256": "35244b5a39f0de7e7d959b61c0c76d10696efac596b9d883d1828d852166053a"
+    },
+    {
+      "view": "states",
+      "viewport_width": 320,
+      "path": "renders/states-320.png",
+      "sha256": "a304e28617fc0df7dc291e7c25bd4ca25e45512cd7113b25a34279ebbb927983"
+    },
+    {
+      "view": "today",
+      "viewport_width": 1440,
+      "path": "renders/today-1440.png",
+      "sha256": "733b085a943162f8bc1e0e76ff2147d24faa3e283933e227e6cc69a464068cb6"
+    },
+    {
+      "view": "archive",
+      "viewport_width": 1440,
+      "path": "renders/archive-1440.png",
+      "sha256": "10eaf6ddb65582586aced15154263e7d8cceb603289f28df31c029346a2c2d62"
+    },
+    {
+      "view": "day",
+      "viewport_width": 1440,
+      "path": "renders/day-1440.png",
+      "sha256": "da2e37f39a3b95eee32d77d0ecf867ed9e8579b23f5a234b89609d01283198e2"
+    },
+    {
+      "view": "player",
+      "viewport_width": 1440,
+      "path": "renders/player-1440.png",
+      "sha256": "e9adc975898a770d935eefacadf92cb29e5fee175a50704bf4926cd45db05b00"
+    },
+    {
+      "view": "stills",
+      "viewport_width": 1440,
+      "path": "renders/stills-1440.png",
+      "sha256": "ce1f699d10ef8f4fa60eaa1c94654a032e3ebca19107e8a1aea80ad2ce09a53d"
+    },
+    {
+      "view": "history",
+      "viewport_width": 1440,
+      "path": "renders/history-1440.png",
+      "sha256": "9437752e2490a1c0a0fc1c0df43b4e3f9e43c00187bd35cc84a4cf6c7035d399"
+    },
+    {
+      "view": "almanac",
+      "viewport_width": 1440,
+      "path": "renders/almanac-1440.png",
+      "sha256": "a7c354cfa4ec7cd08bdd5bccc7f5db68059cf2dcce57bb25f00c6ca1c2680179"
+    },
+    {
+      "view": "events",
+      "viewport_width": 1440,
+      "path": "renders/events-1440.png",
+      "sha256": "0f78d269e340d771bb89167f4f9d3eaca39c78f95fa9af76ea4060d9d74135e3"
+    },
+    {
+      "view": "search",
+      "viewport_width": 1440,
+      "path": "renders/search-1440.png",
+      "sha256": "224561362247fd4c3daf6721359d76e785478cbaa183a5177ea3fcc408930b2e"
+    },
+    {
+      "view": "embed",
+      "viewport_width": 1440,
+      "path": "renders/embed-1440.png",
+      "sha256": "8fec026f160bedd84e488051853f9f7763570b637651697e1deaa6ec09e2fa7a"
+    },
+    {
+      "view": "about",
+      "viewport_width": 1440,
+      "path": "renders/about-1440.png",
+      "sha256": "118c69e6f602af38f09cbf378dd4702dc3178f474383f4e8cb37d1edac1742b0"
+    },
+    {
+      "view": "editor",
+      "viewport_width": 1440,
+      "path": "renders/editor-1440.png",
+      "sha256": "bb0b8e8c75b8483292d771aee0c42ecf6530965a5dbb89b4fefd90fa35d7f3bd"
+    },
+    {
+      "view": "states",
+      "viewport_width": 1440,
+      "path": "renders/states-1440.png",
+      "sha256": "a44d87199d9744a038a356b487267f2c471ce98cff9de2e4449b367b0ee827ab"
+    }
+  ],
+  "external_requests": [],
+  "limitations": [
+    "Synthetic static HTML and system-font wireframes, not React implementation",
+    "Controls illustrate layout; no API/authentication/playback behavior tested",
+    "No full accessibility audit, 200-percent zoom, mobile Safari, real chart, or production test claimed"
+  ]
+}
