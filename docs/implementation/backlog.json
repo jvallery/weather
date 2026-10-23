@@ -56,7 +56,8 @@
       "release_gate": "required",
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
-        "WX-00"
+        "WX-00",
+        "OWN-CI"
       ]
     },
     {
@@ -83,7 +84,8 @@
       "release_gate": "required",
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
-        "WX-00"
+        "WX-00",
+        "OWN-CI"
       ]
     },
     {
@@ -112,7 +114,8 @@
       "release_gate": "required",
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
-        "WX-01"
+        "WX-01",
+        "OWN-NFS"
       ]
     },
     {
@@ -140,7 +143,8 @@
       "release_gate": "required",
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
-        "WX-01"
+        "WX-01",
+        "OWN-UDP"
       ]
     },
     {
@@ -204,7 +208,8 @@
       ],
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
-        "WX-01"
+        "WX-01",
+        "OWN-OBJECT"
       ]
     },
     {
@@ -239,7 +244,8 @@
       ],
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
-        "WX-06"
+        "WX-06",
+        "OWN-GATEWAY"
       ]
     },
     {
@@ -509,7 +515,8 @@
       "release_gate": "conditional",
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
-        "WX-14"
+        "WX-14",
+        "OWN-GPU"
       ]
     },
     {
@@ -662,7 +669,8 @@
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
         "WX-07",
-        "WX-17"
+        "WX-17",
+        "OWN-EDGE"
       ]
     },
     {
@@ -727,7 +735,8 @@
       "release_gate": "required",
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
-        "WX-17"
+        "WX-17",
+        "OWN-MODELS"
       ]
     },
     {
@@ -792,7 +801,8 @@
       ],
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
-        "WX-08"
+        "WX-08",
+        "OWN-MODELS"
       ]
     },
     {
@@ -986,7 +996,8 @@
       ],
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
-        "WX-28"
+        "WX-28",
+        "OWN-CUSTODY"
       ]
     },
     {
@@ -1069,7 +1080,8 @@
         "WX-18",
         "WX-25",
         "WX-29",
-        "WX-38"
+        "WX-38",
+        "OWN-OBS"
       ]
     },
     {
@@ -1709,7 +1721,8 @@
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
         "WX-20",
-        "WX-38"
+        "WX-38",
+        "OWN-EMBED"
       ]
     },
     {
@@ -1845,7 +1858,7 @@
     "planning_issue_count": 1,
     "direct_edge_count": 99,
     "planning_edge_count": 2,
-    "native_edge_count": 101,
+    "native_edge_count": 114,
     "conditional_edge_count": 2,
     "conditional_edges_active": false,
     "required_initial_count": 42,
@@ -1855,7 +1868,9 @@
     ],
     "deferred_research_keys": [
       "WX-46"
-    ]
+    ],
+    "external_prerequisite_count": 11,
+    "external_edge_count": 13
   },
   "audit_issue": {
     "key": "WX-00",
@@ -1864,9 +1879,168 @@
     "url": "https://github.com/jvallery/weather/issues/1"
   },
   "native_verification": {
-    "observed_at": "2026-10-23T19:29:34.018Z",
+    "observed_at": "2026-10-23T19:38:35.290Z",
     "verified_nodes": 46,
-    "verified_edges": 101,
-    "method": "GitHub REST blocked_by readback matched actual issue IDs"
-  }
+    "verified_external_prerequisites": 11,
+    "verified_edges": 114,
+    "method": "GitHub REST blocked_by readback matched exact internal and cross-repository issue IDs"
+  },
+  "external_prerequisites": [
+    {
+      "key": "OWN-CI",
+      "repository": "jvallery/agents",
+      "github_issue": {
+        "number": 5366,
+        "id": 6004250757,
+        "url": "https://github.com/jvallery/agents/issues/5366"
+      },
+      "consumers": [
+        "WX-01",
+        "WX-02"
+      ],
+      "status": "open",
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+    },
+    {
+      "key": "OWN-NFS",
+      "repository": "jvallery/storage-infra",
+      "github_issue": {
+        "number": 1106,
+        "id": 6004251329,
+        "url": "https://github.com/jvallery/storage-infra/issues/1106"
+      },
+      "consumers": [
+        "WX-03"
+      ],
+      "status": "open",
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+    },
+    {
+      "key": "OWN-OBJECT",
+      "repository": "jvallery/storage-infra",
+      "github_issue": {
+        "number": 1107,
+        "id": 6004251653,
+        "url": "https://github.com/jvallery/storage-infra/issues/1107"
+      },
+      "consumers": [
+        "WX-06"
+      ],
+      "status": "open",
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+    },
+    {
+      "key": "OWN-GATEWAY",
+      "repository": "jvallery/storage-infra",
+      "github_issue": {
+        "number": 1108,
+        "id": 6004251974,
+        "url": "https://github.com/jvallery/storage-infra/issues/1108"
+      },
+      "consumers": [
+        "WX-07"
+      ],
+      "status": "open",
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+    },
+    {
+      "key": "OWN-CUSTODY",
+      "repository": "jvallery/storage-infra",
+      "github_issue": {
+        "number": 1109,
+        "id": 6004252341,
+        "url": "https://github.com/jvallery/storage-infra/issues/1109"
+      },
+      "consumers": [
+        "WX-29"
+      ],
+      "status": "open",
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+    },
+    {
+      "key": "OWN-UDP",
+      "repository": "jvallery/network-infra",
+      "github_issue": {
+        "number": 774,
+        "id": 6004252616,
+        "url": "https://github.com/jvallery/network-infra/issues/774"
+      },
+      "consumers": [
+        "WX-04"
+      ],
+      "status": "open",
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+    },
+    {
+      "key": "OWN-EDGE",
+      "repository": "jvallery/network-infra",
+      "github_issue": {
+        "number": 775,
+        "id": 6004252871,
+        "url": "https://github.com/jvallery/network-infra/issues/775"
+      },
+      "consumers": [
+        "WX-19"
+      ],
+      "status": "open",
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+    },
+    {
+      "key": "OWN-MODELS",
+      "repository": "jvallery/cortex-ai-compute",
+      "github_issue": {
+        "number": 402,
+        "id": 6004253184,
+        "url": "https://github.com/jvallery/cortex-ai-compute/issues/402"
+      },
+      "consumers": [
+        "WX-21",
+        "WX-23"
+      ],
+      "status": "open",
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+    },
+    {
+      "key": "OWN-GPU",
+      "repository": "jvallery/cortex-ai-compute",
+      "github_issue": {
+        "number": 403,
+        "id": 6004253526,
+        "url": "https://github.com/jvallery/cortex-ai-compute/issues/403"
+      },
+      "consumers": [
+        "WX-15"
+      ],
+      "status": "open",
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+    },
+    {
+      "key": "OWN-OBS",
+      "repository": "jvallery/monitoring-stack",
+      "github_issue": {
+        "number": 1072,
+        "id": 6004253883,
+        "url": "https://github.com/jvallery/monitoring-stack/issues/1072"
+      },
+      "consumers": [
+        "WX-31"
+      ],
+      "status": "open",
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+    },
+    {
+      "key": "OWN-EMBED",
+      "repository": "VerdifyConsultancy/wordpress",
+      "github_issue": {
+        "number": 242,
+        "id": 6004293631,
+        "url": "https://github.com/VerdifyConsultancy/wordpress/issues/242"
+      },
+      "consumers": [
+        "WX-44"
+      ],
+      "status": "open",
+      "scope": "Owner implementation/admission; qualification evidence is required before dependent execution"
+    }
+  ]
 }

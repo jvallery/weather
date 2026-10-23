@@ -1,8 +1,8 @@
 # Filed implementation backlog
 
-Status: filed; 101 native relationships read back and matched on 2026-10-23; research remains incomplete. [WX-00 / #1](https://github.com/jvallery/weather/issues/1) gates application implementation. The [decision register](../decisions/implementation-register.md) distinguishes working choices from unresolved evidence. [Audit findings](../research/adversarial-audit.md) explain the changes from the seed.
+Status: filed; 114 native relationships read back and matched on 2026-10-23, including 13 edges to 11 owner prerequisites; research remains incomplete. [WX-00 / #1](https://github.com/jvallery/weather/issues/1) gates application implementation. The [decision register](../decisions/implementation-register.md) distinguishes working choices from unresolved evidence. [Audit findings](../research/adversarial-audit.md) explain the changes from the seed.
 
-The [machine-readable graph](backlog.json) records real issue numbers and IDs. Requirement links refer to the normative [requirements](../requirements.md), not only issue titles. Individual issues contain implementation approach, targeted acceptance/failure cases and operations/rollback obligations. Cross-owner prerequisite issues and detailed contract artifacts remain to be completed during research; do not interpret filing as readiness.
+The [machine-readable graph](backlog.json) records real issue numbers and IDs. Requirement links refer to the normative [requirements](../requirements.md), not only issue titles. Individual issues contain implementation approach, targeted acceptance/failure cases and operations/rollback obligations. [Owner prerequisites](owner-prerequisites.md) are filed and linked natively. Detailed contracts and qualification remain incomplete; do not interpret filing as readiness.
 
 ## Scope and sequence
 
@@ -16,7 +16,7 @@ Use one task per coherent change, preserve unrelated work in isolated checkouts,
 
 ## Dependency depth
 
-This is a logical longest chain, **not an elapsed-time estimate** (task durations are unmeasured):
+This is a logical longest chain within Weather, **not an elapsed-time estimate** (task durations are unmeasured). Owner prerequisites additionally gate their listed consumers and can dominate elapsed time:
 
 WX-01 → WX-05 → WX-08 → WX-11 → WX-12 → WX-13 → WX-42 → WX-25 → WX-31 → WX-32 → WX-34 → WX-35
 
