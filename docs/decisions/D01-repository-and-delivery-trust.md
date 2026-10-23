@@ -1,6 +1,6 @@
 # D01 — Independent repository and delivery trust boundaries
 
-Status: repository/license and delivery architecture selected; fleet enrollment, private overlay location and isolated untrusted execution remain material OWN-CI decisions. Requirements §§4.1–4.3, 16.1–16.3 and 18.2; consumers WX-01/02/34. No workflow, registry enrollment, namespace, repo cell or deployment is created by this ADR.
+Status: repository/license and delivery architecture selected; private placement is selected under E12; fleet enrollment and isolated untrusted execution still require OWN-CI implementation/admission. Requirements §§4.1–4.3, 16.1–16.3 and 18.2; consumers WX-01/02/34. No workflow, registry enrollment, namespace, repo cell or deployment is created by this ADR.
 
 ## Confirmed baseline
 
@@ -12,7 +12,7 @@ The inspected event-path renderer admits default-branch pushes and same-reposito
 
 ## Repository, ownership and configuration
 
-Weather owns application code, schemas, synthetic fixtures, public generic deployment templates and its namespace application objects. Existing owner lanes retain shared providers, grants, DNS/tunnel, monitoring definitions, CI admission, images/registry infrastructure and credential custody. Register ownership and update the responsible OWNERSHIP records when resources are implemented. The private Weather deployment overlay belongs in the existing owner-managed delivery system; OWN-CI must select its exact path, AppProject/catalog entry and central KSOPS integration before namespace implementation.
+Weather owns application code, schemas, synthetic fixtures, public generic deployment templates and its namespace application objects. Existing owner lanes retain shared providers, grants, DNS/tunnel, monitoring definitions, CI admission, images/registry infrastructure and credential custody. Register ownership and update the responsible OWNERSHIP records when resources are implemented. The private Weather deployment overlay uses the existing owner-managed Application catalog and central KSOPS lane selected below under E12. OWN-CI implements and verifies those exact coordinates; Weather keeps the reusable application and bootstrap bases.
 
 Keep the namespace, service accounts, RBAC, quotas, secrets, image names and CI identity independent. Do not inherit Sentinel's privileges or make an interactive repo cell a prerequisite for building Weather. Public examples use unmistakable nonproduction placeholders and fail without explicit deployment configuration. Exact camera URLs/location, source receipts and provider credentials remain outside this public repository.
 
@@ -47,7 +47,7 @@ WX-01 verifies the owner registry, namespace/RBAC/quota/secret boundaries and de
 
 WX-34 proves staged deployment, source-to-running-digest linkage, compatibility and rollback with retained data. Capture pre-state and retain the last verified digest/configuration; rollback application/config without destructive down-migration or deleting recovery evidence. An admission or signature failure stops promotion and reports the exact failure; it does not authorize bypassing checks or using an alternate public image.
 
-D01 remains open for concrete registry/overlay/AppProject selection, supported untrusted admission and actual check/provenance/delivery qualification. MIT selection and public repository settings are complete; pipeline existence and production readiness are not.
+D01 remains open for enrollment of the selected registry/overlay/AppProject coordinates, supported untrusted admission, compatible build pins and actual check/provenance/delivery qualification. MIT selection and public repository settings are complete; pipeline existence and production readiness are not.
 
 ## E11 — concrete untrusted-path disposition
 
@@ -65,3 +65,34 @@ The extension contract must:
 - Report checks for the exact source through the trusted controller. A passing untrusted run does not publish an image or authorize deployment; trusted build/integration/promotion retain their separate contracts.
 
 OWN-CI's private E11 update records exact source revision/files, runtime policy observations and the local metadata-only receipt. No Secret was read, no candidate Job executed and no namespace/policy/identity changed. Required implementation qualification covers foreign-fork admission, changed CI/package hooks, wrong identity/source, network/credential denial, timeout cleanup and result tampering. P1 still needs exact owner integration/enrollment and compatible pins; this source review supplies the concrete extension target and rejects unsafe use of the existing path.
+
+## E12 — selected deployment placement and ownership
+
+A read-only refresh of the fleet owner's current source confirms an existing pattern of private `Application.spec.source.kustomize` image overrides and targeted patches over a pinned application base. Select that pattern for Weather rather than a second private application repository or a new deployment controller. The source review also identifies CI-only registry records that do not create coding pods. Live metadata confirms both intended parent catalogs are SHA-pinned, Synced and Healthy at their respective declared revisions; this is evidence of the existing delivery surfaces, not Weather admission. The selected Weather namespace and Application names are absent at observation time. Exact source/file hashes, live parent pins and render images are retained in private E12/OWN-CI.
+
+| Artifact | Selected source and responsibility |
+|---|---|
+| Reusable bootstrap base | Weather `deploy/k8s/bootstrap`: sole renderer of its Namespace and initial policy/quota/role objects; no workload or private secret values. Namespace is not recreated by a second Application. |
+| Reusable application base | Weather `deploy/k8s/application`: application workloads, services, app-owned database/PVC declarations and namespace-scoped route contracts. No private endpoints/location/credentials or working production defaults in public templates. |
+| Private environment overlay | Fleet owner's existing production Application catalog, using targeted `source.kustomize.patches` and digest-only `images` overrides. Exact declaration paths and names are recorded in OWN-CI. This is the one operative private overlay, not another copy of application YAML. |
+| Catalog and AppProjects | Fleet owner declares three Applications: bootstrap, secret delivery and application runtime; separate narrowly scoped projects. Each declaration has one parent. No Weather nested root or hand-applied duplicate Application. |
+| Secret custody | Existing central KSOPS lane for Weather's namespace; application bases reference delivered Secret names but do not render human/provider secret values. Storage-minted provider keys retain their registered owner exception and exact projections. No age key enters Weather. |
+| CI/image ownership | Immutable GitHub repository ID maps to one CI-only registry record, with one producer for each declared image. Generated CI configuration comes from that record. Trusted builds publish scoped estate-registry images; the private catalog consumes immutable digests. No coding pod is a prerequisite. |
+
+Use the exact private coordinate table in OWN-CI as the implementation target, subject to collision/ownership revalidation at execution. It names the registry record, bootstrap/runtime public paths, catalog declarations, projects, KSOPS directory and three image profiles (web, API and media worker). These are selected names, not provisioned resources, reservations or granted permissions. Public source keeps portable image placeholders and source contracts; private registry coordinates remain in owner custody.
+
+### Namespace bootstrap and constrained authority
+
+All three Applications use `CreateNamespace=false`. Bootstrap alone explicitly renders the Weather Namespace, with `Prune=false,Delete=false`, and the initial default-deny, role and quota policy. Its project permits the needed Namespace kind but no cluster RBAC, CRD or shared-operator mutation. AppProject kind permission is not a per-name constraint on cluster-scoped Namespace objects: trusted render/admission checks must independently enforce exactly the selected Weather Namespace and allowed object inventory. Do not copy a broad existing project's grants or assume destination namespace restricts cluster-scoped objects.
+
+The secret project permits its exact namespace and required secret-render output only, not Namespace creation or workloads. The runtime project permits Weather's exact namespace and the resource kinds its declared base actually needs, not Secret-value sources or cluster resources. Registered controller-generated Secrets and exact provider projections remain explicit exceptions. An application dependency or resource need does not expand a project automatically; verify rendered object group/kind/name/namespace and owner against the admitted inventory.
+
+Bootstrap must not deliver camera collectors, UDP listeners, inference calls or public routes. Defaults keep work disabled until private policy references and grants resolve. Namespace or secret availability alone cannot start unsafe work. Public bootstrap and application bases are pinned to reviewed Weather main-reachable revisions, and private patches are pinned to a reviewed owner revision. Arbitrary PR source and candidate-produced patches never enter trusted rendering or promotion.
+
+### Delivery order and recovery coordinates
+
+The implementation change set registers ownership and updates the responsible OWNERSHIP records, creates the CI-only record/generated outputs and declares projects/catalog/KSOPS sources. Do not sync a root merely because this design now names paths. Owner branch checks and current holds apply. Review complete parent diffs before advancing their pins: both selected parents can self-heal the full delta, including unrelated content between revisions. Never blanket-sync a held root or silently change its automation.
+
+After the scoped parent declarations are safely adopted, sync only the exact Weather bootstrap revision and verify the Namespace, default-deny and admitted limits. Then deliver the exact secret-source revision and verify metadata-only custody/projection identity without exposing values. Only then sync the exact application revision and its trusted image digests with the corresponding config/policy hashes. Initial Weather child Applications are manual with pruning disabled; staged source-to-live acceptance in WX-34 determines later automation explicitly. No repeated user approval ceremony is added: the gate is existing authority, exact targets and validated evidence.
+
+Keep bootstrap, secrets and runtime pins separate in release/recovery custody along with rendered inventory/hash, image provenance/digests and policy references. Mixed revisions must fail startup validation rather than run on guessed defaults. Rollback uses a compatible prior runtime/config revision while preserving Namespace, PVCs, database, archives and secret custody; deleting an Application or namespace is not rollback. WX-34 proves a clean bootstrap, version mismatch denial, failed-secret delivery, exact rendered scope, source-to-running-digest linkage and retained-data rollback. This source-backed placement closes the previously unspecified location decision, not the remaining resource grants, CI candidate extension, build pins or runtime qualification.
