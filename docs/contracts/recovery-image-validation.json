@@ -1,0 +1,114 @@
+{
+  "checked_at": "2026-10-23T23:36:30.077223+00:00",
+  "scope": "Recovery schema image-role correction; JSON Schema shape and date-time format only",
+  "files": {
+    "recovery.schema.json": "3d486410fa83dc758451b04b0e88bb11476c2103b9f29184da456c9864a2f8ae",
+    "recovery-fixtures.json": "12f1d2a7543fa660d27629960079eaed6304855c81f6b0b3b41615189cc6e3cf"
+  },
+  "cases": [
+    {
+      "name": "success envelope with empty media closure requires semantic ledgers",
+      "expected_valid": true,
+      "observed_valid": true
+    },
+    {
+      "name": "success cannot include missing object",
+      "expected_valid": false,
+      "observed_valid": false
+    },
+    {
+      "name": "success cannot include mismatch",
+      "expected_valid": false,
+      "observed_valid": false
+    },
+    {
+      "name": "success needs database chain ledger",
+      "expected_valid": false,
+      "observed_valid": false
+    },
+    {
+      "name": "manifest requires exact offsite version",
+      "expected_valid": false,
+      "observed_valid": false
+    },
+    {
+      "name": "credential field not permitted",
+      "expected_valid": false,
+      "observed_valid": false
+    },
+    {
+      "name": "impossible verification date",
+      "expected_valid": false,
+      "observed_valid": false
+    },
+    {
+      "name": "incomplete has distinct record type",
+      "expected_valid": true,
+      "observed_valid": true
+    },
+    {
+      "name": "full content receipt envelope",
+      "expected_valid": true,
+      "observed_valid": true
+    },
+    {
+      "name": "reuse without predecessor rejected",
+      "expected_valid": false,
+      "observed_valid": false
+    },
+    {
+      "name": "reuse requires external semantic predecessor validation",
+      "expected_valid": true,
+      "observed_valid": true
+    },
+    {
+      "name": "candidate empty closure shape requires independent ledgers",
+      "expected_valid": true,
+      "observed_valid": true
+    },
+    {
+      "name": "candidate unknown closure policy",
+      "expected_valid": false,
+      "observed_valid": false
+    },
+    {
+      "name": "candidate missing target",
+      "expected_valid": false,
+      "observed_valid": false
+    },
+    {
+      "name": "candidate empty shard rejected",
+      "expected_valid": false,
+      "observed_valid": false
+    },
+    {
+      "name": "candidate rejects missing web image",
+      "expected_valid": false,
+      "observed_valid": false
+    },
+    {
+      "name": "candidate rejects missing api image",
+      "expected_valid": false,
+      "observed_valid": false
+    },
+    {
+      "name": "candidate rejects missing media image",
+      "expected_valid": false,
+      "observed_valid": false
+    },
+    {
+      "name": "candidate rejects mutable application image tag",
+      "expected_valid": false,
+      "observed_valid": false
+    },
+    {
+      "name": "candidate rejects legacy singular application image",
+      "expected_valid": false,
+      "observed_valid": false
+    }
+  ],
+  "limitations": [
+    "No real image availability, bootstrap trust or restore verification",
+    "Canonical vectors unchanged and not rerun; earlier canonical receipt remains historical for its recorded file hashes"
+  ]
+}

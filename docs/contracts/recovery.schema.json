@@ -188,10 +188,6 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "application_image_digest": {
-          "type": "string",
-          "pattern": "^sha256:[a-f0-9]{64}$"
-        },
         "schema_revision": {
           "$ref": "#/$defs/Id"
         },
@@ -218,10 +214,33 @@
         },
         "secret_recovery_inventory_id": {
           "$ref": "#/$defs/Id"
+        },
+        "application_images": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "web": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "api": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "media": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "web",
+            "api",
+            "media"
+          ]
         }
       },
       "required": [
-        "application_image_digest",
+        "application_images",
         "schema_revision",
         "postgres_image_digest",
         "postgres_major",

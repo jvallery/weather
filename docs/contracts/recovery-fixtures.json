@@ -415,7 +415,6 @@
           "archive_identity": "synthetic-archive"
         },
         "versions": {
-          "application_image_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "postgres_image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "postgres_major": 16,
           "schema_revision": "synthetic-schema_revision",
@@ -423,7 +422,12 @@
           "embedding_profile_inventory_id": "synthetic-embedding_profile_inventory_id",
           "active_search_generation": "synthetic-active_search_generation",
           "configuration_inventory_id": "synthetic-configuration_inventory_id",
-          "secret_recovery_inventory_id": "synthetic-secret_recovery_inventory_id"
+          "secret_recovery_inventory_id": "synthetic-secret_recovery_inventory_id",
+          "application_images": {
+            "web": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "api": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "media": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
         },
         "closure_shards": [],
         "closure_object_count": 0,
@@ -454,7 +458,6 @@
           "archive_identity": "synthetic-archive"
         },
         "versions": {
-          "application_image_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "postgres_image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "postgres_major": 16,
           "schema_revision": "synthetic-schema_revision",
@@ -462,7 +465,12 @@
           "embedding_profile_inventory_id": "synthetic-embedding_profile_inventory_id",
           "active_search_generation": "synthetic-active_search_generation",
           "configuration_inventory_id": "synthetic-configuration_inventory_id",
-          "secret_recovery_inventory_id": "synthetic-secret_recovery_inventory_id"
+          "secret_recovery_inventory_id": "synthetic-secret_recovery_inventory_id",
+          "application_images": {
+            "web": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "api": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "media": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
         },
         "closure_shards": [],
         "closure_object_count": 0,
@@ -482,7 +490,6 @@
         "catalog_generation": 3,
         "catalog_closure_digest": "3401860761d0999dd96aa33ee8d2655c07487c698de3b77da83ae681dc3d0770",
         "versions": {
-          "application_image_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "postgres_image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "postgres_major": 16,
           "schema_revision": "synthetic-schema_revision",
@@ -490,7 +497,12 @@
           "embedding_profile_inventory_id": "synthetic-embedding_profile_inventory_id",
           "active_search_generation": "synthetic-active_search_generation",
           "configuration_inventory_id": "synthetic-configuration_inventory_id",
-          "secret_recovery_inventory_id": "synthetic-secret_recovery_inventory_id"
+          "secret_recovery_inventory_id": "synthetic-secret_recovery_inventory_id",
+          "application_images": {
+            "web": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "api": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "media": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
         },
         "closure_shards": [],
         "closure_object_count": 0,
@@ -521,7 +533,6 @@
           "archive_identity": "synthetic-archive"
         },
         "versions": {
-          "application_image_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "postgres_image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "postgres_major": 16,
           "schema_revision": "synthetic-schema_revision",
@@ -529,7 +540,12 @@
           "embedding_profile_inventory_id": "synthetic-embedding_profile_inventory_id",
           "active_search_generation": "synthetic-active_search_generation",
           "configuration_inventory_id": "synthetic-configuration_inventory_id",
-          "secret_recovery_inventory_id": "synthetic-secret_recovery_inventory_id"
+          "secret_recovery_inventory_id": "synthetic-secret_recovery_inventory_id",
+          "application_images": {
+            "web": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "api": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "media": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
         },
         "closure_shards": [
           {
@@ -540,6 +556,214 @@
             "private_locator_id": "synthetic:shard:0"
           }
         ],
+        "closure_object_count": 0,
+        "closure_total_bytes": 0,
+        "closure_policy_revision": "weather-closure-jcs-v1",
+        "binding_protocol_revision": "synthetic-binding"
+      }
+    },
+    {
+      "name": "candidate rejects missing web image",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "checkpoint_candidate",
+        "checkpoint_id": "synthetic-checkpoint",
+        "created_at": "2026-10-23T00:00:00Z",
+        "catalog_generation": 3,
+        "catalog_closure_digest": "3401860761d0999dd96aa33ee8d2655c07487c698de3b77da83ae681dc3d0770",
+        "database": {
+          "cluster_incarnation": "synthetic-db",
+          "system_identifier": "18446744073709551615",
+          "timeline": 1,
+          "base_backup_id": "synthetic-base",
+          "base_manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "restore_point_name": "synthetic-marker",
+          "restore_lsn": "0/1000000",
+          "target_inclusive": true,
+          "archive_identity": "synthetic-archive"
+        },
+        "versions": {
+          "postgres_image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "postgres_major": 16,
+          "schema_revision": "synthetic-schema_revision",
+          "extension_inventory_id": "synthetic-extension_inventory_id",
+          "embedding_profile_inventory_id": "synthetic-embedding_profile_inventory_id",
+          "active_search_generation": "synthetic-active_search_generation",
+          "configuration_inventory_id": "synthetic-configuration_inventory_id",
+          "secret_recovery_inventory_id": "synthetic-secret_recovery_inventory_id",
+          "application_images": {
+            "api": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "media": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        "closure_shards": [],
+        "closure_object_count": 0,
+        "closure_total_bytes": 0,
+        "closure_policy_revision": "weather-closure-jcs-v1",
+        "binding_protocol_revision": "synthetic-binding"
+      }
+    },
+    {
+      "name": "candidate rejects missing api image",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "checkpoint_candidate",
+        "checkpoint_id": "synthetic-checkpoint",
+        "created_at": "2026-10-23T00:00:00Z",
+        "catalog_generation": 3,
+        "catalog_closure_digest": "3401860761d0999dd96aa33ee8d2655c07487c698de3b77da83ae681dc3d0770",
+        "database": {
+          "cluster_incarnation": "synthetic-db",
+          "system_identifier": "18446744073709551615",
+          "timeline": 1,
+          "base_backup_id": "synthetic-base",
+          "base_manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "restore_point_name": "synthetic-marker",
+          "restore_lsn": "0/1000000",
+          "target_inclusive": true,
+          "archive_identity": "synthetic-archive"
+        },
+        "versions": {
+          "postgres_image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "postgres_major": 16,
+          "schema_revision": "synthetic-schema_revision",
+          "extension_inventory_id": "synthetic-extension_inventory_id",
+          "embedding_profile_inventory_id": "synthetic-embedding_profile_inventory_id",
+          "active_search_generation": "synthetic-active_search_generation",
+          "configuration_inventory_id": "synthetic-configuration_inventory_id",
+          "secret_recovery_inventory_id": "synthetic-secret_recovery_inventory_id",
+          "application_images": {
+            "web": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "media": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        "closure_shards": [],
+        "closure_object_count": 0,
+        "closure_total_bytes": 0,
+        "closure_policy_revision": "weather-closure-jcs-v1",
+        "binding_protocol_revision": "synthetic-binding"
+      }
+    },
+    {
+      "name": "candidate rejects missing media image",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "checkpoint_candidate",
+        "checkpoint_id": "synthetic-checkpoint",
+        "created_at": "2026-10-23T00:00:00Z",
+        "catalog_generation": 3,
+        "catalog_closure_digest": "3401860761d0999dd96aa33ee8d2655c07487c698de3b77da83ae681dc3d0770",
+        "database": {
+          "cluster_incarnation": "synthetic-db",
+          "system_identifier": "18446744073709551615",
+          "timeline": 1,
+          "base_backup_id": "synthetic-base",
+          "base_manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "restore_point_name": "synthetic-marker",
+          "restore_lsn": "0/1000000",
+          "target_inclusive": true,
+          "archive_identity": "synthetic-archive"
+        },
+        "versions": {
+          "postgres_image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "postgres_major": 16,
+          "schema_revision": "synthetic-schema_revision",
+          "extension_inventory_id": "synthetic-extension_inventory_id",
+          "embedding_profile_inventory_id": "synthetic-embedding_profile_inventory_id",
+          "active_search_generation": "synthetic-active_search_generation",
+          "configuration_inventory_id": "synthetic-configuration_inventory_id",
+          "secret_recovery_inventory_id": "synthetic-secret_recovery_inventory_id",
+          "application_images": {
+            "web": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "api": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        "closure_shards": [],
+        "closure_object_count": 0,
+        "closure_total_bytes": 0,
+        "closure_policy_revision": "weather-closure-jcs-v1",
+        "binding_protocol_revision": "synthetic-binding"
+      }
+    },
+    {
+      "name": "candidate rejects mutable application image tag",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "checkpoint_candidate",
+        "checkpoint_id": "synthetic-checkpoint",
+        "created_at": "2026-10-23T00:00:00Z",
+        "catalog_generation": 3,
+        "catalog_closure_digest": "3401860761d0999dd96aa33ee8d2655c07487c698de3b77da83ae681dc3d0770",
+        "database": {
+          "cluster_incarnation": "synthetic-db",
+          "system_identifier": "18446744073709551615",
+          "timeline": 1,
+          "base_backup_id": "synthetic-base",
+          "base_manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "restore_point_name": "synthetic-marker",
+          "restore_lsn": "0/1000000",
+          "target_inclusive": true,
+          "archive_identity": "synthetic-archive"
+        },
+        "versions": {
+          "postgres_image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "postgres_major": 16,
+          "schema_revision": "synthetic-schema_revision",
+          "extension_inventory_id": "synthetic-extension_inventory_id",
+          "embedding_profile_inventory_id": "synthetic-embedding_profile_inventory_id",
+          "active_search_generation": "synthetic-active_search_generation",
+          "configuration_inventory_id": "synthetic-configuration_inventory_id",
+          "secret_recovery_inventory_id": "synthetic-secret_recovery_inventory_id",
+          "application_images": {
+            "web": "weather-web:latest",
+            "api": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "media": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        "closure_shards": [],
+        "closure_object_count": 0,
+        "closure_total_bytes": 0,
+        "closure_policy_revision": "weather-closure-jcs-v1",
+        "binding_protocol_revision": "synthetic-binding"
+      }
+    },
+    {
+      "name": "candidate rejects legacy singular application image",
+      "valid": false,
+      "value": {
+        "schema_version": 1,
+        "record_type": "checkpoint_candidate",
+        "checkpoint_id": "synthetic-checkpoint",
+        "created_at": "2026-10-23T00:00:00Z",
+        "catalog_generation": 3,
+        "catalog_closure_digest": "3401860761d0999dd96aa33ee8d2655c07487c698de3b77da83ae681dc3d0770",
+        "database": {
+          "cluster_incarnation": "synthetic-db",
+          "system_identifier": "18446744073709551615",
+          "timeline": 1,
+          "base_backup_id": "synthetic-base",
+          "base_manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "restore_point_name": "synthetic-marker",
+          "restore_lsn": "0/1000000",
+          "target_inclusive": true,
+          "archive_identity": "synthetic-archive"
+        },
+        "versions": {
+          "postgres_image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "postgres_major": 16,
+          "schema_revision": "synthetic-schema_revision",
+          "extension_inventory_id": "synthetic-extension_inventory_id",
+          "embedding_profile_inventory_id": "synthetic-embedding_profile_inventory_id",
+          "active_search_generation": "synthetic-active_search_generation",
+          "configuration_inventory_id": "synthetic-configuration_inventory_id",
+          "secret_recovery_inventory_id": "synthetic-secret_recovery_inventory_id",
+          "application_image_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "closure_shards": [],
         "closure_object_count": 0,
         "closure_total_bytes": 0,
         "closure_policy_revision": "weather-closure-jcs-v1",
