@@ -174,7 +174,8 @@
       "release_gate": "required",
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
-        "WX-01"
+        "WX-01",
+        "OWN-DB"
       ]
     },
     {
@@ -391,7 +392,8 @@
       "planning_prerequisite": "WX-00",
       "native_depends_on": [
         "WX-04",
-        "WX-08"
+        "WX-08",
+        "OWN-DB"
       ]
     },
     {
@@ -1872,7 +1874,7 @@
     "planning_issue_count": 1,
     "direct_edge_count": 103,
     "planning_edge_count": 2,
-    "native_edge_count": 119,
+    "native_edge_count": 121,
     "conditional_edge_count": 2,
     "conditional_edges_active": false,
     "required_initial_count": 42,
@@ -1883,8 +1885,8 @@
     "deferred_research_keys": [
       "WX-46"
     ],
-    "external_prerequisite_count": 12,
-    "external_edge_count": 14
+    "external_prerequisite_count": 13,
+    "external_edge_count": 16
   },
   "audit_issue": {
     "key": "WX-00",
@@ -1893,11 +1895,11 @@
     "url": "https://github.com/jvallery/weather/issues/1"
   },
   "native_verification": {
-    "observed_at": "2026-10-23T20:16:51.031Z",
+    "observed_at": "2026-10-23T20:47:28.875572Z",
     "verified_nodes": 46,
-    "verified_external_prerequisites": 12,
-    "verified_edges": 119,
-    "method": "Prior complete 118-edge exact-ID readback plus exact readback of all WX-04 prerequisites after adding OWN-L2"
+    "verified_external_prerequisites": 13,
+    "verified_edges": 121,
+    "method": "Prior complete 119-edge readback plus exact complete prerequisite-set readback for WX-05 and WX-11 after adding OWN-DB"
   },
   "external_prerequisites": [
     {
@@ -2069,6 +2071,21 @@
       ],
       "status": "open",
       "scope": "Owner qualification and implementation of isolated secondary VLAN attachments; no new infrastructure installed during planning"
+    },
+    {
+      "key": "OWN-DB",
+      "repository": "jvallery/storage-infra",
+      "github_issue": {
+        "number": 1112,
+        "id": 6005193909,
+        "url": "https://github.com/jvallery/storage-infra/issues/1112"
+      },
+      "consumers": [
+        "WX-05",
+        "WX-11"
+      ],
+      "status": "open",
+      "scope": "Dedicated CNPG storage and independent bounded telemetry spool admission; no reuse of unrelated R1 grants"
     }
   ]
 }

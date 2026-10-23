@@ -18,6 +18,7 @@ Requirements and implementation planning for **[weather.vallery.net](https://wea
 - [Estate standards applicability and evidence](docs/implementation/standards-mapping.md), with a [machine-readable matrix](docs/implementation/standards-mapping.json).
 - [D04 direct Tempest attachment design](docs/decisions/D04-tempest-network.md), based on bounded live packet evidence.
 - [D05 receipt durability, canonical measurements and coverage](docs/decisions/D05-telemetry-integrity.md), with [adversarial telemetry vectors](docs/contracts/telemetry-vectors.json).
+- [D06 dedicated PostgreSQL and storage admission](docs/decisions/D06-database-and-storage.md), with live extension/replication evidence and explicit storage prerequisites.
 - [D09 CPU baseline and GPU admission](docs/decisions/D09-gpu-and-cpu-admission.md), with a verified nine-device census and explicit sharing limitations.
 - [D15 custody/recovery design and open decisions](docs/decisions/D15-custody-and-recovery.md), grounded in [live central custody evidence](docs/research/custody-evidence.md).
 - [HTTP/API semantic contract](docs/contracts/api-contract.md), [OpenAPI](docs/contracts/openapi.json), [JSON Schema](docs/contracts/api.schema.json), and [synthetic schema fixtures](docs/contracts/schema-fixtures.json).
