@@ -1,0 +1,393 @@
+{
+  "scope": "All sections 1-4 including R01-R38, D01-D16, role table and architecture diagrams",
+  "requirements_sha256": "5317cdd5ffc4ac3ff7f42806e0f25e47a8d6099432f0a147bce8cbd0193d1c3c",
+  "source_blocks": [
+    {
+      "id": "F1.01",
+      "section": "1",
+      "source_text": "This is the requirements document for an independent weather observation and timelapse service. Codex's **first assignment is to research the existing estate, resolve the implementation decisions identified here, complete configuration of the public `jvallery/weather` repository, and file a complete set of actionable GitHub implementation issues with a verified dependency graph**. Application implementation follows that research and issue-filing pass.",
+      "sha256": "37e8af2067ce9c6d51479a9efb23c8bc2fb8ef2cc1c8cf6c2e2045c838cf229b",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F1.02",
+      "section": "1",
+      "source_text": "The owner has now supplied the existing public repository at <https://github.com/jvallery/weather>. This handoff is published there. Reuse it; the earlier instruction to create a repository is satisfied. Repository policy, license, CI/CD and deployment configuration still need the first-pass decisions and subsequent implementation work below.",
+      "sha256": "a1cf7c9271a77c55c00e10afd07aec130c1df9ed025d0ee84b376d2181946b86",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F1.03",
+      "section": "1",
+      "source_text": "The [accepted product decisions of 2026-10-23](decisions/2026-10-23-product-scope.md) resolve Q01\u2013Q16 from the [open-source landscape review](research/open-source-landscape.md). This version incorporates those answers. Keep the application independent and fleet-first; use the reviewed solutions as implementation references under \u00a720.1. No application fork or mandatory fork experiment is selected. The original R01\u2013R28 identities remain stable; R29\u2013R37 add initial-release features, and R38 is an explicitly deferred composite-video follow-on.",
+      "sha256": "ad0e895acba5d914cf462cf4f438907c5ce1358ae0313e6a9414ae12da444552",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F1.04",
+      "section": "1",
+      "source_text": "This document specifies required outcomes and the contracts that implementations must preserve. It also supplies candidate designs, commissioning defaults, and decision criteria. A number described as an initial target is not a measured property of the cameras, cluster, or model service. Repository observations establish recorded source state, not present deployment state. Codex must reconcile them with the live environment and current primary documentation.",
+      "sha256": "cc6d7f4924a2af0856a0f4089047ffca4a2c6c24b0b97a479ef8ec4e79197924",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F1.05",
+      "section": "1",
+      "source_text": "**MUST** denotes a requirement. **SHOULD** denotes a recommended approach that may change with a recorded rationale. **MAY** denotes an optional capability. A decision marked **Phase 1** must be resolved, or explicitly recorded as blocked with an owner and evidence needed, before its dependent implementation issues are considered ready. Do useful unblocked work without waiting for unrelated decisions. Do not label Phase 1 complete while a material architecture decision remains unresolved.",
+      "sha256": "083848ec58f967935888f13076fa915ac6f91ea3216fef8b4edc5c8b14706c24",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F1.1.01",
+      "section": "1.1",
+      "source_text": "| Topic | Authoritative requirement in this version |\n|---|---|\n| Project ownership | A new public `jvallery/weather` repository, independent namespace, local CI/CD, and application lifecycle. Sentinel is a reference/integration boundary, not the application repository. |\n| Snapshot staging | **An NFS PVC backed by Obsidian HDDs.** The earlier single-replica Longhorn staging recommendation is withdrawn. |\n| Published media | **One private, isolated Garage bucket** containing media and database backups. The earlier two-replica Longhorn media PVC is withdrawn. Select the Garage tier through the required capacity/availability investigation. |\n| Weather source | **Direct local Tempest UDP**, using Verdify's implementation as a reference. Home Assistant and Tempest cloud APIs are not the ingestion path. |\n| Database | **CNPG-managed PostgreSQL** for complete received weather history, timelapse metadata, jobs/provenance, and semantic search. The static-only/no-database restriction is withdrawn. |\n| Backups | Physical database backups and WAL go to the weather Garage bucket. Enroll it in the central Garage-to-B2 custody system. This supersedes a separate weather-specific NAS media export and separate direct B2 uploader. |\n| GPU decision | Investigate **co-tenancy with existing allocations** and propose an admitted, measured operating envelope. Assigned GPUs are not automatically unavailable; neither are they automatically shareable. CPU fallback remains mandatory. |\n| Preview | Publish a real-frame poster/thumbnail alongside every playable video. |\n| Search | Store versioned embeddings of video metadata and validated descriptions in CNPG; expose bounded semantic search with structured camera/time filters. |\n| Framework | Decide between Astro with an API and a suitable full-stack design after reviewing history/search/live-data needs. Database use does not itself require server rendering for every page. |\n| Reuse and product scope | Independent, fleet-first Weather implementation with documented customization and specific upstream references. Codex proposes license/reuse policy in Phase 1; record the owner's final choice before upstream code imports. |\n| Camera-derived additions | Day/night keograms and delayed current previews for **all three cameras**. Archive one private native still per actual elapsed local hour in Garage with explicit database/day relationships and sanitized public comparison derivatives. |\n| Exploration and control | Per-camera linked weather/video plots, event bookmarks and in-site feed, local almanac, measured search filters, private editorial controls and a main-site weather card. |\n| Initial and later scope | Text embeddings first; reserve visual-index research. A combined east/west skycam video is a tracked follow-on, not an initial-release gate. No external weather context, product notifications, kiosk/PWA or multi-tenant requirement. |",
+      "sha256": "27dd66e488b757d158e8b3bcb10a6e92935f1e29b91e7259891caeccb9dce62f",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F1.1.02",
+      "section": "1.1",
+      "source_text": "\u201cProject\u201d means the GitHub repository and its application. A GitHub Projects board is optional. The public domain and camera identifiers are intentional public product configuration; credentials, private topology, station serial numbers, precise coordinates, raw infrastructure receipts, and private repository contents are not.",
+      "sha256": "51827f5c038cb1ef5cd7124d00d27869d4eb581efbebcc00052bf8e3a29001a0",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F1.2.01",
+      "section": "1.2",
+      "source_text": "Every requirement below must map to one or more implementation issues and acceptance evidence. The detailed sections are normative where they refine a requirement.",
+      "sha256": "044bc4f0d7565b75e1825ad78b5fc0831f83dcf1944f6924563d49d7d524216a",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F1.2.02",
+      "section": "1.2",
+      "source_text": "| ID | Required outcome |\n|---|---|\n| R01 | Codex completes research, decision records, repository setup, filed issues, and an acyclic issue dependency graph as its first assignment. |\n| R02 | Public independent `jvallery/weather`, isolated `weather` namespace and local CI/CD; fleet-first implementation with documented customization and selective upstream references; no unrelated service migration. |\n| R03 | Automated timelapses for `skycam_east`, `skycam_west`, and `frontyard_1`, with honest per-camera availability. |\n| R04 | Per local cycle: daytime civil dawn\u2013civil dusk and overnight civil dusk\u2013next civil dawn, with half-open nonoverlapping source intervals. |\n| R05 | The daytime/overnight pair totals at most 120 seconds per camera; initial contract is exactly 7,200 frames at 60 fps, allocated by elapsed time. |\n| R06 | Timer-driven native-resolution snapshot acquisition; no continuous RTSP decode or retained full-day source video. |\n| R07 | Snapshot staging is an Obsidian-backed NFS PVC, bounded and automatically purged after qualified durable publication and completion of required source-dependent products; only the explicitly selected hourly originals are retained under R30. |\n| R08 | Capture pods initiate network traffic only to their assigned cameras; storage transport, scheduling, weather collection, inference, and publication are separated. |\n| R09 | High-interpolation rendering, synthetic exposure/motion blur, conservative exposure processing, exact source timing, and tested CPU fallback. |\n| R10 | Optional GPU acceleration with a phase-1 inventory of all nine GPUs and a measured, owner-supported co-tenancy proposal. |\n| R11 | Native downloadable MP4 plus broadly playable web/mobile renditions and real-frame preview thumbnails, all served through `weather.vallery.net`. |\n| R12 | Responsive, accessible, mobile-friendly presentation consistent with <https://vallery.net>; date archive and clear day/overnight navigation. |\n| R13 | Local Tempest UDP listener and explicit k3s network path; Verdify reference investigated without copying its data omissions. |\n| R14 | Persist all received allowed-source Tempest payloads and normalized observations in CNPG; expose bounded historical queries and meaningful aggregates. |\n| R15 | Current conditions API/UI refreshed approximately every 15 seconds, with per-measurement freshness, cached last-known values and explicit missing/stale states; all received telemetry remains retained independently. |\n| R16 | HA database and application service following qualified fleet patterns; documented failure domains, failover, storage, and capacity. |\n| R17 | One private weather Garage bucket for videos, posters, keograms, private selected originals and public image derivatives, immutable metadata exports, database base backups/WAL and recovery manifests; controlled credentials and lifecycle. |\n| R18 | No direct Garage browser delivery, anonymous bucket, arbitrary object proxy, or media identity able to read database backups. |\n| R19 | Crash-safe automatic publication and metadata updates, durable jobs/outbox, immutable artifacts, safe cleanup, and per-camera fault isolation. |\n| R20 | Per-video metadata includes exact window/time map, weather evidence and coverage, processing provenance, preview/media identities, and analysis state. |\n| R21 | Automated weather-focused analysis of completed video through the qualified local `llm.primary.longctx.mm` route, with evidence-grounded prompts and honest fallback labels. |\n| R22 | Versioned CNPG text embeddings and bounded semantic/lexical search with camera/date/time filters, seekable results and inference-outage isolation; reserve a later visual-index extension without deploying an image embedding model initially. |\n| R23 | CNPG base backups and continuous WAL in Garage, central full/WAL custody to B2, coordinated media/database recovery checkpoints, and demonstrated restore. |\n| R24 | Local, reproducible, pinned build/deployment artifacts; no public runtime image/package/font/model dependency or external SaaS required for core operation. |\n| R25 | Optional Cloudflare caching only after plan, routing, limits, security, and video-delivery terms are validated; Garage remains primary media storage. |\n| R26 | Measured operational SLOs, resource limits, observability, failure tests, retention policy, and runbooks, including NAS and model outages. |\n| R27 | Public repository and public APIs are sanitized; narrowly scoped credentials and private deployment evidence remain outside public source/history. |\n| R28 | Preserve existing camera behavior, Sentinel/Frigate, Verdify, Home Assistant, GPUStack services, and infrastructure ownership boundaries. |\n| R29 | Daytime and overnight keograms for all three cameras, with a UTC-based axis, explicit gaps, calibrated camera regions and links to the corresponding video/time. |\n| R30 | One selected private native still per camera per actual local hourly slot in Garage, indexed with enforced camera/calendar-day foreign keys and source/cycle provenance; sanitized comparison derivatives; five-year selected retention default. |\n| R31 | Delayed current previews for all three cameras, approximately one-minute refresh and minimum ten-minute publication age, with honest capture-time freshness and no public-request camera access. |\n| R32 | Per-camera video linked bidirectionally to measured-weather plots through the authoritative source-time map, with accessible gap-aware navigation. |\n| R33 | Weather event bookmarks, daily event strip and in-site event feed, with measured/visual/manual provenance and bounded seek precision; no separate event-video or outbound notification pipeline initially. |\n| R34 | Local almanac: records, precipitation calendar, wind rose, sun/moon context and daily/monthly/yearly comparisons, with deterministic formulas and coverage; required history exports remain. |\n| R35 | Typed measured-weather filters in hybrid search, with explicit measurement window, units, coverage and missing-data semantics; no AI-generated measurements or SQL. |\n| R36 | Automatic labeled AI publication plus authenticated private corrections, tags, favorites and poster selection; immutable audit/provenance, revision concurrency, public update and reindex contracts. |\n| R37 | Responsive self-hosted weather card embeddable on `vallery.net`, using the same local observation/freshness contract and a narrowly permitted framing route. |\n| R38 | **Deferred follow-on:** a single composite skycam timelapse product containing east and west views, with researched layout/synchronization and explicit acceptance/dependencies; preserve initial per-camera products. |",
+      "sha256": "f803b50f850a2e9a972b7a997fb9aeca955673eaca0809ea0602cf76f68b1ae1",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F1.3.01",
+      "section": "1.3",
+      "source_text": "The service is an observational archive, not a forecasting or life-safety alerting product. It does not identify people or interpret household activity. Its analysis concerns weather, image visibility, and camera artifacts. Do not add an external cloud AI provider, public analytics dependency, message broker, dedicated vector service, or persistent RTSP subsystem without a demonstrated need and a recorded design decision.",
+      "sha256": "73a1d5838f48b1528c669407dbc830f63037e5f05a7306625b489b854bb803fe",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F1.3.02",
+      "section": "1.3",
+      "source_text": "Only local observations and locally calculated astronomy are in scope. The product event feed stays inside the site; external radar, forecasts, alert feeds, webhooks, email/push subscriptions, general multi-tenancy, kiosk/offline/PWA modes and additional slower event clips are not selected. Preserve existing required weather-query/export behavior. Deferred composite and visual-index issues must be filed by Codex, but neither gates the first release. Fleet operational alerting under \u00a718 is separate from a public weather-notification product.",
+      "sha256": "0bd533591826ca621a696c61147dcc9b041983c7c0b9d3132a0165e7a3f22d16",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F1.3.03",
+      "section": "1.3",
+      "source_text": "The first Codex pass may perform read-only inventory and approved bounded qualification using existing mechanisms. Creating the requested repository, its configuration, research documents, and issues is part of that pass. Production deployment, shared GPU admission changes, Garage provider changes, network changes, backup retention changes, and disruptive failover tests belong to the appropriate implementation issues and owner-controlled rollout. A research spike that would alter an existing service must use its established change process.",
+      "sha256": "655fa08b96c5f54e6928f774dd0da26b2948b86c4e0fc9d431abbbcb34e3d75d",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F2.1.01",
+      "section": "2.1",
+      "source_text": "1. Read this document in full, the accepted product decision record, the source-pinned open-source review and the current ownership/agent instructions in each relevant repository. Inventory existing `jvallery/weather` work before creating anything; reconcile it rather than overwriting it. Treat Q01\u2013Q16 as answered, not an outstanding questionnaire.\n2. Inspect and complete configuration of the supplied public repository, preserving this requirements handoff and any later work. Finalize the license decision, contribution/security guidance, issue templates, documentation structure, and repository settings. Keep the application independent of Sentinel. Initially commit requirements and research materials, not an unreviewed production deployment.\n3. Inspect current fleet configuration and live readbacks relevant to the decision register. Read Verdify's actual UDP implementation, the storage owner contracts, CNPG/operator/plugin patterns, GPUStack/Cortex capability declarations and admission state, local CI conventions, and main-site theme assets. Record source revision and observation time separately.\n4. Run non-disruptive capability checks and bounded experiments appropriate to each decision. Use synthetic fixtures where live data is unnecessary. State measurements, remaining uncertainty, and any test that still needs a controlled implementation environment.\n5. Resolve each decision through an ADR or explicit blocked record. The record must select an approach and explain how it meets requirements; a list of alternatives alone is insufficient. Distinguish a validated platform capability from an implementation that has yet to be written.\n6. Turn the resolved design into the complete implementation backlog. File real GitHub issues, attach requirement/ADR references, record dependency edges using GitHub's native \u201cblocked by\u201d relationships, and publish a machine-readable graph plus a readable diagram. GitHub exposes issue dependency relationships through its UI and API; verify the installed CLI/API support instead of assuming a command-line flag. [S37]\n7. Read back the created issues and dependencies. Validate coverage, missing targets, cycles, cross-repository prerequisites, and readiness states. Commit a backlog index with actual issue URLs/numbers and report the unresolved blockers precisely.",
+      "sha256": "3171147a1609f4928e56fa7a3300b89e115ab39fa8c2b663adf51fb8cff0c970",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F2.1.02",
+      "section": "2.1",
+      "source_text": "Do not end this first assignment with only a plan to create issues. Do not mark research complete merely because a capability is documented upstream or a historical receipt was once green. Do not implement the whole application while preparing its backlog.",
+      "sha256": "073e2b37f65b5c7020ac49f9b2fb29ee24d6726f4e98fbd7f44e6ed9e54f69c1",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F2.2.01",
+      "section": "2.2",
+      "source_text": "| ID | Investigation and required decision | Completion evidence / acceptance |\n|---|---|---|\n| D01 \u2014 Ownership and public repo | Confirm independent fleet-first repo identity, propose license/reuse policy, private overlay location, namespace ownership, local CI/registry and deployment integration. | Owner's final license choice recorded before code imports; revision/file/dependency notices reviewed; repository settings and ownership recorded; sanitized public/private split and CI issues defined. |\n| D02 \u2014 Cameras and schedule | Verify all three snapshot endpoints, native JPEG geometry, fresh-frame cadence, authentication, clock uncertainty, location/timezone source, and civil-event calculation. | Per-camera probe and a day/twilight/night pilot plan; accepted initial cadence; frozen time-map specification. |\n| D03 \u2014 NFS staging | Establish the approved design and owner admission prerequisites for a dedicated Obsidian NFS grant/PVC; determine capacity, UID/GID/export policy, mount behavior, fsync/rename semantics, locking, writer fencing, and outage behavior. | Owner-approved grant specification or linked admission prerequisite, capacity calculation, bounded backlog policy, and an implementable collector fencing design; resource creation occurs in WX-03. |\n| D04 \u2014 Tempest network | Determine actual broadcast destination/VLAN, node L2 reachability, listener attachment, port use, source filtering, and one-active versus redundant receivers. | A current allowed-source packet reaches the proposed path, or an explicit infrastructure prerequisite proves how it will; no claim that ClusterIP receives LAN broadcast automatically. |\n| D05 \u2014 Full telemetry contract | Inventory observed packet types/fields, timestamps, identity/reset semantics, expected cadence/power modes, gap detection, spool, and deduplication. | Raw/normalized schema, all-received-data completeness definition, replay/freshness rules, and bounded spool-loss policy. |\n| D06 \u2014 CNPG and timeseries | Choose dedicated cluster versus isolated database/roles in a suitable existing CNPG cluster; select PG, extensions, HA/durability/storage topology, partitioning/Timescale strategy, retention, and capacity. | Installed versions reconciled; admitted owner pattern; schema/migration/restore plan; no reuse of a retired rehearsal as production authority. |\n| D07 \u2014 Garage tier and durability | Select the isolated bucket's tier, capacity and growth allocation; verify live provider build/config, NFS durability, fsync/loss window, quotas and object operations. | Written local-durability condition for publication and raw deletion; approved tier; actual failure-domain statement. |\n| D08 \u2014 Shared-bucket authorization | Select an enforcing broker/gateway and scoped application identities; qualify Barman's required S3 operations within the private database prefix. | Positive/negative operation matrix, threat boundary, compatible archive/restore path; no fictional native prefix IAM policy. |\n| D09 \u2014 GPU co-tenancy | Reconcile nine physical devices, actual allocation/admission mechanisms and resident workloads; evaluate CPU-only, encode-only sharing, and flow paths. | Measured candidate proposal with resident-service SLO limits, headroom, admission, abort/rollback, and CPU deadline. A justified CPU baseline is valid if sharing cannot be qualified. |\n| D10 \u2014 Media quality and FFmpeg | Select current stable FFmpeg build and optional qualified extras, cadence/shutter/interpolation/encoder profile, worker concurrency and resource budgets. | Capability probes plus representative quality/throughput comparison; exact-time/output contract preserved. |\n| D11 \u2014 Video analysis | Qualify `llm.primary.longctx.mm` end-to-end with temporal controls, request limits, model/backend identity, timeout/cancellation behavior, and fallback behavior. | Fresh video capability receipt or an explicit unsatisfied native-video gate; schema/evidence/time-map contract, server-termination/cancellation evidence and retry envelope. |\n| D12 \u2014 Embeddings/search | Requalify `embed.main`; choose exact vector search versus a compatible ANN representation, profile/versioning, filtered recall and rate limits. | Fresh model/formatter/dimension receipt; extension packaging decision; retrieval fixtures and index/query plan. |\n| D13 \u2014 API/UI framework | Choose Astro plus API or a suitable integrated framework; define linked charts, hourly archive, previews, events/almanac/search, authenticated editorial controls, embed, caching and theme/accessibility. | Recorded fleet-first framework decision; day/hour FK and route/schema contracts; private operator authorization/audit; responsive wireframes and theme tokens; no application fork required. |\n| D14 \u2014 Delivery/CDN | Validate weather-domain ingress, origin streaming/ranges, certificates, download path, optional Cloudflare plan/terms/object-size/cache behavior. | Same-origin media contract; origin path works independently of optional caching; no unsupported video proxy arrangement. |\n| D15 \u2014 Backup and restore | Select the Barman/plugin configuration, unique archive identities and central full/WAL enrollment design; define owner prerequisites, joint checkpoints, retention, RPO/RTO and restore tooling. | Owner-approved coverage/budgets and exact prefixes; activation prerequisites for WX-28/WX-29; test plan for B2-only restore and DB/media mismatch; current central receipts only where enrollment already exists. |\n| D16 \u2014 Operations and acceptance | Finalize publication deadlines, derived-product extraction/cleanup gates, hourly selection tolerance, keogram region/binning, preview time uncertainty/delay, retention/capacity, privacy masks if needed and observability. | Measurable SLOs and acceptance matrix for all selected initial features; maintenance/incident procedures; no hidden dependency on AI, NAS availability or a single coordinator. |",
+      "sha256": "6f0ea0739e0c7c709c2c8355c16714e6ac8caba17141920193a01c0a1bd15ea7",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F2.2.02",
+      "section": "2.2",
+      "source_text": "If a capability cannot be tested without implementing a new component, Phase 1 must establish the feasibility evidence, choose the interface/design, and file a mandatory qualification issue that blocks rollout. It must not fabricate a passing test. A material unresolved architecture choice remains a Phase-1 blocker; a selected design with a specified implementation test is ready for implementation but not for production.",
+      "sha256": "31bee437760f64ce9e150ed0cddc964a7f6142967d5dd26b7ebe8092af75ab23",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F2.3.01",
+      "section": "2.3",
+      "source_text": "Publish sanitized requirements, ADRs, contracts, `docs/implementation/backlog.md`, a machine-readable dependency graph, and a generated Mermaid dependency view in `weather`. Keep live IPs, GPU UUIDs, internal names, secret references that expose deployment structure, exact coordinates, private source excerpts and raw probe receipts in the existing private evidence/deployment system. Public ADRs should reference opaque evidence IDs and summarize findings without copying private content.",
+      "sha256": "8094d21192714acacf2502f9595d9abf8a851d3e77e12b8c17a9099159e39a81",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F2.3.02",
+      "section": "2.3",
+      "source_text": "Each decision record includes: requirements covered; examined public source URLs; private evidence IDs; source revision and observation timestamp; alternatives; chosen approach; cost/capacity/failure implications; verification performed; remaining implementation tests; responsible owner; and affected issue keys. Record \u201cunknown\u201d when a fact cannot be established.",
+      "sha256": "8049a1ce041872103d29931b78bcf3ba3f375581d12f7e17bb5a719b8fde66f7",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F2.3.03",
+      "section": "2.3",
+      "source_text": "Resolve added feature details within these same D01\u2013D16 records: D02/D10/D16 cover camera-derived products and later composite feasibility; D05/D06 cover day/hour identities, events and almanac calculations; D07/D08/D15 cover new Garage asset classes and retention/recovery; D12 covers measured filters and the reserved visual-index boundary; D13 covers linked plots, editorial controls and embed. Do not reopen the accepted owner choices as cluster decisions. A future visual index remains a deferred investigation, not an additional Phase-1 model-qualification gate.",
+      "sha256": "6d0c83a3a6a7a88dd95d03f3779a8e13eb81d02a0406eb5fabd3050ef742a51a",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F2.4.01",
+      "section": "2.4",
+      "source_text": "These findings guide investigation and do not authorize copying an existing deployment:",
+      "sha256": "9d95ca38fdda2f85b9cfecc1cf2290729bb4fc8ef837a29d253b3e5d6930a67c",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F2.4.02",
+      "section": "2.4",
+      "source_text": "- The public Verdify implementation receives Tempest UDP on a greenhouse ESP32 and forwards selected observations. It handles `obs_st`, intentionally skips `rapid_wind`, and does not preserve every raw datagram. It demonstrates a working local protocol path, not a complete k3s weather archive. Its CNPG work is a retired rehearsal; investigate the active estate CNPG patterns separately. [S19], [S20]\n- The examined Garage estate uses bucket-level permissions and an application broker pattern. Its larger HDD tier is NAS-backed. The current tier policy and effective live durability must be checked before allocation; a previous large archive estimate does not fit a small hot-bucket allowance.\n- Existing GPU source distinguishes physical allocations from older manually advertised sharing capacity. An apparent `gpu.shared` resource or an unallocated memory number is insufficient admission evidence.\n- The recorded embedding route uses 2,560-dimensional Qwen3 embeddings. Its historical capability receipt has expired as live evidence. A standard `vector` HNSW index has a lower dimensional limit; exact full-precision search or a qualified `halfvec` expression index is required. [S30]\n- Image-input success on the multimodal route is not proof of temporal video understanding. Qualify that separately.",
+      "sha256": "e149a892a8d645c7150676ee31f4805d91026ed024f4209e8c03f138a44ef2aa",
+      "primary_owner": "WX-00"
+    },
+    {
+      "id": "F3.01",
+      "section": "3",
+      "source_text": "The application has two data paths: snapshot-derived media and station telemetry. They meet in the catalog, weather summaries, and public UI. CNPG is the canonical transactional store; Garage is the immutable artifact and backup store; NFS is temporary snapshot staging. JSON/JSONL remain useful transport/export formats, not a replacement for the database.",
+      "sha256": "18a98f9624cdecf95b4734fe764d1bda00d2ffb275247cfcbe937b7b5261c725",
+      "primary_owner": "WX-08"
+    },
+    {
+      "id": "F3.02",
+      "section": "3",
+      "source_text": "```mermaid\nflowchart TD\n  CAM[\"Three camera snapshot APIs\"] --> CAP[\"Isolated collectors\"]\n  CAP --> NFS[\"Obsidian NFS staging\"]\n  NFS --> REN[\"CPU or admitted GPU workers\"]\n  REN --> PUB[\"Publisher and private object gateway\"]\n  PUB --> GAR[\"Private weather Garage bucket\"]\n  PUB --> DB[\"CNPG catalog and durable jobs\"]\n  DB --> WEB[\"Weather API and media origin\"]\n  GAR --> WEB\n  WEB --> SITE[\"weather.vallery.net\"]\n```",
+      "sha256": "9d14fa7b8c00133c081d7af5cfc9fb8940bf5f155098a1001c0bab73a3903435",
+      "primary_owner": "WX-08"
+    },
+    {
+      "id": "F3.03",
+      "section": "3",
+      "source_text": "```mermaid\nflowchart TD\n  HUB[\"Tempest local UDP\"] --> UDP[\"Network-attached listener\"]\n  UDP --> SPOOL[\"Bounded durable telemetry spool\"]\n  SPOOL --> DB[\"CNPG raw data and observations\"]\n  DB --> AGG[\"Deterministic aggregates\"]\n  DB --> API[\"Current and historical API\"]\n  AGG --> META[\"Video weather evidence\"]\n  META --> AI[\"Qualified video analysis and synthesis\"]\n  AI --> EMB[\"Versioned embeddings\"]\n  EMB --> DB\n```",
+      "sha256": "fa83bea1c704302f18df7fedd371e82f7553a61ebb1d2a76dda579c5f72eecab",
+      "primary_owner": "WX-08"
+    },
+    {
+      "id": "F3.04",
+      "section": "3",
+      "source_text": "The diagrams show data dependencies, not a requirement for one pod per box. Consolidate compatible application roles when that reduces operational overhead, but preserve their credentials, failure isolation, resource budgets, and network boundaries. Camera collectors and the Tempest network listener must remain separate workloads.",
+      "sha256": "46388b3c6a511ed49ce7398f3bbe9958f7a36eb411a95c30fa0844f933a71d8a",
+      "primary_owner": "WX-08"
+    },
+    {
+      "id": "F3.1.01",
+      "section": "3.1",
+      "source_text": "| Role | Responsibility and durable state | Network/credential boundary |\n|---|---|---|\n| Collector, one active per camera | Timer, verified JPEGs, attempt ledger, segment-local sealed NFS chunks. | Only assigned camera API egress; mounted config/secrets; no CNPG, Garage, model, internet, or Kubernetes API access. |\n| Scheduler/reconciler | Solar schedules, sealed-input discovery, idempotent render jobs, recovery after downtime. | CNPG and approved control/storage paths; no need for camera credentials. |\n| Renderer | Sealed NFS input, bounded temporal processing, validated renditions/posters/provenance. | No camera access; resource-bounded CPU/GPU; scoped publishing interface. |\n| Image-product worker | Segment keograms, hourly-original selection/archive, sanitized comparison images and delayed previews; durable slot/product state and source pins. | Read only committed collector chunks; scoped CNPG/object operations; no camera credentials or collector-policy expansion. |\n| Publisher | Verify immutable artifacts, commit publication transaction/outbox, metadata revisions and cleanup eligibility. | CNPG plus authorized media operations through the object boundary. |\n| Tempest listener/ingestor | Receive allowed UDP, durable raw receipts, normalized projection and health. | Approved UDP attachment plus CNPG/spool path; no camera or public internet access. |\n| Analysis/embedding workers | Bounded model calls, validation, versioned descriptions/vectors. | Scoped local inference API and required artifact/DB access; no tools for model-directed writes. |\n| Public API/UI | Current/history, archive, published metadata, search and health-safe responses. | Least-privilege database views/roles and narrow media-origin interface. |\n| Private editorial API | Authenticated corrections, tags, favorites and poster choices; revision/audit and outbox state. | Explicit operator authorization; no anonymous writes, arbitrary object access or camera access. |\n| Media gateway | Stream published allowlisted assets, range/download semantics, immutable caching. | No browser-accessible S3 endpoint and no unrestricted upstream key in the web workload. |\n| Backup/recovery integration | Barman base/WAL and central full/WAL custody, checkpoint verification. | Private database subtree through a qualified boundary; central owner manages B2. |",
+      "sha256": "4adabb8eae069d5c1e94dcf6868d3d4b14eedf2fe4be454e88056deff291bb5a",
+      "primary_owner": "WX-01"
+    },
+    {
+      "id": "F3.2.01",
+      "section": "3.2",
+      "source_text": "Use CNPG job tables/outbox and worker leases with fencing tokens, `attempt`, `not_before`, `deadline`, and expected input revisions. Claim jobs transactionally, for example using `FOR UPDATE SKIP LOCKED`; use idempotent uniqueness keys rather than a distributed message broker for this scale. Heartbeats and bounded lease expiry permit recovery, but an expired worker must not commit after a newer owner has taken over.",
+      "sha256": "62511d9c8c7d2ce6f78152e9f22ab732f5d606607aae4867e0ab763827877337",
+      "primary_owner": "WX-08"
+    },
+    {
+      "id": "F3.2.02",
+      "section": "3.2",
+      "source_text": "At-least-once work is expected. Object names are immutable, and publication/analysis updates use compare-and-set against media/input revision and lease generation. Retrying a job must not create duplicate catalog entries, extend its original deadline indefinitely, or resurrect withdrawn content. Use an outbox so database commits and subsequent work requests cannot diverge silently.",
+      "sha256": "dd3495fa463ee9f2da9bb4320b8a0a2cbfe5b3e019ef5f72617254a620674507",
+      "primary_owner": "WX-08"
+    },
+    {
+      "id": "F3.2.03",
+      "section": "3.2",
+      "source_text": "Collectors cannot acquire database leases because of R08. Their single-writer guarantee must come from their deployment/fencing and the qualified NFS lock protocol. A Kubernetes replica count of one alone does not protect against a partitioned old process; see \u00a76.7.",
+      "sha256": "900a089b2a309462330a95c0c195d28fe9d4fb9a3ae76f20955fd871f4cb78c9",
+      "primary_owner": "WX-08"
+    },
+    {
+      "id": "F3.3.01",
+      "section": "3.3",
+      "source_text": "After restart, reconcile frozen schedules, sealed chunks, render receipts, uploaded objects, committed publications, outbox events, AI/search revisions, retention pins, and cleanup markers. Render/publish one camera independently of the others. Nightly reconciliation repairs state; it is not the only trigger for publication. Neither AI nor embeddings are on the media-publication or raw-cleanup critical path.",
+      "sha256": "59fe6bf8dcf8441303cdd209ae5e7a0c755a875f79f37b6a6866ecdbfdaa771e",
+      "primary_owner": "WX-18"
+    },
+    {
+      "id": "F3.3.02",
+      "section": "3.3",
+      "source_text": "Reconcile hourly slot selections/missing records, original-to-derivative relationships, keogram extraction/publication, preview pointers and editorial revisions as independent idempotent work. A valid video may publish while its keogram is explicitly processing or degraded. Before deleting raw inputs, required image products must have durable outputs or compact durable extraction inputs sufficient to finish them, according to \u00a76.9. A stalled derivative must not hold an entire capture day indefinitely.",
+      "sha256": "2dd0702c1dfd2d9377fd387636fa572803a6ff8533eff98b041958ac7f3c1455",
+      "primary_owner": "WX-18"
+    },
+    {
+      "id": "F4.1.01",
+      "section": "4.1",
+      "source_text": "Apply default-deny ingress/egress to collector pods, then allow only their individual fixed camera IP and snapshot TCP port. Use mounted literal-IP configuration so collector DNS is unnecessary. Disable service-account token automount, run non-root with a read-only root filesystem, drop capabilities, set resource limits and the appropriate seccomp profile. Node infrastructure handles time sync. Logs and metrics should be collected through the established node/platform mechanism without opening arbitrary collector egress.",
+      "sha256": "474d9636f9123d883b8533f16eb6d7334ecb73c0295cf2511abb46ec81d182a3",
+      "primary_owner": "WX-10"
+    },
+    {
+      "id": "F4.1.02",
+      "section": "4.1",
+      "source_text": "The NFS PVC is mounted by the node/CSI storage path. Its kernel/host network traffic may not be governed by pod NetworkPolicy. Thus the collector's application network policy can remain camera-only while the node has a narrowly approved NFS path to Obsidian. Validate the actual CNI/CSI enforcement and node firewall; do not hide an NFS sidecar or host-network camera collector inside an \u201conly cameras\u201d claim. Kubernetes explicitly makes network-policy enforcement dependent on the network plugin and documents host-network/translation limitations. [S13]",
+      "sha256": "fbc771282674d3c356fcbb09c65d650015cedb381d08783c99a045b56302f73c",
+      "primary_owner": "WX-10"
+    },
+    {
+      "id": "F4.1.03",
+      "section": "4.1",
+      "source_text": "Test denied DNS, internet, metadata endpoints, Kubernetes API, sibling cameras, CNPG and Garage from a representative collector. Test the allowed camera request and NFS I/O separately. The public application must have no route or credentials to camera APIs.",
+      "sha256": "4f28381b36610647c46692c59010048d582a3afb5bf4046633aeed598758d9dc",
+      "primary_owner": "WX-10"
+    },
+    {
+      "id": "F4.2.01",
+      "section": "4.2",
+      "source_text": "The Tempest listener has a deliberately different network policy and may need an approved secondary interface or host-network attachment. If host networking is chosen, enforce source and port restrictions at the relevant host/network boundary; ordinary pod policy alone is not a sufficient promise. The ingress-facing API, internal media gateway, database, model workers, and backup jobs each need their own allowlist and service account.",
+      "sha256": "fc9688720bade1a7a63ad4cda021e6bb675f98752192333f6b21567457100861",
+      "primary_owner": "WX-01"
+    },
+    {
+      "id": "F4.2.02",
+      "section": "4.2",
+      "source_text": "Use TLS and verified trust for supported internal APIs; do not use blanket certificate-verification disabling. Keep camera passwords, database roles, inference credentials, broker identities, and backup credentials separate. Follow the fleet's secret-distribution and rotation conventions. No credential belongs in a public URL, command log, image layer, test fixture, issue, or checked-in configuration.",
+      "sha256": "0e218bb8107493066a008c3765ab862f75db52f5fc557b89c5b34bc273709afa",
+      "primary_owner": "WX-01"
+    },
+    {
+      "id": "F4.3.01",
+      "section": "4.3",
+      "source_text": "Only the weather domain exposes the intended UI, read API, media, posters, downloads and sanitized metadata. Administrative endpoints, raw frames, raw infrastructure diagnostics, database backups, broker controls and object listing remain private. Treat media object names and analysis text as untrusted input. Public request parameters never select an arbitrary upstream URL, filesystem path, SQL expression, S3 action or model ID.",
+      "sha256": "24997983a32fe9d5b1695cbadf6e21ab3db940a79e6955cc81ce1d1e45c91c5d",
+      "primary_owner": "WX-19"
+    },
+    {
+      "id": "F4.3.02",
+      "section": "4.3",
+      "source_text": "The same private boundary applies to the retained hourly native originals. Only specifically published sanitized comparison images, delayed previews and keograms are public. Their parent-original keys, exact private configuration and unrestricted raw bytes are never included in public serializers or redirects. An authenticated operator may select approved content for publication without granting the media origin access to the original archive. Apply the selected public masking policy to every image/video derivative and model input; embedded image metadata must not reveal private location or hardware data.",
+      "sha256": "fa5b834d9222ba3d2b70fadfb715f2ba9454b812f4ed6790e9ff3a26631d613c",
+      "primary_owner": "WX-19"
+    },
+    {
+      "id": "F4.3.03",
+      "section": "4.3",
+      "source_text": "Separate public and privileged API roles. Parameterize SQL, validate typed filters, cap response size/time/concurrency, use cursor pagination, and escape all rendered descriptions. CORS, hidden URLs, a `Referer` check, and an S3 key prefix are not substitutes for authorization. Privacy masks, if required by the owner for these public views, must be frozen in the media recipe and applied consistently to video, posters and AI derivatives; they must not silently crop the native field of view.",
+      "sha256": "7468e78a441e70fc27cae0f5c5c8a7e53b6f9ce4d8ab7f2b3cc2ce84ea5b4762",
+      "primary_owner": "WX-19"
+    }
+  ],
+  "acceptance": {
+    "1": {
+      "primary_owner": "WX-00",
+      "obligations": [
+        "Research/design/filed native DAG precede application implementation; reuse the supplied repository and accepted Q01\u2013Q16 rather than creating a fork or reopening the questionnaire.",
+        "Keep requirement/default/measurement/source/live distinctions; material architecture gaps prevent Phase 1 completion while independent authorized research continues."
+      ]
+    },
+    "1.1": {
+      "primary_owner": "WX-00",
+      "obligations": [
+        "Preserve every superseding amendment: Obsidian NFS staging, one private Garage bucket, direct Tempest UDP, CNPG, central custody, researched GPU co-tenancy with CPU fallback, posters, versioned search and independent fleet-first application.",
+        "All-three-camera keograms/hourly originals/delayed previews and exploration/editor/embed are initial scope; composite is follow-on and visual index deferred. Domain/camera IDs are public product data; topology/serials/location/credentials are private."
+      ]
+    },
+    "1.2": {
+      "primary_owner": "WX-00",
+      "obligations": [
+        "Preserve all R01\u2013R38 identities and map each to concrete work and acceptance; normative detailed sections refine broad IDs. R38 is a filed follow-on, not initial deployment."
+      ]
+    },
+    "1.3": {
+      "primary_owner": "WX-00",
+      "obligations": [
+        "Observational weather archive only: no forecast/life-safety/person identification/household analysis or unselected external context/product notifications/PWA/multitenancy/event clips. Preserve required query/export behavior.",
+        "No cloud model/analytics/message broker/vector service/persistent RTSP by convenience. Planning permits scoped read-only/bounded qualification, not production/shared GPU/network/storage/retention changes or disruptive drills; operational alerts are separate from product notifications."
+      ]
+    },
+    "2.1": {
+      "primary_owner": "WX-00",
+      "obligations": [
+        "Reconcile existing work, read owner contracts and accepted decisions, complete planning repository/license/contribution/security/template settings, and inspect current source plus live estate evidence.",
+        "Use supported bounded qualification and record uncertainty; select each ADR approach or explicit material blocker, file actual issues/native edges/readable DAG, read back coverage/identity/cycles/readiness.",
+        "Do not substitute upstream docs/historical green receipts or a plan to file issues for the completed first pass; do not implement the application during backlog preparation."
+      ]
+    },
+    "2.2": {
+      "primary_owner": "WX-00",
+      "obligations": [
+        "Retain all D01\u2013D16 investigation and completion-evidence rows exactly; each needs selected approach, affected issues and evidence or explicit owner/blocker.",
+        "Distinguish material unresolved architecture from a selected feasible design whose implementation qualification is a mandatory rollout prerequisite. Do not require invented passing tests for components not yet built."
+      ]
+    },
+    "2.3": {
+      "primary_owner": "WX-00",
+      "obligations": [
+        "Publish sanitized requirements/ADRs/contracts/backlog/actual DAG/generated Mermaid; keep raw live topology/GPU IDs/coordinates/private excerpts in established private custody.",
+        "Each ADR records requirements, public sources, private evidence IDs, revision/time, alternatives, choice, cost/capacity/failure impact, verification, remaining tests, owner and consumers. Unknown stays unknown.",
+        "Resolve additions within D01\u2013D16 without reopening accepted product choices or making future visual-index research an initial model gate."
+      ]
+    },
+    "2.4": {
+      "primary_owner": "WX-00",
+      "obligations": [
+        "Revalidate Verdify omissions/retired DB rehearsal, Garage bucket authorization/NAS tier durability, physical-versus-shared GPU admission, expected embedding profile/index dimension constraints and native-video temporal capability; none authorizes copying a deployment."
+      ]
+    },
+    "3": {
+      "primary_owner": "WX-08",
+      "obligations": [
+        "Keep snapshot/media and telemetry paths independent until catalog/UI evidence joins; CNPG canonical transactions, Garage artifacts/backups and temporary NFS have distinct roles. JSON exports do not replace DB.",
+        "Diagrams do not require one pod per box; consolidate only compatible roles while preserving credentials/failure/resource/network boundaries. Collector and Tempest listener remain separate workloads."
+      ]
+    },
+    "3.1": {
+      "primary_owner": "WX-01",
+      "obligations": [
+        "Enforce every responsibility/authority row for collectors, scheduler, renderer, image worker, publisher, UDP, inference workers, public API, private editor, media gateway and backup integration.",
+        "Collector camera-only access excludes CNPG/Garage/model/internet/Kubernetes API; image workers read committed chunks without camera credentials; public/privileged/backup roles remain distinct."
+      ]
+    },
+    "3.2": {
+      "primary_owner": "WX-08",
+      "obligations": [
+        "Transactional claims/outbox with attempt/not_before/deadline/input revision and fencing generations; at-least-once retries are idempotent, preserve deadlines and cannot resurrect withdrawn content.",
+        "Collectors cannot use DB leases under camera-only policy. Qualify deployment/NFS writer fencing against partitioned old process; replica count one is insufficient."
+      ]
+    },
+    "3.3": {
+      "primary_owner": "WX-18",
+      "obligations": [
+        "Reconcile all frozen schedules/chunks/render/upload/publication/outbox/AI/search/pin/cleanup states after restart, independently by camera; nightly repair is not the sole publication trigger.",
+        "Hourly selection/missing/derivative/keogram/preview/editorial work is independently idempotent. AI/embedding never gates publication/cleanup; required image outputs or durable compact inputs precede raw release without indefinite full-day retention."
+      ]
+    },
+    "4.1": {
+      "primary_owner": "WX-10",
+      "obligations": [
+        "Default-deny collector ingress/egress except assigned literal camera IP/port; no DNS/token automount, nonroot/read-only root/drop capabilities/seccomp/limits and platform-provided time/logs/metrics.",
+        "Separate kernel/node NFS path from pod policy; qualify actual CNI/CSI/firewall behavior. No hidden NFS sidecar/host-network collector exception to camera-only claims.",
+        "Prove denied DNS/internet/metadata/API/sibling camera/DB/Garage, allowed camera and separately allowed NFS I/O. Public application lacks camera path/credentials."
+      ]
+    },
+    "4.2": {
+      "primary_owner": "WX-01",
+      "obligations": [
+        "Tempest uses explicit distinct attachment/policy; host-network source/port enforcement needs host/network boundary, not pod-policy assumption. Every API/gateway/DB/model/backup role has its own allowlist/account.",
+        "Use verified TLS where supported and separate camera/DB/inference/broker/backup credentials through estate custody. Never place values in URLs/logs/images/fixtures/issues/source."
+      ]
+    },
+    "4.3": {
+      "primary_owner": "WX-19",
+      "obligations": [
+        "Expose only intended Weather UI/read API/media/posters/downloads/sanitized metadata; keep admin/raw/diagnostics/backups/broker/listing private. Parameters never choose arbitrary URL/path/SQL/S3 action/model.",
+        "Private hourly originals never leak through serializers/redirects; publishing an approved derivative does not give origin original-archive authority. Apply selected masks to all video/image/model derivatives and strip private metadata without silent native-FOV cropping.",
+        "Separate public/privileged DB roles, parameterized typed queries, bounded size/time/concurrency/cursors and escaped text. CORS/hidden URL/Referer/prefix are not authorization."
+      ]
+    }
+  },
+  "verification": {
+    "all_nonblank_nonheading_source_lines_preserved": true,
+    "all_38_requirement_ids_have_filed_coverage": true,
+    "runtime_acceptance": false
+  }
+}

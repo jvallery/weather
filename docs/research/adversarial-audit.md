@@ -178,3 +178,7 @@ The [private hourly archive contract](../contracts/hourly-archive-contract.md) r
 ## Seed-to-filed dependency reconciliation
 
 The [section 19 audit](../implementation/plan-clause-audit.md) records why 12 seed nodes changed prerequisites. The filed graph contains 103 internal/122 total assigned edges, remains acyclic and includes all 42 required initial items in rollout while excluding WX-45/WX-46. Every implementation item remains transitively gated by planning. This source-only recalculation does not refresh live endpoint observations or declare the incomplete first-pass handoff finished.
+
+## Foundational scope and role boundaries
+
+The [sections 1–4 audit](../implementation/foundation-clause-audit.md) preserves all R01–R38 and D01–D16 rows plus the complete role/security design. It distinguishes selected feasible interfaces with future implementation tests from unresolved material architecture. Collector camera-only pod policy, node/CSI NFS access, separate UDP workload authority and public/private/backup identities remain distinct acceptance surfaces. No deployed isolation or new admission is inferred from graph or schema coverage.

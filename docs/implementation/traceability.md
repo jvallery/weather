@@ -173,3 +173,7 @@ The [issue-body verification](issue-body-verification.json) checks every produce
 ## Filed-plan requirements
 
 The [section 19 audit](plan-clause-audit.md) preserves all 46 seed rows and complete filing/graph/handoff instructions. It explains 12 seed-node dependency changes and recalculates acyclicity, stored order, 42 required initial items in rollout closure and deferred exclusion. WX-00 owns planning completion; native endpoint and semantic acceptance remain separate evidence.
+
+## Foundational requirements and authority
+
+The [sections 1–4 audit](foundation-clause-audit.md) preserves every source block, amendment, register row, role and diagram with 32 grouped obligations. Primary owners coordinate planning, canonical jobs, independent roles, reconciliation and network/public boundaries; detailed domain audits retain their producer assignments. All 38 R-IDs have filed coverage, but presence is not acceptance.
