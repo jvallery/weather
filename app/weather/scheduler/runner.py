@@ -40,11 +40,9 @@ async def _heartbeat(
             await asyncio.sleep(15)
             async with engine.begin() as connection:
                 if not await jobs.heartbeat(connection, job):
-                    LOST.inc()
                     owner_task.cancel()
                     return
     except Exception:
-        LOST.inc()
         owner_task.cancel()
 
 
