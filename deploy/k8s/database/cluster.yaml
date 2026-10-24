@@ -75,6 +75,8 @@ spec:
       cpu: '2'
       memory: 4Gi
   inheritedMetadata:
+    annotations:
+      argocd.argoproj.io/sync-options: Prune=false,Delete=false
     labels:
       app.kubernetes.io/part-of: weather
   postgresql:
