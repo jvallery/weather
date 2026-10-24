@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Exclusive USTAR writes and an independent strict reader; no generic extraction."""
+"""Exclusive USTAR writes and a tarfile reader that binds every frame; no extraction."""
 
 import hashlib
 import io
@@ -81,7 +81,6 @@ class ChunkWriter:
         self._manifest_bytes = 0
         self._closed = False
         self.renamed = False
-        self._last_sync_ns = time.monotonic_ns()
         with health.operation():
             self.tmp_dir.mkdir(parents=True, exist_ok=True)
             self.sealed_dir.mkdir(parents=True, exist_ok=True)
@@ -138,12 +137,8 @@ class ChunkWriter:
                         "height": self.config.geometry[1],
                     },
                 }
+            # No per-attempt fsync: nothing salvages a tmp file, so durability matters only at seal.
             self._line(record)
-            # Flush each attempt so a subsequent five-second request cannot make a
-            # checkpoint older than five seconds. Commissioning measures the NFS cost.
-            self._file.flush()
-            self.fsync(self._file.fileno())
-            self._last_sync_ns = time.monotonic_ns()
 
     def seal(self) -> Path:
         if self._closed:
@@ -168,13 +163,18 @@ class ChunkWriter:
         return self.destination
 
     def abandon(self) -> None:
-        # Never rename or delete an uncertain chunk, or inspect another writer's file.
+        # Nothing salvages tmp, so remove this writer's own file. Never touch another writer's.
         self._closed = True
         with self.health.operation():
             try:
                 self._file.close()
             except OSError:
                 pass
+            if not self.renamed:
+                try:
+                    self.path.unlink()
+                except OSError:
+                    pass
 
 
 def new_incarnation() -> str:
@@ -195,57 +195,32 @@ def _reject_constant(value: str) -> None:
 
 
 def read_chunk(path: Path, max_frame_bytes: int = 16777216) -> list[dict[str, Any]]:
-    """Verify every raw USTAR header, padding, payload and manifest binding, without extraction."""
+    """Regular frame members, then one final manifest binding each by length and sha256."""
     frames: dict[str, tuple[int, str]] = {}
     manifest: bytes | None = None
-    with path.open("rb") as source:
-        while True:
-            header = source.read(512)
-            if header == b"\0" * 512:
-                if source.read(512) != b"\0" * 512:
-                    raise ValueError("Incomplete TAR termination")
-                while tail := source.read(65536):
-                    if tail.strip(b"\0"):
-                        raise ValueError("Trailing TAR content")
-                break
-            if len(header) != 512 or manifest is not None:
-                raise ValueError("Invalid TAR member order or termination")
-            try:
-                member = tarfile.TarInfo.frombuf(header, "ascii", "strict")
-            except tarfile.HeaderError, UnicodeError:
-                raise ValueError("Invalid TAR header") from None
-            if (
-                header[257:265] != b"ustar\x0000"
-                or member.type != tarfile.REGTYPE
-                or header[345:500].strip(b"\0")
-                or member.linkname
-                or member.size < 0
-                or member.name in frames
-            ):
-                raise ValueError("Only plain USTAR regular members are accepted")
-            if member.name == "manifest.jsonl":
-                if not 0 < member.size <= MAX_MANIFEST_BYTES:
-                    raise ValueError("Manifest bound exceeded")
-                manifest = source.read(member.size)
-                if len(manifest) != member.size:
-                    raise ValueError("Truncated manifest")
-            else:
+    try:
+        with tarfile.open(path, mode="r:") as archive:
+            for member in archive:
+                if manifest is not None or not member.isreg() or member.name in frames:
+                    raise ValueError("Only regular members before a final manifest are accepted")
+                source = archive.extractfile(member)
+                assert source is not None
+                if member.name == "manifest.jsonl":
+                    if not 0 < member.size <= MAX_MANIFEST_BYTES:
+                        raise ValueError("Manifest bound exceeded")
+                    manifest = source.read()
+                    continue
                 if not member.name.startswith("frames/") or not member.name.endswith(".jpg"):
                     raise ValueError("Unexpected member")
                 attempt_id = member.name[7:-4]
                 if not ATTEMPT_ID.fullmatch(attempt_id) or not 0 < member.size <= max_frame_bytes:
                     raise ValueError("Invalid frame member")
-                remaining, digest = member.size, hashlib.sha256()
-                while remaining:
-                    part = source.read(min(65536, remaining))
-                    if not part:
-                        raise ValueError("Truncated frame")
+                digest = hashlib.sha256()
+                while part := source.read(65536):
                     digest.update(part)
-                    remaining -= len(part)
                 frames[member.name] = member.size, digest.hexdigest()
-            padding = (-member.size) % 512
-            if source.read(padding) != b"\0" * padding:
-                raise ValueError("Invalid TAR padding")
+    except tarfile.TarError, EOFError:
+        raise ValueError("Invalid TAR archive") from None
     if manifest is None or not manifest.endswith(b"\n"):
         raise ValueError("Missing complete manifest")
     lines = manifest.splitlines()

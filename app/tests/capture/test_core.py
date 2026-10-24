@@ -1,23 +1,28 @@
 # SPDX-License-Identifier: MIT
 """Focused pure tests: no sockets, full image decode or camera access."""
 
+import asyncio
 import dataclasses
 import errno
 import hashlib
+import io
 import ipaddress
 import json
 import os
+import random
 import subprocess
 import sys
 import tarfile
+import time
 from pathlib import Path
 
 import pytest
 from weather.capture.chunks import ChunkWriter, IOHealth, new_incarnation, read_chunk
-from weather.capture.client import CaptureFailure, Digest
+from weather.capture.client import CaptureFailure, Digest, parse_head
 from weather.capture.collector import Collector, PendingLoss, Watermark, unsealed_inventory
 from weather.capture.config import CaptureConfig
-from weather.capture.jpeg import marker_geometry
+from weather.capture.jpeg import marker_geometry, validate_jpeg
+from weather.capture.metrics import CaptureMetrics
 from weather.capture.timing import Backoff, Schedule, Slot, request_timing, utc_text
 
 
@@ -120,7 +125,10 @@ def test_root_capture_cli_redacts_bad_arguments_without_api_configuration() -> N
 def test_schedule_skips_slow_responses_and_clock_steps_never_reuse_ids() -> None:
     schedule = Schedule(0, 0, 1000, 0)
     first = schedule.take()
-    assert schedule.overdue_count(2_500_000_000) == 2
+    # A slot is overdue only once it is more than half a period late.
+    assert schedule.overdue_count(1_500_000_000) == 0
+    assert schedule.overdue_count(1_500_000_001) == 1
+    assert schedule.overdue_count(2_500_000_001) == 2
     skipped = [schedule.take(), schedule.take()]
     assert schedule.next_mono_ns == 3_000_000_000
     assert schedule.observe_clock(12_500_000_000, 2_500_000_000)
@@ -129,6 +137,46 @@ def test_schedule_skips_slow_responses_and_clock_steps_never_reuse_ids() -> None
     backward = schedule.take()
     assert len({x.slot_id for x in [first, *skipped, forward, backward]}) == 5
     assert len({first.clock_epoch, forward.clock_epoch, backward.clock_epoch}) == 3
+
+
+def test_two_schedules_emit_identical_grid_keys_despite_jitter_and_steps() -> None:
+    rng = random.Random(7)
+    hour = 1_790_002_800_000_000_000  # An exact UTC hour.
+
+    def run(wall_start: int, mono_start: int, step_at: int) -> list[int]:
+        schedule = Schedule(wall_start, mono_start, 1000, 333)
+        offset, keys = wall_start - mono_start, []
+        for i in range(40):
+            if i == step_at:
+                offset += 2_400_000_017  # Off-phase wall step: the deadline is re-anchored.
+            mono = schedule.next_mono_ns
+            schedule.observe_clock(mono + offset + rng.randint(-30_000, 30_000), mono)
+            slot = schedule.take()
+            assert (slot.scheduled_utc_ns - 333_000_000) % 1_000_000_000 == 0
+            assert slot.scheduled_mono_ns + offset - slot.scheduled_utc_ns in range(-30_000, 30_001)
+            keys.append(slot.scheduled_utc_ns)
+        return keys
+
+    first = run(hour - 10_000_000_000, 5, step_at=99)
+    second = run(hour - 6_250_000_123, 987_654_321, step_at=20)
+    assert set(second[:20]) <= set(first) and len(set(first)) == 40
+    assert utc_text(hour + 333_000_000) in {utc_text(x) for x in first}
+    # The key, not the jittered wall time, decides the chunk's hour and window.
+    on_hour = Schedule(hour - 1_000_000_000, 0, 1000, 0)
+    on_hour.take()
+    on_hour.observe_clock(1_000_000_000 + hour - 1_000_000_000 - 30_000, 1_000_000_000)
+    key = on_hour.take()
+    assert key.scheduled_utc_ns == hour
+    assert utc_text(key.scheduled_utc_ns).endswith(":00:00.000000Z")
+
+
+def test_chunk_hour_and_window_follow_the_grid_key(tmp_path: Path) -> None:
+    hour = 1_790_002_800_000_000_000
+    key = Slot("grid-0", 0, hour, "clock")
+    writer = ChunkWriter(config(tmp_path), new_incarnation(), 0, key, IOHealth())
+    assert writer.hour == utc_text(hour)[:13].replace(":", "") + "Z"
+    assert writer.window_start_ns == hour
+    writer.abandon()
 
 
 def test_backoff_and_pressure_hysteresis() -> None:
@@ -144,14 +192,19 @@ def test_backoff_and_pressure_hysteresis() -> None:
     assert not pressure.update(0.749)
 
 
-def test_timing_unknown_is_not_eligible_and_wall_step_is_not_bounded() -> None:
+def test_upper_bound_needs_only_a_continuous_clock_and_calibration_refines_lower() -> None:
     unknown = request_timing(10_000_000_000, 11_000_000_000, 0, 1_000_000_000, None, None)
-    assert unknown["capture_upper_bound"] is None and unknown["uncertainty_ms"] is None
+    assert unknown["capture_upper_bound"] == unknown["response_completed_at_utc"]
+    assert unknown["source_lower_bound"] is None and unknown["uncertainty_ms"] is None
+    assert unknown["freshness"] == "unknown"
     bounded = request_timing(10_000_000_000, 11_000_000_000, 0, 1_000_000_000, 100, "cal-v1")
+    assert bounded["capture_upper_bound"] == unknown["capture_upper_bound"]
     assert bounded["source_time_basis"] == "calibrated_request_midpoint"
-    assert bounded["uncertainty_ms"] == 600
-    stepped = request_timing(10_000_000_000, 1_000_000_000, 0, 1_000_000_000, 100, "cal-v1")
-    assert stepped["clock_discontinuity"] and stepped["capture_upper_bound"] is None
+    assert bounded["uncertainty_ms"] == 600 and bounded["freshness"] == "plausible"
+    for allowance, revision in [(None, None), (100, "cal-v1")]:
+        stepped = request_timing(10_000_000_000, 1_000_000_000, 0, 10**9, allowance, revision)
+        assert stepped["clock_discontinuity"] and stepped["capture_upper_bound"] is None
+        assert stepped["source_lower_bound"] is None
 
 
 def test_digest_calculation_and_header_injection_refusal(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -171,11 +224,102 @@ def test_digest_calculation_and_header_injection_refusal(monkeypatch: pytest.Mon
         digest.challenge('Digest realm="unsafe\r\nX-Test: injected", nonce="abc"')
 
 
+def test_repeated_headers_are_combined_and_digest_is_selected() -> None:
+    status, headers = parse_head(
+        b"HTTP/1.1 401 Unauthorized\r\n"
+        b'WWW-Authenticate: Basic realm="cam"\r\n'
+        b'WWW-Authenticate: Digest realm="cam, digest", nonce="n1", qop="auth"\r\n'
+        b"Set-Cookie: a=1\r\nSet-Cookie: b=2\r\nCache-Control: no-cache\r\n"
+        b"Cache-Control: no-store\r\nContent-Length: 0\r\n\r\n"
+    )
+    assert status == 401 and headers["cache-control"] == "no-cache, no-store"
+    digest = Digest("synthetic-user", "synthetic-password")
+    digest.challenge(headers["www-authenticate"])
+    header = digest.header() or ""
+    assert 'realm="cam, digest"' in header and 'nonce="n1"' in header
+    digest.challenge('Digest realm="r", nonce="n2", Basic realm="other"')
+    assert 'realm="r"' in (digest.header() or "")
+    with pytest.raises(CaptureFailure, match="authentication"):
+        digest.challenge('Basic realm="cam"')
+    for name in ["Content-Length: 1", "Transfer-Encoding: chunked"]:
+        with pytest.raises(CaptureFailure, match="protocol"):
+            parse_head(f"HTTP/1.1 200 OK\r\n{name}\r\n{name}\r\n\r\n".encode())
+
+
+@pytest.mark.parametrize("status", ["600", "999", "099", "000", "2_0", "+20", "20", "2000"])
+def test_out_of_range_status_is_a_protocol_failure(status: str) -> None:
+    with pytest.raises(CaptureFailure, match="protocol") as error:
+        parse_head(f"HTTP/1.1 {status} Odd\r\n\r\n".encode())
+    assert error.value.status is None
+
+
+def test_camera_protocol_failure_is_recorded_and_the_loop_keeps_running(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    collector = Collector(config(tmp_path))
+
+    async def bad_status() -> None:
+        parse_head(b"HTTP/1.1 600 Odd\r\n\r\n")
+
+    monkeypatch.setattr(collector.client, "fetch", bad_status)
+    schedule = Schedule(time.time_ns(), time.monotonic_ns(), 1000, 0)
+
+    async def two_slots() -> None:
+        for _ in range(2):
+            await collector._attempt(schedule.take(), schedule)
+
+    asyncio.run(two_slots())
+    collector._seal()
+    rows = [row for path in (tmp_path / "sealed").rglob("*.tar") for row in read_chunk(path)]
+    attempts = sorted(
+        (row for row in rows if row["record_type"] == "capture_attempt"),
+        key=lambda row: row["slot_at_utc"],
+    )
+    assert [row["failure_class"] for row in attempts] == ["protocol", "backoff"]
+    assert attempts[0]["http_status"] is None
+
+
+def test_cli_catches_only_configuration_loading(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import weather.capture.cli as cli
+
+    args = ["collect", "--camera", "skycam_east", "--config-dir", str(tmp_path)]
+    with pytest.raises(SystemExit) as error:
+        cli.main(args)
+    assert error.value.code == 2
+    assert capsys.readouterr().err == "Invalid mounted capture configuration\n"
+    monkeypatch.setattr(cli.CaptureConfig, "load", lambda *a: config(tmp_path))
+
+    def runtime_fault(value: CaptureConfig) -> None:
+        raise ValueError("synthetic runtime fault")
+
+    monkeypatch.setattr(cli, "collect", runtime_fault)
+    with pytest.raises(ValueError, match="runtime fault"):
+        cli.main(args)
+
+
+def test_attempt_counter_is_one_family_labelled_by_camera_and_result() -> None:
+    metrics = CaptureMetrics("skycam_east", IOHealth())
+    metrics.result("protocol", 2)
+    text = metrics.render().decode()
+    assert 'weather_capture_attempts_total{camera="skycam_east",result="protocol"} 2.0' in text
+    assert 'weather_capture_attempts_total{camera="skycam_east",result="captured"} 0.0' in text
+    assert "weather_capture_attempts_protocol_total" not in text
+    assert text.count("# TYPE weather_capture_attempts_total counter") == 1
+
+
 def test_markers_geometry_and_truncation_without_decoding() -> None:
     data = b"\xff\xd8\xff\xc0\x00\x08\x08\x00\x10\x00\x20\x00\xff\xd9"
     assert marker_geometry(data) == (32, 16)
     with pytest.raises(CaptureFailure, match="jpeg_markers"):
         marker_geometry(data[:-2])
+    # No decode: the renderer rejects undecodable frames per slot.
+    assert validate_jpeg(data[:-2] + b"\x12\x34\xff\xd9", (32, 16), 64) == (32, 16)
+    with pytest.raises(CaptureFailure, match="geometry"):
+        validate_jpeg(data, (16, 32), 64)
+    with pytest.raises(CaptureFailure, match="oversized"):
+        validate_jpeg(data, (32, 16), len(data) - 1)
 
 
 def test_atomic_chunk_native_bytes_and_concurrent_names(tmp_path: Path) -> None:
@@ -215,6 +359,29 @@ def test_reader_refuses_corruption_links_and_traversal(tmp_path: Path) -> None:
             archive.addfile(member)
         with pytest.raises(ValueError):
             read_chunk(bad)
+    truncated = tmp_path / "truncated.tar"
+    truncated.write_bytes(path.read_bytes()[:700])
+    with pytest.raises(ValueError):
+        read_chunk(truncated)
+    late = tmp_path / "late.tar"
+    with tarfile.open(path) as source, tarfile.open(late, "w", format=tarfile.USTAR_FORMAT) as out:
+        for member in source:
+            out.addfile(member, source.extractfile(member))
+        extra = tarfile.TarInfo("frames/after.jpg")
+        extra.size = 1
+        out.addfile(extra, io.BytesIO(b"x"))
+    with pytest.raises(ValueError, match="final manifest"):
+        read_chunk(late)
+
+
+def test_fsync_happens_only_at_seal(tmp_path: Path) -> None:
+    calls: list[int] = []
+    writer = ChunkWriter(config(tmp_path), new_incarnation(), 0, slot(), IOHealth(), calls.append)
+    for seq in range(3):
+        writer.append(attempt(seq), b"original")
+    assert calls == []
+    writer.seal()
+    assert len(calls) == 1
 
 
 def test_eio_never_publishes_partial_and_pending_loss_is_bounded(tmp_path: Path) -> None:
@@ -222,11 +389,13 @@ def test_eio_never_publishes_partial_and_pending_loss_is_bounded(tmp_path: Path)
         raise OSError(errno.EIO, "synthetic failure")
 
     writer = ChunkWriter(config(tmp_path), new_incarnation(), 0, slot(), IOHealth(), failed_fsync)
+    writer.append(attempt(), b"original")
     with pytest.raises(OSError):
-        writer.append(attempt(), b"original")
+        writer.seal()
     writer.abandon()
     assert not list((tmp_path / "sealed").rglob("*.tar"))
-    assert writer.path.exists()
+    # The writer removes its own abandoned tmp file; nothing salvages it.
+    assert not writer.path.exists()
     pending = PendingLoss()
     for i in range(1000):
         pending.add({**attempt(i), "status": "request_failed", "failure_class": "transport"})
@@ -249,6 +418,7 @@ def test_collector_persists_failed_slots_in_next_successful_manifest(
     collector._persist(slot(1), attempt(1), b"second")
     assert collector.writer is None and collector.pending.record is not None
     assert collector.pending.record["attempt_count"] == 2
+    collector.storage_retry_ns = 0  # The storage backoff has elapsed.
     collector._persist(slot(2), attempt(2), b"third")
     collector._seal()
     paths = list((tmp_path / "sealed").rglob("*.tar"))
@@ -257,6 +427,42 @@ def test_collector_persists_failed_slots_in_next_successful_manifest(
     assert rows[1]["failure_class"] == "persist_failed" and rows[1]["attempt_count"] == 2
     assert collector.pending.record is None
     del original
+
+
+def test_storage_failure_backs_off_and_unlinks_own_tmp_chunk(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def full(self: ChunkWriter, record: dict[str, object], body: bytes | None = None) -> None:
+        raise OSError(errno.ENOSPC, "synthetic quota")
+
+    collector = Collector(config(tmp_path))
+    monkeypatch.setattr(ChunkWriter, "append", full)
+    assert not collector._persist(slot(), attempt(), b"first")
+    assert not list((tmp_path / "tmp").rglob("*.tar"))
+    assert collector.storage_retry_ns > time.monotonic_ns() + 900_000_000
+
+    def no_nfs(*args: object) -> None:
+        pytest.fail("no NFS call during storage backoff")
+
+    monkeypatch.setattr(collector, "_open_writer", no_nfs)
+    monkeypatch.setattr(collector, "_occupancy", no_nfs)
+    monkeypatch.setattr(collector.client, "fetch", no_nfs)
+    assert not collector._persist(slot(1), attempt(1), b"second")
+    schedule = Schedule(time.time_ns(), time.monotonic_ns(), 1000, 0)
+    asyncio.run(collector._attempt(schedule.take(), schedule))
+    monkeypatch.undo()
+    collector.storage_retry_ns = 0
+    monkeypatch.setattr(ChunkWriter, "append", full)
+    assert not collector._persist(slot(2), attempt(2), b"third")
+    assert collector.storage_retry_ns > time.monotonic_ns() + 1_900_000_000  # 1 s, then 2 s.
+    monkeypatch.undo()
+    collector.storage_retry_ns = 0
+    assert collector._persist(slot(3), attempt(3), b"fourth")
+    collector._seal()
+    assert collector.storage_backoff.failures == 0
+    assert not list((tmp_path / "tmp").rglob("*.tar"))
+    rows = read_chunk(next((tmp_path / "sealed").rglob("*.tar")))
+    assert rows[1]["record_type"] == "loss_range" and rows[1]["attempt_count"] == 4
 
 
 def test_unsealed_inventory_is_uncertain_and_never_opens_foreign_file(
@@ -319,8 +525,6 @@ os._exit(17)
 def test_read_only_paths_outside_staging_are_never_written(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    import io
-
     original_open = io.open
 
     def guarded_open(file: object, mode: str = "r", *args: object, **kwargs: object) -> object:
@@ -335,20 +539,101 @@ def test_read_only_paths_outside_staging_are_never_written(
     assert read_chunk(writer.seal())[1]["status"] == "captured"
 
 
-def test_code_first_capture_contract_fixtures_and_generated_schema() -> None:
-    from weather.capture.records import ADAPTER, validate_record
+SETTINGS = {
+    "camera": "skycam_east",
+    "geometry": [4096, 1856],
+    "cadence_ms": 1000,
+    "phase_ms": 0,
+    "chunk_seconds": 60,
+    "connect_seconds": 1.0,
+    "read_seconds": 3.0,
+    "total_seconds": 5.0,
+    "max_bytes": 16777216,
+    "cache_allowance_ms": None,
+    "calibration_revision": None,
+}
+HEADER = {
+    "record_type": "chunk_header",
+    "schema_version": 2,
+    "camera": "skycam_east",
+    "pod_uid": "synthetic-pod",
+    "incarnation": "synthetic-incarnation",
+    "sequence": 0,
+    "config_hash": hashlib.sha256(
+        json.dumps(SETTINGS, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest(),
+    "slot_window_start_utc": "2026-10-24T00:00:00Z",
+    "slot_window_end_utc": "2026-10-24T00:01:00Z",
+    "settings": SETTINGS,
+}
+CAPTURED = {
+    "record_type": "capture_attempt",
+    "attempt_id": "synthetic-attempt",
+    "slot_id": "synthetic-slot",
+    "slot_at_utc": "2026-10-24T00:00:00Z",
+    "clock_epoch": "clock-a",
+    "camera": "skycam_east",
+    "status": "captured",
+    "failure_class": None,
+    "member": {
+        "name": "frames/synthetic-attempt.jpg",
+        "bytes": 100,
+        "sha256": "b" * 64,
+        "width": 4096,
+        "height": 1856,
+    },
+    "duplicate_hash": False,
+    "request_started_at_utc": "2026-10-24T00:00:00Z",
+    "response_completed_at_utc": "2026-10-24T00:00:01Z",
+    "monotonic_started_ns": "1000000000",
+    "monotonic_completed_ns": "2000000000",
+    "source_at_utc": "2026-10-24T00:00:00.500000Z",
+    "source_time_basis": "request_midpoint",
+    "source_lower_bound": None,
+    "capture_upper_bound": "2026-10-24T00:00:01Z",
+    "uncertainty_ms": None,
+    "freshness": "unknown",
+    "calibration_revision": None,
+    "clock_discontinuity": False,
+}
 
-    root = Path(__file__).resolve().parents[3]
-    fixtures = json.loads((root / "docs/contracts/capture-fixtures.json").read_text())["fixtures"]
-    for case in fixtures:
-        if case["valid"]:
-            validate_record(case["value"])
-        else:
-            with pytest.raises(ValueError, match="Invalid private capture"):
-                validate_record(case["value"])
-    schema = json.loads((root / "docs/contracts/capture.schema.json").read_text())
-    for key, value in ADAPTER.json_schema().items():
-        assert schema[key] == value
+
+@pytest.mark.parametrize(
+    "record,valid",
+    [
+        (HEADER, True),
+        (CAPTURED, True),  # A finite upper bound needs no calibration.
+        (CAPTURED | {"capture_upper_bound": None}, True),
+        (
+            {
+                "record_type": "loss_range",
+                "failure_class": "persist_failed",
+                "first_slot_id": "first",
+                "last_slot_id": "last",
+                "first_slot_at_utc": "2026-10-24T00:00:00Z",
+                "last_slot_at_utc": "2026-10-24T00:00:05Z",
+                "attempt_count": 6,
+                "individual_details_lost": True,
+            },
+            True,
+        ),
+        (HEADER | {"camera_host": "synthetic-private-endpoint"}, False),
+        (CAPTURED | {"member": None}, False),
+        (CAPTURED | {"clock_discontinuity": True}, False),
+        (CAPTURED | {"source_lower_bound": "2026-10-24T00:00:00Z"}, False),
+        (CAPTURED | {"http_status": 600}, False),
+        (CAPTURED | {"monotonic_completed_ns": "1"}, False),
+        (CAPTURED | {"member": CAPTURED["member"] | {"name": "../escape.jpg"}}, False),
+    ],
+)
+def test_manifest_record_fixtures(record: dict[str, object], valid: bool) -> None:
+    from weather.capture.records import validate_record
+
+    if valid:
+        validate_record(record)
+    else:
+        with pytest.raises(ValueError, match="Invalid private capture"):
+            validate_record(record)
 
 
 def test_exposure_upper_bound_rounds_outward_without_float_timestamp_loss() -> None:
@@ -373,12 +658,14 @@ def test_post_rename_fsync_error_is_uncertain_without_mutating_sealed_file(
     monkeypatch.setattr(chunks, "_fsync_dir", fail)
     with pytest.raises(OSError):
         collector._seal()
+    collector._abandon()
     paths = list((tmp_path / "sealed").rglob("*.tar"))
     assert len(paths) == 1 and read_chunk(paths[0])[1]["status"] == "captured"
     assert collector.pending.record is None
     assert collector.uncertain[0]["classification"] == "seal_uncertain"
     before = paths[0].read_bytes()
     monkeypatch.setattr(chunks, "_fsync_dir", original_fsync_dir)
+    collector.storage_retry_ns = 0
     collector._persist(slot(1), attempt(1), b"later original")
     collector._seal()
     assert paths[0].read_bytes() == before

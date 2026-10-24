@@ -32,8 +32,6 @@ ALLOW = {
     "BlueOak-1.0.0",
     "MPL-2.0",
     "0BSD",
-    # Reviewed NumPy/libjpeg-turbo permissive component notices (WX-10).
-    "Zlib",
 }
 CLASSIFIERS = {
     "Apache Software License": "Apache-2.0",

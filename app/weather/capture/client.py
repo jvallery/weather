@@ -15,6 +15,9 @@ from urllib.request import parse_http_list, parse_keqv_list
 from .config import CaptureConfig
 
 SNAPSHOT_PATH = "/cgi-bin/snapshot.cgi?channel=1"
+AUTH_PARAM = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+=")
+# Repeats are combined per RFC 9110, except framing headers whose repetition is ambiguous.
+SINGLE_HEADERS = {"content-length", "transfer-encoding"}
 
 
 class CaptureFailure(Exception):
@@ -39,9 +42,17 @@ class Digest:
         self._count = 0
 
     def challenge(self, header: str) -> None:
-        if not header.lower().startswith("digest ") or len(header) > 8192:
+        # Cameras may offer Basic and Digest together; only the Digest challenge's params count.
+        items = parse_http_list(header) if len(header) <= 8192 else []
+        start = next((i for i, x in enumerate(items) if x.lower().startswith("digest ")), None)
+        if start is None:
             raise CaptureFailure("authentication", 401)
-        values = parse_keqv_list(parse_http_list(header[7:]))
+        params = [items[start][7:].strip()]
+        for item in items[start + 1 :]:
+            if not AUTH_PARAM.match(item):
+                break
+            params.append(item)
+        values = parse_keqv_list(params)
         if not values.get("realm") or not values.get("nonce"):
             raise CaptureFailure("authentication", 401)
         algorithm = values.get("algorithm", "MD5").upper()
@@ -92,6 +103,26 @@ class Digest:
         elif algorithm.endswith("-SESS"):
             result += f", cnonce={quoted(cnonce)}"
         return result
+
+
+def parse_head(raw: bytes) -> tuple[int, dict[str, str]]:
+    """Status line and headers; any camera-controlled status outside 100-599 is a protocol error."""
+    if len(raw) > 32768:
+        raise CaptureFailure("protocol")
+    lines = raw.decode("latin-1").split("\r\n")
+    version, status_text, *_ = lines[0].split(" ")
+    if version not in {"HTTP/1.0", "HTTP/1.1"} or not re.fullmatch(r"[1-5][0-9]{2}", status_text):
+        raise CaptureFailure("protocol")
+    headers: dict[str, str] = {}
+    for line in lines[1:-2]:
+        name, value = line.split(":", 1)
+        name, value = name.lower().strip(), value.strip()
+        if name in headers:
+            if name in SINGLE_HEADERS:
+                raise CaptureFailure("protocol")
+            value = f"{headers[name]}, {value}"
+        headers[name] = value
+    return int(status_text), headers
 
 
 class SnapshotClient:
@@ -163,20 +194,7 @@ class SnapshotClient:
             writer.write(("\r\n".join(headers) + "\r\n\r\n").encode())
             await asyncio.wait_for(writer.drain(), self.config.read_seconds)
             raw = await asyncio.wait_for(reader.readuntil(b"\r\n\r\n"), self.config.read_seconds)
-            if len(raw) > 32768:
-                raise CaptureFailure("protocol")
-            lines = raw.decode("latin-1").split("\r\n")
-            version, status_text, *_ = lines[0].split(" ")
-            if version not in {"HTTP/1.0", "HTTP/1.1"}:
-                raise CaptureFailure("protocol")
-            status = int(status_text)
-            response_headers: dict[str, str] = {}
-            for line in lines[1:-2]:
-                name, value = line.split(":", 1)
-                name = name.lower().strip()
-                if name in response_headers:
-                    raise CaptureFailure("protocol")
-                response_headers[name] = value.strip()
+            status, response_headers = parse_head(raw)
             if status == 401:
                 return response_headers.get("www-authenticate", "")
             if status != 200:

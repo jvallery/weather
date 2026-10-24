@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Cluster-only fake-camera latency, Digest, JPEG decode and process failure checks."""
+"""Cluster-only fake-camera latency, Digest, response validation and process failure checks."""
 
 import asyncio
 import hashlib
@@ -17,7 +17,6 @@ from weather.capture.chunks import read_chunk
 from weather.capture.client import SNAPSHOT_PATH, CaptureFailure, SnapshotClient
 from weather.capture.collector import Collector
 from weather.capture.config import CaptureConfig
-from weather.capture.jpeg import validate_jpeg
 
 pytestmark = [
     pytest.mark.integration,
@@ -29,12 +28,10 @@ LOOPBACK = str(ipaddress.IPv4Address(0x7F000001))
 
 
 def jpeg() -> bytes:
-    import numpy as np
-    from simplejpeg import encode_jpeg
-
-    pixels = np.empty((16, 32, 3), dtype=np.uint8)
-    pixels[:] = (25, 80, 180)
-    return bytes(encode_jpeg(pixels, colorspace="RGB", colorsubsampling="420", fastdct=False))
+    # The collector checks markers and SOF geometry only; FFmpeg in the renderer decodes.
+    sof = b"\xff\xc0\x00\x11\x08\x00\x10\x00\x20\x03\x01\x22\x00\x02\x11\x01\x03\x11\x01"
+    sos = b"\xff\xda\x00\x0c\x03\x01\x00\x02\x11\x03\x11\x00\x3f\x00"
+    return b"\xff\xd8" + sof + sos + b"\x12\x34" * 64 + b"\xff\xd9"
 
 
 class FakeCamera:
@@ -46,6 +43,7 @@ class FakeCamera:
         self.trickle = False
         self.unknown_oversized = False
         self.always_unauthorized = False
+        self.basic_challenge = False
         self.requests: list[float] = []
         self.in_flight = 0
         self.max_in_flight = 0
@@ -77,8 +75,11 @@ class FakeCamera:
             assert lines[0] == f"GET {SNAPSHOT_PATH} HTTP/1.1"
             headers = dict(line.split(": ", 1) for line in lines[1:-2])
             if not self.authorized(headers.get("Authorization", "")):
+                writer.write(b"HTTP/1.1 401 Unauthorized\r\n")
+                if self.basic_challenge:
+                    writer.write(b'WWW-Authenticate: Basic realm="fake-camera"\r\n')
                 writer.write(
-                    b'HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Digest realm="fake-camera", '
+                    b'WWW-Authenticate: Digest realm="fake-camera", '
                     b'nonce="fixed-nonce", qop="auth", algorithm=MD5\r\n'
                     b"Content-Length: 0\r\nConnection: close\r\n\r\n"
                 )
@@ -143,9 +144,13 @@ class FakeCamera:
         )
 
 
-def test_digest_happy_path_full_decode_and_identical_frames_retained(tmp_path: Path) -> None:
+@pytest.mark.parametrize("basic_challenge", [False, True])
+def test_digest_happy_path_and_identical_frames_retained(
+    tmp_path: Path, basic_challenge: bool
+) -> None:
     async def check() -> None:
         camera = FakeCamera(jpeg())
+        camera.basic_challenge = basic_challenge
         async with camera.running():
             collector = Collector(camera.config(tmp_path))
             await collector.run(max_attempts=2)
@@ -155,6 +160,10 @@ def test_digest_happy_path_full_decode_and_identical_frames_retained(tmp_path: P
         assert captured[0]["duplicate_hash"] is False and captured[1]["duplicate_hash"] is True
         assert captured[0]["member"]["sha256"] == captured[1]["member"]["sha256"]
         assert all(row["freshness"] == "unknown" for row in captured)
+        # Without calibration the upper bound is still the response end.
+        assert all(
+            row["capture_upper_bound"] == row["response_completed_at_utc"] for row in captured
+        )
 
     asyncio.run(check())
 
@@ -185,8 +194,9 @@ def test_slow_camera_never_overlaps_or_catches_up(tmp_path: Path) -> None:
             collector.shutdown()
             await task
         assert camera.max_in_flight == 1
-        # Includes the initial Digest challenge GET, not just successful JPEG responses.
-        assert len(camera.requests) <= 4
+        # Includes the initial Digest challenge GET. A slot under half a period late is still
+        # taken, so 2.5 s responses allow one request per 2.5 s and never a catch-up burst.
+        assert len(camera.requests) <= 5
         assert all(
             b - a >= 0.95 for a, b in zip(camera.requests, camera.requests[1:], strict=False)
         )
@@ -204,7 +214,7 @@ def test_slow_camera_never_overlaps_or_catches_up(tmp_path: Path) -> None:
         ("html", "content_type"),
         ("missing_eoi", "jpeg_markers"),
         ("wrong_geometry", "geometry"),
-        ("corrupt_scan", "decode_error"),
+        ("status_600", "protocol"),
         ("oversized", "oversized"),
     ],
 )
@@ -222,11 +232,8 @@ def test_bad_responses_rejected_and_recorded(tmp_path: Path, kind: str, expected
             # SOF remains valid; mutate dimensions while retaining a complete JPEG body.
             offset = body.index(b"\xff\xc0")
             camera.body = body[: offset + 5] + b"\x00\x20" + body[offset + 7 :]
-        elif kind == "corrupt_scan":
-            offset = body.index(b"\xff\xda")
-            scan_start = offset + 2 + int.from_bytes(body[offset + 2 : offset + 4])
-            # All marker/header bytes remain intact; the entropy stream is truncated.
-            camera.body = body[:scan_start] + body[scan_start : scan_start + 1] + b"\xff\xd9"
+        elif kind == "status_600":
+            camera.status = 600
         else:
             camera.unknown_oversized = True
         async with camera.running():
@@ -255,11 +262,6 @@ def test_auth_failure_cannot_trigger_rapid_relogins(tmp_path: Path) -> None:
         assert any(row.get("failure_class") == "backoff" for row in rows)
 
     asyncio.run(check())
-
-
-def test_decoder_fully_loads_original_native_bytes() -> None:
-    original = jpeg()
-    assert validate_jpeg(original, (32, 16), 16777216) == (32, 16)
 
 
 def test_chunk_deadline_seals_while_waiting_for_a_slower_capture_slot(tmp_path: Path) -> None:

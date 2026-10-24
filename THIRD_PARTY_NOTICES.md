@@ -8,13 +8,6 @@ package/version/license inventory, including build/check and optional platform d
 The Python and Node runtime images include their upstream language and Debian notices.
 The image SBOM is generated in fleet CI at build qualification (WX-01).
 
-Capture uses simplejpeg 1.9.0 and NumPy 2.5.4. This software is based in part on
-the work of the Independent JPEG Group. Their full wheel notices, including
-libjpeg-turbo, OpenBLAS/LAPACK, GCC runtime exception and libquadmath terms, are
-retained in `supply-chain/capture-decoder` and the installed package license
-directories. See `docs/decisions/capture-decoder-reuse.md` for the exact artifacts
-and binary distribution obligations.
-
 The fleet-only weather-ci image retains Playwright 1.64.1 and its Apache-2.0
 notices in `/opt/weather-browser-tools/node_modules`, plus the downloaded
 Chromium, Firefox and WebKit distributions and their notices in

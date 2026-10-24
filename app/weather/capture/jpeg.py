@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Bounded marker validation followed by full libjpeg-turbo decoding in strict mode."""
+"""Bounded SOI/EOI and SOF geometry checks; the renderer decodes and rejects per slot."""
 
 import struct
 
@@ -45,21 +45,4 @@ def validate_jpeg(body: bytes, allowed: tuple[int, int], max_bytes: int) -> tupl
     geometry = marker_geometry(body)
     if geometry != allowed:
         raise CaptureFailure("geometry", 200)
-    # Imported only in the cluster decoder path; pure units do no media work.
-    from simplejpeg import decode_jpeg  # type: ignore[import-untyped]
-
-    try:
-        pixels = decode_jpeg(
-            body,
-            colorspace="RGB",
-            fastdct=False,
-            fastupsample=False,
-            strict=True,
-        )
-        if pixels.shape != (allowed[1], allowed[0], 3):
-            raise CaptureFailure("geometry", 200)
-    except CaptureFailure:
-        raise
-    except ValueError, RuntimeError, OSError:
-        raise CaptureFailure("decode_error", 200) from None
     return geometry
