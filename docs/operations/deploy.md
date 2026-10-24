@@ -40,6 +40,22 @@ root pod, all Weather pods are tokenless, and the label-restricted network
 paths deny an unrelated pod access to the API and deny API internet egress.
 Use disposable, bounded probe pods and remove them after retaining evidence.
 
+Run `python scripts/verify_foundation.py --revision <promotion-sha> --network
+--output <receipt-path>` from the checked-out promotion. It compares rendered
+pins, live image IDs, Argo revision/health, replica availability, public probes,
+tokenless pods and network reachability. The optional network checks create
+one untrusted pod in Weather and one metrics probe in `observability`, with a
+45-second deadline each; both are deleted by exact name. The receipt contains
+no private addresses. Retain it before closing WX-01. PSA root rejection and
+API internet-egress denial are separate commissioning checks.
+
+The API requires `WEATHER_PUBLIC_ORIGIN=https://weather.vallery.net`; `PORT`
+and `METRICS_PORT` default to 8000 and 9000 and must differ. Unknown
+`WEATHER_*` runtime configuration keys, missing origins, placeholder origins
+and invalid ports fail before either server binds. Startup errors name only
+the fields; do not print Pydantic's raw validation errors or environment.
+`WEATHER_CI_IN_CLUSTER` is reserved for the check runner.
+
 ## Capacity envelope
 
 Quota is an admission ceiling, not a reservation or permission to consume
