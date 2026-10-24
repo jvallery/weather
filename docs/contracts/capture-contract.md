@@ -1,53 +1,101 @@
-# Capture ledger and sealed input contract
+# Capture and single-USTAR manifest v2
 
-Status: selected record design; NFS locking, fencing, durability and camera timing remain D02/D03 qualification gates. Implements requirements §§5.4, 6.2–6.9 and 17. Consumers: WX-08/09/10/14/18/36/37/38. [capture.schema.json](capture.schema.json) defines four private record types; the capture validation receipt below supersedes earlier shape checks for the changed schema. No application collector or infrastructure is created by these contracts.
+The accepted [simplification P2](../decisions/2026-10-24-simplification.md) and
+[WX-10 (#11)](https://github.com/jvallery/weather/issues/11) supersede the former
+writer-epoch/fencing, three-file chunk directory, binding-file and promotion
+working-set design. The collector has no coordinator, database, Kubernetes or
+internet access. Camera commissioning and actual NFS behavior belong to WX-03.
 
-[D03](../decisions/D03-staging-and-writer-fencing.md) defines coordinator admission, stop/fence receipts, uncertain-I/O quarantine and replacement transitions. Existing generic NFS classes are not an admitted lock/durability contract.
+The code-first private record union lives in `app/weather/capture/records.py`.
+`scripts/generate_capture_contract.py` renders [capture.schema.json](capture.schema.json).
+The shape fixtures and strict byte-reader tests are separate: JSON shape does not
+prove native JPEG decode or filesystem durability.
 
-## Files and identities
+## Storage representation
 
-Each immutable sealed chunk directory contains exactly `frames.tar`, `attempts.jsonl` and `binding.json`. The binding hashes the exact TAR and JSONL bytes; its own hash is stored in the segment's chunk reference, never inside its hashed content. The active directory has a unique chunk ID and admitted writer epoch. Flush all files and required directory metadata before the single directory rename into the sealed namespace, under the qualified NFS protocol. Readers must ignore active directories and never infer completeness from the TAR filename alone.
+One chunk is a plain USTAR containing zero or more regular
+`frames/<attempt_id>.jpg` members and one **final** `manifest.jsonl`. Original camera
+bytes are retained exactly. Attempt IDs are ASCII, at most 89 characters; complete
+member paths therefore fit USTAR's 100-byte name field without prefix splitting,
+PAX or GNU extensions. Readers reject links, devices, unknown members, traversal,
+duplicate names, invalid headers/checksums, nonzero padding, incomplete termination,
+unbound members and length/hash mismatches. They never extract generic TAR input.
 
-Use UTF-8 JSON with one CaptureAttempt object per LF-terminated JSONL line, rejecting duplicate JSON keys. No blank lines, truncated final line or trailing non-JSON content is accepted in a sealed index. Hash stored bytes, not a parsed/reformatted representation. Before sealing, recovery may repair an exclusively owned active tail and reconcile its index; after sealing, corruption requires quarantine and an explicit replacement revision. Never silently edit sealed bytes.
+A collector exclusively creates
+`tmp/<camera>/<first-slot-ns>_<window-end-ns>__<pod-uid>-<incarnation>-<seq>.tar`
+with `O_EXCL`. Each process has a fresh random incarnation. The final name is
+`sealed/<camera>/<UTC-hour>/<pod-uid>-<incarnation>-<seq>.tar`. Default chunk duration
+is 60 seconds, maximum 300; captured slots never cross a UTC hour. Neither two
+processes nor restarted processes share a target name. No collector deletes a tmp
+file or edits/deletes a sealed file. Cleanup belongs to WX-18.
 
-TAR members are regular files named `frames/<attempt_id>.jpg`; they contain the original camera JPEG bytes. Attempt IDs are ASCII and at most 89 characters, so the complete path fits the 100-byte USTAR name field. Use plain USTAR regular members with no prefix splitting, PAX/GNU long-name records or links. Other opaque IDs retain their separate bounds. This restricted layout requires neither long-name extensions nor links. Reject absolute paths, traversal, symbolic/hard links, devices, unexpected extensions, unknown members, duplicate names and inconsistent header lengths. An index `data_offset_bytes` points at the first JPEG payload byte, not its TAR header; it is at least 512 and a multiple of 512. The member basename must equal the bound attempt ID, not merely match the same pattern. Verify bounds, 512-byte TAR alignment/padding, complete archive termination and the hash/length of every member. Never use generic extraction before validating the archive. Byte offsets/sizes are JSON-safe integers; monotonic nanoseconds are decimal strings to avoid JavaScript precision loss.
+Payload progress is flushed/fsynced at least every five seconds of active writing.
+The final manifest and TAR termination are written, the file is fsynced and closed,
+then renamed atomically and the source/destination directories are fsynced. Readers
+ignore tmp files. NFS read/write errors before rename abandon the complete uncertain
+file in tmp, record `persist_failed` loss accounting and never publish it.
+A directory-fsync error after a successful rename is **commit uncertainty**: the
+complete sealed file may exist. The collector leaves it untouched and emits
+`seal_uncertain`; the scheduler reconciles it instead of asserting either loss or
+success from the collector's return code.
 
-CaptureAttempt binds camera, writer/clock/cadence epochs, logical slot, acquisition timing, best source-time estimate, uncertainty, freshness evidence and optional member. `captured` means a validated JPEG was persisted; it does not mean the coordinator accepted the sample for rendering. `skipped` and `request_failed` preserve reasoned attempts without fictitious JPEGs. Failed requests may have timing fields; skipped slots normally do not. Status codes and sanitized failure classes may appear in quality/reason fields, but endpoints, auth headers and response bodies may not.
+## JSONL records and time
 
-Attempt IDs are globally unique within the deployment; logical slot IDs survive collector restart. A replacement must not intentionally resample a completed slot. A race can leave multiple attempts for a slot; retain them as evidence and accept at most one through the versioned selection policy. Writer epochs qualify authority, not an excuse to count the same slot twice. Admission and coordinator transactions enforce this across chunks and time partitions.
+JSON is UTF-8, one object per LF-terminated line. Duplicate keys, non-finite numbers,
+blank lines and partial final lines are invalid. The manifest is bounded to 1 MiB.
+Only explicitly modeled fields are accepted; endpoints, credentials, response bodies,
+station identities and exact site coordinates have no fields here.
 
-## Timing and segment ownership
+- `chunk_header`: schema version 2, camera, pod UID, incarnation, sequence, safe
+  operational settings and configuration hash. Endpoint and credential values are
+  excluded from the hash/settings rather than published as reversible identifiers.
+- `capture_attempt`: unique attempt/slot identity, scheduled UTC, clock epoch,
+  captured/skipped/request-failed status and a bounded failure class. Captured rows
+  bind the exact member name, byte count, SHA256 and decoded geometry. Identical
+  consecutive hashes set `duplicate_hash` but both frames remain valid inputs.
+- `skipped_range`: a compact, reconstructable consecutive monotonic slot range and
+  count, for overdue slots. It prevents a long outage from creating a catch-up loop
+  or unbounded metadata allocation. It does not issue camera requests.
+- `loss_range`: definite in-process persistence failure, first/last scheduled slot
+  and count. When the mount is unavailable, individual details cannot be retained;
+  this constant-memory summary explicitly records that loss of detail.
+- `unsealed_range`: an uncertain tmp candidate, commit-uncertain seal, or bounded
+  inventory overflow. It is never a captured-success or definite-loss assertion.
 
-Monotonic start/end values are comparable only within the recorded clock epoch. Require completion >= start and enforce the total attempt deadline using monotonic elapsed time. A wall-clock step may make UTC acquisition order surprising; preserve that fact and mark the discontinuity rather than rewriting timestamps. Verified source time or calibrated midpoint must cite the corresponding private calibration/evidence revision. Unknown uncertainty requires a null exposure upper bound. A finite value is not automatically trusted: origin eligibility still checks the calibration and clock-health provenance.
+The monotonic timer advances absolute deadlines and never launches overlapping
+attempts. All physical HTTP exchanges, including Digest negotiation, are also
+limited to the commissioned cadence. Connect/read defaults are 1/3 seconds; a
+separate five-second monotonic deadline covers negotiation, retry and the entire
+body. Redirects are rejected. Transport backoff is 1/2/4/8/16/30 seconds;
+authentication backoff is at least 60 seconds.
 
-The chunk's `scheduled_segment_id` and `slot_interval` describe capture scheduling. They are not proof of source-time membership. A late response or source-clock offset can place a returned image in an adjacent segment. The coordinator assigns accepted samples by the best qualified source estimate to exactly one half-open segment under §5.4. Retain uncertainty even when its bounds cross a segment boundary; a selected strict policy may reject that sample, but must not silently redefine the default assignment rule.
+Each request records UTC start/response-end, monotonic nanoseconds as decimal
+strings, clock epoch and a request-midpoint source estimate. Without a mounted
+cache calibration, uncertainty and exposure bounds are null and freshness is
+`unknown`. With calibration, bounds are `[request-start-cache-allowance, response-end]`;
+uncertainty is the maximum distance from the request midpoint to either bound.
+A wall-clock step greater than one second changes the clock epoch and invalidates
+finite bounds for that request. HTTP Date and equal hashes never establish exposure
+certainty or staleness. A finite bound alone does not qualify public eligibility;
+request-time embargo and independent clock-health checks remain mandatory.
 
-If a segment references a chunk scheduled in the adjacent segment, acquire its own source pin before admitting the sample. The originating segment's cleanup cannot delete the shared chunk while either obligation remains. No rendering context may use nonselected adjacent-segment members merely because they share a TAR. This rule also applies to interpolation, denoising, exposure and stabilization. A member's presence in two chunk-reference lists is not double acceptance; the accepted-attempt uniqueness constraint is global.
+Slot IDs combine a fresh clock epoch and increasing sequence; a backward clock step
+or process restart cannot reuse one. The scheduler deduplicates measured capture
+slots using camera plus scheduled UTC/cadence and selects at most one accepted
+attempt, retaining distinct attempt IDs and clock uncertainty. Timestamp coincidence
+is not a reason for the collector to erase evidence.
 
-At sealing, resolve/time out all relevant in-flight attempts and wait the admitted boundary grace (initially 30 seconds). Freeze schedule, site/timezone/twilight versions, cadence epochs and selection policy. An unbounded source-time uncertainty cannot produce a trusted preview timestamp; it must not be upgraded to certainty during segment sealing. Revisions correcting clocks or selection have a new immutable manifest and `supersedes_sha256`; running jobs retain the original hash and later publication must enforce current revision policy.
+## Hard kills and reconciliation
 
-## Segment manifest and selection index
+A hard kill can lose an in-memory attempt ledger before the final manifest exists.
+On startup a collector may inventory **names only** in its camera's tmp directory;
+it never opens, modifies or removes another incarnation's file. A foreign writer
+may still seal successfully. Filename windows therefore produce
+`unsealed_uncertain` candidates, never `persist_failed` assertions. The scheduler
+must reconcile candidates against sealed chunk identities and actual accepted slots
+before assigning coverage loss. Repeated candidate IDs are idempotent observations.
+At most 128 windows are retained in memory; any overflow count explicitly requires
+further scheduler inventory. A filename never proves a successful capture.
 
-A sealed segment comprises `manifest.json` and `selection.jsonl`. The manifest binds the selection index by exact bytes/hash, references verified chunk bindings and their TAR/index hashes, and records expected slots, attempts, accepted unique samples, coverage/gaps and discontinuities. SelectionRow records each considered attempt's accepted/rejected disposition and reason. `source_interval` records exposure-time bounds, which may be a zero-width instant; it is not automatically an interval of valid exposure coverage. Segment/source coverage intervals, by contrast, are nonempty half-open intervals.
-
-Validate every reference against the actual indexed attempt; one selection row per considered attempt, no unknown IDs, and no duplicate accepted slot or accepted attempt across active segment revisions. Count attempts and accepted samples from the index, not caller-supplied totals. Missing/failed/skipped slots contribute to explicit gaps and never to accepted JPEG counts. Include all considered attempts; a chunk member rejected for one segment may be accepted for its proper adjacent segment with explicit evidence and pins.
-
-Manifest `allocated_frames` must match the frozen cycle allocation. Daytime plus overnight equals exactly 7,200 output frames at 60/1 fps; unavailable input does not permit silently reallocating the other segment. Rational allocation/mux rules remain §5.3 and WX-09/16. The manifest's `sealed_at` cannot substitute for acquisition/source time. Site configuration is an opaque revision reference; exact coordinates and raw camera endpoints remain in private deployment custody.
-
-Empty-input segments are valid manifests with zero accepted samples and reasoned gaps. They later publish an unavailable record, never an invented video. Schema array ceilings bound metadata parsing; if an admitted workload can exceed a ceiling, qualify a versioned sharded format before enabling it. Never truncate chunks, gaps or discontinuities to make a manifest pass. Indexes are streamed under admitted byte limits rather than loaded without bounds.
-
-## Obligations and cleanup
-
-Binding and manifest hashes establish integrity, not storage durability or cleanup permission. The coordinator accepts only admitted writer generations; stale processes can leave quarantined files but cannot advance accepted manifests. No collector writes directly to the database or calls the Kubernetes API to acquire this authority.
-
-Keep durable pins for video, cross-segment samples, hourly candidates and keogram extraction. Transfer exact bytes and obligations to the bounded promotion working set before releasing dense-source pins, as specified in the [publication contract](../archive/planning-2026-10/implementation/publication-recovery-contract.md). A lease expiry is not deletion authority. Delayed preview buffers have a separate bounded policy; no public request triggers capture. AI uses completed media and does not retain dense captures.
-
-## Mandatory acceptance cases
-
-Shape fixtures cover valid missing attempts, required JPEG bindings, unknown uncertainty, path traversal, unsafe numeric offsets, missing hash bindings and rejected selections without reasons. They cannot prove filesystem behavior. WX-10 must inject a crash before/after each flush and rename, a torn TAR/member/index, mismatched TAR/index hashes, duplicate names, links, malformed JSONL and internal corruption. Active-tail repair must produce the same verified members or an explicit loss record, never a false successful seal.
-
-WX-08/09/10 test stale-writer return, clock reversal, source-time/slot boundary mismatch, repeated slot attempts, selection duplicates, unknown references, empty segments and corrected manifest races. WX-18/36/37 test shared-chunk cross-segment pins and crashes at each compact-transfer step; no accepted or pending product may lose its only source. WX-14 must reject unselected adjacent-segment temporal context. Actual NFS durability/fencing, native camera JPEG timing and CPU workload admission need private live evidence before their gates pass.
-
-## TAR representation boundary audit
-
-The earlier generic 128-character Id limit allowed member basenames too long for the no-extension layout. CaptureAttempt and SelectionRow now share a bounded AttemptId, and member paths use the identical bound. Six added fixtures cover 89/90/128-character identities, zero/unaligned offsets and selection consistency. [Capture validation receipt](../archive/planning-2026-10/contracts/capture-validation-receipt.json) records the current shape checks and bounded in-memory USTAR header probe. This does not validate an application writer, JPEG decode, actual NFS persistence or crash recovery; full header/index membership and bounds still require semantic checks.
+Normal in-process EIO/ESTALE/ETIMEDOUT/ENOSPC has separate tests from hard-kill
+uncertainty. Recovery never silently repairs or publishes an uncertain tmp tail.
