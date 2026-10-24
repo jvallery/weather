@@ -70,6 +70,12 @@ class DatabaseManifestTests(unittest.TestCase):
         self.assertNotIn("plugins", cluster["spec"])
         self.assertNotIn("managed", cluster["spec"])
         self.assertEqual(
+            cluster["spec"]["postgresql"]["parameters"]["log_error_verbosity"], "terse"
+        )
+        self.assertEqual(
+            cluster["spec"]["postgresql"]["parameters"]["log_parameter_max_length_on_error"], "0"
+        )
+        self.assertEqual(
             cluster["spec"]["externalClusters"][0]["plugin"]["parameters"]["serverName"],
             "weather-pg",
         )
