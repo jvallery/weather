@@ -4,7 +4,6 @@ import subprocess
 import sys
 
 import pytest
-
 from weather.config import ConfigurationError, load_settings
 
 
@@ -12,7 +11,10 @@ def test_unknown_and_invalid_settings_do_not_disclose_values() -> None:
     private_value = "do-not-log-this-value"
     with pytest.raises(ConfigurationError) as result:
         load_settings(
-            {"WEATHER_PUBLIC_ORIGIN": "https://weather.vallery.net", "WEATHER_UNKNOWN": private_value}
+            {
+                "WEATHER_PUBLIC_ORIGIN": "https://weather.vallery.net",
+                "WEATHER_UNKNOWN": private_value,
+            }
         )
     assert "unknown" in str(result.value)
     assert private_value not in str(result.value)

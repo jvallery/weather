@@ -46,7 +46,9 @@ def public_probe(path: str, expected: int) -> None:
         response.read(1024 * 1024)
 
 
-def pod_probe(namespace: str, name: str, image: str, program: str, env: list[dict[str, str]]) -> None:
+def pod_probe(
+    namespace: str, name: str, image: str, program: str, env: list[dict[str, str]]
+) -> None:
     manifest = {
         "apiVersion": "v1",
         "kind": "Pod",
@@ -139,7 +141,9 @@ def main() -> None:
     pods = read("weather", "pods")["items"]
     for pod in pods:
         assert pod["spec"].get("automountServiceAccountToken") is False
-        assert not any(v["name"].startswith("kube-api-access") for v in pod["spec"].get("volumes", []))
+        assert not any(
+            v["name"].startswith("kube-api-access") for v in pod["spec"].get("volumes", [])
+        )
         name = pod["metadata"].get("labels", {}).get("app.kubernetes.io/component")
         if name in deployments and pod["status"]["phase"] == "Running":
             for container in pod["status"].get("containerStatuses", []):

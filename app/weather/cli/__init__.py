@@ -2,6 +2,7 @@
 """Role entrypoint. Roles are added as their implementation issues land."""
 
 import argparse
+
 from weather.config import ConfigurationError, load_settings
 
 
