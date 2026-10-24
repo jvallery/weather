@@ -99,6 +99,7 @@ These remain sound and are **kept**:
 | **C13** | **Closeout is honest.** At #36, GC of orphans and tombstones runs with the grace guard. The expiry flags stay off; #79 enables them on its date. Add a minimal Grafana dashboard to #49's monitoring PR. #36 adds an upgrade runbook and Cortex key renewal. Keograms follow the stills lifecycle, and `keogram_bin` rows are deleted once the PNG is committed. | #36 vacuous expiry; lost WX-31/34 items |
 | **C14** | **Remove the ceremony** (#76): evidence tooling, verifier scripts, commissioning probe policies, the rollout harness, stale contracts, ADRs and the generated backlog. Branch and worktree pruning needs Jason's explicit OK. | — |
 | **C15** | **Right-size the database.** `weather-pg` starts near the options-pg pattern, about 250m/1Gi requests, and grows from observed working sets. | 1 CPU/2Gi ×3 |
+| **C17** | **The api never mounts NFS.** Delayed previews are served by a small `weather-preview` Deployment (same image and origin code), the only public-path pod that mounts staging `previews/` read-only (#39). A NAS outage therefore can't block api start-up or current conditions (SLO 2). | api `previews/` subPath |
 | **C16** | **Use issue numbers.** Drop WX- keys from titles and new text; WX-n is issue n+1, which caused confusion. | WX keys |
 
 ## Requirement amendments (v4.2)
@@ -113,19 +114,27 @@ These remain sound and are **kept**:
 
 ## Critical path and order
 
+**Ready now** (no open native blockers): #6 database, #21 web promotion, #73 telemetry corrections, #75 collector corrections and #76 cleanup.
+
 **Slice 1 (#48).** These run in parallel now:
 - #6: port the CNPG fix, right-size, commission, back up, run one switchover and the PITR drill
 - #73: telemetry corrections
 - #21: promote PR #72 without receipts, fix the rate limit
-- agents#5368: plugins and NAD
+- agents#5368: plugins and NAD (owner lane)
 
-Then #74, the baseline and first migration. Then #14, the API. Then #5, the receiver, which needs #74 and agents#5368. Then #48.
+Then #74, the baseline and first migration. Then #14, the API. Then #5, the receiver, which needs #73, #74 and agents#5368. Then #48. #41 events, #42 almanac and #45 card can land any time after #14 (#45 also needs #21); none of them gates #48.
 
-**Slice 2 (#49).** Can start now: #18 publication, #20 media origin and #75 collector fixes. Then #15 renderer, followed by #37, #38 and #39 in parallel, #40 and #19. #4 waits on **Jason's camera-source decision** (sentinel#550) and storage-infra#1107. #77 follows #49.
+**Slice 2 (#49).** #75 now. Coding on #18 publication and #20 media origin can start now; they merge after #74 (and #20 after #18), because their migrations chain on the baseline. Then #15 renderer, followed by #37, #38 and #39 in parallel, #40 and #19. #4 waits on **Jason's camera-source decision** (sentinel#550) and #75. #49 also needs storage-infra#1107. #77 follows #49.
 
-**Slice 3 (#50).** #41 events can start once #14's code merges. #25 search and #23 descriptions follow. Then #27, #44 and #78. #33 runs before #36. #42 almanac and #45 card can land any time after #14.
+**Slice 3 (#50).** #25 search and #23 descriptions (which also needs #37 and cortex-ai-compute#402) follow #14. Then #27, #44 and #78. #33 runs before #36.
 
-**Closeout:** #36, then wordpress#242 and #79. Non-blocking throughout: #76, #16, #46, #47.
+**Closeout:** #36, then #79 on its date. #36 also waits on wordpress#242, #42, #45 and #76. Non-blocking throughout: #16, #46 and #47.
+
+## Live observations at takeover
+
+- Someone ran a `kubectl rollout restart` on `deploy/api` at 16:52Z, after Codex's pause. Neither the audit agents nor the Codex session logs record it; the Codex sessions' last write was at 16:47Z. It's harmless, but **confirm no other controller is still acting on `weather`** before implementation resumes.
+- Four `weather.slice1` alerts are firing because they watch workloads that don't exist yet: monitoring-stack#1134.
+- Fleet CI history: 126 Weather workflows in about 12 hours, 47 of them failed. Use one standard validate and one standard build per merge from here on.
 
 ## Decisions for Jason
 
