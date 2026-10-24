@@ -2,7 +2,7 @@
 """Role entrypoint. Roles are added as their implementation issues land."""
 
 import argparse
-import os
+from weather.config import ConfigurationError, load_settings
 
 
 def main() -> None:
@@ -10,10 +10,15 @@ def main() -> None:
     parser.add_argument("role", choices=["api"], nargs="?")
     args = parser.parse_args()
     if args.role == "api":
+        try:
+            settings = load_settings()
+        except ConfigurationError as exc:
+            parser.exit(2, f"{exc}\n")
+
         import uvicorn
         from prometheus_client import start_http_server
 
-        start_http_server(int(os.environ.get("METRICS_PORT", "9000")))
-        uvicorn.run("weather.api:app", host="0.0.0.0", port=int(os.environ.get("PORT", "8000")))
+        start_http_server(settings.metrics_port)
+        uvicorn.run("weather.api:app", host="0.0.0.0", port=settings.port)
     else:
         parser.print_help()

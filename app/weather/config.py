@@ -1,0 +1,56 @@
+# SPDX-License-Identifier: MIT
+"""Validate runtime settings without including input values in startup errors."""
+
+import os
+from collections.abc import Mapping
+
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, ValidationError, field_validator
+
+
+class Settings(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    public_origin: HttpUrl
+    port: int = Field(default=8000, ge=1, le=65535)
+    metrics_port: int = Field(default=9000, ge=1, le=65535)
+
+    @field_validator("public_origin")
+    @classmethod
+    def public_https_origin(cls, value: HttpUrl) -> HttpUrl:
+        host = value.host or ""
+        if (
+            value.scheme != "https"
+            or value.username
+            or value.password
+            or value.query
+            or value.fragment
+            or value.path not in (None, "/")
+            or host in {"localhost", "example.com", "example.net", "example.org"}
+            or any(word in host for word in ("placeholder", "changeme", "replace-me"))
+        ):
+            raise ValueError("requires a configured public HTTPS origin")
+        return value
+
+
+class ConfigurationError(ValueError):
+    """A value-free diagnostic safe for process startup logs."""
+
+
+def load_settings(environment: Mapping[str, str] | None = None) -> Settings:
+    env = os.environ if environment is None else environment
+    values: dict[str, str] = {
+        key.removeprefix("WEATHER_").lower(): value
+        for key, value in env.items()
+        if key.startswith("WEATHER_") and key != "WEATHER_CI_IN_CLUSTER"
+    }
+    for key in ("PORT", "METRICS_PORT"):
+        if key in env:
+            values[key.lower()] = env[key]
+    try:
+        settings = Settings.model_validate(values)
+    except ValidationError as exc:
+        fields = sorted({str(error["loc"][0]) for error in exc.errors()})
+        raise ConfigurationError("Invalid configuration fields: " + ", ".join(fields)) from None
+    if settings.port == settings.metrics_port:
+        raise ConfigurationError("Invalid configuration fields: port, metrics_port")
+    return settings

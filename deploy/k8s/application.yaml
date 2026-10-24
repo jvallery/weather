@@ -51,6 +51,8 @@ spec:
           value: '8000'
         - name: METRICS_PORT
           value: '9000'
+        - name: WEATHER_PUBLIC_ORIGIN
+          value: https://weather.vallery.net
         resources:
           requests:
             cpu: 100m
