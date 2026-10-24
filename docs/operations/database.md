@@ -30,6 +30,14 @@ Migrations supply their grants. The five basic-auth Secrets are
 `password`. No database credential belongs in source, a connection URI printed
 to a log, or an issue. Superuser password access is disabled.
 
+Private packet identifiers must also stay out of PostgreSQL diagnostics.
+`log_error_verbosity=terse` removes duplicate-key DETAIL, both parameter-length
+settings are zero, and SQL statement/duration logging is disabled, including
+error statements below PANIC. Generic CSV error/SQLSTATE diagnostics remain.
+The application must still parameterize writes and validate input: terse mode
+is not a sanitizer for arbitrary values in an error's primary message. Do not
+enable verbose statement/parameter logging on production to debug ingest.
+
 The migrator runs as a `Sync` hook at wave 1 after the Cluster at wave -5, with
 bounded role-login readiness. It uses the projected `weather-pg-migrator`
 credentials plus `weather-pg-ca` and verifies TLS for `weather-pg-rw:5432`.
