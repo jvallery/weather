@@ -120,6 +120,9 @@ class Collector:
         self.watermark = Watermark()
         self.backoff = Backoff()
         self.next_request_ns = 0
+        # Storage failures back off separately, so a healthy camera cannot reset the delay.
+        self.storage_backoff = Backoff()
+        self.storage_retry_ns = 0
         self.last_hash: str | None = None
         self.stop = asyncio.Event()
         self.active: asyncio.Task[Any] | None = None
@@ -144,6 +147,11 @@ class Collector:
         }
 
     def _persist(self, slot: Slot, record: dict[str, object], body: bytes | None = None) -> bool:
+        if time.monotonic_ns() < self.storage_retry_ns:
+            # Constant memory and no NFS calls while the share is failing.
+            self.pending.add(record)
+            self.metrics.result("persist_failed")
+            return False
         try:
             hour = utc_text(slot.scheduled_utc_ns)[:13].replace(":", "") + "Z"
             if self.writer is not None and (
@@ -197,6 +205,9 @@ class Collector:
         self._seal()
 
     def _abandon(self) -> None:
+        """Every storage failure: drop the chunk, keep its loss and delay the next NFS write."""
+        delay = self.storage_backoff.failure()
+        self.storage_retry_ns = time.monotonic_ns() + delay * 1_000_000_000
         writer = self.writer
         if writer is not None:
             writer.abandon()
@@ -221,18 +232,15 @@ class Collector:
     def _seal(self) -> None:
         if self.writer is None:
             return
+        # Callers abandon on OSError, which also applies the storage backoff once.
         start = time.monotonic()
-        try:
-            self.writer.seal()
-        except OSError:
-            self._abandon()
-            raise
-        else:
-            self.writer = None
-            self._chunk_records = []
-            self.pending.record = None
-            self.uncertain = []
-            self.metrics.seal_latency.observe(time.monotonic() - start)
+        self.writer.seal()
+        self.writer = None
+        self._chunk_records = []
+        self.pending.record = None
+        self.uncertain = []
+        self.storage_backoff.success()
+        self.metrics.seal_latency.observe(time.monotonic() - start)
 
     def _occupancy(self) -> float:
         with self.health.operation():
@@ -241,14 +249,19 @@ class Collector:
             raise OSError("Staging capacity unavailable")
         return 1 - stat.f_bavail / stat.f_blocks
 
+    def _staging_full(self) -> bool:
+        ratio = self._occupancy()
+        self.metrics.staging_ratio.set(ratio)
+        return self.watermark.update(ratio)
+
     async def _attempt(self, slot: Slot, schedule: Schedule) -> None:
         record = self._base(slot)
         body: bytes | None = None
         start_wall, start_mono = time.time_ns(), time.monotonic_ns()
         try:
-            ratio = self._occupancy()
-            self.metrics.staging_ratio.set(ratio)
-            if self.watermark.update(ratio):
+            if start_mono < self.storage_retry_ns:
+                record["failure_class"] = "backoff"
+            elif self._staging_full():
                 record["failure_class"] = "staging_full"
             elif start_mono < self.next_request_ns:
                 record["failure_class"] = "backoff"
@@ -295,7 +308,6 @@ class Collector:
             self._abandon()
             self.pending.add(record)
             self.metrics.result("persist_failed")
-            self.next_request_ns = time.monotonic_ns() + 1_000_000_000
 
     async def run(self, max_attempts: int | None = None) -> None:
         schedule = Schedule(
@@ -335,7 +347,7 @@ class Collector:
                     try:
                         self._seal()
                     except OSError:
-                        pass
+                        self._abandon()
                 if time.monotonic_ns() < schedule.next_mono_ns:
                     continue
                 schedule.observe_clock(time.time_ns(), time.monotonic_ns())
@@ -373,8 +385,7 @@ class Collector:
                 loop.remove_signal_handler(sig)
 
 
-def collect(camera: str, config_dir: Path, secret_dir: Path) -> None:
-    config = CaptureConfig.load(camera, config_dir, secret_dir)
+def collect(config: CaptureConfig) -> None:
     collector = Collector(config)
     server = collector.metrics.serve(config.metrics_port)
     try:

@@ -30,29 +30,38 @@ class Slot:
 class Schedule:
     def __init__(self, wall_ns: int, mono_ns: int, cadence_ms: int, phase_ms: int) -> None:
         self.period_ns = cadence_ms * 1_000_000
-        phase_ns = phase_ms * 1_000_000
-        delta = (phase_ns - wall_ns) % self.period_ns
+        self.phase_ns = phase_ms * 1_000_000
+        delta = (self.phase_ns - wall_ns) % self.period_ns
         self.next_mono_ns = mono_ns + delta
         self.offset_ns = wall_ns - mono_ns
         self.epoch = uuid.uuid4().hex
         self.seq = 0
 
+    def grid(self, wall_ns: int) -> int:
+        """Canonical (camera, slot) key: the nearest cadence grid point, identical per writer."""
+        steps = (wall_ns - self.phase_ns + self.period_ns // 2) // self.period_ns
+        return steps * self.period_ns + self.phase_ns
+
     def observe_clock(self, wall_ns: int, mono_ns: int) -> bool:
         offset = wall_ns - mono_ns
-        changed = abs(offset - self.offset_ns) > 1_000_000_000
+        expected = self.grid(self.next_mono_ns + self.offset_ns)
+        # Re-anchor the monotonic deadline to the wall grid; this also restores phase after steps.
+        wall = self.next_mono_ns + offset
+        key = self.grid(wall)
+        # A re-anchor that repeats or skips a key is a discontinuity, however small the step.
+        changed = abs(offset - self.offset_ns) > 1_000_000_000 or key != expected
         if changed:
             self.epoch = uuid.uuid4().hex
         self.offset_ns = offset
+        self.next_mono_ns += key - wall
         return changed
 
-    def take(self) -> Slot:
+    def _slot(self, seq: int, mono_ns: int) -> Slot:
         # Epoch+sequence cannot reuse an identifier after backwards clock steps or restart.
-        slot = Slot(
-            f"{self.epoch}-{self.seq}",
-            self.next_mono_ns,
-            self.next_mono_ns + self.offset_ns,
-            self.epoch,
-        )
+        return Slot(f"{self.epoch}-{seq}", mono_ns, self.grid(mono_ns + self.offset_ns), self.epoch)
+
+    def take(self) -> Slot:
+        slot = self._slot(self.seq, self.next_mono_ns)
         self.seq += 1
         self.next_mono_ns += self.period_ns
         return slot
@@ -63,16 +72,12 @@ class Schedule:
         first = self.take()
         self.seq += count - 1
         self.next_mono_ns += (count - 1) * self.period_ns
-        last = Slot(
-            f"{self.epoch}-{self.seq - 1}",
-            self.next_mono_ns - self.period_ns,
-            self.next_mono_ns - self.period_ns + self.offset_ns,
-            self.epoch,
-        )
-        return first, last
+        return first, self._slot(self.seq - 1, self.next_mono_ns - self.period_ns)
 
     def overdue_count(self, now_ns: int) -> int:
-        return max(0, (now_ns - self.next_mono_ns + self.period_ns - 1) // self.period_ns)
+        """Slots more than half a period late are skipped; a later slot is still taken."""
+        late = now_ns - self.next_mono_ns - self.period_ns // 2
+        return max(0, (late + self.period_ns - 1) // self.period_ns)
 
 
 def request_timing(
@@ -86,6 +91,8 @@ def request_timing(
     discontinuity = (
         abs((ended_wall_ns - started_wall_ns) - (ended_mono_ns - started_mono_ns)) > 1_000_000_000
     )
+    # The frame cannot postdate the response, so the upper bound needs only a continuous clock.
+    # A mounted cache calibration refines the lower bound and freshness, never the upper bound.
     bounded = cache_allowance_ms is not None and not discontinuity
     lower = started_wall_ns - (cache_allowance_ms or 0) * 1_000_000
     midpoint = ((started_wall_ns + ended_wall_ns) // 2) // 1000 * 1000
@@ -99,7 +106,7 @@ def request_timing(
         "source_at_utc": utc_text(midpoint),
         "source_time_basis": "calibrated_request_midpoint" if bounded else "request_midpoint",
         "source_lower_bound": utc_text(lower) if bounded else None,
-        "capture_upper_bound": utc_text(ended_wall_ns, upper=True) if bounded else None,
+        "capture_upper_bound": None if discontinuity else utc_text(ended_wall_ns, upper=True),
         "uncertainty_ms": max(midpoint - lower, upper - midpoint) / 1_000_000 if bounded else None,
         "freshness": "plausible" if bounded else "unknown",
         "calibration_revision": calibration_revision if bounded else None,

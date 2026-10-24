@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import NoReturn
 
 from .collector import collect
-from .config import CAMERAS
+from .config import CAMERAS, CaptureConfig
 
 
 class CaptureArgumentParser(argparse.ArgumentParser):
@@ -24,6 +24,8 @@ def main(argv: list[str] | None = None) -> None:
     command.add_argument("--secret-dir", type=Path, default=Path("/run/secrets/camera"))
     args = parser.parse_args(argv)
     try:
-        collect(args.camera, args.config_dir, args.secret_dir)
+        config = CaptureConfig.load(args.camera, args.config_dir, args.secret_dir)
     except ValueError:
         parser.exit(2, "Invalid mounted capture configuration\n")
+    # Runtime faults are not configuration errors; the collector records camera faults itself.
+    collect(config)
