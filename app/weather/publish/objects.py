@@ -56,6 +56,29 @@ class MultipartUpload:
     initiated: datetime
 
 
+class ObjectSpan:
+    """An open GET whose bytes are counted: a short or long body raises StoreError."""
+
+    def __init__(self, response: httpx2.Response, length: int) -> None:
+        self._response, self.length = response, length
+
+    async def chunks(self, size: int) -> AsyncIterator[bytes]:
+        remaining = self.length
+        try:
+            async for chunk in self._response.aiter_raw(size):
+                remaining -= len(chunk)
+                if remaining < 0:
+                    raise StoreError("span length")
+                yield chunk
+        except httpx2.HTTPError:
+            raise StoreError("span read") from None
+        if remaining:
+            raise StoreError("span length")
+
+    async def aclose(self) -> None:
+        await self._response.aclose()
+
+
 def _hmac(key: bytes, message: str) -> bytes:
     return hmac.digest(key, message.encode(), "sha256")
 
@@ -159,7 +182,9 @@ class ObjectStore:
         )
 
     @classmethod
-    def from_environment(cls, bucket: str) -> ObjectStore:
+    def from_environment(
+        cls, bucket: str, client: httpx2.AsyncClient | None = None
+    ) -> ObjectStore:
         """Per-bucket key files mounted from KSOPS; endpoint and region are plain config."""
         directory = Path(os.environ.get("GARAGE_CREDENTIAL_DIRECTORY", CREDENTIAL_ROOT)) / bucket
         try:
@@ -175,6 +200,7 @@ class ObjectStore:
             bucket=bucket,
             access_key=access,
             secret_key=secret,
+            client=client,
         )
 
     async def aclose(self) -> None:
@@ -254,6 +280,37 @@ class ObjectStore:
         except httpx2.HTTPError:
             raise StoreError("read") from None
         return size, digest.hexdigest(), bytes(kept) if keep else None
+
+    async def open_span(self, key: str, first: int, last: int, size: int) -> ObjectSpan:
+        """Start a GET of bytes `first`..`last` (inclusive) of an object of `size` bytes.
+
+        The status, length, Content-Range and identity encoding are checked before any byte
+        is returned, so a missing, resized or re-encoded object fails here. Close the span.
+        """
+        if not 0 <= first <= last < size:
+            raise ValueError("Invalid object span")
+        whole = first == 0 and last == size - 1
+        url, headers = self._request(
+            "GET", key, headers={} if whole else {"range": f"bytes={first}-{last}"}
+        )
+        headers["accept-encoding"] = "identity"
+        try:
+            response = await self._client.send(
+                self._client.build_request("GET", url, headers=headers), stream=True
+            )
+        except httpx2.HTTPError:
+            raise StoreError("span") from None
+        expected = {
+            "content-length": str(last - first + 1),
+            "content-range": None if whole else f"bytes {first}-{last}/{size}",
+            "content-encoding": None,
+        }
+        if response.status_code != (200 if whole else 206) or any(
+            response.headers.get(name) != value for name, value in expected.items()
+        ):
+            await response.aclose()
+            raise StoreError("span", response.status_code)
+        return ObjectSpan(response, last - first + 1)
 
     async def put(
         self,

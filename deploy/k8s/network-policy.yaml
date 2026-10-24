@@ -129,3 +129,37 @@ spec:
       port: 53
     - protocol: TCP
       port: 53
+---
+# The media origin (#20) reads Garage S3 at https://s3-hdd.vallery.net, which resolves to the
+# traefik-apps Service (443) and its websecure target (8443). DNS comes from
+# weather-database-clients. No other HTTPS destination.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-garage-egress
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: weather
+      app.kubernetes.io/component: api
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik-apps
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: traefik
+          app.kubernetes.io/instance: traefik-apps-traefik-apps
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 8443

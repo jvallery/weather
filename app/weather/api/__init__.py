@@ -9,8 +9,13 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from prometheus_client import REGISTRY, CollectorRegistry
+from starlette.datastructures import State
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from weather.config import Settings
+from weather.media.catalog import CatalogResolver, media_routes
+from weather.media.garage import GarageBody, media_store
+from weather.media.origin import MediaMetrics, MediaOrigin
 from weather.timemodel import ScheduleError, SiteConfig, load_site
 
 from .cursors import CursorCodec
@@ -49,13 +54,31 @@ def read_site(path: Path = SITE_FILE) -> SiteConfig | None:
         return None
 
 
+class MediaDispatch:
+    """Hands `/media/` and `/downloads/` to the media origin (#20) ahead of the other
+    middleware, so the stream is never wrapped or buffered."""
+
+    def __init__(self, app: ASGIApp, state: State) -> None:
+        self.app, self.state = app, state
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        origin: MediaOrigin | None = getattr(self.state, "media", None)
+        if scope["type"] == "http" and origin is not None and origin.route_for(scope):
+            await origin(scope, receive, send)
+            return
+        await self.app(scope, receive, send)
+
+
 def build_app(
-    service: WeatherService | None = None, search: SearchService | None = None
+    service: WeatherService | None = None,
+    search: SearchService | None = None,
+    media: MediaOrigin | None = None,
 ) -> FastAPI:
     """Without a service (no database configured) data routes answer 503."""
     app = FastAPI(title="Weather", version="1", docs_url=None, redoc_url=None)
     app.state.weather = service
     app.state.search = search
+    app.state.media = media
 
     @app.get("/healthz", include_in_schema=False)
     @app.get("/api/healthz", include_in_schema=False)
@@ -69,6 +92,8 @@ def build_app(
         return JSONResponse({"ready": ok}, status_code=200 if ok else 503)
 
     install(app)
+    # Added last, so it is the outermost user middleware.
+    app.add_middleware(MediaDispatch, state=app.state)
     return app
 
 
@@ -107,6 +132,14 @@ def create_app(settings: Settings, registry: CollectorRegistry = REGISTRY) -> Fa
         cadences=cadences(settings),
         registry=registry,
     )
+    # The read-only weather-media key is optional: without it media GET answers 503.
+    store = media_store()
+    resolver = CatalogResolver(engine)
+    origin = MediaOrigin(
+        media_routes(resolver.asset, resolver.download),
+        GarageBody(store) if store is not None else None,
+        MediaMetrics(registry),
+    )
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
@@ -124,9 +157,11 @@ def create_app(settings: Settings, registry: CollectorRegistry = REGISTRY) -> Fa
             await service.stop()
             if embedder is not None:
                 await embedder.aclose()
+            if store is not None:
+                await store.aclose()
             await engine.dispose()
 
-    app = build_app(service, search)
+    app = build_app(service, search, origin)
     app.state.timelapses = Catalog(DatabaseSource(engine), TimelapseCursor(key))
     app.router.lifespan_context = lifespan
     return app

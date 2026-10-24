@@ -21,6 +21,23 @@ spec:
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
+  name: weather-media-in-flight
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  # Open media streams per visitor (#20). A player holds one or two ranges at a time;
+  # each api pod also refuses more than 32 streams with a 503 before any body.
+  inFlightReq:
+    amount: 6
+    sourceCriterion:
+      requestHeaderName: Cf-Connecting-Ip
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
   name: weather-security-headers
   namespace: weather
   labels:
@@ -51,6 +68,17 @@ spec:
     kind: Rule
     middlewares:
     - name: weather-rate-limit
+    - name: weather-security-headers
+    services:
+    - name: api
+      port: 80
+  # Same-origin media and native downloads (#20), streamed by the api, never the web.
+  - match: Host(`weather.vallery.net`) && (PathPrefix(`/media/`) || PathPrefix(`/downloads/`))
+    priority: 100
+    kind: Rule
+    middlewares:
+    - name: weather-rate-limit
+    - name: weather-media-in-flight
     - name: weather-security-headers
     services:
     - name: api
