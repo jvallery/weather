@@ -206,10 +206,17 @@ comparison; a failed run is never treated as acceptance.
 Playwright 1.64.1's WebKit 27.2 reports one false `style-src-attr` violation per native
 `select` in its user-agent shadow tree (confirmed upstream:
 https://github.com/microsoft/playwright/issues/43497 and WebKit 327212). Qualification
-keeps the production CSP intact, requires no application `[style]` attributes, and compares
+keeps the production CSP intact, requires no inline style attributes in the serialized SSR document, and compares
 pre-axe violations to the exact native-select count only in that engine. A minimal empty/native
 select control and a real forbidden-inline-style negative control run in every engine; the
 negative control must add a violation. Other directives and all Chromium/Firefox violations
 must be empty. A browser change that fixes the defect fails the control and requires removing
 this narrow accounting. The retained failed browser03 run has 78 passes, 15 WebKit control
 failures, and 21 checksummed screenshots; it is not acceptance.
+
+History chart labels use two lines (date, then time and UTC offset) with a 150-pixel
+minimum tick spacing and reserved axis height. This avoids overlapping full timestamps while
+preserving the distinction between the two repeated 01:15 observations. The table retains exact
+source timestamps. uPlot sizes its canvas using CSP-permitted JavaScript style properties;
+qualification checks serialized HTML for inline style attributes, rather than forbidding those
+legitimate computed dimensions.

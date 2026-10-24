@@ -5,6 +5,11 @@ export const CAMERA_LABELS = { skycam_east: "East sky", skycam_west: "West sky",
 export function localTime(instant: string): string {
   return new Intl.DateTimeFormat("en-US", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23", timeZoneName: "longOffset" }).format(new Date(instant));
 }
+export function plotTime(epochSeconds: number): string {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZoneName: "longOffset" }).formatToParts(new Date(epochSeconds * 1000));
+  const part = (name: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === name)?.value || "";
+  return `${part("month")}/${part("day")}/${part("year")}\n${part("hour")}:${part("minute")} ${part("timeZoneName")}`;
+}
 export function localDate(instant: string): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(instant));
 }

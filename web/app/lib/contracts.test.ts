@@ -5,7 +5,7 @@ import current from "../fixtures/current.json";
 import history from "../fixtures/history.json";
 import registryFixture from "../fixtures/metric-registry.json";
 import catalog from "../fixtures/catalog.json";
-import { ageLabel, conversionAvailable, localTime, metricValue } from "./format";
+import { ageLabel, conversionAvailable, localTime, metricValue, plotTime } from "./format";
 import { historySeries } from "../components/history-plot";
 
 test("hand-typed public fixtures validate with zero, missing, DST and six camera segments", () => {
@@ -84,4 +84,9 @@ test("response clocks cannot freshen future/expired evidence and numeric invalid
   const changed = structuredClone(current); changed.metrics[0].quality = "invalid";
   expect(currentSchema.safeParse(changed).success).toBe(false);
   expect(currentSchema.safeParse({ ...current, metrics: [] }).success).toBe(false);
+});
+
+test("chart ticks retain repeated-hour offsets on bounded two-line labels", () => {
+  expect(plotTime(Date.parse("2026-11-01T07:15:00Z") / 1000)).toBe("11/01/2026\n01:15 GMT-06:00");
+  expect(plotTime(Date.parse("2026-11-01T08:15:00Z") / 1000)).toBe("11/01/2026\n01:15 GMT-07:00");
 });

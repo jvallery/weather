@@ -17,7 +17,7 @@ for (const width of [320, 768, 1440]) for (const path of paths) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.waitForLoadState("networkidle");
     // Measure the unmodified application before axe mutates the document.
-    expect(await page.locator("[style]").count()).toBe(0);
+    expect(await response?.text()).not.toMatch(/\sstyle\s*=/i);
     // WebKit 27.2 creates one forbidden inline style inside each native select's
     // user-agent shadow tree (upstream327212/PW43497). The control below verifies
     // this exact engine defect and a real injected-style negative control.

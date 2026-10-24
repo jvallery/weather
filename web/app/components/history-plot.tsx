@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { useEffect, useRef } from "react";
 import type { History, MetricDefinition, Units } from "../lib/contracts";
-import { localTime, metricLabel, metricValue } from "../lib/format";
+import { plotTime, metricLabel, metricValue } from "../lib/format";
 
 export function historySeries(history: History, metric: string): [number[], (number | null)[]] {
   const points = new Map<number, number | null>();
@@ -30,7 +30,7 @@ export function HistoryPlot({ history, metric, units, definition }: { history: H
       const unit = history.points.find((point) => point.metric === metric)?.unit || "";
       plot = new UPlot({ width: element.clientWidth, height: 240, title: `${metricLabel(metric, definition)} · explicit gaps`,
         series: [{}, { label: metricLabel(metric, definition), stroke: "#0e5a43", width: 2, spanGaps: false }],
-        axes: [{ stroke: "#626b76", values: (_plot, values) => values.map((value) => localTime(new Date(value * 1000).toISOString())) }, { stroke: "#626b76", values: (_plot, values) => values.map((value) => metricValue(value, unit, units, definition)) }],
+        axes: [{ stroke: "#626b76", font: "12px IBM Plex Sans", space: 150, size: 64, values: (_plot, values) => values.map(plotTime) }, { stroke: "#626b76", values: (_plot, values) => values.map((value) => metricValue(value, unit, units, definition)) }],
         cursor: { drag: { x: true, y: false } }, legend: { show: false },
       }, data, element);
     });
