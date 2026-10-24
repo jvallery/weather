@@ -17,6 +17,7 @@ from test_current_publication_integration import (
     engine,
     incident,
     observation,
+    receipt,
 )
 from test_current_publication_integration import disposable_database as disposable_database
 from weather.api.cursors import Snapshot
@@ -480,6 +481,113 @@ def test_coarse_aggregate_evidence_read_keeps_empty_watermark_and_exact_overflow
             assert failure.value.code == "range_too_large"
         finally:
             await api.dispose()
+            await db.dispose()
+
+    asyncio.run(check())
+
+
+def test_lightning_distance_correlates_same_family_row_and_safe_revision_companion() -> None:
+    async def check() -> None:
+        db, ingest = engine(), engine("weather_ingest")
+        budget = PublicDatabaseBudget(pool_size=2)
+        api = await api_engine(budget)
+        try:
+            async with db.begin() as connection:
+                d, alias = await station(connection)
+                zero, _ = await observation(
+                    connection,
+                    d,
+                    values={"lightning_strike_count": 0, "lightning_strike_avg_distance": 0},
+                )
+                # IDs are family-scoped. A different family with the same UUID
+                # and qualified strikes must never qualify this newer zero row.
+                await observation(
+                    connection,
+                    d,
+                    family="obs_air",
+                    identity=zero,
+                    source=SOURCE - timedelta(seconds=10),
+                    values={"lightning_strike_count": 9, "lightning_strike_avg_distance": 33},
+                )
+            reader = source(api, alias, budget)
+            metrics = {m.metric: m for m in (await reader.current()).current.metrics}
+            assert metrics["lightning_count"].value == 0
+            assert metrics["lightning_distance"].value is None
+            query = ObservationQuery(
+                start=SOURCE - timedelta(seconds=20),
+                end=SOURCE + timedelta(seconds=20),
+                metrics=["lightning_distance"],
+                limit=10,
+            )
+            points = (await reader.observations(query, None)).data.points
+            assert [p.value for p in points] == [33, None]
+            async with db.begin() as connection:
+                positive, raw = await observation(
+                    connection,
+                    d,
+                    source=SOURCE + timedelta(seconds=10),
+                    values={"lightning_strike_count": 2, "lightning_strike_avg_distance": 0},
+                )
+            metrics = {m.metric: m for m in (await reader.current()).current.metrics}
+            assert metrics["lightning_distance"].value == 0
+            window = Interval(start=query.start, end=query.end)
+            frozen = await read_evidence_window(
+                reader,
+                window,
+                ["lightning_distance"],
+                preceding_hold_seconds=0,
+                following_report_seconds=0,
+            )
+            assert next(r for r in frozen.rows if r.observation_id == positive).exact_value == 0
+            async with ingest.begin() as connection:
+                alternate = await receipt(connection)
+                conflict = (
+                    await connection.execute(
+                        text("""INSERT INTO weather.observation_conflict
+                    (family,observation_id,first_receipt_id,conflicting_receipt_id,fields,
+                     source_ts,received_at)
+                    VALUES('obs_st',:id,:first,:alternate,ARRAY['lightning_strike_count'],:ts,:ts)
+                    RETURNING id"""),
+                        {
+                            "id": positive,
+                            "first": raw,
+                            "alternate": alternate,
+                            "ts": SOURCE + timedelta(seconds=10),
+                        },
+                    )
+                ).scalar_one()
+                await connection.execute(
+                    text("SELECT weather.qualify_telemetry_conflict(:id)"), {"id": conflict}
+                )
+            metrics = {m.metric: m for m in (await reader.current()).current.metrics}
+            assert metrics["lightning_count"].value is None
+            assert metrics["lightning_distance"].value is None
+            assert (await reader.observations(query, None)).data.points[-1].value is None
+            old = await read_evidence_window(
+                reader,
+                window,
+                ["lightning_distance"],
+                preceding_hold_seconds=0,
+                following_report_seconds=0,
+                snapshot_watermark=frozen.watermark,
+            )
+            assert next(r for r in old.rows if r.observation_id == positive).exact_value == 0
+            fresh = await read_evidence_window(
+                reader,
+                window,
+                ["lightning_distance"],
+                preceding_hold_seconds=0,
+                following_report_seconds=0,
+            )
+            invalid = next(r for r in fresh.rows if r.observation_id == positive)
+            assert invalid.point.value is None and invalid.exact_value is None
+            assert (
+                invalid.quality_revision
+                != next(r for r in frozen.rows if r.observation_id == positive).quality_revision
+            )
+        finally:
+            await api.dispose()
+            await ingest.dispose()
             await db.dispose()
 
     asyncio.run(check())

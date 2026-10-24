@@ -61,6 +61,12 @@ EVIDENCE_SQL = text("""WITH boundary AS MATERIALIZED (
     p.publication_seq,b.metric,b.unit,
     p."values"->>b.field AS value_text,jsonb_typeof(p."values"->b.field) AS value_kind,
     p.field_quality->b.field AS field_quality,p.quality,
+    CASE WHEN b.metric='lightning_distance' THEN
+      p."values"->>'lightning_strike_count' END AS companion_value_text,
+    CASE WHEN b.metric='lightning_distance' THEN
+      jsonb_typeof(p."values"->'lightning_strike_count') END AS companion_value_kind,
+    CASE WHEN b.metric='lightning_distance' THEN
+      p.field_quality->'lightning_strike_count' END AS companion_field_quality,
     coalesce(p.quality->'valid'='true'::jsonb,false)
       AND p.observed_at<=:now AND p.received_at<=:now AS source_time_eligible
   FROM revisions p JOIN bindings b ON b.family=p.message_type
@@ -120,12 +126,16 @@ def quality_revision(row: dict[str, object]) -> str:
             if isinstance(support, dict)
             else None
         )
-    payload = {
+    payload: dict[str, object] = {
         "field_quality": projected,
         "quality": {key: top.get(key) for key in ("valid", "reason")}
         if isinstance(top, dict)
         else None,
     }
+    if row.get("metric") == "lightning_distance":
+        payload["companion_quality_revision"] = quality_revision(
+            {"field_quality": row.get("companion_field_quality"), "quality": top}
+        )
     raw = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
     return "quality_v1_" + hashlib.sha256(raw).hexdigest()
 
