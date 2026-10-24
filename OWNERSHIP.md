@@ -34,3 +34,9 @@ there is no coordinator, writer fencing or database dependency in this role.
 Source preparation and small pure checks do not commission cameras or storage.
 Real workloads, private egress rules and cadence remain WX-03; fake-camera
 latency/decode integration runs only in fleet CI. See [capture operations](docs/operations/capture.md).
+
+Weather also owns the planned `weather/garage-probe-egress` NetworkPolicy in
+`deploy/k8s/commissioning/garage-probe-egress.yaml`. It is excluded from the
+foundation kustomization and has not been applied. It selects only the Garage
+actuator's labelled commissioning probes; usage and removal are documented in
+`docs/operations/garage-commissioning.md`.
