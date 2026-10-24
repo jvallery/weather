@@ -321,7 +321,9 @@ def run(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--operation", required=True)
-    parser.add_argument("--target", default=dt.datetime.now(dt.UTC).isoformat())
+    parser.add_argument(
+        "--target", help="manifest-plan timestamp only; --run chooses between its new sentinel commits"
+    )
     parser.add_argument(
         "--expires", default=(dt.datetime.now(dt.UTC).date() + dt.timedelta(days=1)).isoformat()
     )
@@ -331,8 +333,11 @@ def main():
     modes.add_argument("--cleanup", action="store_true")
     modes.add_argument("--verify", action="store_true")
     args = parser.parse_args()
+    if args.run and args.target:
+        parser.error("--target is plan-only; --run creates sentinels and selects their PITR target")
     # Validate the operation before it can enter SQL or exact deletion targets.
-    plan = manifest(args.operation, args.target, args.expires)
+    target = args.target or dt.datetime.now(dt.UTC).isoformat()
+    plan = manifest(args.operation, target, args.expires)
     if args.run:
         run(args)
     elif args.cleanup:
