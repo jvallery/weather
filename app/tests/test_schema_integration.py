@@ -727,6 +727,13 @@ def test_preview_embargo_trust_and_expiry_are_enforced() -> None:
                 await connection.execute(
                     text(statement), {**values, "generation": 2, "trusted": False}
                 )
+                await rejects(
+                    connection,
+                    "UPDATE weather.camera_preview SET "
+                    "path='previews/frontyard_1/../escape.jpg' WHERE id=:id",
+                    {"id": good},
+                    "23514",
+                )
                 await connection.execute(
                     text(statement),
                     {
