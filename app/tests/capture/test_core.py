@@ -309,3 +309,48 @@ def test_exposure_upper_bound_rounds_outward_without_float_timestamp_loss() -> N
     assert value["capture_upper_bound"] == "1970-01-01T00:00:11.000001Z"
     assert value["source_lower_bound"] == "1970-01-01T00:00:10.000000Z"
     assert value["uncertainty_ms"] == 500.001
+
+
+def test_post_rename_fsync_error_is_uncertain_without_mutating_sealed_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import weather.capture.chunks as chunks
+
+    collector = Collector(config(tmp_path))
+    collector._persist(slot(), attempt(), b"original")
+    original_fsync_dir = chunks._fsync_dir
+
+    def fail(path: Path) -> None:
+        raise OSError(errno.EIO, "synthetic directory sync failure")
+
+    monkeypatch.setattr(chunks, "_fsync_dir", fail)
+    with pytest.raises(OSError):
+        collector._seal()
+    paths = list((tmp_path / "sealed").rglob("*.tar"))
+    assert len(paths) == 1 and read_chunk(paths[0])[1]["status"] == "captured"
+    assert collector.pending.record is None
+    assert collector.uncertain[0]["classification"] == "seal_uncertain"
+    before = paths[0].read_bytes()
+    monkeypatch.setattr(chunks, "_fsync_dir", original_fsync_dir)
+    collector._persist(slot(1), attempt(1), b"later original")
+    collector._seal()
+    assert paths[0].read_bytes() == before
+    assert collector.metrics.seal_uncertain._value.get() == 1
+
+
+def test_mounted_secret_fields_and_camera_phase_are_not_arguments(tmp_path: Path) -> None:
+    config_dir, secret_dir = tmp_path / "config", tmp_path / "secrets"
+    config_dir.mkdir()
+    secret_dir.mkdir()
+    (config_dir / "capture.json").write_text(json.dumps({"staging": str(tmp_path)}))
+    (config_dir / "POD_UID").write_text("synthetic-pod")
+    for name, value in {
+        "CAMERA_HOST": str(ipaddress.IPv4Address(0x7F000001)),
+        "CAMERA_PORT": "8080",
+        "CAMERA_USER": "synthetic-user",
+        "CAMERA_PASSWORD": " synthetic-password ",
+    }.items():
+        (secret_dir / name).write_text(value)
+    loaded = CaptureConfig.load("skycam_west", config_dir, secret_dir)
+    assert loaded.phase_ms == 333 and loaded.password == " synthetic-password "
+    assert "synthetic-password" not in repr(loaded)
