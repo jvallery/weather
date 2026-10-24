@@ -20,6 +20,7 @@ class DatabaseManifestTests(unittest.TestCase):
         probe = yaml.safe_load((ROOT / "deploy/acceptance/restore/role-logins.yaml").read_text())
         pod = probe["spec"]["template"]["spec"]
         self.assertFalse(pod["automountServiceAccountToken"])
+        self.assertFalse(pod["enableServiceLinks"])
         self.assertTrue(pod["securityContext"]["runAsNonRoot"])
         self.assertEqual(pod["securityContext"]["runAsUser"], 26)
         projected = pod["volumes"][0]["projected"]
@@ -71,6 +72,9 @@ class DatabaseManifestTests(unittest.TestCase):
             {"weather-pg-backup-b2-writer"},
         )
         roles = cluster["spec"]["managed"]["roles"]
+        self.assertEqual(
+            next(r for r in roles if r["name"] == "weather_api")["connectionLimit"], 40
+        )
         self.assertEqual(
             {r["name"] for r in roles},
             {"weather_ingest", "weather_worker", "weather_api", "weather_editor"},
