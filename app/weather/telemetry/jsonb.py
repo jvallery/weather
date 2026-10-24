@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Preserve private evidence PostgreSQL JSONB cannot represent without poisoning drain.
+"""Preserve private evidence outside bounded JSONB storage without poisoning drain.
 
 Exact datagram bytes remain authoritative. Tagged leaves are explicit evidence, never
 canonical public metrics. Parsed envelope is SQL NULL when not representable as JSONB.
@@ -17,9 +17,10 @@ def compatible(value: Any) -> bool:
         exponent = value.as_tuple().exponent
         return (
             value.is_finite()
-            and value.adjusted() <= 131071
+            and abs(value.adjusted()) <= 127
+            and len(value.as_tuple().digits) <= 128
             and isinstance(exponent, int)
-            and exponent >= -16383
+            and exponent >= -128
         )
     if isinstance(value, str):
         return not any(ord(char) == 0 or 0xD800 <= ord(char) <= 0xDFFF for char in value)

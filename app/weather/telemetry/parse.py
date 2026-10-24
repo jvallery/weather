@@ -6,7 +6,6 @@ Primary protocol: https://weatherflow.github.io/Tempest/api/udp/v171/
 
 import hashlib
 import json
-import math
 from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any, Literal
@@ -233,11 +232,15 @@ def _field(value: Any, spec: FieldSpec) -> FieldValue:
         return result("invalid", None, "invalid_type")
     try:
         numeric = Decimal(str(value))
-        finite = numeric.is_finite() and math.isfinite(float(numeric))
+        finite = numeric.is_finite()
     except ValueError, OverflowError:
         finite = False
     if not finite:
         return result("invalid", None, "non_finite")
+    if not numeric.is_zero() and (
+        abs(numeric.adjusted()) > 127 or len(numeric.as_tuple().digits) > 128
+    ):
+        return result("invalid", None, "numeric_storage_bound")
     if spec.integer and numeric != numeric.to_integral_value():
         return result("invalid", None, "non_integer")
     if (
@@ -246,7 +249,7 @@ def _field(value: Any, spec: FieldSpec) -> FieldValue:
         or (spec.choices is not None and numeric not in spec.choices)
     ):
         return result("invalid", None, "out_of_range")
-    canonical = int(numeric) if spec.integer else value
+    canonical = int(numeric) if spec.integer else (Decimal(0) if numeric.is_zero() else value)
     return result("valid", canonical, "valid")
 
 
@@ -325,6 +328,7 @@ class Row:
             "fields": fields,
             "extra_fields": self.extra,
             "parser_revision": PARSER_REVISION,
+            "row_fingerprint": self.fingerprint,
             "source_time_eligible": self.source_ts is not None and not self.future,
             "event_multiplicity": "single_report" if self.family == "evt_strike" else None,
             "measured_lightning_authority_candidate": self.family in {"obs_st", "obs_air"},

@@ -277,3 +277,13 @@ def test_revision_ddl_has_no_accidental_sqlalchemy_value_bindings() -> None:
 
     for statement in statements():
         assert not text(statement)._bindparams
+
+
+def test_unbounded_numeric_expansion_does_not_poison_valid_siblings_or_zero() -> None:
+    raw = b'{"type":"rapid_wind","ob":[1700000000,1e-999999,128]}'
+    row = parse_packet(raw, NOW).rows[0]
+    assert row.fields["wind_speed"].state == "invalid"
+    assert row.fields["wind_speed"].reason == "numeric_storage_bound"
+    assert row.fields["wind_direction"].state == "valid"
+    zero = parse_packet(raw.replace(b"1e-999999", b"0e-999999"), NOW).rows[0]
+    assert zero.fields["wind_speed"].state == "valid" and zero.values["wind_speed"] == 0

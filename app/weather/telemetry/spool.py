@@ -285,24 +285,31 @@ class Spool:
         )
 
     def _checkpoint(self) -> None:
-        self._conn_required().execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        result = self._conn_required().execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+        if result[0]:
+            self.checkpoint_errors += 1
 
     def physical_bytes(self) -> int:
-        return sum(path.stat().st_size for path in self.root.rglob("*") if path.is_file())
+        try:
+            return sum(path.stat().st_size for path in self.root.rglob("*") if path.is_file())
+        except OSError:
+            self.diagnostic_loss_unknown = True
+            raise SpoolError("Spool capacity accounting unavailable") from None
 
     def append(self, receipt: Receipt) -> bool:
         with self._mutex:
             if hashlib.sha256(receipt.raw).hexdigest() != receipt.sha256:
                 raise SpoolError("Receipt checksum differs")
-            metadata = receipt.metadata_json
-            # Leave diagnostic and bounded transaction headroom; no old row is overwritten.
-            reservation = 2 * receipt.charge + 65536
-            full = self._meta("pending_bytes") + receipt.charge > self.data_capacity_bytes
-            full = (
-                full
-                or self.physical_bytes() + reservation > self.capacity_bytes - self.reserve_bytes
-            )
             try:
+                metadata = receipt.metadata_json
+                # Leave diagnostic and bounded transaction headroom; no old row is overwritten.
+                reservation = 2 * receipt.charge + 65536
+                full = self._meta("pending_bytes") + receipt.charge > self.data_capacity_bytes
+                full = (
+                    full
+                    or self.physical_bytes() + reservation
+                    > self.capacity_bytes - self.reserve_bytes
+                )
                 with self._transaction():
                     if full:
                         self._loss("capacity_loss", 1, receipt.received_ns)
@@ -404,12 +411,19 @@ class Spool:
                     self._set_meta("pending_count", self._meta("pending_count") - 1)
                     self._set_meta("pending_bytes", self._meta("pending_bytes") - stored[0])
         with self._mutex:
-            self._checkpoint()
+            try:
+                self._checkpoint()
+            except sqlite3.DatabaseError:
+                self.checkpoint_errors += 1
 
     def stats(self) -> dict[str, Any]:
         with self._mutex:
             used = self._meta("pending_bytes")
-            fraction = used / self.data_capacity_bytes
+            physical = self.physical_bytes()
+            fraction = max(
+                used / self.data_capacity_bytes,
+                physical / (self.capacity_bytes - self.reserve_bytes),
+            )
             losses = (
                 self._conn_required()
                 .execute("SELECT reason,first_ns,last_ns,lost_count FROM loss ORDER BY reason")
@@ -419,7 +433,7 @@ class Spool:
                 "generation": self.generation,
                 "depth": self._meta("pending_count"),
                 "pending_bytes": used,
-                "physical_bytes": self.physical_bytes(),
+                "physical_bytes": physical,
                 "capacity_bytes": self.capacity_bytes,
                 "data_capacity_bytes": self.data_capacity_bytes,
                 "pressure": "critical"

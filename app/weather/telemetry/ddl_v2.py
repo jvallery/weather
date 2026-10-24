@@ -152,7 +152,7 @@ def statements() -> list[str]:
           'eligible',coalesce(value->'eligible'='true'::jsonb,false),
           'reason',CASE WHEN value->>'reason' IN
             ('valid','null','absent','invalid_type','non_finite','non_integer','out_of_range',
-             'future_timestamp','payload_conflict','sensor_failed','unknown')
+             'future_timestamp','payload_conflict','sensor_failed','numeric_storage_bound','unknown')
              THEN value->>'reason' ELSE 'unknown' END,
           'reported_unit',CASE WHEN value->>'reported_unit' IN
             ('m/s','deg','s','mb','degC','%','lx','index','W/m2','mm','1','km','min')

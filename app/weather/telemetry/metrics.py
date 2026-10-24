@@ -60,6 +60,12 @@ class Metrics:
                 ages.add_metric([family], max(0, float(age)))
         result.append(ages)
         stats = self.receiver.spool.stats()
+        checkpoints = CounterMetricFamily(
+            "weather_telemetry_spool_checkpoint_errors",
+            "Post-commit checkpoint housekeeping errors",
+        )
+        checkpoints.add_metric([], stats["checkpoint_errors"])
+        result.append(checkpoints)
         for suffix, key in (
             ("spool_depth", "depth"),
             ("spool_bytes", "pending_bytes"),
@@ -115,6 +121,11 @@ class Metrics:
             def log_message(self, format: str, *args: Any) -> None:
                 pass
 
-        server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
+        class QuietServer(ThreadingHTTPServer):
+            def handle_error(self, request: Any, client_address: Any) -> None:
+                # socketserver's default traceback includes the client's private address.
+                pass
+
+        server = QuietServer(("0.0.0.0", port), Handler)
         Thread(target=server.serve_forever, daemon=True, name="telemetry-metrics").start()
         return server

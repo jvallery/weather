@@ -383,7 +383,7 @@ class Drain:
                     first.quality_json, parse_float=Decimal, parse_int=Decimal
                 )
                 fields = disputed_fields(first_quality, private_storage(row.quality))
-                if fields or first_quality.get("extra_fields") != private_storage(row.extra):
+                if fields or first_quality.get("row_fingerprint") != row.fingerprint:
                     await self._conflict(
                         db,
                         row,
