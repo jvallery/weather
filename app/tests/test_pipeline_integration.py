@@ -164,9 +164,9 @@ def test_schedule_freezes_days_ahead_matches_time_model_and_is_idempotent() -> N
             assert (anchored.dusk, anchored.next_dawn) == (moved_day.dusk, moved_day.next_dawn)
             assert (anchored.day_frames, anchored.night_frames) == astuple(
                 allocate_frames(
-                    Fraction((anchored.dusk - anchored.dawn) / timedelta(microseconds=1), 10**6),
+                    Fraction((anchored.dusk - anchored.dawn) // timedelta(microseconds=1), 10**6),
                     Fraction(
-                        (anchored.next_dawn - anchored.dusk) / timedelta(microseconds=1), 10**6
+                        (anchored.next_dawn - anchored.dusk) // timedelta(microseconds=1), 10**6
                     ),
                 )
             )
