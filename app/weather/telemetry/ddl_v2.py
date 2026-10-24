@@ -67,11 +67,14 @@ def statements() -> list[str]:
           IF incident.family NOT IN ({families}) OR cardinality(incident.fields)>64 THEN
             RAISE EXCEPTION 'invalid conflict qualification';
           END IF;
-          EXECUTE format('SELECT quality FROM weather.%I WHERE id=$1 AND receipt_id=$2 AND source_ts=$3 FOR UPDATE',
+          EXECUTE format('SELECT quality FROM weather.%I '
+                         'WHERE id=$1 AND receipt_id=$2 AND source_ts=$3 FOR UPDATE',
                          incident.family)
-            INTO STRICT q USING incident.observation_id,incident.first_receipt_id,incident.source_ts;
+            INTO STRICT q USING incident.observation_id,incident.first_receipt_id,
+                                incident.source_ts;
           FOREACH item IN ARRAY incident.fields LOOP
-            IF item IS NULL OR item NOT IN ({fields}) OR NOT (coalesce(q->'fields','{{}}'::jsonb) ? item) THEN
+            IF item IS NULL OR item NOT IN ({fields})
+               OR NOT (coalesce(q->'fields','{{}}'::jsonb) ? item) THEN
               RAISE EXCEPTION 'invalid conflicting field';
             END IF;
             q := jsonb_set(q,ARRAY['fields',item],(q->'fields'->item) ||
