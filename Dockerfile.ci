@@ -50,6 +50,6 @@ RUN sha256sum -c /usr/share/doc/weather-ci/production-denver.sha256 \
  && postgres --version | grep -F 'PostgreSQL) 16.15' \
  && ffmpeg -version | grep -E '^ffmpeg version 9[.]0[.]2 ' \
  && ffmpeg -hide_banner -encoders | grep -E '[[:space:]]libx264[[:space:]]' \
- && node -e "const fs=require('node:fs'); const p=require('/opt/weather-browser-tools/node_modules/playwright'); for(const b of [p.chromium,p.webkit,p.firefox]) fs.accessSync(b.executablePath(),fs.constants.X_OK)"
+ && node -e "const fs=require('node:fs'); const p=require('/opt/weather-browser-tools/node_modules/@playwright/test'); for(const b of [p.chromium,p.webkit,p.firefox]) fs.accessSync(b.executablePath(),fs.constants.X_OK)"
 ENTRYPOINT []
 CMD ["/bin/bash"]
