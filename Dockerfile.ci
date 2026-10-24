@@ -13,6 +13,8 @@ RUN curl --fail --location https://files.pythonhosted.org/packages/3a/ad/3c2a81d
  && echo 'fa8d26e08e34c29c0c4e820cf3181757086d547240b4f4d31ff1d8bd810ca946  /tmp/uv.whl' | sha256sum -c - \
  && unzip -q /tmp/uv.whl -d /tmp/uv-wheel \
  && find /tmp/uv-wheel -path '*/scripts/uv' -exec install -m 0755 {} /usr/local/bin/uv \; \
+ && mkdir -p /usr/share/doc/weather-ci/uv \
+ && find /tmp/uv-wheel -type f \( -iname 'LICENSE*' -o -iname 'NOTICE*' \) -exec cp {} /usr/share/doc/weather-ci/uv/ \; \
  && rm -rf /tmp/uv.whl /tmp/uv-wheel
 ENV UV_PYTHON_INSTALL_DIR=/opt/weather-python
 RUN uv python install 3.14.9 \
