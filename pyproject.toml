@@ -18,6 +18,8 @@ dependencies = [
   "astral==3.2",
   "prometheus-client==0.24.1",
   "tzdata==2026.5",
+  "numpy==2.5.4",
+  "pillow==13.0.0",
 ]
 
 [project.scripts]

@@ -467,3 +467,54 @@ def test_remaining_invalid_geometry_inputs():
         allocate_frames(1, 1, fps=60.0)
     with pytest.raises(ScheduleError):
         SiteConfig(0, 0, horizon_model="")
+
+
+@pytest.mark.parametrize(
+    "cycle", VECTORS["solar_anchors"][0]["cycles"], ids=lambda cycle: cycle["local_date"]
+)
+def test_public_city_centre_anchor_within_tolerance(cycle):
+    """An independent ephemeris at a public city centre (never the station) bounds Astral."""
+    anchor = VECTORS["solar_anchors"][0]
+    site = SiteConfig(latitude=anchor["latitude"], longitude=anchor["longitude"])
+    computed = solar_cycle(date.fromisoformat(cycle["local_date"]), site)
+    tolerance = timedelta(seconds=anchor["tolerance_seconds"])
+    for name in ("dawn", "dusk", "next_dawn"):
+        expected = datetime.fromisoformat(cycle[name])
+        assert abs(getattr(computed, name) - expected) <= tolerance, name
+    assert computed.cycle_date == date.fromisoformat(cycle["local_date"])
+
+
+@pytest.mark.parametrize("value", [3601, -3601, "3601", 86400, "-86400"])
+def test_offsets_past_one_hour_are_rejected(value):
+    with pytest.raises(ScheduleError, match="offset"):
+        SiteConfig.from_mapping({"latitude": 0, "longitude": 0, "dusk_offset_seconds": value})
+    with pytest.raises(ScheduleError, match="offset"):
+        SiteConfig(0, 0, dawn_offset_seconds=value)  # type: ignore[arg-type]
+    for edge in (3600, -3600, "3600"):
+        assert SiteConfig.from_mapping(
+            {"latitude": 0, "longitude": 0, "dawn_offset_seconds": edge}
+        ).dawn_offset_seconds in (3600, -3600)
+
+
+def test_schedule_error_is_reraised_unchanged(monkeypatch):
+    """A specific sanitized reason survives; only foreign errors become the generic one."""
+
+    def dawn(observer, local_date, *, depression, tzinfo):
+        return datetime.combine(local_date, time(12), UTC)
+
+    def dusk(observer, local_date, *, depression, tzinfo):
+        return datetime.combine(local_date, time(12, 30), UTC)
+
+    monkeypatch.setattr(solar_module.astral_sun, "dawn", dawn)
+    monkeypatch.setattr(solar_module.astral_sun, "dusk", dusk)
+    shifted = replace(SYNTHETIC, dawn_offset_seconds=3600)
+    with pytest.raises(ScheduleError, match="Shifted civil boundaries") as raised:
+        solar_cycle(date(2026, 10, 23), shifted)
+    assert raised.value.__cause__ is None
+
+    def broken(observer, local_date, **kwargs):
+        raise ValueError("Sun never reaches the depression")
+
+    monkeypatch.setattr(solar_module.astral_sun, "dusk", broken)
+    with pytest.raises(ScheduleError, match="unavailable or invalid"):
+        solar_cycle(date(2026, 10, 23), SYNTHETIC)
