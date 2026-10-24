@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -31,8 +32,12 @@ def engine(role: str = "postgres") -> AsyncEngine:
     if os.environ.get("WEATHER_CI_IN_CLUSTER") != "1":
         pytest.fail("Integration requires fleet CI")
     url = make_url(os.environ["WEATHER_CI_ADMIN_DATABASE_URL"]).set(username=role)
-    if url.database != "weather_ci" or not url.query.get("host", "").startswith(
-        "/tmp/"
+    socket = Path(str(url.query.get("host", "")))
+    if (
+        url.database != "weather_ci"
+        or socket.name != "socket"
+        or not socket.is_absolute()
+        or not socket.parent.name.startswith("weather-schema-ci.")
     ):
         pytest.fail("Integration requires its disposable socket-only database")
     return create_async_engine(url, echo=False, pool_size=10, max_overflow=0)
