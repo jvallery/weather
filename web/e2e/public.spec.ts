@@ -224,12 +224,17 @@ test("a cookie-free browser loads and polls the card without leaving the Weather
   const page = await context.newPage();
   const origins = new Set<string>();
   page.on("request", (request) => origins.add(new URL(request.url()).origin));
+  // The chrome-free embed document must hydrate cleanly: React reports mismatches on the console.
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => { if (/hydrat/i.test(message.text())) errors.push(message.text()); });
   await page.goto("/embed/weather/");
   await expect(page.getByRole("heading", { level: 1, name: "Current weather in Longmont" })).toBeVisible();
   // The client's own poll (about 15 s, ±10%) also stays on this origin.
   await page.waitForRequest((request) => new URL(request.url()).pathname === "/api/v1/weather/current", { timeout: 25_000 });
   expect([...origins]).toEqual(["http://localhost:4173"]);
   expect(await context.cookies()).toEqual([]);
+  expect(errors).toEqual([]);
   await context.close();
 });
 test("without JavaScript the card is a dated snapshot that does not claim to update", async ({ browser }) => {
