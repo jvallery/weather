@@ -45,8 +45,8 @@ Lane table and rules: [estate README](https://github.com/jvallery/agents/blob/ma
 
 ## In transition
 
-- Implementation follows the re-planned backlog. Namespace guardrails are deployed; application commissioning remains tracked in WX-01 (#2). Planning history lives in [docs/archive/planning-2026-10/](docs/archive/planning-2026-10). It is context, not instructions.
-- agents#5366 registered Weather as a `ci-only` cell with generated CI profiles, estate ownership and GitOps roots. The first Weather CI callback completes branch-check activation. WX-01 (#2) commissions the application workloads and public route.
+- The walking skeleton is deployed and verified; WX-01 (#2) is closed. Slice 1 launch remains tracked in #48. Planning history lives in [docs/archive/planning-2026-10/](docs/archive/planning-2026-10). It is context, not instructions.
+- agents#5366 delivered Weather's `ci-only` ownership, registry, generated CI profiles, GitOps roots and enforced branch protection. Weather has no coding repository pod.
 
 ## Deliver and verify
 

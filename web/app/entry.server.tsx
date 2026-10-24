@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 import { PassThrough } from "node:stream";
+import { Counter, register } from "prom-client";
 import { createReadableStreamFromReadable } from "@react-router/node";
 import { renderToPipeableStream } from "react-dom/server";
-import { ServerRouter, type EntryContext } from "react-router";
+import { ServerRouter, isRouteErrorResponse, type EntryContext } from "react-router";
 
 export default function handleRequest(request: Request, status: number, headers: Headers, routerContext: EntryContext): Promise<Response> {
   return new Promise((resolve, reject) => {
@@ -26,4 +27,11 @@ export default function handleRequest(request: Request, status: number, headers:
     timeout.unref();
     request.signal.addEventListener("abort", () => { clearTimeout(timeout); stream.abort(); }, { once: true });
   });
+}
+
+/** Framework errors use bounded metrics; request URLs and stack text are never logged. */
+export function handleError(error: unknown, { request }: { request: Request }): void {
+  if (request.signal.aborted || (isRouteErrorResponse(error) && error.status < 500)) return;
+  const counter = register.getSingleMetric("weather_web_ssr_failures_total");
+  if (counter instanceof Counter) counter.labels("render_error").inc();
 }

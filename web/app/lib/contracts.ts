@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 /** Strict runtime boundary for the code-first public API; media contracts remain independent. */
 import { z } from "zod";
+// Zod's caught eval-capability probe still violates a strict browser CSP.
+// Configure before constructing any object schema; retain interpreted validation.
+z.config({ jitless: true });
 
 const text = z.string().min(1).max(512);
 const id = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/);

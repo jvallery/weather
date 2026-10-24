@@ -15,10 +15,15 @@ for (const width of [320, 768, 1440]) for (const path of paths) {
     expect(response?.ok()).toBe(true);
     await page.evaluate(() => document.fonts.ready);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.waitForLoadState("networkidle");
+    // Measure the unmodified application before axe mutates the document.
+    expect(await page.evaluate(() => (window as Window & { cspViolations?: string[] }).cspViolations)).toEqual([]);
     const result = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
     expect(result.violations).toEqual([]);
     expect(errors).toEqual([]);
-    expect(await page.evaluate(() => (window as Window & { cspViolations?: string[] }).cspViolations)).toEqual([]);
+    // axe's elementsFromPoint polyfill probes inline pointer-event styles in
+    // WebKit. Keep all AA rules; exclude only its post-scan style-attribute noise.
+    expect(await page.evaluate(() => (window as Window & { cspViolations?: string[] }).cspViolations?.filter((directive) => directive !== "style-src-attr"))).toEqual([]);
     expect(response?.headers()["content-security-policy"]).not.toContain("unsafe-inline");
     expect(response?.headers()["x-frame-options"]).toBe("DENY");
     if (["/", "/about/", "/weather/history/"].includes(path)) await page.screenshot({ path: `../artifacts/synthetic-${path === "/" ? "today" : path.includes("history") ? "history" : "about"}-${width}-${test.info().project.name}.png`, fullPage: true });

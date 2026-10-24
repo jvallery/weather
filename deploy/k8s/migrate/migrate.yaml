@@ -1,0 +1,128 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: weather-migrate
+  namespace: weather
+  labels: &id001
+    app.kubernetes.io/part-of: weather
+    app.kubernetes.io/component: migrate
+    app.kubernetes.io/name: migrate
+    weather.vallery.net/database-role: migrator
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/sync-wave: '1'
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  ttlSecondsAfterFinished: 86400
+  activeDeadlineSeconds: 300
+  backoffLimit: 0
+  template:
+    metadata:
+      labels: *id001
+    spec:
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      serviceAccountName: migrate
+      imagePullSecrets:
+      - name: zot-origin-cluster-pull
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+        fsGroup: 10001
+      containers:
+      - name: migrate
+        image: weather-app
+        command:
+        - python
+        - -m
+        - weather.db.migrate
+        env:
+        - name: DATABASE_CREDENTIAL_DIRECTORY
+          value: /var/run/weather-db
+        - name: METRICS_PORT
+          value: '9000'
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '1'
+            memory: 512Mi
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: database
+          mountPath: /var/run/weather-db
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: database
+        projected:
+          defaultMode: 288
+          sources:
+          - secret:
+              name: weather-pg-migrator
+              items:
+              - key: username
+                path: username
+              - key: password
+                path: password
+          - secret:
+              name: weather-pg-ca
+              items:
+              - key: ca.crt
+                path: ca.crt
+      - name: tmp
+        emptyDir:
+          sizeLimit: 64Mi
+      restartPolicy: Never
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: migrate
+  namespace: weather
+  labels:
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+    app.kubernetes.io/part-of: weather
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: weather
+      app.kubernetes.io/component: migrate
+      app.kubernetes.io/name: migrate
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress: []
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          cnpg.io/cluster: weather-pg
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53

@@ -1,0 +1,134 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduler
+  namespace: weather
+  labels: &id001
+    app.kubernetes.io/part-of: weather
+    app.kubernetes.io/component: scheduler
+    app.kubernetes.io/name: scheduler
+    weather.vallery.net/database-role: worker
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  replicas: 0
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: *id001
+  template:
+    metadata:
+      labels: *id001
+    spec:
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      serviceAccountName: scheduler
+      imagePullSecrets:
+      - name: zot-origin-cluster-pull
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+        fsGroup: 10001
+      containers:
+      - name: scheduler
+        image: weather-app
+        command:
+        - python
+        - -m
+        - weather.scheduler
+        env:
+        - name: DATABASE_CREDENTIAL_DIRECTORY
+          value: /var/run/weather-db
+        - name: METRICS_PORT
+          value: '9000'
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '1'
+            memory: 512Mi
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: database
+          mountPath: /var/run/weather-db
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+        ports:
+        - name: metrics
+          containerPort: 9000
+      volumes:
+      - name: database
+        projected:
+          defaultMode: 288
+          sources:
+          - secret:
+              name: weather-pg-worker
+              items:
+              - key: username
+                path: username
+              - key: password
+                path: password
+          - secret:
+              name: weather-pg-ca
+              items:
+              - key: ca.crt
+                path: ca.crt
+      - name: tmp
+        emptyDir:
+          sizeLimit: 64Mi
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: scheduler
+  namespace: weather
+  labels:
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+    app.kubernetes.io/part-of: weather
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: weather
+      app.kubernetes.io/component: scheduler
+      app.kubernetes.io/name: scheduler
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: observability
+    ports:
+    - protocol: TCP
+      port: 9000
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          cnpg.io/cluster: weather-pg
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53

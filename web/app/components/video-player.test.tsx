@@ -5,8 +5,10 @@ import { afterEach, expect, test, vi } from "vitest";
 import { VideoPlayer } from "./video-player";
 import { catalogSchema } from "../lib/contracts";
 import catalog from "../fixtures/catalog.json";
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 test("native controls never autoplay, one player, quality change preserves the playhead", () => {
+  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
+  const ready = vi.spyOn(HTMLMediaElement.prototype, "readyState", "get").mockReturnValue(1);
   const video = catalogSchema.parse(catalog).items[0];
   const view = render(<VideoPlayer video={video} />);
   const element = view.container.querySelector("video")!;
@@ -16,9 +18,9 @@ test("native controls never autoplay, one player, quality change preserves the p
   Object.defineProperty(element, "paused", { configurable: true, value: true });
   element.currentTime = 12.5;
   fireEvent.change(screen.getByLabelText("Playback quality"), { target: { value: "mobile" } });
-  element.currentTime = 0;
+  element.currentTime = 0; ready.mockReturnValue(0);
   fireEvent.change(screen.getByLabelText("Playback quality"), { target: { value: "native" } });
-  fireEvent.loadedMetadata(element);
+  ready.mockReturnValue(1); fireEvent.loadedMetadata(element);
   expect(element.currentTime).toBe(12.5);
   expect(element.src).toContain("native"); expect(screen.getByRole("link", { name: /Download native/ }).getAttribute("href")).toContain("/native");
 });

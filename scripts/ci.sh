@@ -32,13 +32,7 @@ while (( $# )); do
       ;;
     integration)
       [[ "${WEATHER_CI_IN_CLUSTER:-}" == "1" ]] || { echo 'Integration requires fleet CI in-cluster' >&2; exit 2; }
-      if uv run --frozen pytest -m integration; then
-        :
-      else
-        result=$?
-        [[ "$result" == 5 ]] || exit "$result"
-        echo 'No integration tests collected; service suites arrive in later issues'
-      fi
+      bash scripts/ci_integration.sh
       ;;
     browser)
       [[ "${WEATHER_CI_IN_CLUSTER:-}" == "1" ]] || { echo 'Browser checks require fleet CI in-cluster' >&2; exit 2; }

@@ -1,0 +1,100 @@
+# Render __OPERATION__ and __EXPIRES__ before applying after #6 is ready.
+# Excluded from Argo. No credential value or credential-bearing URI is logged.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: weather-drill-roles-__OPERATION__
+  namespace: weather
+  labels:
+    estate.vallery.net/disposable: 'true'
+    estate.vallery.net/expires: '__EXPIRES__'
+    weather.vallery.net/role-probe: '__OPERATION__'
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        estate.vallery.net/disposable: 'true'
+        estate.vallery.net/expires: '__EXPIRES__'
+        weather.vallery.net/role-probe: '__OPERATION__'
+        weather.vallery.net/database-role: api
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        # Use the pinned PostgreSQL image's existing non-root account.
+        runAsUser: 26
+        runAsGroup: 26
+        fsGroup: 26
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: logins
+          image: registry.vallery.net/jvallery/mirror-ghcr-io-cloudnative-pg-postgresql-777ad6774e00fff6@sha256:d66df406385b9f3c43c47e94fe3a0002278ef56d21b82a8c9d3a22f91aa9c3f0
+          command: [sh, -eu, -c]
+          args:
+            - |
+              for role in migrator ingest worker api editor; do
+                username="$(cat "/auth/$role/username")"
+                test "$username" = "weather_$role"
+                PGPASSWORD="$(cat "/auth/$role/password")"
+                export PGPASSWORD
+                result="$(psql -X -A -t -U "$username" -v ON_ERROR_STOP=1 -c 'SELECT current_user, rolsuper, rolcreatedb, rolcreaterole FROM pg_roles WHERE rolname=current_user;')"
+                test "$result" = "$username|f|f|f"
+                unset PGPASSWORD
+                echo "role=$role authenticated=true superuser=false createdb=false createrole=false"
+              done
+          env:
+            - {name: PGHOST, value: weather-pg-rw}
+            - {name: PGPORT, value: '5432'}
+            - {name: PGDATABASE, value: weather}
+            - {name: PGSSLMODE, value: verify-full}
+            - {name: PGSSLROOTCERT, value: /auth/ca.crt}
+            - {name: PGCONNECT_TIMEOUT, value: '10'}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - {name: credentials, mountPath: /auth, readOnly: true}
+      volumes:
+        - name: credentials
+          projected:
+            defaultMode: 0440
+            sources:
+              - secret:
+                  name: weather-pg-migrator
+                  items:
+                    - {key: username, path: migrator/username}
+                    - {key: password, path: migrator/password}
+              - secret:
+                  name: weather-pg-ingest
+                  items:
+                    - {key: username, path: ingest/username}
+                    - {key: password, path: ingest/password}
+              - secret:
+                  name: weather-pg-worker
+                  items:
+                    - {key: username, path: worker/username}
+                    - {key: password, path: worker/password}
+              - secret:
+                  name: weather-pg-api
+                  items:
+                    - {key: username, path: api/username}
+                    - {key: password, path: api/password}
+              - secret:
+                  name: weather-pg-editor
+                  items:
+                    - {key: username, path: editor/username}
+                    - {key: password, path: editor/password}
+              - secret:
+                  name: weather-pg-ca
+                  items:
+                    - {key: ca.crt, path: ca.crt}

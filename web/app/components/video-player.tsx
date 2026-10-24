@@ -7,13 +7,16 @@ export function VideoPlayer({ video }: { video: Video }) {
   const resume = useRef<{ time: number; playing: boolean } | null>(null);
   const [quality, setQuality] = useState("auto");
   const [autoRole, setAutoRole] = useState("web");
+  const previousAutoRole = useRef("web");
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
     const media = window.matchMedia("(max-width: 767px)");
     const changed = () => {
       const element = player.current;
-      if (quality === "auto" && element && element.readyState >= 1) resume.current = { time: element.currentTime, playing: !element.paused };
-      setAutoRole(media.matches ? "mobile" : "web");
+      const nextRole = media.matches ? "mobile" : "web";
+      if (quality === "auto" && nextRole !== previousAutoRole.current && element && element.readyState >= 1) resume.current = { time: element.currentTime, playing: !element.paused };
+      previousAutoRole.current = nextRole;
+      setAutoRole(nextRole);
     };
     changed(); media.addEventListener("change", changed);
     return () => media.removeEventListener("change", changed);
@@ -40,7 +43,10 @@ export function VideoPlayer({ video }: { video: Video }) {
     </video>
     <div className="filters"><label htmlFor="quality">Playback quality<select id="quality" value={quality} onChange={(event) => {
       const element = player.current;
-      resume.current ||= { time: element?.currentTime || 0, playing: !!element && !element.paused };
+      // Prefer the current loaded media, retaining a pending seek only while a
+      // previous rendition switch is still loading its metadata.
+      if (element && element.readyState >= 1) resume.current = { time: element.currentTime, playing: !element.paused };
+      else resume.current ||= { time: element?.currentTime || 0, playing: !!element && !element.paused };
       setQuality(event.target.value);
     }}><option value="auto">Auto ({autoRole === "mobile" ? "Mobile" : "Web"})</option><option value="web">Web</option><option value="mobile">Mobile</option><option value="native">Native</option></select></label></div>
     {resumeMessage && <p>{resumeMessage}</p>}

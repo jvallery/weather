@@ -15,7 +15,7 @@ def main() -> None:
         return
     parser = argparse.ArgumentParser(prog="weather", description="Weather archive services")
     parser.epilog = "Snapshot acquisition: weather capture collect --camera <id>"
-    parser.add_argument("role", choices=["api"], nargs="?")
+    parser.add_argument("role", choices=["api", "scheduler"], nargs="?")
     args = parser.parse_args()
     if args.role == "api":
         try:
@@ -28,5 +28,9 @@ def main() -> None:
 
         start_http_server(settings.metrics_port)
         uvicorn.run("weather.api:app", host="0.0.0.0", port=settings.port)
+    elif args.role == "scheduler":
+        from weather.scheduler.runner import main as run_scheduler
+
+        run_scheduler()
     else:
         parser.print_help()
