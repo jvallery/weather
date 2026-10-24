@@ -403,7 +403,7 @@ def precipitation(
     support = coverage(window, intervals)
     algorithm, identity, evidence = _identity(
         "precipitation",
-        "sum",
+        "observed_accumulation",
         "mm",
         window,
         items,
@@ -461,9 +461,9 @@ def lightning(
             uncertain += number.numerator
     support = coverage(window, intervals)
     algorithm, identity, evidence = _identity(
-        "lightning",
+        "lightning_count",
         "count",
-        "count",
+        "1",
         window,
         selected,
         evidence_revision,
@@ -712,7 +712,7 @@ def pressure_trend(
     a = scalar(
         first,
         items,
-        metric="pressure",
+        metric="station_pressure",
         unit="hPa",
         statistic="mean",
         evidence_revision=evidence_revision,
@@ -720,7 +720,7 @@ def pressure_trend(
     b = scalar(
         last,
         items,
-        metric="pressure",
+        metric="station_pressure",
         unit="hPa",
         statistic="mean",
         evidence_revision=evidence_revision,
@@ -755,7 +755,7 @@ def pressure_trend(
         if separation > 0:
             value = (b.value - a.value) * 3600 / separation
     algorithm, identity, evidence = _identity(
-        "pressure",
+        "station_pressure",
         "trend",
         "hPa/h",
         window,

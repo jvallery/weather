@@ -151,3 +151,19 @@ Before joint adoption, preserve the following alignments:
 These are source/runtime alignment notes, not evidence of deployed API, SQL timeout/pool isolation,
 real station cadence/support, valid event authority or browser integration. Those remain with WX-13
 and the Slice-1 acceptance path.
+
+## Aggregate calculation boundary
+
+`aggregate_adapter.compute` binds the public registry to the qualified-support engine. The caller
+supplies a complete, consistent support set for the requested window, including any preceding
+observations required by its commissioned hold policy. A page of raw export points cannot establish
+aggregate coverage. The adapter never constructs support from report cadence or chooses an event
+authority. Lightning counts require the commissioned interval authority; pressure trends require
+explicit endpoint width and minimum support. Reported mean wind speed is not replaced by rapid wind.
+
+The public projection binds metric, statistic, unit and the engine recipe into its computation
+revision and stable aggregate identity. Full structured wind, lightning boundary uncertainty and
+pressure endpoint evidence remain attached to the internal computation for later summaries. Rain
+split across a support boundary carries an explicit estimate reason. Conversion to JSON numbers
+happens only after exact engine arithmetic; unsupported values remain reasoned nulls. These pure
+calculations do not establish database snapshot membership or activate the revision worker.
