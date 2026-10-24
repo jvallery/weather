@@ -9,10 +9,12 @@ resources:
 - application.yaml
 - ingress.yaml
 - database
+- migrate
+- scheduler
 images:
 - name: weather-app
   newName: registry.vallery.net/jvallery/weather-app
-  digest: sha256:b31d9d54d737d6cc1607618f4aa0ba99f8c6a4c8e256a5b931d825f8984342a1
+  digest: sha256:4962f74dc436395d18f41eea8783b58617fcfa7bd1edcad104f6e7cd8e02b342
 - name: weather-web
   newName: registry.vallery.net/jvallery/weather-web
   digest: sha256:36ee790bd578610172865caf0fe9428cb24dc0b63cbfd0fec059614f0175ce6e
