@@ -51,8 +51,8 @@ def sql(cluster, statement):
 
 
 def manifest(operation, target, expires):
-    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,30}", operation):
-        raise ValueError("operation must be 1-31 lowercase letters, digits or hyphens")
+    if not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,29}[a-z0-9])?", operation):
+        raise ValueError("operation must be a 1-31 character DNS slug with alphanumeric ends")
     target_time = dt.datetime.fromisoformat(target.replace("Z", "+00:00"))
     if target_time.tzinfo is None:
         raise ValueError("recovery target requires an explicit timezone")
