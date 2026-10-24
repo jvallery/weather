@@ -74,6 +74,10 @@ The opt-in API factory owns the startup policy/key readers, bounded background c
 public discovery cadence and read-only API pool wiring. It remains disabled by default and changes
 no live mount, label, image pin or replica count. See [API runtime](docs/operations/api-runtime.md).
 
+Weather also owns immutable safe telemetry qualification history (migration 0004), retained aggregate
+revisions and fenced heads (0005), and their read-only public projections. These remain prepared
+source until the WX-13 cluster/database qualification and disabled scheduler commissioning complete.
+
 ## Tempest ingestion source preparation
 
 Weather owns the `tempest-receiver` role source, its private SQLite WAL/FULL receipt spool, additive telemetry provenance/conflict/coverage schema and receiver metrics. Migration `0002_telemetry` extends schema v1 without changing its snapshot. This source preparation creates no active receiver, PVC, network attachment or credential; #5 commissions those objects after native prerequisites. See [Tempest operations](docs/operations/tempest-ingest.md).

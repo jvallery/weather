@@ -66,6 +66,7 @@ def disposable_database() -> None:
                     text("TRUNCATE " + ",".join("weather." + n for n in names) + " CASCADE")
                 )
                 await connection.execute(text("TRUNCATE weather.device,weather.station CASCADE"))
+                await connection.execute(text("TRUNCATE weather.outbox,weather.job CASCADE"))
                 await connection.execute(
                     text("UPDATE weather.telemetry_publication_clock SET published_through=0")
                 )
@@ -316,7 +317,9 @@ def test_conflict_invalidates_matching_current_only_and_retry_is_revision_noop()
                 )
                 assert await current(connection) == invalidated
                 assert (
-                    await connection.execute(text("SELECT count(*) FROM weather.outbox"))
+                    await connection.execute(
+                        text("SELECT count(*) FROM weather.outbox WHERE topic='telemetry.conflict'")
+                    )
                 ).scalar_one() == 1
                 newer, _ = await observation(connection, d, source=SOURCE + timedelta(minutes=1))
                 t2 = await current(connection)
@@ -352,7 +355,9 @@ def test_conflict_rollback_keeps_current_and_outbox_atomic() -> None:
             async with db.begin() as connection:
                 assert await current(connection) == before
                 assert (
-                    await connection.execute(text("SELECT count(*) FROM weather.outbox"))
+                    await connection.execute(
+                        text("SELECT count(*) FROM weather.outbox WHERE topic='telemetry.conflict'")
+                    )
                 ).scalar_one() == 0
         finally:
             await ingest.dispose()
@@ -613,7 +618,7 @@ def test_existing_committed_rows_backfill_idempotently_without_revising_pointers
                 # Simulate pre-0003 committed history, then exercise the exact
                 # migration backfill and its safe repeat against existing publications.
                 await connection.execute(
-                    text("TRUNCATE weather.metric_current,weather.telemetry_publication")
+                    text("TRUNCATE weather.metric_current,weather.telemetry_publication CASCADE")
                 )
                 await connection.execute(
                     text("UPDATE weather.telemetry_publication_clock SET published_through=0")
