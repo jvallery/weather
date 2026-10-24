@@ -57,6 +57,23 @@ and invalid ports fail before either server binds. Startup errors name only
 the fields; do not print Pydantic's raw validation errors or environment.
 The `WEATHER_CI_` prefix is reserved for the check runner and its pinned tools.
 
+## Supply-chain evidence
+
+After both commissioned runtime digests exist, the registry-owned
+`supply-chain-evidence` check runs `scripts/ci-evidence.sh` through the same
+pinned fleet bootstrap. It serially scans only the two exact Weather runtime
+pins and stages `artifacts/supply-chain/sbom-app.json`, `sbom-web.json` and
+`licenses.json`. Mutable tags, another repository's image, duplicate pins,
+symlink inputs and JSON files larger than 16 MiB are rejected. The script
+refuses to run image scans on the Mac, including when the CI flag is set.
+
+The platform's fixed Weather evidence check must archive those three files
+with a trusted manifest binding the Workflow/Pod UIDs and file SHA-256 values.
+Verify that upload and an independent readback before accepting the files as
+durable evidence. A local output directory, log line or completed scan alone
+does not prove custody. Add this registry step only after the two image pins
+exist; the scaffold's image-free supply-chain check runs before commissioning.
+
 ## Capacity envelope
 
 Quota is an admission ceiling, not a reservation or permission to consume
