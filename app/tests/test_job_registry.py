@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: MIT
 import pytest
-
 from weather.scheduler.registry import JobContext, Registry, UnregisteredJob
 
 

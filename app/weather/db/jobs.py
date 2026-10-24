@@ -117,7 +117,8 @@ async def append_outbox(
         raise ValueError("Outbox times must be aware")
     result = await connection.execute(
         text("""
-        INSERT INTO weather.outbox(topic,idempotency_key,payload,not_before,deadline,expected_revision)
+        INSERT INTO weather.outbox(topic,idempotency_key,payload,not_before,deadline,
+                                   expected_revision)
         VALUES(:topic,:key,CAST(:payload AS jsonb),:not_before,:deadline,:revision)
         ON CONFLICT(idempotency_key) DO NOTHING RETURNING id
     """),
