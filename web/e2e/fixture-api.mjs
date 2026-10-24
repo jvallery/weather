@@ -69,6 +69,8 @@ createServer(async (req, res) => {
       const age = metric.freshness === "fresh" ? 5000 : 120_000;
       metric.observed_at = new Date(now - age).toISOString(); metric.received_at = new Date(now - age + 1000).toISOString(); metric.valid_until = new Date(now - age + 90_000).toISOString();
     }
+    // An unparseable source time makes the page's render fail: a real SSR 500.
+    if (state.invalidTime) value.metrics[0].observed_at = "synthetic-invalid-time";
     if (state.unique) { value.station_alias = `synthetic-request-${++serial}`; value.metrics[0].value = serial; }
     return json(res, value);
   }

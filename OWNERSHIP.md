@@ -78,3 +78,7 @@ agents contributions and provider B2 identities remain storage-infra's.
 ## Tempest ingestion source preparation
 
 Weather owns the `tempest-receiver` role source, its private SQLite WAL/FULL receipt spool, the raw `telemetry_receipt` and typed family tables in `weather-pg`, and receiver metrics. This source preparation creates no active receiver, PVC, network attachment or credential; #5 commissions those objects after native prerequisites. See [Tempest operations](docs/operations/tempest-ingest.md).
+
+## Current-weather embed (#45)
+
+`/embed/weather/` (and its error responses) is the only Weather page a parent may frame, and only `https://vallery.net` may frame it: the response CSP carries `frame-ancestors https://vallery.net` and no X-Frame-Options. Every other route keeps `frame-ancestors 'none'` and `X-Frame-Options: DENY`. Source: `web/app/routes/embed.weather.tsx`, `web/security-headers.mjs`; runbook [embed](docs/operations/embed.md). WordPress owns the parent CSP and homepage block (VerdifyConsultancy/wordpress#242).
