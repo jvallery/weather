@@ -28,7 +28,7 @@ export function HistoryPlot({ history, metric, units, definition }: { history: H
       const data = historySeries(history, metric);
       // Canonical values stay authoritative; only tick presentation changes units.
       const unit = history.points.find((point) => point.metric === metric)?.unit || "";
-      plot = new UPlot({ width: element.clientWidth, height: 240, title: `${metricLabel(metric, definition)} · explicit gaps`,
+      plot = new UPlot({ width: element.clientWidth, height: 240, padding: [null, 64, null, 16], title: `${metricLabel(metric, definition)} · explicit gaps`,
         series: [{}, { label: metricLabel(metric, definition), stroke: "#0e5a43", width: 2, spanGaps: false }],
         axes: [{ stroke: "#626b76", font: "12px IBM Plex Sans", space: 150, size: 64, values: (_plot, values) => values.map(plotTime) }, { stroke: "#626b76", values: (_plot, values) => values.map((value) => metricValue(value, unit, units, definition)) }],
         cursor: { drag: { x: true, y: false } }, legend: { show: false },
