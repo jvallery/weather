@@ -83,7 +83,7 @@ class DatabaseManifestTests(unittest.TestCase):
         self.assertEqual({p["port"] for rule in policy["egress"] for p in rule["ports"]}, {53, 443})
 
     def test_operation_cannot_inject_sql_names_or_labels(self):
-        for operation in ("bad'name", "../weather-pg", "UPPER", "", "a" * 32):
+        for operation in ("bad'name", "../weather-pg", "UPPER", "", "bad-", "-bad", "a" * 32):
             with self.assertRaises(ValueError):
                 drill.manifest(operation, "2026-10-24T03:00:00+00:00", "2026-10-25")
         with self.assertRaises(ValueError):
