@@ -56,7 +56,7 @@ bounded lifecycle: `docs/operations/garage-commissioning.md`.
 | Public read projections, scoped grants and CAS/append-only guards | `app/weather/db/ddl_v1.py` | No raw receipts, private IDs, originals or private editorial tables granted to API |
 | `weather-migrate` Sync Job and database-only NetworkPolicy | `deploy/k8s/migrate` | Excluded from root kustomization until #6 commissions the database |
 | `scheduler` Deployment and database/metrics NetworkPolicy | `deploy/k8s/scheduler` | Zero replicas and excluded; #14 registers handlers and enables it |
-| `weather-ci` tooling image | `Dockerfile.ci`, registry-owned repo-build profile | PG16.15/vector0.8.6 disposable in-container integration; never an application database |
+| `weather-ci` tooling image | `Dockerfile.ci`, `ci/browser/`, registry-owned repo-build profile | PG16.15/vector0.8.6 disposable integration and pinned Playwright browser tooling; never an application database |
 
 These namespace-rendered application objects inherit the central `namespace:weather`
 ownership declaration. Fleet validation/profile declarations and the CI image digest
