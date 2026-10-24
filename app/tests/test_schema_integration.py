@@ -736,6 +736,15 @@ def test_preview_embargo_trust_and_expiry_are_enforced() -> None:
                         "trusted": True,
                     },
                 )
+                await connection.execute(
+                    text(statement),
+                    {
+                        **values,
+                        "generation": 4,
+                        "first": now + timedelta(minutes=1),
+                        "trusted": True,
+                    },
+                )
             async with api.begin() as connection:
                 ids = (
                     (
