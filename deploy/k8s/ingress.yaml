@@ -48,7 +48,7 @@ spec:
     - name: weather-security-headers
     services:
     - name: api
-      port: 8000
+      port: 80
   - match: Host(`weather.vallery.net`)
     priority: 1
     kind: Rule

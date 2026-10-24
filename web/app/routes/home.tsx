@@ -3,7 +3,7 @@ type Health = { apiState: "healthy" | "unavailable" };
 
 export async function loader(): Promise<Health> {
   try {
-    const origin = process.env.API_ORIGIN ?? "http://api:8000";
+    const origin = process.env.API_ORIGIN ?? "http://api";
     const response = await fetch(`${origin}/healthz`, { signal: AbortSignal.timeout(3000) });
     const body: unknown = await response.json();
     return { apiState: response.ok && typeof body === "object" && body !== null &&

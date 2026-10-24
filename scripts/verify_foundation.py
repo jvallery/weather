@@ -159,7 +159,7 @@ def main() -> None:
         pod_probe(
             "weather", "weather-deny-" + suffix, desired["api"],
             "import os,socket,sys\n"
-            "try: socket.create_connection((os.environ['API'],8000),3)\n"
+            "try: socket.create_connection((os.environ['API'],80),3)\n"
             "except OSError: sys.exit(0)\n"
             "sys.exit(1)",
             [{"name": "API", "value": api_ip}],
@@ -167,7 +167,7 @@ def main() -> None:
         pod_probe(
             "observability", "weather-metrics-" + suffix, desired["api"],
             "import os,urllib.request\n"
-            "for key,port,path in [('API',8000,'/readyz'),('API',9000,'/metrics'),"
+            "for key,port,path in [('API',80,'/readyz'),('API',9000,'/metrics'),"
             "('WEB',9000,'/metrics')]:\n"
             " r=urllib.request.urlopen('http://'+os.environ[key]+':'+str(port)+path,timeout=5)\n"
             " assert r.status==200\n"

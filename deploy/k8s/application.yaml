@@ -110,7 +110,7 @@ spec:
     app.kubernetes.io/component: api
   ports:
   - name: http
-    port: 8000
+    port: 80
     targetPort: http
   - name: metrics
     port: 9000
@@ -187,7 +187,7 @@ spec:
         - name: METRICS_PORT
           value: '9000'
         - name: API_ORIGIN
-          value: http://api:8000
+          value: http://api
         resources:
           requests:
             cpu: 100m
