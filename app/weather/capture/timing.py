@@ -44,13 +44,16 @@ class Schedule:
 
     def observe_clock(self, wall_ns: int, mono_ns: int) -> bool:
         offset = wall_ns - mono_ns
-        changed = abs(offset - self.offset_ns) > 1_000_000_000
+        expected = self.grid(self.next_mono_ns + self.offset_ns)
+        # Re-anchor the monotonic deadline to the wall grid; this also restores phase after steps.
+        wall = self.next_mono_ns + offset
+        key = self.grid(wall)
+        # A re-anchor that repeats or skips a key is a discontinuity, however small the step.
+        changed = abs(offset - self.offset_ns) > 1_000_000_000 or key != expected
         if changed:
             self.epoch = uuid.uuid4().hex
         self.offset_ns = offset
-        # Re-anchor the monotonic deadline to the wall grid; this also restores phase after steps.
-        wall = self.next_mono_ns + offset
-        self.next_mono_ns += self.grid(wall) - wall
+        self.next_mono_ns += key - wall
         return changed
 
     def _slot(self, seq: int, mono_ns: int) -> Slot:

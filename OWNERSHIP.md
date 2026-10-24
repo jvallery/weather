@@ -28,12 +28,13 @@ Adjacent items this repo consumes but does not own: Tempest hub (homeassistant),
 ## Snapshot collector source (WX-10)
 
 `app/weather/capture` owns the isolated channel-1 snapshot client, absolute timer,
-strict native-JPEG validation, single-USTAR writer/reader and capture metrics. Its
-private manifest v2 is generated from code and follows the simplified P2 contract;
-there is no coordinator, writer fencing or database dependency in this role.
+SOI/EOI, SOF-geometry, size and content-type checks, single-USTAR writer/reader and
+capture metrics. Its private manifest v2 is defined by the Pydantic records in
+`records.py` and follows the simplified P2 contract; there is no coordinator, writer
+fencing or database dependency in this role.
 Source preparation and small pure checks do not commission cameras or storage.
 Real workloads, private egress rules and cadence remain WX-03; fake-camera
-latency/decode integration runs only in fleet CI. See [capture operations](docs/operations/capture.md).
+latency/response integration runs only in fleet CI. See [capture operations](docs/operations/capture.md).
 
 Weather also owns the planned `weather/garage-probe-egress` NetworkPolicy in
 `deploy/k8s/commissioning/garage-probe-egress.yaml`. It is excluded from the

@@ -198,11 +198,24 @@ def read_chunk(path: Path, max_frame_bytes: int = 16777216) -> list[dict[str, An
     """Regular frame members, then one final manifest binding each by length and sha256."""
     frames: dict[str, tuple[int, str]] = {}
     manifest: bytes | None = None
+    end = 0
     try:
-        with tarfile.open(path, mode="r:") as archive:
+        with tarfile.open(path, mode="r:") as archive, path.open("rb") as raw:
             for member in archive:
-                if manifest is not None or not member.isreg() or member.name in frames:
+                # Contiguous plain headers exclude PAX/GNU extension blocks; types exclude sparse.
+                if (
+                    manifest is not None
+                    or member.type not in (tarfile.REGTYPE, tarfile.AREGTYPE)
+                    or member.offset != end
+                    or member.offset_data != end + tarfile.BLOCKSIZE
+                    or member.name in frames
+                ):
                     raise ValueError("Only regular members before a final manifest are accepted")
+                padding = -member.size % tarfile.BLOCKSIZE
+                raw.seek(member.offset_data + member.size)
+                if raw.read(padding) != bytes(padding):
+                    raise ValueError("Nonzero member padding")
+                end = member.offset_data + member.size + padding
                 source = archive.extractfile(member)
                 assert source is not None
                 if member.name == "manifest.jsonl":
@@ -219,6 +232,11 @@ def read_chunk(path: Path, max_frame_bytes: int = 16777216) -> list[dict[str, An
                 while part := source.read(65536):
                     digest.update(part)
                 frames[member.name] = member.size, digest.hexdigest()
+            # tarfile stops silently at a bad header; require two zero blocks and only zero fill.
+            raw.seek(end)
+            tail = raw.read(tarfile.RECORDSIZE + 1)
+            if not 2 * tarfile.BLOCKSIZE <= len(tail) <= tarfile.RECORDSIZE or any(tail):
+                raise ValueError("Incomplete TAR termination")
     except tarfile.TarError, EOFError:
         raise ValueError("Invalid TAR archive") from None
     if manifest is None or not manifest.endswith(b"\n"):
