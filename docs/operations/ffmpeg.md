@@ -19,3 +19,8 @@ The source is unmodified. No application source is copied from FFmpeg or x264.
 
 WX-01 (#2) owns actual in-cluster compilation, executable/capability probes, SBOM generation,
 archive custody and egress-denied startup verification. A committed Dockerfile proves none of those.
+
+The compiler stage uses main, bookworm-updates and bookworm-security from the same fixed
+Debian snapshot date. All three suites are needed because the digest-pinned Python base
+already includes security updates; main alone can require an older exact-version dependency
+(for example perl versus perl-base), causing apt to fail before compilation.
