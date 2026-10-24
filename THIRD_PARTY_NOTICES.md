@@ -15,8 +15,15 @@ retained in `supply-chain/capture-decoder` and the installed package license
 directories. See `docs/decisions/capture-decoder-reuse.md` for the exact artifacts
 and binary distribution obligations.
 
+The fleet-only weather-ci image retains Playwright 1.64.1 and its Apache-2.0
+notices in `/opt/weather-browser-tools/node_modules`, plus the downloaded
+Chromium, Firefox and WebKit distributions and their notices in
+`/opt/ms-playwright`. The exact JavaScript closure is locked separately in
+`ci/browser/pnpm-lock.yaml`; those tools are not distributed in weather-web.
+
 FFmpeg 9.0.2 with libx264 is GPL, not MIT. Its licenses are included under
-`/opt/ffmpeg/share/licenses` in weather-app; see `docs/operations/ffmpeg.md` for the exact source
+`/opt/ffmpeg/share/licenses` in weather-app and the copied weather-ci toolchain;
+see `docs/operations/ffmpeg.md` for the exact source
 archive, checksum, configuration and corresponding-source distribution obligations.
 
 No third-party application source, fonts or design assets have been imported by the scaffold.
