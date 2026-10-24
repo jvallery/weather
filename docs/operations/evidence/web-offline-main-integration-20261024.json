@@ -1,0 +1,41 @@
+{
+  "kind": "weather_web_offline_main_integration",
+  "main_base": "7c927cb4711b0901804d9fb775d42bea089146b1",
+  "web_source": "48063755e550bcd6dcdb979001d031901268c85a",
+  "preserved_pr_head": "9694d43a6936a904ed522a519bb16cbedcf15125",
+  "preserved_failed_workflow": {
+    "name": "repo-validate-jvallery-weather-9694d43a6936-pr",
+    "uid": "1f996709-4bf9-4e66-af08-9ddf7c356e23",
+    "required_status": "failure",
+    "failed_stage": "shared evidence fetch-context init; ordinary validation succeeded"
+  },
+  "jitter_fix_original": "4b252dd483f60b4de629299c39584fc5f86f0ef0",
+  "jitter_fix_adopted": "48063755e550bcd6dcdb979001d031901268c85a",
+  "api_contract_source": "fcd8388289fd9b77c3a5ae50db8bdc8e06fe58c0",
+  "api_stack_in_branch": false,
+  "checks": {
+    "command": "scripts/ci.sh lint typecheck unit",
+    "python_nonintegration_passed": 110,
+    "integration_deselected": 12,
+    "web_units_passed": 33,
+    "asset_retention_passed": 5,
+    "timemodel_line_coverage_percent": 100,
+    "strict_types": "passed",
+    "lint": "passed",
+    "supply_chain_command": "scripts/ci.sh supply-chain",
+    "licenses_locked_versions": 449,
+    "secret_scan": "passed",
+    "font_and_ofl_hashes": "passed",
+    "actual_serialized_api_cases_accepted": 4,
+    "malformed_controls_rejected": 2
+  },
+  "browser_build_media_execution": false,
+  "remote_push": false,
+  "remaining": [
+    "Wait for explicit maintenance and approved tooling-image CI release",
+    "Adopt accepted 9/12 and API14 from main; do not stack unaccepted API branch",
+    "Re-run required native checks at the eventual exact pushed head",
+    "Run supported in-cluster three-engine browser/axe matrix and retain/review 27 checksummed screenshots",
+    "Build and promote pinned web image with previous assets; prove actual rolling tabs and public SSR/header/privacy behavior"
+  ]
+}

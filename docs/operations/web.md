@@ -177,3 +177,12 @@ report, and exits. Missing or mismatched acknowledgement fails qualification. Th
 records ROOT's custody claim; the retained independent file hashes are the custody proof. Collect
 final report from the Workflow output parameter. No capture wait occurs when the optional operation
 variable is absent. Do not use the hold in event/required CI, and do not recreate a timed-out operation.
+
+
+The offline fresh-main integration receipt is
+`evidence/web-offline-main-integration-20261024.json`. Its separate
+`public-web-alignment-fcd8388-20261024.json` audit reads a detached immutable API source snapshot
+without adding that unaccepted API stack to the web branch. It preserves the earlier failed native
+Workflow/head as historical evidence; local source checks do not replace the eventual exact-head
+required Fleet checks. Optional polling jitter is sampled once per request cycle, so one-second
+source-age renders cannot continually reset the interval. Today retains zero jitter by default.
