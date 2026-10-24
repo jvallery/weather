@@ -1,0 +1,365 @@
+{
+  "observed_at": "2026-10-24T16:43:11.510837+00:00",
+  "note": "Handoff worktree changes are committed/pushed after this inventory. Generated Python bytecode is disposable; no cleanups/deletions performed.",
+  "worktrees": [
+    {
+      "path": "/Users/jason/repos/weather",
+      "head": "c4657216b8d84b9331d2f5bd8e95443b81017853",
+      "remote_contains": [
+        "refs/remotes/origin/HEAD",
+        "refs/remotes/origin/archive/weather-app-promotion-71-97132413",
+        "refs/remotes/origin/archive/weather-cnpg-6-03ee107",
+        "refs/remotes/origin/archive/weather-cnpg-6-bbf3255",
+        "refs/remotes/origin/archive/weather-pause-20261024-aggregate-source",
+        "refs/remotes/origin/archive/weather-pause-20261024-aggregate-support",
+        "refs/remotes/origin/archive/weather-web-21-validation-20261024",
+        "refs/remotes/origin/codex/weather-almanac-calculations",
+        "refs/remotes/origin/codex/weather-api",
+        "refs/remotes/origin/codex/weather-api-integration",
+        "refs/remotes/origin/codex/weather-build-fix",
+        "refs/remotes/origin/codex/weather-capture-11",
+        "refs/remotes/origin/codex/weather-ci-artifact-consumer",
+        "refs/remotes/origin/codex/weather-ci-evidence-receipt",
+        "refs/remotes/origin/codex/weather-cnpg-ready-e5a1eade",
+        "refs/remotes/origin/codex/weather-commission",
+        "refs/remotes/origin/codex/weather-current-db-14",
+        "refs/remotes/origin/codex/weather-custody-probe-egress",
+        "refs/remotes/origin/codex/weather-embed-card-prep-45",
+        "refs/remotes/origin/codex/weather-foundation",
+        "refs/remotes/origin/codex/weather-garage-probe-egress",
+        "refs/remotes/origin/codex/weather-launch-smoke",
+        "refs/remotes/origin/codex/weather-lightning-source-14",
+        "refs/remotes/origin/codex/weather-live-acceptance",
+        "refs/remotes/origin/codex/weather-oci-evidence",
+        "refs/remotes/origin/codex/weather-public-contracts",
+        "refs/remotes/origin/codex/weather-public-service",
+        "refs/remotes/origin/codex/weather-scaffold",
+        "refs/remotes/origin/codex/weather-scaffold-final",
+        "refs/remotes/origin/codex/weather-schema",
+        "refs/remotes/origin/codex/weather-schema-ready-2f021fa8",
+        "refs/remotes/origin/codex/weather-skeleton-promotion",
+        "refs/remotes/origin/codex/weather-tempest-ingest-12",
+        "refs/remotes/origin/codex/weather-time-model-10",
+        "refs/remotes/origin/codex/weather-web",
+        "refs/remotes/origin/codex/weather-web-promotion-21",
+        "refs/remotes/origin/codex/weather-web-ready-090e23c2",
+        "refs/remotes/origin/deploy/weather-db-artifact-6",
+        "refs/remotes/origin/docs/weather-shutdown-20261024",
+        "refs/remotes/origin/feat/weather-aggregate-worker-14",
+        "refs/remotes/origin/feat/weather-cnpg-6",
+        "refs/remotes/origin/feat/weather-cnpg-commission-6",
+        "refs/remotes/origin/feat/weather-collector-11",
+        "refs/remotes/origin/feat/weather-evidence-revisions-14",
+        "refs/remotes/origin/main"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-aggregate-source",
+      "head": "f9165d2c11791e259ff964882c59b61c56efab4b",
+      "remote_contains": [
+        "refs/remotes/origin/archive/weather-pause-20261024-aggregate-source"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-aggregate-support",
+      "head": "21a0cfcc538642e600a6fb221de01f76015bd426",
+      "remote_contains": [
+        "refs/remotes/origin/archive/weather-pause-20261024-aggregate-support"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-aggregate-worker-14",
+      "head": "bf27df578d2a2e532238dc50452f701d46b7b980",
+      "remote_contains": [
+        "refs/remotes/origin/feat/weather-aggregate-worker-14"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-almanac-calculations",
+      "head": "72029c6db4b2d68214c68288d797e3940a838ecb",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-almanac-calculations"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-api",
+      "head": "aa74981912958ea5130fbc263ebc53bda6802672",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-almanac-calculations"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-api-integration",
+      "head": "85173af51a25b66475dda4053a31769960465e59",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-api",
+        "refs/remotes/origin/codex/weather-api-integration"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-app-promote-6",
+      "head": "33501b424c63d38b01504e6d653c430952c00b50",
+      "remote_contains": [
+        "refs/remotes/origin/deploy/weather-db-artifact-6"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-build-fix",
+      "head": "70596ac27654fdfb067a2b65fa46a70f9151a601",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-build-fix"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-capture-11",
+      "head": "3eee19996d6bf0f8dc8a2ac562cd7eeba57e3569",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-capture-11"
+      ],
+      "working_tree_status": [
+        "?? app/tests/capture/__pycache__/",
+        "?? app/weather/__pycache__/",
+        "?? app/weather/capture/__pycache__/"
+      ]
+    },
+    {
+      "path": "/Users/jason/repos/weather-ci-artifact-consumer",
+      "head": "4ea95aa83b29bf0417f444c4355b974ba59313a1",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-ci-artifact-consumer"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-ci-evidence-receipt",
+      "head": "e83054fbc18009861d60065fd83022bfba203e16",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-ci-evidence-receipt"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-cnpg",
+      "head": "f22e553f4fc67af4c52b3ec71aa5298f45d29d4f",
+      "remote_contains": [
+        "refs/remotes/origin/feat/weather-cnpg-6"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-cnpg-commission-6",
+      "head": "38944f9d2002092c570fbd8d481b899346940b2a",
+      "remote_contains": [
+        "refs/remotes/origin/feat/weather-cnpg-commission-6"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-collector-adopt-11",
+      "head": "9a9d592ea513b6c065834e4fe9caac225bc7f9ee",
+      "remote_contains": [
+        "refs/remotes/origin/feat/weather-collector-11"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-commission",
+      "head": "95f0a4cad7ea96795b3a4f0ef7d0be3e48d41ba0",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-commission"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-current-db-14",
+      "head": "270534c8b8b7b60097173658e48ab5567a910624",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-current-db-14"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-custody-probe-egress",
+      "head": "dd6935ca145a295747de37e02b9389b702884806",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-custody-probe-egress"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-embed-card-45",
+      "head": "45200343a3f9a3e0d0e51fa509e7a11dfd3b3e33",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-embed-card-prep-45"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-evidence-v4",
+      "head": "0b654a90609639438b9fa11c96235e83e7b45371",
+      "remote_contains": [
+        "refs/remotes/origin/feat/weather-evidence-revisions-14"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-foundation",
+      "head": "74f5f4c46ed592cadb7ce2f819971c61fbd45c87",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-foundation"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-garage-probe-egress",
+      "head": "2035563e823406f52073caaecca079d2adfc44e8",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-garage-probe-egress"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-launch-smoke",
+      "head": "37b6022ab1c6254d9701d69a17fb5a8d46875004",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-launch-smoke"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-lightning-source-14",
+      "head": "8bbbaae92a01a1b417a91b18416d2a12bc8d713c",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-lightning-source-14"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-live-acceptance",
+      "head": "44a3fd1355fbc00587f82160020576b418081e14",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-live-acceptance"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-oci-evidence",
+      "head": "4ad8518af557cb683cda1732d28c1d03e5c7891f",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-oci-evidence"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-public-contracts",
+      "head": "c70ffa0138fe85383f31f33c4fe9dfca533ba738",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-public-service"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-scaffold",
+      "head": "222832d9b061068321de3199151ba7acaa21719c",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-scaffold"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-schema",
+      "head": "9492744096fb29341ce85c0073199338ef7c1ba7",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-schema"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-shutdown-20261024",
+      "head": "f8bd4606c79c790d559a981894629107b638418d",
+      "remote_contains": [
+        "refs/remotes/origin/docs/weather-shutdown-20261024"
+      ],
+      "working_tree_status": [
+        "?? docs/operations/handoffs/2026-10-24/shutdown-issue-publications.json",
+        "?? docs/operations/handoffs/2026-10-24/shutdown-owner-issue-audit.json"
+      ]
+    },
+    {
+      "path": "/Users/jason/repos/weather-skeleton-promotion",
+      "head": "0d032ec83a966c39477793a4b740fc5cfb6225c1",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-skeleton-promotion"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-tempest-ingest-12",
+      "head": "34501feb8738dcf3c694c816e9a107effcceef02",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-tempest-ingest-12"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-time-model-10",
+      "head": "6bb2a95c3592668b4bc55c507d8643932e7ff0e2",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-time-model-10"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-web",
+      "head": "9694d43a6936a904ed522a519bb16cbedcf15125",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-embed-card-prep-45",
+        "refs/remotes/origin/codex/weather-web",
+        "refs/remotes/origin/codex/weather-web-ready-090e23c2"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-web-21-archive",
+      "head": "a630e1133f8de99a7144fb8f43bfc1daaaae7480",
+      "remote_contains": [
+        "refs/remotes/origin/archive/weather-web-21-validation-20261024"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-web-contracts-api",
+      "head": "fcd8388289fd9b77c3a5ae50db8bdc8e06fe58c0",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-api",
+        "refs/remotes/origin/codex/weather-api-integration"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-web-integration",
+      "head": "8c2ccdfff5394e3c5cd381d10e9d49f6c2f2b1a8",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-web"
+      ],
+      "working_tree_status": []
+    },
+    {
+      "path": "/Users/jason/repos/weather-web-promotion-21",
+      "head": "ff74fb13c0ec3c870061fb4348e70dcc0d7178ae",
+      "remote_contains": [
+        "refs/remotes/origin/codex/weather-web-promotion-21"
+      ],
+      "working_tree_status": []
+    }
+  ]
+}

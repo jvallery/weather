@@ -1,0 +1,86 @@
+[
+  {
+    "repo": "jvallery/agents",
+    "number": 5366,
+    "state": "closed",
+    "url": "https://github.com/jvallery/agents/issues/5366",
+    "title": "Onboard jvallery/weather as a ci-only fleet cell (options-tracker pattern)"
+  },
+  {
+    "repo": "jvallery/agents",
+    "number": 5368,
+    "state": "open",
+    "url": "https://github.com/jvallery/agents/issues/5368",
+    "title": "Multus macvlan attachment on VLAN 10 for the Weather Tempest receiver"
+  },
+  {
+    "repo": "jvallery/storage-infra",
+    "number": 1106,
+    "state": "closed",
+    "url": "https://github.com/jvallery/storage-infra/issues/1106",
+    "title": "Weather snapshot staging: dedicated Obsidian NFS share and static PV with quota"
+  },
+  {
+    "repo": "jvallery/storage-infra",
+    "number": 1107,
+    "state": "open",
+    "url": "https://github.com/jvallery/storage-infra/issues/1107",
+    "title": "Weather Garage buckets weather-media and weather-originals, keys and custody mirror rows"
+  },
+  {
+    "repo": "jvallery/storage-infra",
+    "number": 1112,
+    "state": "closed",
+    "url": "https://github.com/jvallery/storage-infra/issues/1112",
+    "title": "Dedicated B2 bucket and scoped keys for the weather-pg CNPG archive"
+  },
+  {
+    "repo": "jvallery/sentinel",
+    "number": 550,
+    "state": "open",
+    "url": "https://github.com/jvallery/sentinel/issues/550",
+    "title": "Weather snapshot access: polling consent, view-only camera users and NTP check"
+  },
+  {
+    "repo": "jvallery/cortex-ai-compute",
+    "number": 402,
+    "state": "open",
+    "url": "https://github.com/jvallery/cortex-ai-compute/issues/402",
+    "title": "Scoped GPUStack consumer key for Weather (llm.primary.longctx.mm image path and embed.main)"
+  },
+  {
+    "repo": "jvallery/monitoring-stack",
+    "number": 1072,
+    "state": "closed",
+    "url": "https://github.com/jvallery/monitoring-stack/issues/1072",
+    "title": "Weather scrape, probe and slice-1 alert rules"
+  },
+  {
+    "repo": "jvallery/network-infra",
+    "number": 774,
+    "state": "closed",
+    "url": "https://github.com/jvallery/network-infra/issues/774",
+    "title": "Reserve the Weather Tempest receiver IP on VLAN 10 and record the UDP 50222 consumer"
+  },
+  {
+    "repo": "jvallery/network-infra",
+    "number": 775,
+    "state": "closed",
+    "url": "https://github.com/jvallery/network-infra/issues/775",
+    "title": "Record weather.vallery.net as a public read-only route via the wildcard tunnel"
+  },
+  {
+    "repo": "jvallery/network-infra",
+    "number": 799,
+    "state": "open",
+    "url": "https://github.com/jvallery/network-infra/issues/799",
+    "title": "Exclude weather.vallery.net from automatic Cloudflare RUM injection"
+  },
+  {
+    "repo": "VerdifyConsultancy/wordpress",
+    "number": 242,
+    "state": "open",
+    "url": "https://github.com/VerdifyConsultancy/wordpress/issues/242",
+    "title": "Embed the Weather card on the vallery.net homepage"
+  }
+]

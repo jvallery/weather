@@ -79,7 +79,7 @@
       "title": "WX-06: Isolated Garage bucket/tier, quotas, keys and verified local durability contract.",
       "url": "https://github.com/jvallery/weather/issues/7",
       "github_state": "CLOSED",
-      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed; not separate delivery proof",
       "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
       "open_native_blockers": []
     },
@@ -88,7 +88,7 @@
       "title": "WX-07: Shared-bucket authorization boundary, independent backup/restore credentials and Barman-compatible prefix enforcement.",
       "url": "https://github.com/jvallery/weather/issues/8",
       "github_state": "CLOSED",
-      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed; not separate delivery proof",
       "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
       "open_native_blockers": []
     },
@@ -133,7 +133,7 @@
       "title": "WX-12: All-field/row normalization, event deduplication, timeseries partitions/history and coverage.",
       "url": "https://github.com/jvallery/weather/issues/13",
       "github_state": "CLOSED",
-      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed; not separate delivery proof",
       "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
       "open_native_blockers": []
     },
@@ -192,7 +192,7 @@
       "title": "WX-16: Native/web/mobile encodes, both MP4 timescales, posters, checksums and full validation.",
       "url": "https://github.com/jvallery/weather/issues/17",
       "github_state": "CLOSED",
-      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed; not separate delivery proof",
       "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
       "open_native_blockers": []
     },
@@ -259,7 +259,7 @@
       "title": "WX-21: Qualified completed-video adapter, temporal control tests, clip mapping and bounded inference capability handling.",
       "url": "https://github.com/jvallery/weather/issues/22",
       "github_state": "CLOSED",
-      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed; not separate delivery proof",
       "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
       "open_native_blockers": []
     },
@@ -294,7 +294,7 @@
       "title": "WX-23: Text-embedding profile/extension/storage and exact baseline; compatible ANN only if justified; reserve visual profile boundary.",
       "url": "https://github.com/jvallery/weather/issues/24",
       "github_state": "CLOSED",
-      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed; not separate delivery proof",
       "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
       "open_native_blockers": []
     },
@@ -321,7 +321,7 @@
       "title": "WX-25: Bounded hybrid semantic/lexical API with exact measured predicates, numeric-only mode, recall and outage behavior.",
       "url": "https://github.com/jvallery/weather/issues/26",
       "github_state": "CLOSED",
-      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed; not separate delivery proof",
       "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
       "open_native_blockers": []
     },
@@ -348,7 +348,7 @@
       "title": "WX-27: If selected: plan-compliant Cloudflare routing/cache, object-size/range/Safari tests and purge controls.",
       "url": "https://github.com/jvallery/weather/issues/28",
       "github_state": "CLOSED",
-      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed; not separate delivery proof",
       "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
       "open_native_blockers": []
     },
@@ -357,7 +357,7 @@
       "title": "WX-28: Barman physical base/WAL archives, unique identities, retention and real gateway backup/restore qualification.",
       "url": "https://github.com/jvallery/weather/issues/29",
       "github_state": "CLOSED",
-      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed; not separate delivery proof",
       "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
       "open_native_blockers": []
     },
@@ -366,7 +366,7 @@
       "title": "WX-29: Central full and exact-WAL custody enrollment, budgets, monitoring and independently checked receipts.",
       "url": "https://github.com/jvallery/weather/issues/30",
       "github_state": "CLOSED",
-      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed; not separate delivery proof",
       "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
       "open_native_blockers": []
     },
@@ -375,7 +375,7 @@
       "title": "WX-30: Joint checkpoint closure and recovery-aware GC including keograms, hourly originals/day FKs and public/private assets.",
       "url": "https://github.com/jvallery/weather/issues/31",
       "github_state": "CLOSED",
-      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed; not separate delivery proof",
       "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
       "open_native_blockers": []
     },
@@ -384,7 +384,7 @@
       "title": "WX-31: Integrated operational dashboards/alerts, SLOs, capacity and dependency-failure visibility.",
       "url": "https://github.com/jvallery/weather/issues/32",
       "github_state": "CLOSED",
-      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed; not separate delivery proof",
       "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
       "open_native_blockers": []
     },
@@ -415,7 +415,7 @@
       "title": "WX-33: Integrated security/browser/accessibility/quality acceptance for all selected initial features and privacy boundaries.",
       "url": "https://github.com/jvallery/weather/issues/34",
       "github_state": "CLOSED",
-      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed; not separate delivery proof",
       "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
       "open_native_blockers": []
     },
@@ -424,7 +424,7 @@
       "title": "WX-34: Fleet deployment, customization, upgrades, capacity and recovery runbooks; selected upstream provenance and licenses.",
       "url": "https://github.com/jvallery/weather/issues/35",
       "github_state": "CLOSED",
-      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed; not separate delivery proof",
       "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
       "open_native_blockers": []
     },
@@ -595,7 +595,7 @@
       "title": "WX-42: Typed measured-weather search predicates and bounded source-interval evidence queries.",
       "url": "https://github.com/jvallery/weather/issues/43",
       "github_state": "CLOSED",
-      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed; not separate delivery proof",
       "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
       "open_native_blockers": []
     },

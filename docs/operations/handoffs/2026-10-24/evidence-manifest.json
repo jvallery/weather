@@ -1,8 +1,13 @@
 [
   {
-    "name": "api59-85173af-qualified.json",
-    "bytes": 1557,
-    "sha256": "75a75f38caa13fbda2c610316e11769a67093fd7e4ea3f3aad32ffa37318c84f"
+    "name": "README.md",
+    "bytes": 16469,
+    "sha256": "17c498b0abc8716d7a8269e86522aa065b5c50c568da4e178fb5d90d1bc2b954"
+  },
+  {
+    "name": "api59-85173af-application-retained-tail.log",
+    "bytes": 4000,
+    "sha256": "4b016fef8e0a9233427c518d06c2a28504a49199f9f8799c68ac35eb68cf8ecd"
   },
   {
     "name": "api59-85173af-evidence-expected.json",
@@ -10,14 +15,39 @@
     "sha256": "c83d99b4412cb08d183a3a76dc28c8edfa51521b48739e21590f1e7b40dd2673"
   },
   {
+    "name": "api59-85173af-failed-attempt.json",
+    "bytes": 741,
+    "sha256": "18dedbc5f02adf7945c70b3bd87728f17abce9f3b6678cb6cbf679efb1e07ad2"
+  },
+  {
     "name": "api59-85173af-independent-readback.json",
     "bytes": 2218,
     "sha256": "f969d35c7a80024b607af124cfa252c56de46606582bfd1a2d3ecb5c633c50db"
   },
   {
-    "name": "api59-85173af-application-retained-tail.log",
-    "bytes": 4000,
-    "sha256": "4b016fef8e0a9233427c518d06c2a28504a49199f9f8799c68ac35eb68cf8ecd"
+    "name": "api59-85173af-qualified.json",
+    "bytes": 1557,
+    "sha256": "75a75f38caa13fbda2c610316e11769a67093fd7e4ea3f3aad32ffa37318c84f"
+  },
+  {
+    "name": "audit-outcome.json",
+    "bytes": 1056,
+    "sha256": "b5e1e9ffc89751a9b8b1db325650a3433cdfd862ef6125cb49fc68ad7c795f27"
+  },
+  {
+    "name": "issue-status-matrix.json",
+    "bytes": 32606,
+    "sha256": "61fb8bbeeeb01b4db57c25d560f001fd8281e7ad1c47281a0b81ca1c00a4bf8e"
+  },
+  {
+    "name": "shutdown-issue-publications.json",
+    "bytes": 4645,
+    "sha256": "d906c01cadc6af81a829b17e11eebfbe06576bfaabbfa9d14f45b976b3ae85d7"
+  },
+  {
+    "name": "shutdown-owner-issue-audit.json",
+    "bytes": 2925,
+    "sha256": "2fa1c22088fa13cdf0c21658cf77422f9f92f547f4f64ed7874bf5e15762ebe3"
   },
   {
     "name": "weather-shutdown-probe-observation.json",
@@ -30,8 +60,8 @@
     "sha256": "d00de87b8a165c528f8d0df63dea27a2b7729f5c3fc03db4ab5069a76056fd3d"
   },
   {
-    "name": "audit-outcome.json",
-    "bytes": 1056,
-    "sha256": "b5e1e9ffc89751a9b8b1db325650a3433cdfd862ef6125cb49fc68ad7c795f27"
+    "name": "weather-worktree-custody.json",
+    "bytes": 13235,
+    "sha256": "6f7a684ee414b666238d520337bae4ec7fa9d36f00da181904f17e5d8ae179b3"
   }
 ]
