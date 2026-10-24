@@ -8,9 +8,15 @@ metadata:
     agent-fleet.vallery.net/owner: jvallery
     agent-fleet.vallery.net/project: weather
 spec:
+  # Every request arrives through the Cloudflare tunnel, so the TCP peer is a
+  # cloudflared pod. Key on the visitor's address instead (C7). LAN clients
+  # that reach traefik-apps directly could spoof the header; that only lets
+  # them evade their own limit.
   rateLimit:
     average: 30
     burst: 60
+    sourceCriterion:
+      requestHeaderName: Cf-Connecting-Ip
 ---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
@@ -48,6 +54,15 @@ spec:
     - name: weather-security-headers
     services:
     - name: api
+      port: 80
+  # Hashed, immutable build assets and fonts are not rate limited.
+  - match: Host(`weather.vallery.net`) && (PathPrefix(`/assets/`) || PathPrefix(`/fonts/`))
+    priority: 20
+    kind: Rule
+    middlewares:
+    - name: weather-security-headers
+    services:
+    - name: web
       port: 80
   - match: Host(`weather.vallery.net`)
     priority: 10
