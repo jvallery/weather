@@ -6,7 +6,6 @@ import re
 import time
 import uuid
 from collections import Counter
-from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -22,6 +21,21 @@ STATION_ALIAS, STATION_SITE = "home", "local"
 DEVICE_VALID_FROM = datetime(2020, 1, 1, tzinfo=UTC)
 # Receipts the receiver quarantined at admission are never projected, even on reproject.
 ADMISSION_QUARANTINE = "missing_hub_identity"
+# Connection, transaction-conflict, resource, operator-intervention, lock-timeout and privilege
+# failures are not the receipt's fault: they fail the batch so the spool retries it unchanged.
+SYSTEMIC_CLASSES, SYSTEMIC_CODES = ("08", "40", "53", "57"), ("42501", "55P03")
+
+
+def sqlstate(error: BaseException) -> str | None:
+    code = getattr(getattr(error, "orig", None), "sqlstate", None)
+    return code if isinstance(code, str) and re.fullmatch(r"[0-9A-Z]{5}", code) else None
+
+
+def systemic(error: BaseException) -> bool:
+    if getattr(error, "connection_invalidated", False):
+        return True
+    code = sqlstate(error)
+    return code is not None and (code[:2] in SYSTEMIC_CLASSES or code in SYSTEMIC_CODES)
 
 
 def instant(epoch: Decimal) -> datetime | None:
@@ -164,14 +178,12 @@ class Drain:
         self.last_error_code: str | None = None
 
     def _error(self, error: Exception) -> None:
-        code = getattr(getattr(error, "orig", None), "sqlstate", None)
-        self.last_error_code = (
-            code if isinstance(code, str) and re.fullmatch(r"[0-9A-Z]{5}", code) else "UNAVAILABLE"
-        )
+        self.last_error_code = sqlstate(error) or "UNAVAILABLE"
         self.counts["drain_errors"] += 1
 
     async def once(self) -> int:
-        committed = projected = quarantined = 0
+        # Counters merge only after the CNPG commit, so retries and rolled-back work never count.
+        pending: Counter[str] = Counter()
         try:
             async with asyncio.timeout(30):
                 if not self.seeded and self.hub_identity is not None:
@@ -183,27 +195,26 @@ class Drain:
                     return 0
                 async with self.engine.begin() as db:
                     for item in batch:
+                        receipt_counts: Counter[str] = Counter()
                         try:
                             async with db.begin_nested():
-                                new, rows = await self._receipt(db, item.receipt)
-                        except Exception:
+                                await self._receipt(db, item.receipt, receipt_counts)
+                        except Exception as error:
+                            if systemic(error):
+                                raise
                             # A deterministic failure must not block later receipts forever:
                             # keep its raw bytes as a quarantined row and move on.
+                            reason = item.receipt.quarantine_reason or "drain_failed"
                             async with db.begin_nested():
-                                new = int(
-                                    await store(db, item.receipt, "quarantined", "drain_failed")
-                                )
-                            rows, quarantined = 0, quarantined + new
-                        committed += new
-                        projected += rows
+                                new = int(await store(db, item.receipt, "quarantined", reason))
+                            receipt_counts = Counter(committed=new, drain_quarantined=new)
+                        pending.update(receipt_counts)
         except Exception as error:
             # Never log exceptions: DB errors may include parameters/raw/private identities.
             self._error(error)
             return 0
         # Known committed counters advance before the separately fallible local acknowledgement.
-        self.counts["committed"] += committed
-        self.counts["projected"] += projected
-        self.counts["drain_quarantined"] += quarantined
+        self.counts.update(pending)
         self.last_commit_ns = time.time_ns()
         try:
             await asyncio.to_thread(self.spool.acknowledge, batch)
@@ -220,15 +231,19 @@ class Drain:
                 except TimeoutError:
                     pass
 
-    async def _receipt(self, db: AsyncConnection, receipt: Receipt) -> tuple[int, int]:
+    async def _receipt(self, db: AsyncConnection, receipt: Receipt, counts: Counter[str]) -> None:
+        if receipt.quarantine_reason is not None:
+            # Admission quarantine is raw-only and never reaches the parser.
+            counts["committed"] += int(
+                await store(db, receipt, "quarantined", receipt.quarantine_reason)
+            )
+            return
         packet = parse_packet(
             receipt.raw, Decimal(receipt.received_ns) / 1_000_000_000, self.future_seconds
         )
-        if receipt.quarantine_reason is not None:
-            packet = replace(packet, state="quarantined", rows=(), reason=receipt.quarantine_reason)
-        if not await store(db, receipt, packet.state, packet.reason):
-            return 0, 0
-        return 1, await project(db, receipt.id, packet, self.counts)
+        if await store(db, receipt, packet.state, packet.reason):
+            counts["committed"] += 1
+            counts["projected"] += await project(db, receipt.id, packet, counts)
 
 
 async def reproject(
@@ -247,12 +262,10 @@ async def reproject(
                 await db.execute(
                     text("""
                 SELECT id,received_at,raw_bytes FROM weather.telemetry_receipt
-                WHERE received_at>=:since AND (received_at,id)>(:at,:id)
-                  AND coalesce(parse_reason,'')<>:skip
+                WHERE (received_at,id)>(:at,:id) AND coalesce(parse_reason,'')<>:skip
                 ORDER BY received_at,id LIMIT :page
             """),
                     {
-                        "since": since,
                         "at": cursor[0],
                         "id": cursor[1],
                         "skip": ADMISSION_QUARANTINE,
@@ -265,11 +278,17 @@ async def reproject(
                 packet = parse_packet(
                     item.raw_bytes, Decimal(micros) / 1_000_000, future_seconds
                 )
+                receipt_counts: Counter[str] = Counter()
+                new = 0
                 try:
                     async with db.begin_nested():
-                        rows += await project(db, item.id, packet, counts)
-                except Exception:
-                    counts["reproject_errors"] += 1
+                        new = await project(db, item.id, packet, receipt_counts)
+                except Exception as error:
+                    if systemic(error):
+                        raise
+                    new, receipt_counts = 0, Counter(reproject_errors=1)
+                rows += new
+                counts.update(receipt_counts)
             receipts += len(batch)
         if len(batch) < page:
             return receipts, rows, counts
