@@ -13,9 +13,22 @@ def main() -> None:
 
         capture_main(sys.argv[2:])
         return
+    if sys.argv[1:2] == ["tempest-receiver"]:
+        receiver_parser = argparse.ArgumentParser(
+            prog="weather tempest-receiver", description="Receive using mounted configuration only"
+        )
+        if sys.argv[2:] in (["--help"], ["-h"]):
+            receiver_parser.print_help()
+            return
+        if sys.argv[2:]:
+            receiver_parser.exit(2, "tempest-receiver accepts mounted configuration only\n")
+        from weather.telemetry.runtime import main as receiver_main
+
+        receiver_main()
+        return
     parser = argparse.ArgumentParser(prog="weather", description="Weather archive services")
     parser.epilog = "Snapshot acquisition: weather capture collect --camera <id>"
-    parser.add_argument("role", choices=["api", "scheduler"], nargs="?")
+    parser.add_argument("role", choices=["api", "scheduler", "tempest-receiver"], nargs="?")
     args = parser.parse_args()
     if args.role == "api":
         try:

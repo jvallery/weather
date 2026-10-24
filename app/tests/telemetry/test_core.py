@@ -327,13 +327,10 @@ def test_metrics_fixed_labels_and_config_errors_do_not_expose_private_values(
     from weather.telemetry.drain import Drain
     from weather.telemetry.metrics import Metrics
 
-    private = {
-        "interface_name": "net1",
-        "hub_source_ip": "192.0.2.1",
-        "hub_identity": "SYNTHETIC-HUB",
-        "device_identities": ["SYNTHETIC-ST"],
-    }
-    (tmp_path / "receiver.json").write_text(json.dumps(private))
+    (tmp_path / "receiver.json").write_text(json.dumps({"interface_name": "net1"}))
+    (tmp_path / "TEMPEST_HUB_SOURCE").write_text("192.0.2.1")
+    (tmp_path / "TEMPEST_HUB_SERIAL").write_text("SYNTHETIC-HUB")
+    (tmp_path / "TEMPEST_DEVICE_SERIALS").write_text(json.dumps(["SYNTHETIC-ST"]))
     config = load_config(tmp_path)
     assert "192.0.2.1" not in repr(config) and "SYNTHETIC" not in repr(config)
     spool = Spool(tmp_path / "spool", 1 << 20)
@@ -357,9 +354,7 @@ def test_metrics_fixed_labels_and_config_errors_do_not_expose_private_values(
         assert "weather_telemetry_received_total 1.0" in body
         assert 'family="rapid_wind"' in body and "weather_telemetry_drain_lag_seconds" in body
         assert "192.0.2.1" not in body and "SYNTHETIC" not in body
-        (tmp_path / "receiver.json").write_text(
-            json.dumps({**private, "hub_source_ip": "PRIVATE-BAD"})
-        )
+        (tmp_path / "TEMPEST_HUB_SOURCE").write_text("PRIVATE-BAD")
         with pytest.raises(ValueError) as error:
             load_config(tmp_path)
         assert "PRIVATE-BAD" not in str(error.value)

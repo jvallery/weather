@@ -19,7 +19,7 @@ from .spool import Spool
 async def run() -> None:
     if sys.platform != "linux":
         raise RuntimeError("Receiver runtime requires the commissioned Linux pod")
-    from weather.db.connection import create_database_engine  # type: ignore[import-not-found]
+    from weather.db.connection import create_database_engine
 
     config = load_config(
         Path(os.environ.get("TELEMETRY_CONFIG_DIRECTORY", "/etc/weather/telemetry"))

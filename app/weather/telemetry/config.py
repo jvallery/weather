@@ -23,16 +23,13 @@ class ReceiverConfig:
 
 def load_config(directory: Path) -> ReceiverConfig:
     try:
-        with (directory / "receiver.json").open() as stream:
-            raw = stream.read(65537)
-        if len(raw) > 65536:
-            raise ValueError
-        data: Any = json.loads(raw)
+        data: Any = json.loads(
+            _read(directory / "receiver.json", 65536),
+            object_pairs_hook=_unique,
+            parse_constant=_invalid_constant,
+        )
         allowed = {
             "interface_name",
-            "hub_source_ip",
-            "hub_identity",
-            "device_identities",
             "hub_source_port",
             "spool_directory",
             "capacity_bytes",
@@ -41,16 +38,21 @@ def load_config(directory: Path) -> ReceiverConfig:
         }
         if not isinstance(data, dict) or set(data) - allowed:
             raise ValueError
-        for key in ("interface_name", "hub_source_ip", "hub_identity"):
-            if not isinstance(data[key], str) or not data[key] or len(data[key]) > 128:
-                raise ValueError
-        if ipaddress.ip_address(data["hub_source_ip"]).version != 4:
+        if not _atom(data["interface_name"]):
             raise ValueError
-        devices = data["device_identities"]
+        source = _read(directory / "TEMPEST_HUB_SOURCE", 128)
+        hub = _read(directory / "TEMPEST_HUB_SERIAL", 128)
+        if not _atom(source) or ipaddress.ip_address(source).version != 4 or not _atom(hub):
+            raise ValueError
+        devices: Any = json.loads(
+            _read(directory / "TEMPEST_DEVICE_SERIALS", 8192),
+            parse_constant=_invalid_constant,
+        )
         if (
             not isinstance(devices, list)
             or not 1 <= len(devices) <= 32
-            or any(not isinstance(value, str) or not value or len(value) > 128 for value in devices)
+            or any(not _atom(value) for value in devices)
+            or len(set(devices)) != len(devices)
         ):
             raise ValueError
         for key, low, high in (
@@ -71,8 +73,8 @@ def load_config(directory: Path) -> ReceiverConfig:
             raise ValueError
         return ReceiverConfig(
             data["interface_name"],
-            data["hub_source_ip"],
-            data["hub_identity"],
+            source,
+            hub,
             frozenset(devices),
             data.get("hub_source_port"),
             spool,
@@ -82,3 +84,33 @@ def load_config(directory: Path) -> ReceiverConfig:
         )
     except OSError, ValueError, KeyError, TypeError:
         raise ValueError("Invalid mounted private receiver configuration") from None
+
+
+def _read(path: Path, limit: int) -> str:
+    with path.open("rb") as stream:
+        raw = stream.read(limit + 1)
+    if len(raw) > limit:
+        raise ValueError
+    return raw.decode("utf-8")
+
+
+def _atom(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and 1 <= len(value) <= 128
+        and value.isascii()
+        and all(32 < ord(character) < 127 for character in value)
+    )
+
+
+def _unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError
+        result[key] = value
+    return result
+
+
+def _invalid_constant(_: str) -> None:
+    raise ValueError
