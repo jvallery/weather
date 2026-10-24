@@ -331,6 +331,40 @@
         "individual_details_lost": true,
         "reconciliation": "scheduler compares sealed chunks and accepted slots"
       }
+    },
+    {
+      "name": "boolean is not a byte count",
+      "valid": false,
+      "value": {
+        "record_type": "capture_attempt",
+        "attempt_id": "synthetic-attempt",
+        "slot_id": "synthetic-slot",
+        "slot_at_utc": "2026-10-24T00:00:00Z",
+        "clock_epoch": "clock-a",
+        "camera": "skycam_east",
+        "status": "captured",
+        "failure_class": null,
+        "member": {
+          "name": "frames/synthetic-attempt.jpg",
+          "bytes": true,
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "width": 4096,
+          "height": 1856
+        },
+        "duplicate_hash": false,
+        "request_started_at_utc": "2026-10-24T00:00:00Z",
+        "response_completed_at_utc": "2026-10-24T00:00:01Z",
+        "monotonic_started_ns": "1000000000",
+        "monotonic_completed_ns": "2000000000",
+        "source_at_utc": "2026-10-24T00:00:00.500000Z",
+        "source_time_basis": "request_midpoint",
+        "source_lower_bound": null,
+        "capture_upper_bound": null,
+        "uncertainty_ms": null,
+        "freshness": "unknown",
+        "calibration_revision": null,
+        "clock_discontinuity": false
+      }
     }
   ]
 }
