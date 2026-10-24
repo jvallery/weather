@@ -45,6 +45,10 @@ class DatabaseManifestTests(unittest.TestCase):
                 obj["metadata"]["annotations"]["argocd.argoproj.io/sync-options"],
                 "Prune=false,Delete=false",
             )
+        self.assertEqual(
+            cluster["spec"]["inheritedMetadata"]["annotations"]["argocd.argoproj.io/sync-options"],
+            "Prune=false,Delete=false",
+        )
         self.assertEqual(cluster["spec"]["instances"], 3)
         self.assertFalse(cluster["spec"]["enableSuperuserAccess"])
         self.assertEqual(cluster["spec"]["affinity"]["podAntiAffinityType"], "required")
