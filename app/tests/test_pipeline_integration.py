@@ -9,8 +9,9 @@ import asyncio
 import json
 import os
 from collections.abc import Iterator
-from dataclasses import replace
+from dataclasses import astuple, replace
 from datetime import UTC, date, datetime, timedelta
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -146,12 +147,33 @@ def test_schedule_freezes_days_ahead_matches_time_model_and_is_idempotent() -> N
                 == frozen
             )
             assert len(await rows(worker, "SELECT id FROM weather.segment")) == 24
-            # A new day that would not start at the frozen next dawn fails visibly.
+            # A new day whose recomputed dawn moved (a rotated offset) starts at the frozen
+            # next dawn instead of stalling; its allocation follows its real lengths.
+            moved_day = solar_cycle(date(2026, 12, 24), shifted)
+            assert moved_day.dawn != frozen[-1].next_dawn
+            async with worker.begin() as connection:
+                assert await schedule.freeze(connection, shifted, [moved_day]) == 1
+            anchored = (
+                await rows(
+                    worker,
+                    "SELECT * FROM weather.solar_cycle WHERE cycle_date=:d",
+                    d=date(2026, 12, 24),
+                )
+            )[0]
+            assert anchored.dawn == frozen[-1].next_dawn
+            assert (anchored.dusk, anchored.next_dawn) == (moved_day.dusk, moved_day.next_dawn)
+            assert (anchored.day_frames, anchored.night_frames) == astuple(
+                allocate_frames(
+                    Fraction((anchored.dusk - anchored.dawn) / timedelta(microseconds=1), 10**6),
+                    Fraction(
+                        (anchored.next_dawn - anchored.dusk) / timedelta(microseconds=1), 10**6
+                    ),
+                )
+            )
+            # A cycle that cannot start there (dusk before the frozen dawn) fails visibly.
+            impossible = replace(moved_day, dusk=frozen[-1].next_dawn - timedelta(seconds=1))
             with pytest.raises(ScheduleError, match="frozen previous"):
-                async with worker.begin() as connection:
-                    await schedule.freeze(
-                        connection, shifted, [solar_cycle(date(2026, 12, 24), shifted)]
-                    )
+                schedule.anchored(impossible, frozen[-1].next_dawn)
             # Overlapping current segments of one camera are refused by the database.
             with pytest.raises(Exception, match="ex_segment_current_overlap"):
                 async with worker.begin() as connection:
@@ -163,6 +185,33 @@ def test_schedule_freezes_days_ahead_matches_time_model_and_is_idempotent() -> N
                         FROM weather.segment WHERE camera_id='skycam_east' LIMIT 1
                     """)
                     )
+        finally:
+            await worker.dispose()
+
+    asyncio.run(check())
+
+
+def test_schedule_across_the_fall_dst_change_is_contiguous() -> None:
+    async def check() -> None:
+        worker = engine("weather_worker")
+        cycles = [solar_cycle(date(2026, 10, 31) + timedelta(days=n), SITE) for n in range(3)]
+        try:
+            async with worker.begin() as connection:
+                assert await schedule.freeze(connection, SITE, cycles) == 3
+            frozen = await rows(worker, "SELECT * FROM weather.solar_cycle ORDER BY cycle_date")
+            segments = await rows(
+                worker,
+                "SELECT * FROM weather.segment WHERE camera_id='skycam_east' ORDER BY starts_at",
+            )
+            assert [r.cycle_date for r in frozen] == [c.cycle_date for c in cycles]
+            assert all(a.next_dawn == b.dawn for a, b in zip(frozen, frozen[1:], strict=False))
+            assert all(r.day_frames + r.night_frames == 7200 for r in frozen)
+            # The 25-hour local day changes nothing in UTC: segments tile time exactly.
+            assert all(
+                a.ends_at == b.starts_at for a, b in zip(segments, segments[1:], strict=False)
+            )
+            keys = {schedule.hour_key(s.ends_at) for s in segments}
+            assert len(keys) == len(segments)
         finally:
             await worker.dispose()
 
@@ -219,10 +268,10 @@ async def run_jobs(db: AsyncEngine, kind: str, handler: Any) -> int:
 
 
 class KillOnce:
-    """Dies on the first matching call, like a process killed at that point."""
+    """Dies on the first call, like a process killed at that point."""
 
-    def __init__(self) -> None:
-        self.armed = True
+    def __init__(self, armed: bool = True) -> None:
+        self.armed = armed
 
     def check(self) -> None:
         if self.armed:
@@ -230,22 +279,33 @@ class KillOnce:
             raise RuntimeError("killed")
 
 
-class KilledPublisher(Publisher):
-    def __init__(self, *args: Any, kill: KillOnce, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.kill = kill
+class HookedPublisher(Publisher):
+    """#18's publisher with a kill between staging and commit, and a hook before publish."""
+
+    def __init__(self, *args: Any, kill_commit: KillOnce, before: Any = None, **kw: Any) -> None:
+        super().__init__(*args, **kw)
+        self.kill_commit, self.before = kill_commit, before
 
     async def publish(self, *args: Any, **kwargs: Any) -> Any:
-        self.kill.check()
+        if self.before is not None:
+            hook, self.before = self.before, None
+            await hook()
         return await super().publish(*args, **kwargs)
+
+    async def commit(self, staged: Any) -> Any:
+        self.kill_commit.check()  # objects uploaded and read back, intent registered
+        return await super().commit(staged)
 
 
 def test_stopped_camera_is_unavailable_and_others_publish_exactly_once(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     now = datetime.now(UTC).replace(microsecond=0)
-    dawn = (now - timedelta(hours=6)).replace(second=0)
-    # A short synthetic cycle: two 120 s segments of 3,600 frames each.
+    # A short synthetic cycle that straddles a UTC hour: [h:59, h+1:01) and [h+1:01, h+1:03).
+    # Boundaries 4-5 h ago: inside the tick's 6 h lookback and past the 2 h deadline.
+    dawn = (now - timedelta(hours=4)).replace(minute=59, second=0)
+    if dawn > now - timedelta(hours=4):
+        dawn -= timedelta(hours=1)
     cycle = SolarCycle(
         cycle_date=day_for(dawn).local_date,
         dawn=dawn,
@@ -270,65 +330,81 @@ def test_stopped_camera_is_unavailable_and_others_publish_exactly_once(
             geometry=(W, H),
             pod=camera.replace("_", "-"),
         )
+    assert len(list((tmp_path / "sealed/skycam_east").iterdir())) == 2  # two hour directories
 
     async def check() -> None:
-        admin, worker_db = engine(), engine("weather_worker")
+        admin, worker_db, api = engine(), engine("weather_worker"), engine("weather_api")
         buckets = stores()
+
+        def worker(camera: str, publisher: Publisher) -> Worker:
+            # A fresh Worker each time: nothing in memory survives a restart.
+            config = PipelineConfig(
+                camera=camera,
+                staging=tmp_path,
+                expected=Expected(camera, 1000, 0, W, H),
+                recipe=Recipe(),
+            )
+            return Worker(config, worker_db, publisher, AggregateWeather(worker_db))
+
         try:
             async with worker_db.begin() as connection:
                 await schedule.freeze(connection, SITE, [cycle])
                 await schedule.periodic(connection, now)
-            # The real boundary jobs, claimed and run as the scheduler would.
-            async with worker_db.begin() as connection:
-                due = await connection.execute(
-                    text("SELECT idempotency_key,not_before FROM weather.job ORDER BY 1")
-                )
-                due_rows = list(due)
-            finalize_keys = [r for r in due_rows if r.idempotency_key.startswith("finalize:")]
-            assert finalize_keys and all(r.not_before <= now for r in finalize_keys)
+            keys = [r.idempotency_key for r in await rows(worker_db, "SELECT * FROM weather.job")]
+            assert any(k.startswith("finalize:") for k in keys)
             await run_jobs(worker_db, schedule.FINALIZE_KIND, schedule.finalize_job)
             states = await rows(worker_db, "SELECT camera_id,state FROM weather.segment")
             assert len(states) == 6 and {s.state for s in states} == {"processing"}
 
-            kill_publish = KillOnce()
+            # East: killed after staging (objects uploaded, intent registered) before commit,
+            # then restarted from durable state.
+            kill_commit = KillOnce()
+            await worker(
+                "skycam_east", HookedPublisher(worker_db, buckets, kill_commit=kill_commit)
+            ).step(now)
+            assert not kill_commit.armed
+            for _ in range(2):
+                fresh = worker(
+                    "skycam_east", HookedPublisher(worker_db, buckets, kill_commit=KillOnce(False))
+                )
+                await fresh.step(now)
+
+            pending = await rows(
+                admin,
+                "SELECT count(*) AS n FROM weather.upload_intent "
+                "WHERE camera_id='skycam_east' AND state='pending'",
+            )
+            assert pending[0].n == 1  # the killed attempt's intent, for the reconciler
+
+            # Frontyard: the deadline commits its placeholders while the pipeline is about to
+            # publish (a race), and the segment update after the real publish is killed.
+            async def deadline() -> None:
+                await run_jobs(worker_db, schedule.DEADLINE_KIND, schedule.deadline_job)
+
             kill_finish = KillOnce()
             original_finish = schedule.finish
-            for camera, publish_kill, finish_kill in (
-                ("skycam_east", kill_publish, None),
-                ("frontyard_1", None, kill_finish),
-            ):
-                config = PipelineConfig(
-                    camera=camera,
-                    staging=tmp_path,
-                    expected=Expected(camera, 1000, 0, W, H),
-                    recipe=Recipe(),
-                )
-                publisher = KilledPublisher(worker_db, buckets, kill=publish_kill or KillOnce())
-                if publish_kill is None:
-                    publisher.kill.armed = False
 
-                async def killed_finish(
-                    *args: Any, kill: KillOnce | None = finish_kill, **kwargs: Any
-                ) -> None:
-                    if kill is not None:
-                        kill.check()
-                    await original_finish(*args, **kwargs)
+            async def killed_finish(*args: Any, **kwargs: Any) -> None:
+                kill_finish.check()
+                await original_finish(*args, **kwargs)
 
-                monkeypatch.setattr(schedule, "finish", killed_finish)
-                pipeline = Worker(config, worker_db, publisher, AggregateWeather(worker_db))
-                # Every block and boundary is long past; kills are retried on the next loop.
-                for _ in range(3):
-                    await pipeline.step(now)
-                monkeypatch.setattr(schedule, "finish", original_finish)
-            # West never ran: its rows miss the deadline; the others are untouched.
-            await run_jobs(worker_db, schedule.DEADLINE_KIND, schedule.deadline_job)
+            monkeypatch.setattr(schedule, "finish", killed_finish)
+            await worker(
+                "frontyard_1",
+                HookedPublisher(worker_db, buckets, kill_commit=KillOnce(False), before=deadline),
+            ).step(now)
+            monkeypatch.setattr(schedule, "finish", original_finish)
+            assert not kill_finish.armed
+            await worker(
+                "frontyard_1", HookedPublisher(worker_db, buckets, kill_commit=KillOnce(False))
+            ).step(now)
+
             final = {
                 (r.camera_id, r.kind): r
                 for r in await rows(
                     worker_db,
                     "SELECT camera_id,kind,state,reason,render_result,mezzanine_durable_at,"
-                    "mezzanine_through,ends_at "
-                    "FROM weather.segment",
+                    "mezzanine_through,ends_at FROM weather.segment",
                 )
             }
             assert len(final) == 6
@@ -341,22 +417,38 @@ def test_stopped_camera_is_unavailable_and_others_publish_exactly_once(
                     assert row.mezzanine_durable_at is not None
                     assert row.mezzanine_through == row.ends_at
                     assert row.render_result["frames"] == 3600
-            published = await rows(
-                admin,
-                "SELECT camera_id,product_key,count(*) AS n,max(revision) AS r "
-                "FROM weather.publication WHERE product='video' GROUP BY 1,2",
-            )
-            assert len(published) == 4
-            assert all(p.n == 1 and p.r == 1 for p in published)
-            videos = await rows(
-                admin, "SELECT camera_id,public_not_before,ends_at,revision FROM weather.video"
-            )
-            assert len(videos) == 4 and {v.camera_id for v in videos} == {
-                "skycam_east",
-                "frontyard_1",
+            published = {
+                (p.camera_id, p.product_key): (p.n, p.r, p.states)
+                for p in await rows(
+                    admin,
+                    "SELECT camera_id,product_key,count(*) AS n,max(revision) AS r,"
+                    "string_agg(state,',' ORDER BY revision) AS states "
+                    "FROM weather.publication WHERE product='video' GROUP BY 1,2",
+                )
             }
+            assert len(published) == 6
+            for (camera, _), (n, revision, history) in published.items():
+                expected = {
+                    "skycam_east": (1, 1, "published"),
+                    "frontyard_1": (2, 2, "unavailable,published"),  # placeholder superseded
+                    "skycam_west": (1, 1, "unavailable"),
+                }[camera]
+                assert (n, revision, history) == expected, camera
+            # The public catalog shows the stopped camera honestly (R03).
+            async with api.connect() as connection:
+                public = list(
+                    await connection.execute(
+                        text("SELECT camera_id,segment,state,reason FROM public_api.videos")
+                    )
+                )
+            assert len(public) == 6
+            for row in public:
+                if row.camera_id == "skycam_west":
+                    assert (row.state, row.reason) == ("unavailable", "deadline_missed")
+                else:
+                    assert row.state == "published"
+            videos = await rows(admin, "SELECT public_not_before,ends_at FROM weather.video")
             assert all(v.public_not_before >= v.ends_at + timedelta(seconds=630) for v in videos)
-            assert not kill_publish.armed and not kill_finish.armed
             summary = await AggregateWeather(worker_db).summary(dawn, dawn + timedelta(seconds=120))
             assert summary is not None and summary["items"]
         finally:
@@ -364,5 +456,6 @@ def test_stopped_camera_is_unavailable_and_others_publish_exactly_once(
                 await store.aclose()
             await admin.dispose()
             await worker_db.dispose()
+            await api.dispose()
 
     asyncio.run(check())

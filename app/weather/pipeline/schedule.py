@@ -26,17 +26,22 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from weather.db import jobs
 from weather.db.days import ensure_days
+from weather.publish import catalog
+from weather.publish.model import EMBARGO, Product
+from weather.publish.publisher import Publisher
 from weather.scheduler.registry import JobContext, Registry
 from weather.timemodel import (
     TZDATA_VERSION,
     ScheduleError,
     SiteConfig,
     SolarCycle,
+    allocate_frames,
     day_for,
     load_site,
     solar_cycle,
     weather_day,
 )
+from weather.timemodel._instant import duration_seconds
 
 from . import metrics
 from .recipe import CAMERAS
@@ -51,6 +56,7 @@ DEADLINE_KIND = "segment.deadline"
 PROCESSING_AFTER = timedelta(seconds=30)
 DEADLINE_AFTER = timedelta(hours=2)
 LOOKBACK = timedelta(hours=6)
+LATE_RENDER = timedelta(hours=12)
 HOUR = timedelta(hours=1)
 
 
@@ -60,6 +66,25 @@ def hour_of(instant: datetime) -> datetime:
 
 def hour_key(instant: datetime) -> str:
     return hour_of(instant).strftime("%Y-%m-%dT%HZ")
+
+
+def anchored(cycle: SolarCycle, dawn: datetime) -> SolarCycle:
+    try:
+        return SolarCycle(
+            cycle_date=cycle.cycle_date,
+            dawn=dawn,
+            dusk=cycle.dusk,
+            next_dawn=cycle.next_dawn,
+            sunrise=cycle.sunrise,
+            sunset=cycle.sunset,
+            allocation=allocate_frames(
+                duration_seconds(cycle.dusk - dawn), duration_seconds(cycle.next_dawn - cycle.dusk)
+            ),
+            config_hash=cycle.config_hash,
+        )
+    except ScheduleError:
+        metrics.SCHEDULE_FAILURES.labels("discontinuity").inc()
+        raise ScheduleError("New cycle cannot start at the frozen previous next dawn") from None
 
 
 async def freeze(
@@ -92,8 +117,11 @@ async def freeze(
                 )
             ).scalar_one_or_none()
             if previous is not None and previous != cycle.dawn:
-                metrics.SCHEDULE_FAILURES.labels("discontinuity").inc()
-                raise ScheduleError("New cycle does not start at the frozen previous next dawn")
+                # A changed offset or library moved dawn: the frozen past wins. The new cycle
+                # starts at the frozen next dawn and its allocation follows its real lengths.
+                cycle = anchored(cycle, previous)
+                metrics.SCHEDULE_ANCHORED.inc()
+                LOG.warning("New cycle anchored to the frozen previous next dawn")
             await connection.execute(
                 text("""
                 INSERT INTO weather.solar_cycle(site,cycle_date,dawn,dusk,next_dawn,day_frames,
@@ -226,18 +254,112 @@ async def sweep_processing(connection: AsyncConnection, hour: datetime) -> int:
     return result.rowcount
 
 
+def due(alias: str = "") -> str:
+    """Current, unfinished segments of the hour whose deadline has passed."""
+    a = f"{alias}." if alias else ""
+    return (
+        f"{a}current AND {a}state IN ('scheduled','processing') AND {a}ends_at >= :hour"
+        f" AND {a}ends_at < :next AND {a}ends_at + CAST(:after AS interval) <= clock_timestamp()"
+    )
+
+
 async def sweep_deadline(connection: AsyncConnection, hour: datetime) -> list[str]:
+    """Segments still unfinished two hours after their boundary. One whose video is already
+    committed (a publish whose acknowledgement was lost) takes the video's state; the rest
+    become unavailable/deadline_missed. Returns the cameras that missed."""
+    params = {"hour": hour, "next": hour + HOUR, "after": DEADLINE_AFTER}
+    await connection.execute(
+        text(f"""
+        UPDATE weather.segment s SET state=v.state,reason=v.reason,updated_at=clock_timestamp()
+        FROM weather.video v
+        WHERE {due("s")} AND v.camera_id=s.camera_id
+          AND v.cycle_date=s.cycle_date AND v.segment=s.kind
+          AND NOT (v.state='unavailable' AND v.reason='deadline_missed')
+    """),
+        params,
+    )
     rows = await connection.execute(
-        text("""
+        text(f"""
         UPDATE weather.segment SET state='unavailable',reason='deadline_missed',
           updated_at=clock_timestamp()
-        WHERE current AND state IN ('scheduled','processing') AND ends_at >= :hour
-          AND ends_at < :next AND ends_at + CAST(:after AS interval) <= clock_timestamp()
+        WHERE {due()}
         RETURNING camera_id
     """),
-        {"hour": hour, "next": hour + HOUR, "after": DEADLINE_AFTER},
+        params,
     )
     return [str(row.camera_id) for row in rows]
+
+
+async def current_video(engine: AsyncEngine, job: SegmentJob) -> catalog.Current:
+    identity = Product.video(
+        camera_id=job.camera,
+        cycle_date=job.cycle_date,
+        segment=job.kind,
+        starts_at=job.starts_at,
+        ends_at=job.ends_at,
+        frames=job.frames,
+        public_not_before=job.ends_at + EMBARGO,
+        state="unavailable",
+        reason="identity",
+        files=(),
+    )
+    async with engine.connect() as connection:
+        return await catalog.current(connection, identity)
+
+
+def is_placeholder(current: catalog.Current) -> bool:
+    return current.state == "unavailable" and current.reason == "deadline_missed"
+
+
+async def publish_missed(engine: AsyncEngine, hour: datetime) -> int:
+    """Commit a database-only `unavailable` video for each missed segment that has no video,
+    through #18's fenced commit, so the public catalog shows it (R03). No object is uploaded,
+    so no bucket key is needed. A pipeline that publishes later supersedes it."""
+    async with engine.connect() as connection:
+        missed = list(
+            await connection.execute(
+                text(f"""
+            SELECT s.camera_id,s.cycle_date,s.kind,s.revision,s.starts_at,s.ends_at,s.frames
+            FROM weather.segment s WHERE {due("s")}
+              AND NOT EXISTS (SELECT 1 FROM weather.video v WHERE v.camera_id=s.camera_id
+                AND v.cycle_date=s.cycle_date AND v.segment=s.kind)
+        """),
+                {"hour": hour, "next": hour + HOUR, "after": DEADLINE_AFTER},
+            )
+        )
+    publisher = Publisher(engine, {})
+    count = 0
+    for row in missed:
+        job = SegmentJob(
+            str(row.camera_id),
+            row.cycle_date,
+            str(row.kind),
+            int(row.revision),
+            row.starts_at,
+            row.ends_at,
+            int(row.frames),
+        )
+        if (await current_video(engine, job)).revision:
+            continue
+        product = Product.video(
+            camera_id=job.camera,
+            cycle_date=job.cycle_date,
+            segment=job.kind,
+            starts_at=job.starts_at,
+            ends_at=job.ends_at,
+            frames=job.frames,
+            public_not_before=job.ends_at + EMBARGO,
+            state="unavailable",
+            reason="deadline_missed",
+            files=(),
+        )
+        try:
+            await publisher.publish(product, expected_revision=0, deadline=datetime.now(UTC) + HOUR)
+            count += 1
+        except catalog.RevisionConflict, catalog.StaleFence, catalog.Withdrawn:
+            # The pipeline (or a withdrawal) got there first; its state wins.
+            continue
+    return count
 
 
 async def finalize_job(context: JobContext) -> None:
@@ -252,6 +374,9 @@ async def finalize_job(context: JobContext) -> None:
 async def deadline_job(context: JobContext) -> None:
     hour = datetime.fromisoformat(str(context.job.payload["hour"]))
     missed: list[str] = []
+    # Catalog first (idempotent: a segment that already has a video is skipped), then the
+    # segment states, which then follow the committed videos.
+    await publish_missed(context.engine, hour)
 
     async def write(connection: AsyncConnection) -> None:
         missed.extend(await sweep_deadline(connection, hour))
@@ -279,16 +404,21 @@ class SegmentRow:
 
 
 async def active(engine: AsyncEngine, camera: str, now: datetime) -> list[SegmentRow]:
-    """Current segments of a camera that have started and are not finished, oldest first."""
+    """Current segments of a camera that have started and are not finished, oldest first.
+
+    A segment that missed its deadline stays here for LATE_RENDER after its end, so a late
+    (or unacknowledged) render still publishes and supersedes the deadline placeholder."""
     async with engine.connect() as connection:
         rows = await connection.execute(
             text("""
             SELECT id,state,cycle_date,kind,revision,starts_at,ends_at,frames
-            FROM weather.segment WHERE current AND camera_id=:camera
-              AND state IN ('scheduled','processing') AND starts_at <= :now
+            FROM weather.segment WHERE current AND camera_id=:camera AND starts_at <= :now
+              AND (state IN ('scheduled','processing')
+                   OR (state='unavailable' AND reason='deadline_missed'
+                       AND finalized_at IS NULL AND ends_at > CAST(:late AS timestamptz)))
             ORDER BY starts_at
         """),
-            {"camera": camera, "now": now},
+            {"camera": camera, "now": now, "late": now - LATE_RENDER},
         )
         return [
             SegmentRow(

@@ -35,7 +35,8 @@ SUMMARY = (
 
 class WeatherSummaryProvider(Protocol):
     async def summary(self, start: datetime, end: datetime) -> dict[str, Any] | None:
-        """Aggregates for [start, end), or None when telemetry is unavailable."""
+        """Aggregates for [start, end), or None when there is no telemetry source; raises
+        SourceUnavailable on a transient failure, which the caller retries."""
         ...
 
 
@@ -76,8 +77,8 @@ class AggregateWeather:
                         }
                     )
         except SourceUnavailable:
-            LOG.warning("Weather summary unavailable; the sidecar records none")
-            return None
+            LOG.warning("Weather summary read failed; will retry")
+            raise
         return {
             "interval": {"start": start.isoformat(), "end": end.isoformat()},
             "source": "aggregates/v1",

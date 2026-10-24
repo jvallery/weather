@@ -171,13 +171,18 @@ class SegmentRenderer:
         return self.rendered == self.job.frames
 
     def released_through(self) -> Fraction | None:
-        """Source time before which no remaining block will read a frame."""
+        """Slot key below which this segment will never read another frame (#19).
+
+        Blocks read by source time; a frame's source time trails its slot key by at most
+        `max_lag`, so the next block's earliest read (its window start) is converted to the
+        smallest slot key that can still be read there. A complete mezzanine reads nothing."""
         if not self.metas:
             return None
         if self.complete:
             return self.geometry.end
         owned_end = self.geometry.owned(0, self.rendered)[1]
-        return max(self.geometry.start, owned_end - 2 * self.expected.interval)
+        window_start = max(self.geometry.start, owned_end - 2 * self.expected.interval)
+        return window_start - self.expected.max_lag
 
     def block_paths(self) -> list[Path]:
         return [self.blocks_dir / f"{int(meta['first']):05d}.mkv" for meta in self.metas]
@@ -214,7 +219,11 @@ class SegmentRenderer:
         margin = 2 * expected.interval
         lo = max(g.start, min(shutter_lo, owned[0]) - margin)
         hi = min(g.end, max(shutter_hi, owned[1]) + margin)
-        self.index.refresh(lo, hi)
+        final = last == self.job.frames
+        # The final block also judges slots just before b whose capture landed at or after b:
+        # they count toward this segment's slot coverage, though their pixels belong to the next.
+        tail_end = g.end + expected.max_lag if final else hi
+        self.index.refresh(lo, tail_end)
         window = self.index.window(lo, hi)
         own = self.index.window(*owned)
         slots: dict[str, str] = {}
@@ -320,6 +329,19 @@ class SegmentRenderer:
                 pending = decoded
             emit_through(None)
             encoder.close()
+            if final:
+                tail = self.index.window(g.end, tail_end)
+                for slot, (_, reason) in tail.rejected.items():
+                    if slot < g.end:
+                        slots[micros(slot)] = reason
+                for candidate in tail.frames:
+                    if candidate.slot >= g.end:
+                        continue
+                    try:
+                        good = decode_jpeg(read_frame(candidate), expected.width, expected.height)
+                        slots[micros(candidate.slot)] = "ok" if good is not None else "decode"
+                    except IntakeError:
+                        slots[micros(candidate.slot)] = "changed"
         except BaseException:
             encoder.abort()
             tmp.unlink(missing_ok=True)
@@ -329,6 +351,9 @@ class SegmentRenderer:
         meta = {
             "schema_version": 1,
             "recipe": self.recipe.id,
+            # Build provenance per block: a resumed mezzanine may span an image upgrade.
+            "encoder": self.recipe.encoder,
+            "image": self.recipe.image,
             "first": first,
             "last": last,
             "mkv_sha256": file_sha256(tmp),

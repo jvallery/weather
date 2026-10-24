@@ -49,6 +49,10 @@ SCHEDULE_FAILURES = Counter(
     "Schedule jobs that could not freeze cycles (site, discontinuity, solar)",
     ["reason"],
 )
+SCHEDULE_ANCHORED = Counter(
+    "weather_schedule_anchored_total",
+    "New cycles started at the frozen previous next dawn because dawn was recomputed",
+)
 SITE_CONFIGURED = Gauge(
     "weather_schedule_site_configured",
     "1 when the private site configuration loaded on the last schedule attempt",

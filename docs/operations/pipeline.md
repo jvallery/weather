@@ -15,19 +15,24 @@ The scheduler's minute tick enqueues idempotent jobs:
 |---|---|---|
 | `schedule:<local date>` | at once | Freeze `solar_cycle` for today and the next 3 local days, plus 6 `segment` rows per cycle (3 cameras × daytime/overnight) |
 | `finalize:<UTC hour of b>` | boundary b + 30 s | `scheduled` → `processing` for segments ending at b |
-| `deadline:<UTC hour of b>` | b + 2 h | Anything still `scheduled`/`processing` → `unavailable`, reason `deadline_missed` |
+| `deadline:<UTC hour of b>` | b + 2 h | Each unfinished segment without a video gets a database-only `unavailable` video (reason `deadline_missed`, no assets) through #18's fenced commit, so `/api/v1/timelapses` shows it; then segment states follow the committed videos, and the rest become `unavailable`/`deadline_missed` |
 
 Cycles are written once and never changed (`site`, `cycle_date` key; the
 private site hash and Astral/tzdata versions are provenance only). A
 recomputation that disagrees is counted (`weather_schedule_failures_total{reason="drift"}`)
-and ignored; a new day that would not start at the frozen previous next dawn
-fails (`reason="discontinuity"`). Current segments of one camera can never
+and ignored. When a new day's recomputed dawn differs from the frozen previous
+next dawn (a rotated `dawn_offset_seconds` or a library upgrade), the new cycle
+starts at the frozen next dawn and its allocation is recomputed from its real
+lengths (`weather_schedule_anchored_total`); only a cycle that cannot start
+there fails (`reason="discontinuity"`). Current segments of one camera can never
 overlap (exclusion constraint). A clock correction is a new segment revision,
 never an edit; sealed manifests never change.
 
 Every camera gets its rows whether its pipeline runs or not, so a stopped
-camera shows `unavailable`/`deadline_missed` two hours after each boundary
-while the others publish.
+camera shows `unavailable`/`deadline_missed` in the public catalog two hours
+after each boundary while the others publish. A pipeline that finishes later
+(up to 12 h after the boundary, or after a lost acknowledgement) still
+publishes: its video supersedes the placeholder as the next revision.
 
 The pipeline sets `published` or `partial` (reason `partial_coverage` at
 90–99% slot coverage, `low_coverage` at 50–90%) or `unavailable`
@@ -68,8 +73,11 @@ coverage 0.90 inclusive, slot thresholds 99/90/50.
   `manifest.jsonl`, each member bound by length and sha256). Frames are keyed
   by #75's canonical grid slot. Per-slot rejects: `settings` (cadence/phase
   differ from `WEATHER_PIPELINE_CADENCE_MS`/`_PHASE_MS`), `unknown_timing` (no
-  capture upper bound), `geometry`, `stale`, `changed` (bytes changed after
-  sealing) and `decode`. Duplicates keep one attempt: verified > plausible >
+  capture upper bound), `geometry`, `stale`, `changed` (size or hash differs
+  from the sealed manifest) and `decode`. An I/O error on the share is never a
+  verdict: the block aborts and retries. Slot coverage is by grid key, so a
+  slot just before b whose capture landed at or after b counts for its own
+  segment (the final block judges it) while its pixels belong to the next. Duplicates keep one attempt: verified > plausible >
   lower uncertainty > earlier. Gaps are grid slots with no accepted frame;
   collector loss records never remove a sealed frame.
 - **Decode.** The collector does not decode (#75). Every accepted frame is
@@ -80,8 +88,9 @@ coverage 0.90 inclusive, slot thresholds 99/90/50.
   `last shutter end + 2 intervals + chunk_seconds + 30 s` has passed. Chunks
   sealed later are counted in `weather_pipeline_late_frames_total` and not
   integrated. Each block is an intra-only `libx264rgb` QP 12 Matroska file
-  plus JSON metadata (per-frame coverage and hash, slot verdicts, inputs),
-  fsynced and renamed. Decoded frames do not depend on block size or restarts.
+  plus JSON metadata (per-frame coverage and hash, slot verdicts, inputs, and
+  the FFmpeg build and image that rendered it; a mezzanine resumed across an
+  upgrade lists every build in `mezzanine_builds`), fsynced and renamed. Decoded frames do not depend on block size or restarts.
 
 ## Finalize and publish
 
@@ -96,21 +105,27 @@ tags, geometry, faststart) and fully decodes every frame at `k/60`; all three
 must share one time map. Posters are the observed frame nearest the middle,
 decoded from the validated native rendition, as JPEG and WebP at 1920, 960
 and 480 wide (roles `poster`, `poster_960`, `poster_480`, `poster_webp`,
-`poster_webp960`, `poster_webp480`); a poster is never a slate.
+`poster_webp960`, `poster_webp480`); a poster is never a slate (known exactly
+from the block metadata).
 
 The sidecar carries the exact time map, slot and per-frame exposure coverage,
 gap ranges, rendition geometry, provenance (recipe, FFmpeg build, image digest,
 input-manifest hash) and a `weather` block: #14's on-read aggregates over
 `[a, b)` (`summary.py`; temperature, humidity, wind, gust, direction, rain,
-pressure, irradiance, UV, lightning), or `null` if telemetry is unreadable. It
+pressure, irradiance, UV, lightning). A failed telemetry read is retried; only
+after an hour past the boundary does the sidecar record `weather: null`. It
 never names a frame hash, camera address, coordinate or credential.
 `public_not_before = max(b, latest capture upper bound) + 630 s`.
 
 `result.json` (RenderResult, sidecar, file list) is written last, after every
 output validated, and contains no wall-clock time. A restart reuses it and
 publishes with the expected revision recorded in it, so a kill between
-validation and publish, or between publish and the segment update, still
-commits exactly one publication.
+validation and publish, between staging and commit, or between publish and the
+segment update, still commits exactly one publication. If the catalog moved
+under it: a deadline placeholder is superseded (the new expected revision is
+written to `result.json` first); any other content is terminal for that
+result (`unavailable`, reason `revision_conflict`). A failing segment backs off
+from 10 s doubling to 30 min, so it never starves the camera's live segment.
 
 ## Staging layout and cleanup preconditions (#19)
 
@@ -124,12 +139,14 @@ commits exactly one publication.
 
 The pipeline deletes nothing. For #19:
 
-- a sealed chunk's video duty is done once its slot window ends at or before
-  `segment.mezzanine_through` of every current segment it overlaps. The
-  pipeline advances that column after each durable block (the owned source
-  time minus two capture intervals, the reach of the next block), and sets it
-  to the segment end with `mezzanine_durable_at` when the mezzanine is
-  complete, so staging holds only the unrendered tail of each segment. The
+- `segment.mezzanine_through` is a slot key: the segment will never read
+  another frame whose slot is earlier. The pipeline advances it after each
+  durable block to the next block's window start minus the largest lag of a
+  capture behind its slot (half a cadence plus the 5 s capture deadline), and
+  to the segment end once the mezzanine is complete. A sealed chunk's video
+  duty is done once its slot window ends at or before `mezzanine_through` of
+  every current segment whose read range `[starts_at − lag, ends_at)` its
+  window overlaps, so staging holds only each segment's unrendered tail. The
   keogram, hourly-original and preview conditions of P3 still apply;
 - a render directory is deletable once its segment is terminal
   (`published`/`partial`/`unavailable`) and, unless `unavailable`, its
@@ -187,7 +204,7 @@ issue and delete the Job. Never run it on a workstation.
 | `weather_pipeline_segments_total{camera,state}` | Finalized segments by state |
 | `weather_pipeline_publish_latency_seconds{camera}` | Boundary to commit; SLO 1 is ≤ 2 h for 95% |
 | `weather_pipeline_failures_total{camera,stage}` | `render`, `prepare`, `publish`, `catalog`, `loop`; the segment retries every 10 s |
-| `weather_schedule_failures_total{reason}`, `weather_schedule_site_configured` | Schedule freezing |
+| `weather_schedule_failures_total{reason}`, `weather_schedule_site_configured`, `weather_schedule_anchored_total` | Schedule freezing |
 | `weather_segments_deadline_missed_total{camera}` | Segments still unpublished at boundary + 2 h |
 
 Alert rules belong to monitoring-stack at #49. Logs carry fixed stage names

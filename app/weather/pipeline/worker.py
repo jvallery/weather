@@ -14,29 +14,32 @@ import os
 import signal
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 
 from prometheus_client import start_http_server
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from weather.api.source import SourceUnavailable
 from weather.db.connection import create_database_engine, wait_for_database
 from weather.publish import catalog
-from weather.publish.model import MEDIA_BUCKET, Product
+from weather.publish.model import MEDIA_BUCKET
 from weather.publish.objects import ObjectStore
 from weather.publish.publisher import Publisher
 from weather.timemodel._instant import epoch_seconds
 
 from . import ffmpeg, metrics, schedule
-from .finalize import RESULT, prepare, publish
+from .finalize import RESULT, Prepared, prepare, publish, rebase
 from .intake import ChunkIndex, Expected, utc
 from .recipe import CAMERAS, DEFAULT_PHASE_MS, MAX_BLOCK, Recipe, from_environment
-from .render import ChunkStage, SegmentJob, SegmentRenderer
+from .render import ChunkStage, SegmentRenderer
 from .summary import AggregateWeather, WeatherSummaryProvider
 
 LOG = logging.getLogger("weather.pipeline")
 LOOP_SECONDS = 10
+MAX_BACKOFF = 1800
+WEATHER_PATIENCE = timedelta(hours=1)
 
 
 @dataclass(frozen=True)
@@ -88,23 +91,6 @@ class PipelineConfig:
         return config
 
 
-async def current_revision(engine: AsyncEngine, job: SegmentJob) -> int:
-    identity = Product.video(
-        camera_id=job.camera,
-        cycle_date=job.cycle_date,
-        segment=job.kind,
-        starts_at=job.starts_at,
-        ends_at=job.ends_at,
-        frames=job.frames,
-        public_not_before=job.ends_at,
-        state="unavailable",
-        reason="identity",
-        files=(),
-    )
-    async with engine.connect() as connection:
-        return (await catalog.current(connection, identity)).revision
-
-
 class Worker:
     def __init__(
         self,
@@ -120,6 +106,8 @@ class Worker:
         self.index = ChunkIndex(config.staging, config.expected)
         self.renderers: dict[UUID, SegmentRenderer] = {}
         self.durable: set[UUID] = set()
+        # Per-segment retry backoff: (consecutive failures, wall time of the next attempt).
+        self.backoff: dict[UUID, tuple[int, datetime]] = {}
 
     def renderer(self, row: schedule.SegmentRow) -> SegmentRenderer:
         found = self.renderers.get(row.id)
@@ -144,8 +132,11 @@ class Worker:
         for stale in set(self.renderers) - live:
             del self.renderers[stale]
         self.durable &= live
+        self.backoff = {k: v for k, v in self.backoff.items() if k in live}
         current = epoch_seconds(now)
         for row in rows:
+            if row.id in self.backoff and now < self.backoff[row.id][1]:
+                continue
             stage = "render"
             try:
                 renderer = self.renderer(row)
@@ -177,19 +168,21 @@ class Worker:
                 weather = None
                 revision = 0
                 if not (renderer.directory / RESULT).exists():
-                    revision = await current_revision(self.engine, row.job)
-                    weather = await self.weather.summary(row.job.starts_at, row.job.ends_at)
+                    revision = (await schedule.current_video(self.engine, row.job)).revision
+                    stage = "weather"
+                    try:
+                        weather = await self.weather.summary(row.job.starts_at, row.job.ends_at)
+                    except SourceUnavailable:
+                        # Retry a transient failure; never freeze it into result.json while
+                        # there is time. Past the patience window the sidecar records none.
+                        if now < row.job.ends_at + WEATHER_PATIENCE:
+                            raise
+                    stage = "prepare"
                 prepared = await asyncio.to_thread(
                     prepare, renderer, weather=weather, expected_revision=revision
                 )
                 stage = "publish"
-                outcome: tuple[str, str | None] | None = None
-                try:
-                    await publish(self.publisher, prepared, renderer.directory)
-                except catalog.Withdrawn:
-                    # A withdrawn video stays withdrawn: record it, never republish it.
-                    LOG.warning("Segment product was withdrawn; not republished (%s)", camera)
-                    outcome = ("unavailable", "withdrawn")
+                outcome = await self._publish(row, renderer, prepared)
                 stage = "catalog"
                 result = prepared.result.model_dump(mode="json")
                 await schedule.finish(self.engine, row.id, result, outcome=outcome)
@@ -198,12 +191,45 @@ class Worker:
                 metrics.LATENCY.labels(camera).observe((now - row.job.ends_at).total_seconds())
                 del self.renderers[row.id]
                 self.durable.discard(row.id)
+                self.backoff.pop(row.id, None)
             except Exception as error:
                 metrics.FAILURES.labels(camera, stage).inc()
                 # Never log paths, payloads or driver errors; the type and stage suffice.
                 LOG.error("Pipeline %s failed (%s, %s)", stage, camera, type(error).__name__)
+                # Back off so a deterministic failure never re-reads gigabytes every loop or
+                # starves the camera's live segment: 10 s doubling to 30 min.
+                failures = self.backoff.get(row.id, (0, now))[0] + 1
+                delay = min(MAX_BACKOFF, LOOP_SECONDS * 2 ** min(failures - 1, 10))
+                self.backoff[row.id] = (failures, now + timedelta(seconds=delay))
         if rows:
             self.index.prune(min(epoch_seconds(row.job.starts_at) for row in rows) - 3600)
+
+    async def _publish(
+        self, row: schedule.SegmentRow, renderer: SegmentRenderer, prepared: Prepared
+    ) -> tuple[str, str | None] | None:
+        """Publish once; returns a state override for outcomes the result does not carry."""
+        camera = self.config.camera
+        try:
+            await publish(self.publisher, prepared, renderer.directory)
+            return None
+        except catalog.Withdrawn:
+            # A withdrawn video stays withdrawn: record it, never republish it.
+            LOG.warning("Segment product was withdrawn; not republished (%s)", camera)
+            return "unavailable", "withdrawn"
+        except catalog.RevisionConflict:
+            current = await schedule.current_video(self.engine, row.job)
+            if not schedule.is_placeholder(current):
+                # Someone else committed other content: terminal for this prepared result.
+                LOG.warning("Segment video changed under the pipeline (%s)", camera)
+                return "unavailable", "revision_conflict"
+        # The deadline committed its database-only placeholder first: supersede it, recording
+        # the new expected revision durably so a retry stays exactly-once.
+        prepared = rebase(renderer, prepared, current.revision)
+        try:
+            await publish(self.publisher, prepared, renderer.directory)
+        except catalog.Withdrawn:
+            return "unavailable", "withdrawn"
+        return None
 
     async def run(self, stop: asyncio.Event) -> None:
         while not stop.is_set():

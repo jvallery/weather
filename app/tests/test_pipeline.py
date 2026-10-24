@@ -310,6 +310,9 @@ def _result(**overrides: object) -> dict[str, object]:
         "recipe": Recipe().record(),
         "input_manifest_sha256": "a" * 64,
         "inputs": 5,
+        "mezzanine_builds": [
+            {"encoder": "ffmpeg version 9.0.2", "image": "unpinned", "first": 0, "last": 10}
+        ],
         "slots": {
             "expected": 10,
             "accepted": 10,
@@ -353,6 +356,7 @@ def test_render_result_validates_and_refuses_inconsistent_records() -> None:
         {"state": "partial"},  # no reason
         {"exposure": {"rendered": 9, "gaps": [[2, 4]], "threshold": "9/10"}},
         {"unexpected": True},
+        {"mezzanine_builds": [{"encoder": "x", "image": "unpinned", "first": 0, "last": 9}]},
     ]
     for override in bad:
         with pytest.raises(ValueError):
@@ -673,3 +677,173 @@ def test_pipeline_deployments_ship_disabled_with_only_their_inputs() -> None:
     assert not any(
         "secret" in v or "projected" in v for v in bench["spec"]["template"]["spec"]["volumes"]
     )
+
+
+def _at(text: str) -> datetime:
+    return datetime.fromisoformat(text)
+
+
+def _frames_at(
+    start: datetime, seconds: range, offset_ns: int = 100_000_000
+) -> list[synthetic.Frame]:
+    return [
+        synthetic.Frame(
+            int(start.timestamp() + s) * NS,
+            synthetic.jpeg(synthetic.sky(W, H, s)),
+            offset_ns=offset_ns,
+        )
+        for s in seconds
+    ]
+
+
+def test_refresh_reads_every_hour_a_window_touches(tmp_path: Path) -> None:
+    """A window from 10:58 to 11:11 must read the 11Z directory too (start minute > end)."""
+    start = _at("2026-10-23T10:55:00+00:00")
+    synthetic.write_chunks(
+        tmp_path, "skycam_east", _frames_at(start, range(0, 1200)), geometry=(W, H)
+    )
+    assert sorted(p.name for p in (tmp_path / "sealed/skycam_east").iterdir()) == [
+        "2026-10-23T10Z",
+        "2026-10-23T11Z",
+    ]
+    index = ChunkIndex(tmp_path, _expected())
+    lo, hi = instant("2026-10-23T10:58:00Z"), instant("2026-10-23T11:11:00Z")
+    index.refresh(lo, hi)
+    window = index.window(lo, hi)
+    assert len(window.frames) == 13 * 60
+    assert window.frames[-1].slot == hi - 1
+
+
+def test_release_point_never_drops_a_frame_the_next_block_reads(tmp_path: Path) -> None:
+    start = _at("2026-10-23T10:00:00+00:00")
+    # Captures trailing their slot by up to the whole lag budget: 0.5 s late start + 5 s.
+    frames = [
+        synthetic.Frame(
+            int(start.timestamp() + s) * NS,
+            synthetic.jpeg(synthetic.sky(W, H, 1)),
+            offset_ns=offset,
+        )
+        for s, offset in zip(
+            range(600), [100_000_000, 2_500_000_000, 5_400_000_000] * 200, strict=True
+        )
+    ]
+    synthetic.write_chunks(tmp_path, "skycam_east", frames, geometry=(W, H))
+    job = SegmentJob(
+        "skycam_east", date(2026, 10, 23), "daytime", 1, start, start + timedelta(seconds=600), 50
+    )
+    renderer = _renderer(tmp_path, job)
+    assert renderer.released_through() is None
+    renderer.metas = [{"first": 0, "last": 20}]
+    through = renderer.released_through()
+    assert through is not None
+    first, last = renderer.next_block() or (0, 0)
+    g = renderer.geometry
+    owned = g.owned(first, last)
+    lo = max(g.start, min(g.shutter(first)[0], owned[0]) - 2 * _expected().interval)
+    hi = min(g.end, max(g.shutter(last - 1)[1], owned[1]) + 2 * _expected().interval)
+    renderer.index.refresh(lo, hi)
+    read = renderer.index.window(lo, hi).frames
+    assert read and min(c.slot for c in read) >= through
+    assert through == lo - _expected().max_lag
+    renderer.metas = [{"first": 0, "last": 50}]
+    assert renderer.released_through() == g.end
+
+
+def test_unavailable_video_needs_no_assets_but_others_do() -> None:
+    from weather.publish.model import Product, ProductError
+
+    def video(state: str, reason: str | None) -> Product:
+        return Product.video(
+            camera_id="skycam_west",
+            cycle_date=date(2026, 10, 23),
+            segment="daytime",
+            starts_at=T0,
+            ends_at=T0 + timedelta(hours=1),
+            frames=10,
+            public_not_before=T0 + timedelta(hours=1, seconds=630),
+            state=state,  # type: ignore[arg-type]
+            reason=reason,
+            files=(),
+        )
+
+    video("unavailable", "deadline_missed").validate()
+    for state, reason in (("published", None), ("partial", "low_coverage")):
+        with pytest.raises(ProductError):
+            video(state, reason).validate()
+
+
+@needs_ffmpeg
+def test_an_io_error_aborts_the_block_for_retry_instead_of_a_changed_hole(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from weather.pipeline import render as render_module
+
+    _corpus(tmp_path, 120)
+    renderer = _renderer(tmp_path, _job(120, 60))
+    real = render_module.read_frame
+    calls = {"n": 0}
+
+    def flaky(candidate: Candidate) -> bytes:
+        calls["n"] += 1
+        if calls["n"] == 5:
+            raise OSError(5, "Input/output error")
+        return real(candidate)
+
+    monkeypatch.setattr(render_module, "read_frame", flaky)
+    with pytest.raises(OSError):
+        renderer.advance(FAR_FUTURE)
+    assert renderer.metas == [] and not list(renderer.blocks_dir.glob(".tmp-*"))
+    renderer.advance(FAR_FUTURE)
+    verdicts = {v for meta in renderer.metas for v in meta["slots"].values()}
+    assert verdicts == {"ok"}
+
+
+@needs_ffmpeg
+def test_hour_straddling_segment_off_the_hour_renders_every_frame(tmp_path: Path) -> None:
+    start = _at("2026-10-23T10:59:00+00:00")
+    synthetic.write_chunks(tmp_path, "skycam_east", _frames_at(start, range(120)), geometry=(W, H))
+    job = SegmentJob(
+        "skycam_east", date(2026, 10, 23), "daytime", 1, start, start + timedelta(seconds=120), 60
+    )
+    renderer = _renderer(tmp_path, job, block=7)
+    renderer.advance(FAR_FUTURE)
+    prepared = prepare(renderer, weather=None, expected_revision=0)
+    assert prepared.result.slots.accepted == 120 and prepared.result.exposure.gaps == []
+
+
+@needs_ffmpeg
+def test_a_slot_before_b_captured_after_b_counts_for_its_own_segment(tmp_path: Path) -> None:
+    frames = _frames_at(T0, range(19)) + [
+        synthetic.Frame(
+            int(T0.timestamp() + 19) * NS,
+            synthetic.jpeg(synthetic.sky(W, H, 9)),
+            offset_ns=1_200_000_000,
+        )
+    ]
+    synthetic.write_chunks(tmp_path, "skycam_east", frames, geometry=(W, H))
+    renderer = _renderer(tmp_path, _job(20, 10))
+    renderer.advance(FAR_FUTURE)
+    prepared = prepare(renderer, weather=None, expected_revision=0)
+    assert prepared.result.slots.accepted == 20 and prepared.result.slots.missing == 0
+
+
+@needs_ffmpeg
+def test_each_block_records_the_build_that_rendered_it(tmp_path: Path) -> None:
+    _corpus(tmp_path, 240)
+    job = _job(240, 120)
+
+    class Killed(Exception):
+        pass
+
+    def kill(last: int) -> None:
+        raise Killed
+
+    old = Recipe(encoder="ffmpeg version 9.0.1", image="sha256:" + "1" * 64)
+    with pytest.raises(Killed):
+        _renderer(tmp_path, job, recipe=old, after_block=kill).advance(FAR_FUTURE)
+    new = Recipe(encoder="ffmpeg version 9.0.2", image="sha256:" + "2" * 64)
+    resumed = _renderer(tmp_path, job, recipe=new)
+    assert resumed.rendered == 60
+    resumed.advance(FAR_FUTURE)
+    builds = prepare(resumed, weather=None, expected_revision=0).result.mezzanine_builds
+    assert [(b.image[-1], b.first, b.last) for b in builds] == [("1", 0, 60), ("2", 60, 120)]

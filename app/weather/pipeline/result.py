@@ -57,6 +57,15 @@ class SlotCoverage(Model):
         return self
 
 
+class Build(Model):
+    """The image and FFmpeg build that rendered mezzanine frames [first, last)."""
+
+    encoder: str = Field(max_length=128)
+    image: str = Field(pattern=r"^(unpinned|sha256:[0-9a-f]{64})$")
+    first: int = Field(ge=0)
+    last: int = Field(gt=0)
+
+
 class ExposureCoverage(Model):
     rendered: int = Field(ge=0)
     gaps: list[tuple[int, int]]
@@ -78,6 +87,7 @@ class RenderResult(Model):
     recipe: dict[str, Any]
     input_manifest_sha256: Hash
     inputs: int = Field(ge=0)
+    mezzanine_builds: list[Build]
     slots: SlotCoverage
     exposure: ExposureCoverage
     renditions: list[Rendition]
@@ -100,6 +110,13 @@ class RenderResult(Model):
             or self.exposure.rendered + gap_frames != self.frames
         ):
             raise ValueError("Gap ranges must be ordered, disjoint and account for every frame")
+        spans = [(b.first, b.last) for b in self.mezzanine_builds]
+        if spans and (
+            spans[0][0] != 0
+            or spans[-1][1] != self.frames
+            or any(a[1] != b[0] or a[0] >= a[1] for a, b in zip(spans, spans[1:], strict=False))
+        ):
+            raise ValueError("Mezzanine builds must cover every frame once, in order")
         if self.state == "unavailable":
             if self.renditions or self.posters:
                 raise ValueError("Unavailable segments carry no media")

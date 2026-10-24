@@ -171,6 +171,11 @@ class BlockEncoder:
 
     def abort(self) -> None:
         self._process.kill()
+        if self._process.stdin is not None:
+            try:
+                self._process.stdin.close()
+            except OSError:
+                pass  # buffered frames cannot reach a killed process
         self._process.wait()
         self._errors.close()
 

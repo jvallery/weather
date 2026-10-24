@@ -36,9 +36,9 @@ from .ffmpeg import (
     validate_rendition,
 )
 from .intake import utc
-from .recipe import SLATE_RGB, Recipe
+from .recipe import Recipe
 from .render import SegmentRenderer, canonical, durable_write, file_sha256, fsync_dir, micros
-from .result import EMBARGO, ExposureCoverage, Poster, RenderResult, Rendition, SlotCoverage
+from .result import EMBARGO, Build, ExposureCoverage, Poster, RenderResult, Rendition, SlotCoverage
 
 LOG = logging.getLogger("weather.pipeline")
 RESULT = "result.json"
@@ -166,6 +166,14 @@ def prepare(
     uppers = [int(meta["max_upper"]) for meta in metas if meta["max_upper"] is not None]
     pnb = max(job.ends_at, *(utc(Fraction(u, 1_000_000)) for u in uppers)) + EMBARGO
     inputs = sorted({tuple(item) for meta in metas for item in meta["inputs"]})
+    # Mezzanine build provenance, merged over contiguous blocks from the same build.
+    builds: list[dict[str, Any]] = []
+    for meta in metas:
+        build = {"encoder": meta.get("encoder", "unknown"), "image": meta.get("image", "unpinned")}
+        if builds and {k: builds[-1][k] for k in build} == build:
+            builds[-1]["last"] = meta["last"]
+        else:
+            builds.append({**build, "first": meta["first"], "last": meta["last"]})
     manifest = hashlib.sha256(canonical(inputs)).hexdigest()
     slots = SlotCoverage(
         expected=len(grid),
@@ -230,8 +238,6 @@ def prepare(
         rgb = np.frombuffer(
             extract_frame(out / "native.mp4", index, native.width, native.height), dtype=np.uint8
         ).reshape(native.height, native.width, 3)
-        if np.all(np.abs(rgb.astype(np.int16) - np.array(SLATE_RGB, dtype=np.int16)) <= 3):
-            raise ValidationError("poster_slate")
         image = Image.fromarray(rgb, "RGB")
         for target, jpeg_role, webp_role in POSTERS:
             width = min(target, native.width)
@@ -299,7 +305,12 @@ def prepare(
             {"role": r.role, "width": r.width, "height": r.height, "frames": r.frames}
             for r in renditions
         ],
-        "provenance": {**recipe.record(), "input_manifest_sha256": manifest, "inputs": len(inputs)},
+        "provenance": {
+            **recipe.record(),
+            "input_manifest_sha256": manifest,
+            "inputs": len(inputs),
+            "mezzanine_builds": builds,
+        },
         "weather": weather,
     }
     sidecar_bytes = ProductFile.sidecar(sidecar).data
@@ -318,6 +329,7 @@ def prepare(
         recipe=recipe.record(),
         input_manifest_sha256=manifest,
         inputs=len(inputs),
+        mezzanine_builds=[Build.model_validate(item) for item in builds],
         slots=slots,
         exposure=ExposureCoverage(
             rendered=rendered, gaps=gaps, threshold=str(recipe.min_exposure_coverage)
@@ -330,6 +342,16 @@ def prepare(
     prepared = Prepared(result, sidecar, tuple(files))
     durable_write(path, canonical(prepared.document()))
     return prepared
+
+
+def rebase(renderer: SegmentRenderer, prepared: Prepared, expected_revision: int) -> Prepared:
+    """The same outputs against a newer expected revision, written durably first."""
+    result = prepared.result.model_copy(update={"expected_revision": expected_revision})
+    rebased = Prepared(
+        RenderResult.model_validate(result.model_dump()), prepared.sidecar, prepared.files
+    )
+    durable_write(renderer.directory / RESULT, canonical(rebased.document()))
+    return rebased
 
 
 def product(prepared: Prepared, directory: Path) -> Product:

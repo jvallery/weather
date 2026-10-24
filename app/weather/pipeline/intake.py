@@ -24,6 +24,7 @@ from weather.timemodel._instant import epoch_seconds
 
 LOG = logging.getLogger("weather.pipeline")
 HOUR = 3600
+MAX_CAPTURE_SECONDS = 5
 FRESHNESS_RANK = {"verified": 0, "plausible": 1, "unknown": 2}
 # Per-slot intake verdicts other than "ok". Decode failures are added by the renderer.
 REJECTS = ("settings", "unknown_timing", "geometry", "stale", "changed", "decode")
@@ -88,6 +89,13 @@ class Expected:
     @property
     def interval(self) -> Fraction:
         return Fraction(self.cadence_ms, 1000)
+
+    @property
+    def max_lag(self) -> Fraction:
+        """How far a frame's source time can trail its slot key: a request starts at most half
+        a period late (later slots are skipped) and its midpoint is at most the capture
+        deadline (<= 5 s, `capture.records.Settings`) after the start."""
+        return self.interval / 2 + MAX_CAPTURE_SECONDS
 
     def grid(self, start: Fraction, end: Fraction) -> list[Fraction]:
         """Every grid slot key in [start, end)."""
@@ -160,20 +168,23 @@ def parse_chunk(path: Path, expected: Expected) -> Chunk:
 
 
 def read_frame(candidate: Candidate) -> bytes:
-    """One member's bytes, re-verified against the sealed manifest."""
-    try:
-        if candidate.offset is not None:
-            with candidate.chunk.open("rb") as handle:
-                handle.seek(candidate.offset)
-                data = handle.read(candidate.size)
-        else:
+    """One member's bytes, re-verified against the sealed manifest.
+
+    An I/O error (a soft-mounted share failing) propagates as OSError so the caller retries;
+    only bytes that differ from the manifest are `IntakeError` (verdict `changed`)."""
+    if candidate.offset is not None:
+        with candidate.chunk.open("rb") as handle:
+            handle.seek(candidate.offset)
+            data = handle.read(candidate.size)
+    else:
+        try:
             with tarfile.open(candidate.chunk, mode="r:") as archive:
                 source = archive.extractfile(candidate.member)
                 if source is None:
                     raise IntakeError("Frame member missing")
                 data = source.read(candidate.size + 1)
-    except OSError, tarfile.TarError, KeyError:
-        raise IntakeError("Frame member unreadable") from None
+        except tarfile.TarError, KeyError:
+            raise IntakeError("Frame member unreadable") from None
     if len(data) != candidate.size or hashlib.sha256(data).hexdigest() != candidate.sha256:
         raise IntakeError("Frame member changed after sealing")
     return data
@@ -203,9 +214,12 @@ class ChunkIndex:
     def refresh(self, start: Fraction, end: Fraction) -> list[Chunk]:
         """Parse sealed chunks of every UTC hour that can hold frames for [start, end)."""
         added: list[Chunk] = []
-        hour = int(start) - HOUR
+        # Whole UTC hours, from the one before start's (a frame's slot can precede its source
+        # time) through end's own hour.
+        hour = (int(start // 1) // HOUR - 1) * HOUR
+        last = int(end // 1) // HOUR * HOUR
         self.generation += 1
-        while hour <= int(end):
+        while hour <= last:
             directory = self.root / hour_name(hour)
             hour += HOUR
             try:

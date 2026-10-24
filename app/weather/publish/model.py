@@ -241,7 +241,10 @@ class Product:
         ):
             raise ProductError("Published products have no reason; others need one")
         roles = [file.role for file in self.files] + list(self.keep)
-        if len(roles) != len(set(roles)) or not roles:
+        # The one product without assets: an unavailable video committed from the database
+        # alone (a camera that missed its deadline, #15), so the catalog still says so.
+        catalog_only = self.kind == "video" and self.state == "unavailable"
+        if len(roles) != len(set(roles)) or (not roles and not catalog_only):
             raise ProductError("Roles must be unique and nonempty")
         for file in self.files:
             asset_class = role_class(self.kind, file.role)
