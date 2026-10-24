@@ -157,18 +157,8 @@ class Collector:
             ):
                 self._seal()
             if self.writer is None:
-                self.writer = ChunkWriter(
-                    self.config,
-                    self.incarnation,
-                    self.sequence,
-                    slot,
-                    self.health,
-                )
-                self.sequence += 1
-                if self.pending.record:
-                    self.writer.append(self.pending.record)
-                for uncertain in self.uncertain:
-                    self.writer.append(uncertain)
+                self._open_writer(slot)
+            assert self.writer is not None
             self.writer.append(record, body)
             # At most 301 records per <=300-second, >=1-second chunk. Payloads stay on NFS.
             self._chunk_records.append(record)
@@ -178,6 +168,33 @@ class Collector:
             self.pending.add(record)
             self.metrics.result("persist_failed")
             return False
+
+    def _open_writer(self, slot: Slot) -> None:
+        self.writer = ChunkWriter(
+            self.config,
+            self.incarnation,
+            self.sequence,
+            slot,
+            self.health,
+        )
+        self.sequence += 1
+        if self.pending.record:
+            self.writer.append(self.pending.record)
+        for uncertain in self.uncertain:
+            self.writer.append(uncertain)
+
+    def _finish(self) -> None:
+        if self.writer is None and (self.pending.record or self.uncertain):
+            # A recovered mount can retain pending loss even when no next capture is due.
+            self._open_writer(
+                Slot(
+                    f"{self.incarnation}-{self.sequence}-metadata",
+                    time.monotonic_ns(),
+                    time.time_ns(),
+                    self.incarnation,
+                )
+            )
+        self._seal()
 
     def _abandon(self) -> None:
         writer = self.writer
@@ -349,9 +366,9 @@ class Collector:
 
         finally:
             try:
-                self._seal()
+                self._finish()
             except OSError:
-                pass
+                self._abandon()
             for sig in (signal.SIGTERM, signal.SIGINT):
                 loop.remove_signal_handler(sig)
 
