@@ -382,7 +382,7 @@ def test_identity_is_order_independent_and_binds_quality_without_watermark_chang
     )
     assert (
         a.evidence_revision
-        != assemble(window(), inputs(first, second, watermark="10"), policies).evidence_revision
+        == assemble(window(), inputs(first, second, watermark="10"), policies).evidence_revision
     )
     assert (
         a.evidence_revision

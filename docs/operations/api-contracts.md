@@ -204,11 +204,17 @@ lightning authority. Pressure trend still requires explicit endpoint width/minim
 Boundary-straddling qualified rain is conserved and labelled as a uniform-intensity estimate;
 lightning remains an integer contained subtotal with separate boundary uncertainty.
 
-The evidence revision binds the UTC window, membership watermark, every canonical source identity,
+The evidence revision binds the UTC window, every selected canonical source identity,
 full safe quality fingerprint, exact value, source/receipt times, support metadata and every effective
 policy. It is order-independent and collapses only byte-equivalent repeated evidence identities;
 differing inputs under one evidence identity fail closed. A quality correction changes this revision
 even when its publication watermark and numeric output do not change. Assembly and registry recipes
-are versioned separately. Formula/support-policy changes therefore invalidate aggregate identities,
+are versioned separately. A newer boundary containing no changed relevant inputs retains the same
+computation identity.
+The snapshot boundary is retained separately for export/reproduction, rather than creating a new
+historical revision for every unrelated packet. Actual evidence IDs are preserved up to the complete
+input bound of 50,000; a page also bounds its total emitted references. No input is dropped or replaced
+with an unresolved synthetic collection. Coverage gap overflow is an explicit bounded-range error.
+Formula/support-policy changes invalidate aggregate identities,
 while private metadata is never emitted. This does not implement ledger/outbox recomputation or prove
 PostgreSQL snapshot consistency; those remain the root integration/qualification responsibility.
