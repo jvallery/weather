@@ -4,7 +4,7 @@
 import asyncio
 import json
 import time
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -15,14 +15,16 @@ from test_current_publication_integration import (
     SOURCE,
     device,
     engine,
+    guard,
     incident,
     observation,
     receipt,
 )
 from test_current_publication_integration import disposable_database as disposable_database
-from weather.api.cursors import Snapshot
+from weather.api.cursors import CursorCodec, Snapshot
 from weather.api.metric_registry import PublicInputError
 from weather.api.public_models import Interval, ObservationQuery
+from weather.api.public_service import PublicWeatherService
 from weather.db.public_connection import PublicDatabaseBudget
 from weather.db.public_evidence import read_evidence_window
 from weather.db.public_mapping import FreshnessPolicy
@@ -246,6 +248,102 @@ def test_api_pool_saturation_and_timeout_do_not_block_ingest_or_leak_driver_text
                 await connection.close()
             await api.dispose()
             await ingest.dispose()
+            await db.dispose()
+
+    asyncio.run(check())
+
+
+def test_real_backend_outage_ages_cache_and_cold_process_recovers_persisted_values() -> None:
+    async def check() -> None:
+        db = engine()
+        budget = PublicDatabaseBudget(pool_size=2)
+        api = await api_engine(budget)
+        elapsed = [1.0]
+        def clock() -> datetime:
+            return SOURCE + timedelta(seconds=elapsed[0])
+
+        services = []
+        login_disabled = False
+        try:
+            async with db.begin() as connection:
+                d, alias = await station(connection)
+                await observation(connection, d, values={"air_temperature": 21})
+            reader = PublicSqlSource(
+                api,
+                station_alias=alias,
+                maximum_raw_seconds=30 * 86400,
+                policies={"temperature": FreshnessPolicy(60, 90)},
+                budget=budget,
+                clock=clock,
+            )
+
+            def service() -> PublicWeatherService:
+                value = PublicWeatherService(
+                    reader,
+                    CursorCodec(b"synthetic-cursor-key" * 4, policy_revision="synthetic_v1"),
+                    maximum_raw_seconds=30 * 86400,
+                    clock=clock,
+                    monotonic=lambda: elapsed[0],
+                )
+                services.append(value)
+                return value
+
+            warm = service()
+            initial = await warm.current()
+            temperature = next(m for m in initial.metrics if m.metric == "temperature")
+            assert initial.data_state == "live" and temperature.freshness == "fresh"
+            async with db.begin() as connection:
+                # The guard proves this process owns an isolated socket-only PG
+                # instance before changing its test role or terminating backends.
+                await guard(connection)
+                await connection.execute(text("ALTER ROLE weather_api NOLOGIN"))
+                login_disabled = True
+                terminated = (
+                    await connection.execute(
+                        text("""SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+                        WHERE usename='weather_api' AND datname=current_database()""")
+                    )
+                ).scalars().all()
+                assert terminated and all(terminated)
+            elapsed[0] = 121
+            cached = await warm.current()
+            stale = next(m for m in cached.metrics if m.metric == "temperature")
+            assert cached.data_state == "cached" and stale.freshness == "stale"
+            assert stale.value == temperature.value == 21
+            assert stale.observed_at == temperature.observed_at == SOURCE
+            assert stale.received_at == temperature.received_at
+            assert warm.metrics.registry.get_sample_value(
+                "weather_current_conditions_age_seconds"
+            ) == 121
+            cold = service()
+            with pytest.raises(PublicInputError) as failure:
+                await cold.current()
+            assert failure.value.code == "unavailable"
+            assert str(failure.value) == "Weather data is temporarily unavailable."
+            async with db.begin() as connection:
+                await connection.execute(text("ALTER ROLE weather_api LOGIN"))
+                login_disabled = False
+                await observation(
+                    connection,
+                    d,
+                    source=SOURCE + timedelta(seconds=120),
+                    received=SOURCE + timedelta(seconds=120),
+                    values={"air_temperature": 22},
+                )
+            elapsed[0] = 127
+            for value in services:
+                recovered = await value.current()
+                metric = next(m for m in recovered.metrics if m.metric == "temperature")
+                assert recovered.data_state == "live" and metric.freshness == "fresh"
+                assert metric.value == 22 and metric.observed_at == SOURCE + timedelta(seconds=120)
+        finally:
+            if login_disabled:
+                async with db.begin() as connection:
+                    await guard(connection)
+                    await connection.execute(text("ALTER ROLE weather_api LOGIN"))
+            for value in services:
+                await value.aclose()
+            await api.dispose()
             await db.dispose()
 
     asyncio.run(check())

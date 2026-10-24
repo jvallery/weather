@@ -49,7 +49,12 @@ Disposable integration cleanup preserves the camera seed, metric bindings and pu
 singleton; production tables are never truncated by these helpers. Source and pure startup/cache
 tests do not prove real database permissions, export concurrency, saturation, outage recovery or
 aggregate-revision handling. Those require the qualified in-cluster CI image and actual database
-tests before WX-13 deployment. Aggregate requests now use the complete as-of source and bounded
+tests before WX-13 deployment. The guarded integration suite includes a real API-backend outage:
+it disables login only on the disposable instance's API role, terminates that role's connections,
+checks aging warm-cache and cold-process 503 behavior, restores login, and checks persisted-value
+recovery. Its fixture verifies the isolated socket, server marker and versions before changing
+the test role; this is not a production outage procedure. The prepared test remains unexecuted.
+Aggregate requests now use the complete as-of source and bounded
 calculator, with one nonwaiting process slot, cooperative work accounting and explicit overflow;
 they do not silently truncate inputs or change the statistic. Their signed continuation position
 binds the fixed UTC evaluation instant as well as the ordinal, and the publication watermark retains
