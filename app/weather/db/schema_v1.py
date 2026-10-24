@@ -4,6 +4,8 @@
 Later migrations extend models.metadata; do not change this migration snapshot.
 """
 
+import math
+from collections.abc import Callable
 from typing import Any
 from uuid import UUID
 
@@ -29,6 +31,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR, UUID as PGUUID
 from sqlalchemy.dialects.postgresql.base import ischema_names
+from sqlalchemy.engine import Dialect
 from sqlalchemy.sql.schema import SchemaItem
 from sqlalchemy.types import UserDefinedType
 
@@ -41,6 +44,31 @@ class Vector(UserDefinedType[list[float]]):
 
     def get_col_spec(self, **kw: Any) -> str:
         return f"VECTOR({self.dimensions})"
+
+    def bind_processor(self, dialect: Dialect) -> Callable[[Any], str | None]:
+        def encode(value: Any) -> str | None:
+            if value is None:
+                return None
+            numbers = [float(number) for number in value]
+            if len(numbers) != self.dimensions or not all(
+                math.isfinite(n) for n in numbers
+            ):
+                raise ValueError("Invalid embedding dimensions or finite values")
+            return "[" + ",".join(repr(number) for number in numbers) + "]"
+
+        return encode
+
+    def result_processor(
+        self, dialect: Dialect, coltype: Any
+    ) -> Callable[[Any], list[float] | None]:
+        def decode(value: Any) -> list[float] | None:
+            if value is None:
+                return None
+            if isinstance(value, str):
+                return [float(number) for number in value[1:-1].split(",")]
+            return [float(number) for number in value]
+
+        return decode
 
 
 ischema_names["vector"] = Vector
@@ -139,7 +167,11 @@ def build_metadata() -> MetaData:
         Column("parse_state", String(32), nullable=False),
         Column("parser_revision", String(64), nullable=False),
         Column("receiver_incarnation", String(128), nullable=False),
-        CheckConstraint("sha256 ~ '^[0-9a-f]{64}$'", name="digest"),
+        CheckConstraint(
+            "sha256 ~ '^[0-9a-f]{64}$' AND "
+            "sha256=encode(pg_catalog.sha256(raw_bytes),'hex')",
+            name="digest",
+        ),
         CheckConstraint(
             "parse_state IN ('received','parsed','malformed',"
             "'unsupported','quarantined')",
@@ -550,7 +582,7 @@ def build_metadata() -> MetaData:
         Column("height", Integer, nullable=False),
         instant("captured_lower"),
         instant("captured_upper"),
-        Column("path", Text, nullable=False),
+        Column("path", Text, nullable=False, unique=True),
         digest(),
         instant("public_not_before"),
         instant("expires_at"),

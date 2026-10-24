@@ -20,4 +20,5 @@ RUN uv python install 3.14.9 \
 ENV PATH=/usr/lib/postgresql/16/bin:$PATH \
     UV_PYTHON=/usr/local/bin/python3 UV_PYTHON_DOWNLOADS=never
 USER 1001:1001
+ENTRYPOINT []
 CMD ["/bin/bash"]
