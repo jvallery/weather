@@ -218,3 +218,58 @@ with an unresolved synthetic collection. Coverage gap overflow is an explicit bo
 Formula/support-policy changes invalidate aggregate identities,
 while private metadata is never emitted. This does not implement ledger/outbox recomputation or prove
 PostgreSQL snapshot consistency; those remain the root integration/qualification responsibility.
+
+## Read-only aggregate callback and paging
+
+`weather.api.aggregate_source.AggregateSource` is an optional callable for the SQL source's
+aggregate callback. Construction requires its existing reader, an explicit `SupportPolicy` mapping,
+clock, and explicit pressure endpoint options (both null when uncommissioned). It creates no pool,
+worker or background computation and is not automatically installed in the application lifespan.
+Root integration owns runtime configuration, the ledger/current-head worker and actual PostgreSQL
+qualification.
+
+The callback accepts any positive explicit resolution supported by `AggregateQuery`. Half-open bins
+are anchored at the query start; the last bin is clipped at the actual query end. It computes integer
+bin and output counts, then visits at most `query.limit` outputs (maximum 5,000), ordered by bin then
+sorted public metric ID. It never allocates all bins in a long interval or substitutes a statistic.
+A pressure-trend bin narrower than its commissioned pair of endpoint windows fails explicitly with a
+resolution suggestion; no endpoint width is silently shortened.
+
+Source positions use canonical `a1_` tokens containing a version, next output ordinal and UTC
+microsecond evaluation timestamp. These positions are authenticated by the existing HMAC export
+cursor, including canonical query filters/expiry/policy binding. The source also rejects malformed,
+noncanonical, out-of-range and future positions. The first complete evidence query atomically
+obtains its publication watermark even with no rows. Later pages use that same as-of-v4 watermark
+and signed evaluation time: a future-tolerated source or receipt timestamp cannot age into a later
+page. `read_evidence_window(..., enforce_raw_range=False)` keeps aggregate windows separate from the
+raw export duration limit, while retaining statement/pool/input budgets. No raw page supplies input.
+
+One complete bounded page envelope (up to 50,000 flattened inputs, never truncated) includes the
+calibrated preceding bookends and reported lookahead. The callback indexes streams and derives a
+canonical per-bin/per-metric subset, including wind dependencies, all eligible ties and invalid
+boundaries. Per-output input revisions therefore remain independent of successful page size and
+page boundaries for the same snapshot/evaluation/policy. They bind the actual safe quality/support
+and exact values. The response-level `Aggregates.revision` names the export snapshot/query/policies;
+it includes the watermark and frozen evaluation time and is not a stored computation revision.
+Unrelated publications can change that snapshot receipt while unchanged closed-window item
+identities remain unchanged.
+
+Every actual evidence ID is retained. The sum of emitted evidence-ID references across the entire
+page, including repeated IDs in separate outputs, is limited to 50,000. Overflow fails explicitly;
+no bundle identity, dropped provenance or partial page is published. Other existing bounded DTO
+limits, including at most 1,000 coverage gaps per aggregate, likewise fail as `range_too_large`.
+Input and work overflow instruct the caller to choose a smaller explicit page or source interval.
+
+A nonwaiting process-wide slot permits one aggregate callback at a time, including source I/O.
+Overload is a sanitized 503; it never queues an unbounded set of computations. The default work
+budget is 250,000 charged work units (constructor bound at one million); index work
+cooperatively yields each 128 charged operations and every output yields before computation.
+Before synchronous engine math, a cooperative endpoint preflight additionally charges the
+active-support cardinality/sort cost at each boundary, with conservative wind/pressure sweep
+multipliers. This prevents staggered long overlapping holds from bypassing the work budget through
+the engine's quadratic active-set work. Assembly and engine calls retain the complete input cap,
+with no detached threads or tasks.
+Cancellation releases the slot; bounded `aclose()` cancels its active caller and prevents further
+reads or late publication. The existing service timeout remains the outer five-second guard.
+Actual source SQL stress, maximum-density memory/CPU and cancellation latency require in-cluster
+qualification; fake-reader tests do not establish those performance bounds.
