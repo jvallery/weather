@@ -50,8 +50,10 @@ addresses. Native NetworkPolicy has no FQDN selector; this is a documented TLS
 port exception, not an endpoint allowlist enforced by the network. The probe
 must separately allow only the source-declared B2 HTTPS origin, validate its
 certificate, and use only `weather-custody-restore-reader` in place. It mounts
-no provider management identity or ServiceAccount token. No API endpoint port
-is needed. Do not reuse the native controller's configured proxy or create a
+no provider management identity or ServiceAccount token. No TCP 6443 exception
+is needed; the TLS-port rule itself cannot distinguish B2 from other HTTPS
+services, including the Kubernetes API Service on 443. The fixed provider URL
+allowlist and absent API token are part of the isolated probe contract. Do not reuse the native controller's configured proxy or create a
 new proxy, identity or RBAC for this probe.
 
 The policy selects only pods with all three: managed-by

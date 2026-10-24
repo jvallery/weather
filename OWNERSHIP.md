@@ -44,6 +44,6 @@ actuator's labelled commissioning probes; usage and removal are documented in
 Weather owns the excluded, transient NetworkPolicy
 `weather/weather-custody-probe-egress` for storage-infra#1107's independent
 B2-reader proof. It selects only labelled disposable operation pods, permits
-kube-dns and TCP 443 for dynamic B2, and adds no API access, proxy, credentials
-or workload activation. Source: `deploy/k8s/commissioning/custody-probe-egress.yaml`;
+kube-dns and TCP 443 for dynamic B2, and adds no ServiceAccount token, TCP
+6443 exception, proxy, credentials or workload activation. Source: `deploy/k8s/commissioning/custody-probe-egress.yaml`;
 bounded lifecycle: `docs/operations/garage-commissioning.md`.

@@ -28,6 +28,6 @@ spec:
         - {protocol: TCP, port: 53}
     # B2 addresses change. Reuse the isolated restore pattern: TLS only,
     # provider URL allowlist + certificate verification + scoped reader key.
-    # Tokenless object probes require no Kubernetes API endpoint port.
+    # Tokenless object probes require no TCP 6443 API endpoint exception.
     - ports:
         - {protocol: TCP, port: 443}
