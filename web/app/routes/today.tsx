@@ -7,9 +7,8 @@ import { currentRead, metricRegistryRead } from "../lib/public-api.server";
 import { unitsFrom } from "../lib/route-params";
 export const meta = () => [{ title: "Today · Weather" }];
 export async function loader({ request }: LoaderFunctionArgs) {
-  // Sequential reads keep four simultaneous SSR documents inside API admission.
-  const registry = await metricRegistryRead(request);
-  return { ...await currentRead(request), registry, units: unitsFrom(new URL(request.url)) };
+  const [registry, current] = await Promise.all([metricRegistryRead(request), currentRead(request)]);
+  return { ...current, registry, units: unitsFrom(new URL(request.url)) };
 }
 export default function Today() {
   const { current, now, units, registry, apiUnavailable } = useLoaderData<typeof loader>();

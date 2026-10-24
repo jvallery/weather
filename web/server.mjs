@@ -47,7 +47,11 @@ let rendering = 0;
 const renderFailures = new Counter({ name: "weather_web_ssr_failures_total", help: "Bounded SSR failures by cause", labelNames: ["reason"] });
 for (const reason of ["overloaded", "deadline", "render_error"]) renderFailures.labels(reason).inc(0);
 const activeRenders = new Gauge({ name: "weather_web_ssr_inflight", help: "Active bounded document/data responses" });
-app.use((_req, res, next) => {
+// Only routes whose loaders read the API take a slot. Loader-less pages, their data requests and
+// the lazy route manifest never wait behind API work.
+const UNMETERED = /^\/(?:(?:about|search)(?:\/|\/_\.data|\.data)?|__manifest)$/;
+app.use((req, res, next) => {
+  if (UNMETERED.test(req.path)) return next();
   if (rendering >= 4) { renderFailures.labels("overloaded").inc(); res.setHeader("Retry-After", "5"); return res.status(503).type("text").send("Weather is busy. Please retry shortly."); }
   rendering += 1; activeRenders.inc();
   let released = false;
