@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-/** Strict runtime boundary for the code-first public API; media contracts remain independent. */
+/** Media (timelapse) contracts until the slice-2 API generates them; weather types live in weather-api.ts. */
 import { z } from "zod";
 // Zod's caught eval-capability probe still violates a strict browser CSP.
 // Configure before constructing any object schema; retain interpreted validation.
@@ -36,47 +36,6 @@ export const coverageSchema = z.strictObject({
   fraction: number.min(0).max(1), support_seconds: nonnegative, expected_seconds: nonnegative,
   algorithm_revision: id, gaps: z.array(intervalSchema).max(1000),
 });
-export const canonicalUnits = {
-  temperature: "degC", humidity: "%", wind_lull: "m/s", wind_avg: "m/s", wind_speed: "m/s", wind_gust: "m/s", wind_direction: "deg",
-  precipitation: "mm", rain_last_hour: "mm", rain_today: "mm", station_pressure: "hPa", illuminance: "lx", uv: "index", irradiance: "W/m2", lightning_count: "1", lightning_distance: "km",
-} as const;
-const metricID = z.enum(Object.keys(canonicalUnits) as [keyof typeof canonicalUnits, ...(keyof typeof canonicalUnits)[]]);
-export function isDirectMetric(metric: string): boolean { return metric !== "rain_last_hour" && metric !== "rain_today"; }
-export const metricSchema = z.strictObject({
-  metric: metricID, value: number.nullable(), unit: z.string().min(1).max(32),
-  observed_at: utc.nullable(), received_at: utc.nullable(), expected_interval_seconds: number.positive().nullable(),
-  valid_until: utc.nullable(), quality: z.enum(["valid", "suspect", "missing", "invalid"]),
-  freshness: z.enum(["fresh", "stale", "unavailable"]), reason,
-}).superRefine((metric, context) => {
-  if (metric.unit !== canonicalUnits[metric.metric] || (metric.value !== null && (!metric.observed_at || !metric.received_at || ["invalid", "missing"].includes(metric.quality))) || (metric.freshness !== "fresh" && !metric.reason)) {
-    context.addIssue({ code: "custom", message: "Measurements require canonical units, source timing and explicit quality" });
-  }
-  if (metric.valid_until && (!metric.observed_at || sourceMicros(metric.valid_until)! <= sourceMicros(metric.observed_at)!)) context.addIssue({ code: "custom", message: "Expiry must follow source time" });
-  if (metric.metric === "lightning_count" && metric.value !== null && (!Number.isSafeInteger(metric.value) || metric.value < 0)) context.addIssue({ code: "custom", message: "Counts require nonnegative integers" });
-  if (metric.value === null && (!metric.reason || metric.freshness !== "unavailable")) {
-    context.addIssue({ code: "custom", message: "Missing metrics require a reason and unavailable state" });
-  }
-  if (metric.freshness === "fresh" && (metric.value === null || !metric.observed_at || !metric.received_at || !metric.valid_until || metric.quality !== "valid")) {
-    context.addIssue({ code: "custom", message: "Fresh metrics require valid source timing and quality" });
-  }
-});
-export const currentSchema = z.strictObject({
-  schema_version: z.literal(1), generated_at: utc, station_alias: z.string().min(1).max(128),
-  data_state: z.enum(["live", "cached", "unavailable"]), metrics: z.array(metricSchema).max(128),
-}).superRefine((data, context) => {
-  if (new Set(data.metrics.map((metric) => metric.metric)).size !== data.metrics.length || (!data.metrics.length && data.data_state !== "unavailable")) context.addIssue({ code: "custom", message: "Invalid current metric identities or state" });
-  for (const metric of data.metrics) if (metric.freshness === "fresh" && (sourceMicros(metric.observed_at!)! > sourceMicros(data.generated_at)! || sourceMicros(metric.received_at!)! > sourceMicros(data.generated_at)! || sourceMicros(data.generated_at)! >= sourceMicros(metric.valid_until!)!)) context.addIssue({ code: "custom", message: "Response time cannot freshen source evidence" });
-});
-const historyPoint = z.strictObject({
-  observed_at: utc, received_at: utc, metric: metricID, value: number.nullable(), unit: z.string().min(1).max(32),
-  quality: z.enum(["valid", "suspect", "missing", "invalid"]), evidence_id: id,
-  reason, support_interval: intervalSchema.nullable(),
-}).refine((point) => point.unit === canonicalUnits[point.metric] && (point.value !== null || !!point.reason) && !(point.value !== null && ["invalid", "missing"].includes(point.quality)) && (point.metric !== "lightning_count" || point.value === null || (Number.isSafeInteger(point.value) && point.value >= 0)), "Unqualified observation");
-export const historySchema = z.strictObject({
-  generated_at: utc, interval: intervalSchema, resolution_seconds: z.literal(0), aggregation: z.literal("observed"),
-  points: z.array(historyPoint).max(5000), gaps: z.array(intervalSchema).max(1000),
-  next_cursor: z.string().min(1).max(2048).nullable(),
-}).refine((page) => new Set(page.points.map((point) => point.evidence_id)).size === page.points.length && page.points.every((point) => sourceMicros(point.observed_at)! >= sourceMicros(page.interval.start)! && sourceMicros(point.observed_at)! < sourceMicros(page.interval.end)!) && page.gaps.every((gap) => sourceMicros(gap.start)! >= sourceMicros(page.interval.start)! && sourceMicros(gap.end)! <= sourceMicros(page.interval.end)!), "Observation page exceeds source bounds");
 const asset = z.strictObject({
   asset_id: id, class: z.enum(["video", "poster", "public_still", "keogram", "camera_preview", "metadata"]),
   url: z.string().regex(/^\/media\/[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/),
@@ -135,22 +94,6 @@ export const videoSchema = z.strictObject({
   }
 });
 export const catalogSchema = z.strictObject({ generated_at: utc, revision: id, items: z.array(videoSchema).max(100), next_cursor: z.string().max(4096).nullable() });
-const signedInteger = z.number().int().refine(Number.isSafeInteger);
-const conversionSchema = z.strictObject({ unit: z.string().min(1).max(32), scale_numerator: signedInteger, scale_denominator: signedInteger.positive(), offset_numerator: signedInteger, offset_denominator: signedInteger.positive() });
-export const metricDefinitionSchema = z.strictObject({
-  metric: metricID, label: z.string().min(1).max(128), canonical_unit: z.string().min(1).max(32),
-  display_units: z.array(z.string().min(1).max(32)).min(1).max(16), conversions: z.array(conversionSchema).min(1).max(16),
-  statistics: z.array(z.string().min(1).max(64)).min(1).max(16), expected_interval_seconds: number.positive().nullable(), public: z.literal(true), revision: id,
-}).refine((row) => {
-  const identity = row.conversions.find((item) => item.unit === row.canonical_unit);
-  return row.canonical_unit === canonicalUnits[row.metric] && row.display_units.join("|") === row.conversions.map((item) => item.unit).join("|") && new Set(row.display_units).size === row.display_units.length && new Set(row.statistics).size === row.statistics.length && !!identity && identity.scale_numerator === identity.scale_denominator && identity.offset_numerator === 0;
-}, "Invalid explicit conversion recipe");
-export const metricRegistrySchema = z.strictObject({ revision: id, metrics: z.array(metricDefinitionSchema).max(256) }).refine((registry) => new Set(registry.metrics.map((row) => row.metric)).size === registry.metrics.length, "Duplicate registry identities");
-export type MetricDefinition = z.infer<typeof metricDefinitionSchema>;
-export type MetricRegistry = z.infer<typeof metricRegistrySchema>;
-export type Current = z.infer<typeof currentSchema>;
-export type Metric = z.infer<typeof metricSchema>;
-export type History = z.infer<typeof historySchema>;
 export type Video = z.infer<typeof videoSchema>;
 export type Catalog = z.infer<typeof catalogSchema>;
 export type Camera = z.infer<typeof cameraSchema>;

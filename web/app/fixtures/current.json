@@ -14,7 +14,8 @@
       "valid_until": "2026-11-01T08:16:30Z",
       "quality": "valid",
       "freshness": "fresh",
-      "reason": null
+      "reason": null,
+      "coverage": null
     },
     {
       "metric": "wind_gust",
@@ -26,7 +27,8 @@
       "valid_until": "2026-11-01T07:16:30Z",
       "quality": "valid",
       "freshness": "stale",
-      "reason": "Synthetic fixture: no recent wind report"
+      "reason": "Synthetic fixture: no recent wind report",
+      "coverage": null
     },
     {
       "metric": "humidity",
@@ -38,7 +40,8 @@
       "valid_until": null,
       "quality": "missing",
       "freshness": "unavailable",
-      "reason": "Synthetic fixture: missing support"
+      "reason": "Synthetic fixture: missing support",
+      "coverage": null
     }
   ]
 }

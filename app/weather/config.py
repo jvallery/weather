@@ -13,6 +13,11 @@ class Settings(BaseModel):
     public_origin: HttpUrl
     port: int = Field(default=8000, ge=1, le=65535)
     metrics_port: int = Field(default=9000, ge=1, le=65535)
+    # Default Tempest cadences; a value is fresh until observed_at + hold (#14).
+    api_obs_st_interval_seconds: float = Field(default=60, gt=0, le=3600)
+    api_obs_st_hold_seconds: float = Field(default=150, gt=0, le=86400)
+    api_rapid_wind_interval_seconds: float = Field(default=3, gt=0, le=3600)
+    api_rapid_wind_hold_seconds: float = Field(default=15, gt=0, le=86400)
 
     @field_validator("public_origin")
     @classmethod

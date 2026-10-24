@@ -25,7 +25,14 @@ class DatabaseUnavailable(RuntimeError):
     pass
 
 
-def create_database_engine() -> AsyncEngine:
+def create_database_engine(
+    *,
+    pool_size: int = 5,
+    pool_timeout: float = 30,
+    server_settings: dict[str, str] | None = None,
+) -> AsyncEngine:
+    """TLS verify-full engine for the mounted role; the API passes a smaller read-only budget."""
+    settings = {"timezone": "UTC", **(server_settings or {})}
     # Only the cluster integration fixture may use its isolated test endpoint.
     test_url = os.environ.get("WEATHER_CI_DATABASE_URL")
     if test_url:
@@ -34,9 +41,10 @@ def create_database_engine() -> AsyncEngine:
         return create_async_engine(
             test_url,
             echo=False,
-            pool_size=5,
+            pool_size=pool_size,
             max_overflow=0,
-            connect_args={"server_settings": {"timezone": "UTC"}},
+            pool_timeout=pool_timeout,
+            connect_args={"server_settings": settings},
         )
     directory = Path(
         os.environ.get("DATABASE_CREDENTIAL_DIRECTORY", "/var/run/weather-db")
@@ -69,10 +77,12 @@ def create_database_engine() -> AsyncEngine:
     return create_async_engine(
         url,
         echo=False,
-        pool_size=5,
+        hide_parameters=True,
+        pool_size=pool_size,
         max_overflow=0,
+        pool_timeout=pool_timeout,
         pool_pre_ping=True,
-        connect_args={"ssl": tls, "server_settings": {"timezone": "UTC"}},
+        connect_args={"ssl": tls, "server_settings": settings},
     )
 
 

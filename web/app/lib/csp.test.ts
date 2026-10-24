@@ -12,12 +12,12 @@ test("public schema construction and parsing never probe dynamic code under stri
       apply() { calls++; throw new Error("Dynamic compiler blocked"); },
       construct() { calls++; throw new Error("Dynamic compiler blocked"); }
     });
-    const { currentSchema } = await import(pathToFileURL(process.argv[1]));
-    currentSchema.parse(JSON.parse(readFileSync(process.argv[2], "utf8")));
+    const { parseCurrent } = await import(pathToFileURL(process.argv[1]));
+    if (!parseCurrent(JSON.parse(readFileSync(process.argv[2], "utf8")))) throw new Error("fixture rejected");
     process.stdout.write(JSON.stringify({ calls }));
   `;
   const result = spawnSync(process.execPath, ["--experimental-strip-types", "--input-type=module", "-e", program,
-    fileURLToPath(new URL("./contracts.ts", import.meta.url)), fileURLToPath(new URL("../fixtures/current.json", import.meta.url))], { encoding: "utf8", timeout: 5000 });
+    fileURLToPath(new URL("./weather-api.ts", import.meta.url)), fileURLToPath(new URL("../fixtures/current.json", import.meta.url))], { encoding: "utf8", timeout: 5000 });
   expect(result.status).toBe(0);
   expect(JSON.parse(result.stdout)).toEqual({ calls: 0 });
 });

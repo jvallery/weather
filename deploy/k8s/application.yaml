@@ -3,6 +3,9 @@ kind: Deployment
 metadata:
   name: api
   namespace: weather
+  annotations:
+    # After the wave-1 migrate hook; DB clients run at wave >= 2.
+    argocd.argoproj.io/sync-wave: '2'
   labels:
     app.kubernetes.io/part-of: weather
     agent-fleet.vallery.net/owner: jvallery
@@ -17,7 +20,12 @@ spec:
       app.kubernetes.io/component: api
   template:
     metadata:
-      labels: *id001
+      labels:
+        app.kubernetes.io/name: api
+        app.kubernetes.io/part-of: weather
+        app.kubernetes.io/component: api
+        # Admits egress to weather-pg (weather-database-clients NetworkPolicy).
+        weather.vallery.net/database-role: api
     spec:
       serviceAccountName: api
       enableServiceLinks: false
@@ -67,9 +75,11 @@ spec:
           capabilities:
             drop:
             - ALL
+        # Startup and liveness never depend on the database; readiness does (#14), so a
+        # database outage makes pods unready instead of restarting them.
         startupProbe:
           httpGet:
-            path: /readyz
+            path: /healthz
             port: http
           periodSeconds: 5
           failureThreshold: 30
@@ -86,6 +96,12 @@ spec:
         volumeMounts:
         - name: tmp
           mountPath: /tmp
+        - name: database
+          mountPath: /var/run/weather-db
+          readOnly: true
+        - name: cursor
+          mountPath: /var/run/weather-api-cursor
+          readOnly: true
         command:
         - weather
         - api
@@ -93,6 +109,29 @@ spec:
       - name: tmp
         emptyDir:
           sizeLimit: 64Mi
+      - name: database
+        projected:
+          defaultMode: 288
+          sources:
+          - secret:
+              name: weather-pg-api
+              items:
+              - key: username
+                path: username
+              - key: password
+                path: password
+          - secret:
+              name: weather-pg-ca
+              items:
+              - key: ca.crt
+                path: ca.crt
+      - name: cursor
+        secret:
+          secretName: weather-api-cursor
+          defaultMode: 288
+          items:
+          - key: CURSOR_HMAC_KEY
+            path: CURSOR_HMAC_KEY
       terminationGracePeriodSeconds: 30
 ---
 apiVersion: v1

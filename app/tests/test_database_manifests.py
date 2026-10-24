@@ -278,3 +278,29 @@ class DatabaseManifestTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ApiManifestTests(unittest.TestCase):
+    def test_api_reads_weather_pg_as_its_own_role_after_migrations(self):
+        api = next(
+            d
+            for d in yaml.safe_load_all((ROOT / "deploy/k8s/application.yaml").read_text())
+            if d["kind"] == "Deployment" and d["metadata"]["name"] == "api"
+        )
+        wave = api["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"]
+        self.assertGreaterEqual(int(wave), 2)
+        pod = api["spec"]["template"]
+        self.assertEqual(pod["metadata"]["labels"]["weather.vallery.net/database-role"], "api")
+        selector = api["spec"]["selector"]["matchLabels"]
+        self.assertNotIn("weather.vallery.net/database-role", selector)
+        volumes = {v["name"]: v for v in pod["spec"]["volumes"]}
+        self.assertEqual(
+            [s["secret"]["name"] for s in volumes["database"]["projected"]["sources"]],
+            ["weather-pg-api", "weather-pg-ca"],
+        )
+        self.assertEqual(volumes["cursor"]["secret"]["secretName"], "weather-api-cursor")
+        container = pod["spec"]["containers"][0]
+        # A database outage must make pods unready, never restart them.
+        self.assertEqual(container["startupProbe"]["httpGet"]["path"], "/healthz")
+        self.assertEqual(container["livenessProbe"]["httpGet"]["path"], "/healthz")
+        self.assertEqual(container["readinessProbe"]["httpGet"]["path"], "/readyz")

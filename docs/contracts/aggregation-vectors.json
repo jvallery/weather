@@ -1,0 +1,118 @@
+{
+  "description": "Golden vectors for on-read aggregates (#14). app/tests/test_api_integration.py seeds each case's rows into an ephemeral PostgreSQL, calls the real API service and compares every expected item. Values use the obs_st cadence of 60 s (sample cap 120 s) and the 60 s report support from #73.",
+  "cases": [
+    {
+      "name": "time-weighted mean, held samples, bin edges and a cadence gap",
+      "rows": [
+        {"family": "obs_st", "at": "2026-07-01T00:00:00Z", "values": {"air_temperature": 10}},
+        {"family": "obs_st", "at": "2026-07-01T00:01:00Z", "values": {"air_temperature": 20}},
+        {"family": "obs_st", "at": "2026-07-01T00:02:30Z", "values": {"air_temperature": 30}},
+        {"family": "obs_st", "at": "2026-07-01T00:06:00Z", "values": {"air_temperature": 40}}
+      ],
+      "query": {"start": "2026-07-01T00:00:00Z", "end": "2026-07-01T00:06:00Z", "resolution": "180", "metrics": ["temperature"], "statistics": ["mean", "min", "max"]},
+      "expected": [
+        {"start": "2026-07-01T00:00:00Z", "statistic": "mean", "value": 18.333333, "support_seconds": 180, "evidence_count": 3},
+        {"start": "2026-07-01T00:00:00Z", "statistic": "min", "value": 10},
+        {"start": "2026-07-01T00:00:00Z", "statistic": "max", "value": 30},
+        {"start": "2026-07-01T00:03:00Z", "statistic": "mean", "value": 30, "support_seconds": 90, "evidence_count": 1},
+        {"start": "2026-07-01T00:03:00Z", "statistic": "max", "value": 30}
+      ]
+    },
+    {
+      "name": "zero support is null with a reason, not zero",
+      "rows": [
+        {"family": "obs_st", "at": "2026-07-01T00:00:00Z", "values": {"air_temperature": 0}}
+      ],
+      "query": {"start": "2026-07-01T00:00:00Z", "end": "2026-07-01T00:06:00Z", "resolution": "180", "metrics": ["temperature"], "statistics": ["mean"]},
+      "expected": [
+        {"start": "2026-07-01T00:00:00Z", "statistic": "mean", "value": 0, "support_seconds": 120},
+        {"start": "2026-07-01T00:03:00Z", "statistic": "mean", "value": null, "support_seconds": 0, "evidence_count": 0}
+      ]
+    },
+    {
+      "name": "rain on the 25-hour fall-back day: amounts belong to the window holding their support end",
+      "rows": [
+        {"family": "obs_st", "at": "2026-11-01T05:59:30Z", "values": {"precip_accumulated": 0.2}},
+        {"family": "obs_st", "at": "2026-11-01T06:00:00Z", "values": {"precip_accumulated": 0.3}},
+        {"family": "obs_st", "at": "2026-11-01T06:00:30Z", "values": {"precip_accumulated": 0.5}},
+        {"family": "obs_st", "at": "2026-11-02T06:30:00Z", "values": {"precip_accumulated": 1.0}}
+      ],
+      "query": {"start": "2026-10-31T06:00:00Z", "end": "2026-11-02T07:00:00Z", "resolution": "day", "metrics": ["precipitation"], "statistics": ["sum"]},
+      "expected": [
+        {"start": "2026-10-31T06:00:00Z", "end": "2026-11-01T06:00:00Z", "statistic": "sum", "value": 0.5, "support_seconds": 90, "evidence_count": 2},
+        {"start": "2026-11-01T06:00:00Z", "end": "2026-11-02T07:00:00Z", "statistic": "sum", "value": 1.5, "support_seconds": 90, "evidence_count": 2}
+      ],
+      "conserved_total": 2.0
+    },
+    {
+      "name": "23-hour spring-forward day",
+      "rows": [
+        {"family": "obs_st", "at": "2026-03-08T12:00:00Z", "values": {"precip_accumulated": 0.4}}
+      ],
+      "query": {"start": "2026-03-08T07:00:00Z", "end": "2026-03-09T06:00:00Z", "resolution": "day", "metrics": ["precipitation"], "statistics": ["sum"]},
+      "expected": [
+        {"start": "2026-03-08T07:00:00Z", "end": "2026-03-09T06:00:00Z", "statistic": "sum", "value": 0.4, "support_seconds": 60, "evidence_count": 1}
+      ]
+    },
+    {
+      "name": "wind: 359/1 wrap, calm and missing direction; rose conserves the interval",
+      "rows": [
+        {"family": "obs_st", "at": "2026-07-01T00:01:00Z", "values": {"wind_avg": 5, "wind_direction": 359}},
+        {"family": "obs_st", "at": "2026-07-01T00:02:00Z", "values": {"wind_avg": 5, "wind_direction": 1}},
+        {"family": "obs_st", "at": "2026-07-01T00:03:00Z", "values": {"wind_avg": 0.3, "wind_direction": 180}},
+        {"family": "obs_st", "at": "2026-07-01T00:04:00Z", "values": {"wind_avg": 8}}
+      ],
+      "query": {"start": "2026-07-01T00:00:00Z", "end": "2026-07-01T00:05:00Z", "resolution": "300", "metrics": ["wind_direction"], "statistics": ["vector_mean", "rose"]},
+      "expected": [
+        {"start": "2026-07-01T00:00:00Z", "statistic": "vector_mean", "value": 0, "direction_state": "directional", "support_seconds": 180, "evidence_count": 4},
+        {"start": "2026-07-01T00:00:00Z", "statistic": "rose", "rose": {"directional:348.75:5.0": 120, "calm": 60, "variable": 0, "missing": 120}}
+      ]
+    },
+    {
+      "name": "opposed winds are variable, never an arbitrary angle",
+      "rows": [
+        {"family": "obs_st", "at": "2026-07-01T00:01:00Z", "values": {"wind_avg": 4, "wind_direction": 90}},
+        {"family": "obs_st", "at": "2026-07-01T00:02:00Z", "values": {"wind_avg": 4, "wind_direction": 270}}
+      ],
+      "query": {"start": "2026-07-01T00:00:00Z", "end": "2026-07-01T00:05:00Z", "resolution": "300", "metrics": ["wind_direction"], "statistics": ["vector_mean"]},
+      "expected": [
+        {"start": "2026-07-01T00:00:00Z", "statistic": "vector_mean", "value": null, "direction_state": "variable"}
+      ]
+    },
+    {
+      "name": "lightning counts stay integers and gusts are reported maxima",
+      "rows": [
+        {"family": "obs_st", "at": "2026-07-01T00:01:00Z", "values": {"lightning_strike_count": 2, "wind_gust": 7.5}},
+        {"family": "obs_st", "at": "2026-07-01T00:02:00Z", "values": {"lightning_strike_count": 0, "wind_gust": 12.1}},
+        {"family": "obs_st", "at": "2026-07-01T00:03:00Z", "values": {"lightning_strike_count": 3, "wind_gust": 9}}
+      ],
+      "query": {"start": "2026-07-01T00:00:00Z", "end": "2026-07-01T01:00:00Z", "resolution": "3600", "metrics": ["lightning_count", "wind_gust"], "statistics": ["sum"]},
+      "expected_error": "unsupported_statistic"
+    },
+    {
+      "name": "lightning sum",
+      "rows": [
+        {"family": "obs_st", "at": "2026-07-01T00:01:00Z", "values": {"lightning_strike_count": 2}},
+        {"family": "obs_st", "at": "2026-07-01T00:02:00Z", "values": {"lightning_strike_count": 0}},
+        {"family": "obs_st", "at": "2026-07-01T00:03:00Z", "values": {"lightning_strike_count": 3}}
+      ],
+      "query": {"start": "2026-07-01T00:00:00Z", "end": "2026-07-01T01:00:00Z", "resolution": "3600", "metrics": ["lightning_count"], "statistics": ["sum"]},
+      "expected": [
+        {"start": "2026-07-01T00:00:00Z", "statistic": "sum", "value": 5, "support_seconds": 180, "evidence_count": 3}
+      ]
+    },
+    {
+      "name": "rapid wind: 3 s samples held at most 6 s",
+      "rows": [
+        {"family": "rapid_wind", "at": "2026-07-01T00:00:00Z", "values": {"wind_speed": 2, "wind_direction": 10}},
+        {"family": "rapid_wind", "at": "2026-07-01T00:00:03Z", "values": {"wind_speed": 4, "wind_direction": 10}},
+        {"family": "rapid_wind", "at": "2026-07-01T00:00:30Z", "values": {"wind_speed": 6, "wind_direction": 10}}
+      ],
+      "query": {"start": "2026-07-01T00:00:00Z", "end": "2026-07-01T00:01:00Z", "resolution": "60", "metrics": ["wind_speed"], "statistics": ["mean", "max"]},
+      "expected": [
+        {"start": "2026-07-01T00:00:00Z", "statistic": "mean", "value": 4.4, "support_seconds": 15, "evidence_count": 3},
+        {"start": "2026-07-01T00:00:00Z", "statistic": "max", "value": 6}
+      ]
+    }
+  ]
+}

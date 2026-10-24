@@ -2,15 +2,19 @@
 
 Requirements §§10.5–10.6; D05/D12/D16; producers WX-13/41/42, consumers WX-22/39/40. This specifies calculations over already validated, deduplicated metric support. Raw parsing/support calibration remains D05 qualification; no observed fixture is invented from a packet receipt timestamp.
 
-## Common support and revision rules
+## Implementation (#14)
+
+`app/weather/api/source.py` implements these rules for the public `/aggregates` route. Instantaneous readings (temperature, humidity, pressure, light, UV, irradiance, rapid wind) hold from their source time until the next reading, capped at twice the expected cadence; longer silence is a gap that lowers coverage. Report-interval values (wind lull/average/gust/direction, rain, lightning) cover the 60 s ending at their source time. Min/max use readings in effect during the bin; sums and report maxima use reports whose support ends in the bin. [aggregation-vectors.json](aggregation-vectors.json) holds the golden cases that `app/tests/test_api_integration.py` runs against PostgreSQL. Pressure trend, solar energy and boundary-uncertain lightning counts are not served yet (#42).
+
+## Common support rules
 
 Intersect each metric's qualified half-open support with the requested UTC interval. Resolve conflicts before aggregation; overlapping competing values cannot be averaged as independent time. Coverage is the union of eligible support duration divided by elapsed window duration. Preserve missing intervals and algorithm/config revision. Count-based receipt coverage is a different diagnostic.
 
 Temperature/humidity means are sum(value × supported seconds) / supported seconds, with null and reason when duration is zero; min/max are observed eligible values, not interpolated extrema. Apply the effective per-metric hold cap, never a universal unlimited hold. Preserve exact source precision internally and round only display output. Calendar-day aggregates use real UTC day bounds, including DST duration; video summaries use their own solar interval.
 
-Precipitation sums reconciled unique amounts over qualified protocol support. A boundary-straddling report can be split by overlap fraction only with the uniform-intensity estimate labeled and exact conservation across adjacent windows. Unknown support is excluded from qualified totals with a reason. Missing time is never extrapolated to full-period rain. Lightning uses one configured event/count authority, keeps integer counts and exposes boundary-uncertain counts separately; do not add events and interval counts or split a strike fractionally. Instrument precipitation classification remains distinct from visual claims and is not snow depth.
+Precipitation sums unique amounts over protocol support: each obs_st amount covers the 60 s ending at its source time (#73), trimmed at the previous report so supports never overlap. An amount belongs whole to the window that contains the end of its support, which conserves totals exactly across adjacent windows without splitting. Unknown support is excluded from qualified totals with a reason. Missing time is never extrapolated to full-period rain. Lightning uses one configured event/count authority, keeps integer counts and exposes boundary-uncertain counts separately; do not add events and interval counts or split a strike fractionally. Instrument precipitation classification remains distinct from visual claims and is not snow depth.
 
-Solar energy is sum(irradiance W/m² × valid seconds) / 3600, in Wh/m². Pressure remains station pressure. Pressure trend uses duration-weighted endpoint-window averages with coverage and their actual midpoint separation; window width/minimum support is versioned and still requires commissioning. No implicit sea-level conversion. Evidence IDs bind metric/statistic/window/unit/algorithm/coverage and revision; corrections invalidate dependent synthesis, records and search through outbox/CAS while retaining prior provenance.
+Solar energy is sum(irradiance W/m² × valid seconds) / 3600, in Wh/m². Pressure remains station pressure. Pressure trend uses duration-weighted endpoint-window averages with coverage and their actual midpoint separation; window width/minimum support is versioned and still requires commissioning. No implicit sea-level conversion. Per C5, aggregates are computed on read with SQL `date_bin` (or `weather_day` bounds for local days) and carry an evidence count and hash, not evidence IDs or a revision; a late correction simply changes the next read.
 
 ## Wind recipe v1
 
@@ -38,4 +42,4 @@ WX-13/41/42 test 359/1-degree wrap, opposing directions, unequal speed/duration,
 
 ## Public computation identity
 
-Serialize the immutable metric/statistic recipe as `Aggregate.algorithm_revision`; retain input `evidence_revision` and `coverage.algorithm_revision` separately. Formula or boundary-policy changes require recomputation and a new computation revision with affected sidecar/search/almanac invalidation. Reusing unchanged support does not authorize reusing a stale computed value. The schema can require identities but cannot establish that the implementation used the claimed recipe.
+Superseded by C5: there is no stored computation identity. `evidence_count` and `evidence_hash` identify the inputs of each read; formula changes ship with updated golden vectors.
