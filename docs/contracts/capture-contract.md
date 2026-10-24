@@ -16,8 +16,10 @@ One chunk is a plain USTAR containing zero or more regular
 `frames/<attempt_id>.jpg` members and one **final** `manifest.jsonl`. Original camera
 bytes are retained exactly. Attempt IDs are ASCII, at most 89 characters; complete
 member paths therefore fit USTAR's 100-byte name field without prefix splitting,
-PAX or GNU extensions. Readers reject links, devices, unknown members, traversal,
-duplicate names, invalid headers/checksums, nonzero padding, incomplete termination,
+PAX or GNU extensions. Readers accept only contiguous plain `REGTYPE`/`AREGTYPE`
+headers and reject links, devices, sparse/contiguous members, PAX/GNU extension
+headers, unknown members, traversal, duplicate names, invalid headers/checksums,
+nonzero padding, anything but zero fill after the two end-of-archive blocks,
 unbound members and length/hash mismatches. The reader iterates with `tarfile` and
 never extracts.
 
@@ -71,7 +73,9 @@ late.
 `round((wall_ns - phase) / period) * period + phase`, so every writer emits the same
 key for the same slot. The key decides the chunk's UTC hour and window and is the
 scheduler's `capture_slot.slot_ts`. Each observation re-anchors the monotonic
-deadline to the grid, which also restores the phase after a wall-clock step. All physical HTTP exchanges, including Digest negotiation, are also
+deadline to the grid, which also restores the phase after a wall-clock step. A
+re-anchor that would repeat or skip a key (a step of half a period or more) opens a
+new clock epoch, so keys within one epoch are consecutive grid points. All physical HTTP exchanges, including Digest negotiation, are also
 limited to the commissioned cadence. Connect/read defaults are 1/3 seconds; a
 separate five-second monotonic deadline covers negotiation, retry and the entire
 body. Redirects are rejected. A status outside 100-599 is a `protocol` failure. Repeated

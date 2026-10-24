@@ -170,6 +170,32 @@ def test_two_schedules_emit_identical_grid_keys_despite_jitter_and_steps() -> No
     assert utc_text(key.scheduled_utc_ns).endswith(":00:00.000000Z")
 
 
+def test_sub_second_step_past_half_a_period_opens_a_new_epoch() -> None:
+    for step, expected in ((-600_000_000, 12_000), (-900_000_000, 12_000), (600_000_000, 14_000)):
+        schedule = Schedule(10_000_000_000, 0, 1000, 0)
+        offset, slots = 10_000_000_000, []
+        for i in range(6):
+            if i == 3:
+                offset += step
+            mono = schedule.next_mono_ns
+            schedule.observe_clock(mono + offset, mono)
+            slots.append(schedule.take())
+        keys = [slot.scheduled_utc_ns // 1_000_000 for slot in slots]
+        assert keys[2:4] == [12_000, expected]
+        # Within an epoch keys never repeat and never skip a grid point.
+        epochs: dict[str, list[int]] = {}
+        for slot, key in zip(slots, keys, strict=True):
+            epochs.setdefault(slot.clock_epoch, []).append(key)
+        assert len(epochs) == 2
+        for run in epochs.values():
+            assert run == list(range(run[0], run[0] + 1000 * len(run), 1000))
+    # A step under half a period snaps back to the expected key in the same epoch.
+    schedule = Schedule(0, 0, 1000, 0)
+    schedule.take()
+    assert not schedule.observe_clock(1_000_000_000 + 400_000_000, 1_000_000_000)
+    assert schedule.take().scheduled_utc_ns == 1_000_000_000
+
+
 def test_chunk_hour_and_window_follow_the_grid_key(tmp_path: Path) -> None:
     hour = 1_790_002_800_000_000_000
     key = Slot("grid-0", 0, hour, "clock")
@@ -372,6 +398,48 @@ def test_reader_refuses_corruption_links_and_traversal(tmp_path: Path) -> None:
         out.addfile(extra, io.BytesIO(b"x"))
     with pytest.raises(ValueError, match="final manifest"):
         read_chunk(late)
+
+
+def test_reader_requires_zero_padding_termination_and_plain_regular_headers(
+    tmp_path: Path,
+) -> None:
+    writer = ChunkWriter(config(tmp_path), new_incarnation(), 0, slot(), IOHealth())
+    writer.append(attempt(), b"original")
+    sealed = writer.seal().read_bytes()
+    with tarfile.open(fileobj=io.BytesIO(sealed)) as archive:
+        manifest = archive.getmember("manifest.jsonl")
+    end = manifest.offset_data + manifest.size + (-manifest.size % 512)
+    padded = bytearray(sealed)
+    padded[512 + len(b"original")] = 1
+    cases = {
+        "padding": bytes(padded),
+        "termination": sealed + b"garbage" * 100,
+        "unterminated": sealed[:end],
+        "short": sealed[: end + 512],
+    }
+    for name, kind, pax in [
+        ("frames/synthetic-0.jpg", tarfile.CONTTYPE, False),
+        ("frames/synthetic-0.jpg", tarfile.REGTYPE, True),
+    ]:
+        out = io.BytesIO()
+        fmt = tarfile.PAX_FORMAT if pax else tarfile.USTAR_FORMAT
+        with (
+            tarfile.open(fileobj=io.BytesIO(sealed)) as source,
+            tarfile.open(fileobj=out, mode="w", format=fmt) as archive,
+        ):
+            for member in source:
+                if member.name == name:
+                    member.type = kind
+                    if pax:
+                        member.pax_headers = {"comment": "extension"}
+                archive.addfile(member, source.extractfile(member))
+        cases[f"type-{kind.decode()}-{pax}"] = out.getvalue()
+    for label, data in cases.items():
+        bad = tmp_path / f"{label}.tar"
+        bad.write_bytes(data)
+        with pytest.raises(ValueError):
+            read_chunk(bad)
+    assert len(read_chunk(writer.destination)) == 2
 
 
 def test_fsync_happens_only_at_seal(tmp_path: Path) -> None:

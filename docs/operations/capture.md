@@ -82,4 +82,5 @@ Never run those HTTP/latency tests or image builds on the Mac.
 The collector does not decode frames. It checks size, `Content-Type: image/jpeg`,
 SOI/EOI markers and that the SOF geometry equals the mounted native geometry, then
 stores the original bytes unchanged. The renderer decodes every frame with FFmpeg
-and records a decode failure as a reject for that slot.
+and records a decode failure as a reject for that slot
+([#15](https://github.com/jvallery/weather/issues/15) acceptance).
