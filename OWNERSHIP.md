@@ -23,3 +23,5 @@ State as of 2026-10-24: namespace guardrails are deployed at `bed09184608c947dc0
 | Secrets (camera, B2, Garage, Cortex, DB) | KSOPS | agents `secrets-ksops/weather` | owner issues above | Planned |
 
 Adjacent items this repo consumes but does not own: Tempest hub (homeassistant), cameras (sentinel), Cortex routes (cortex-ai-compute), `ak-forwardauth` (network-infra), vallery.net homepage (VerdifyConsultancy/wordpress).
+
+The unregistered current-weather embed component and its shared polling options are prepared for Weather #45. No route, framing permission or Kubernetes object is activated. The fixed parent URL, frame dimensions and pending owner browser/header checks are recorded in [the embed runbook](docs/operations/embed.md); WordPress owns the parent CSP and page.
