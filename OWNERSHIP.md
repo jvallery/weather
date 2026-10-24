@@ -75,4 +75,4 @@ agents contributions and provider B2 identities remain storage-infra's.
 
 ## Tempest ingestion source preparation
 
-Weather owns the `tempest-receiver` role source, its private SQLite WAL/FULL receipt spool, additive telemetry provenance/conflict/coverage schema and receiver metrics. Migration `0002_telemetry` extends schema v1 without changing its snapshot. This source preparation creates no active receiver, PVC, network attachment or credential; #5 commissions those objects after native prerequisites. See [Tempest operations](docs/operations/tempest-ingest.md).
+Weather owns the `tempest-receiver` role source, its private SQLite WAL/FULL receipt spool, the raw `telemetry_receipt` and typed family tables in `weather-pg`, and receiver metrics. This source preparation creates no active receiver, PVC, network attachment or credential; #5 commissions those objects after native prerequisites. See [Tempest operations](docs/operations/tempest-ingest.md).

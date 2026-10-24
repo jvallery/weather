@@ -1,9 +1,7 @@
 # SPDX-License-Identifier: MIT
-"""Bounded CNPG drain; replay retains receipt identity, receive times and raw bytes."""
+"""Bounded CNPG drain: raw receipt plus typed family rows, one SAVEPOINT per receipt (P4)."""
 
 import asyncio
-import hashlib
-import json
 import re
 import time
 import uuid
@@ -11,18 +9,19 @@ from collections import Counter
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
-from .coverage import Cadence, DiagnosticInterval, arrival_interval
-from .jsonb import compatible, private_storage
-from .parse import FAMILIES, PARSER_REVISION, Packet, Row, json_text, parse_packet
-from .reconcile import disputed_fields
+from .parse import FAMILIES, PARSER_REVISION, Packet, json_text, parse_packet
 from .spool import Receipt, Spool
 
 EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
+# Public aliases only; serials stay in weather.device.private_id.
+STATION_ALIAS, STATION_SITE = "home", "local"
+DEVICE_VALID_FROM = datetime(2020, 1, 1, tzinfo=UTC)
+# Receipts the receiver quarantined at admission are never projected, even on reproject.
+ADMISSION_QUARANTINE = "missing_hub_identity"
 
 
 def instant(epoch: Decimal) -> datetime | None:
@@ -36,45 +35,175 @@ def instant(epoch: Decimal) -> datetime | None:
         return None
 
 
-def encoded(value: Any) -> str:
-    return json_text(private_storage(value))
+async def seed(db: AsyncConnection, hub: str, devices: frozenset[str]) -> None:
+    """Idempotently insert the station and hub/ST device rows named by the mounted Secret."""
+    await db.execute(
+        text("INSERT INTO weather.station(alias,site) VALUES(:alias,:site) ON CONFLICT DO NOTHING"),
+        {"alias": STATION_ALIAS, "site": STATION_SITE},
+    )
+    station = (
+        await db.execute(
+            text("SELECT id FROM weather.station WHERE alias=:alias"), {"alias": STATION_ALIAS}
+        )
+    ).scalar_one()
+    known = dict(
+        (await db.execute(text("SELECT private_id,kind FROM weather.device"))).tuples().all()
+    )
+    for serial, kind in [(hub, "hub"), *((serial, "tempest") for serial in sorted(devices))]:
+        if serial in known:
+            continue
+        # Aliases are ordinal per kind, so adding a device never renames an existing one.
+        ordinal = sum(1 for value in known.values() if value == kind) + 1
+        await db.execute(
+            text("""
+            INSERT INTO weather.device(station_id,alias,private_id,kind,valid_from)
+            VALUES(:station,:alias,:serial,:kind,:valid_from) ON CONFLICT DO NOTHING
+        """),
+            {
+                "station": station,
+                "alias": kind if ordinal == 1 else f"{kind}-{ordinal}",
+                "serial": serial,
+                "kind": kind,
+                "valid_from": DEVICE_VALID_FROM,
+            },
+        )
+        known[serial] = kind
+
+
+async def store(db: AsyncConnection, receipt: Receipt, state: str, reason: str | None) -> bool:
+    """Insert the raw receipt; False means this receipt ID is already stored (replay)."""
+    inserted = (
+        await db.execute(
+            text("""
+        INSERT INTO weather.telemetry_receipt
+          (id,received_at,raw_bytes,sha256,parse_state,parse_reason,parser_revision,
+           receiver_incarnation)
+        VALUES(:id,:received,:raw,:sha,:state,:reason,:parser,:incarnation)
+        ON CONFLICT(id) DO NOTHING RETURNING id
+    """),
+            {
+                "id": receipt.id,
+                "received": EPOCH + timedelta(microseconds=receipt.received_ns // 1000),
+                "raw": receipt.raw,
+                "sha": receipt.sha256,
+                "state": state,
+                "reason": reason,
+                "parser": PARSER_REVISION,
+                "incarnation": receipt.receiver_incarnation,
+            },
+        )
+    ).first()
+    return inserted is not None
+
+
+async def project(
+    db: AsyncConnection, receipt_id: uuid.UUID, packet: Packet, counts: Counter[str]
+) -> int:
+    """Insert typed family rows with ON CONFLICT DO NOTHING; the first receipt's row wins."""
+    serial = packet.envelope.get("serial_number") if packet.envelope else None
+    projected = 0
+    for row in packet.rows:
+        if row.family not in FAMILIES:
+            raise ValueError("Unsupported canonical family")
+        source = instant(row.source_ts) if row.source_ts is not None else None
+        device = None
+        if source is not None and row.quarantine_reason is None and isinstance(serial, str):
+            device = (
+                await db.execute(
+                    text("""
+                SELECT id FROM weather.device WHERE private_id=:private
+                AND valid_from<=:source AND (valid_until IS NULL OR :source<valid_until)
+            """),
+                    {"private": serial, "source": source},
+                )
+            ).scalar_one_or_none()
+        if device is None:
+            # Invalid source time or no seeded device: raw is retained; reproject can retry.
+            counts["unprojected"] += 1
+            continue
+        inserted = (
+            await db.execute(
+                text(f"""
+            INSERT INTO weather.{row.family}
+              (device_id,receipt_id,message_type,source_ts,row_idx,"values",quality)
+            VALUES(:device,:receipt,:family,:source,:idx,CAST(:values AS jsonb),
+                   CAST(:quality AS jsonb))
+            ON CONFLICT(device_id,message_type,source_ts,row_idx) DO NOTHING RETURNING id
+        """),
+                {
+                    "device": device,
+                    "receipt": receipt_id,
+                    "family": row.family,
+                    "source": source,
+                    "idx": row.ordinal,
+                    "values": json_text(row.values),
+                    "quality": json_text(row.quality),
+                },
+            )
+        ).first()
+        projected += int(inserted is not None)
+    return projected
 
 
 class Drain:
-    def __init__(self, spool: Spool, engine: AsyncEngine, future_seconds: int = 120) -> None:
+    def __init__(
+        self,
+        spool: Spool,
+        engine: AsyncEngine,
+        future_seconds: int = 120,
+        hub_identity: str | None = None,
+        device_identities: frozenset[str] = frozenset(),
+    ) -> None:
         if not 0 <= future_seconds <= 86400:
             raise ValueError("Invalid future timestamp tolerance")
         self.spool, self.engine, self.future_seconds = spool, engine, future_seconds
+        self.hub_identity, self.device_identities = hub_identity, device_identities
+        self.seeded = hub_identity is None
         self.counts: Counter[str] = Counter()
         self.last_commit_ns: int | None = None
         self.last_error_code: str | None = None
 
+    def _error(self, error: Exception) -> None:
+        code = getattr(getattr(error, "orig", None), "sqlstate", None)
+        self.last_error_code = (
+            code if isinstance(code, str) and re.fullmatch(r"[0-9A-Z]{5}", code) else "UNAVAILABLE"
+        )
+        self.counts["drain_errors"] += 1
+
     async def once(self) -> int:
+        committed = projected = quarantined = 0
         try:
-            batch = await asyncio.to_thread(self.spool.batch)
-            stats = await asyncio.to_thread(self.spool.stats)
-            if not batch and not stats["losses"]:
-                return 0
-            async with asyncio.timeout(30), self.engine.begin() as connection:
-                committed = projected = 0
-                for item in batch:
-                    new_receipt, new_rows = await self._receipt(connection, item.receipt)
-                    committed += new_receipt
-                    projected += new_rows
-                await self._loss_snapshots(connection, stats)
+            async with asyncio.timeout(30):
+                if not self.seeded and self.hub_identity is not None:
+                    async with self.engine.begin() as db:
+                        await seed(db, self.hub_identity, self.device_identities)
+                    self.seeded = True
+                batch = await asyncio.to_thread(self.spool.batch)
+                if not batch:
+                    return 0
+                async with self.engine.begin() as db:
+                    for item in batch:
+                        try:
+                            async with db.begin_nested():
+                                new, rows = await self._receipt(db, item.receipt)
+                        except Exception:
+                            # A deterministic failure must not block later receipts forever:
+                            # keep its raw bytes as a quarantined row and move on.
+                            async with db.begin_nested():
+                                new = int(
+                                    await store(db, item.receipt, "quarantined", "drain_failed")
+                                )
+                            rows, quarantined = 0, quarantined + new
+                        committed += new
+                        projected += rows
         except Exception as error:
-            code = getattr(getattr(error, "orig", None), "sqlstate", None)
-            self.last_error_code = (
-                code
-                if isinstance(code, str) and re.fullmatch(r"[0-9A-Z]{5}", code)
-                else "UNAVAILABLE"
-            )
-            self.counts["drain_errors"] += 1
             # Never log exceptions: DB errors may include parameters/raw/private identities.
+            self._error(error)
             return 0
         # Known committed counters advance before the separately fallible local acknowledgement.
         self.counts["committed"] += committed
         self.counts["projected"] += projected
+        self.counts["drain_quarantined"] += quarantined
         self.last_commit_ns = time.time_ns()
         try:
             await asyncio.to_thread(self.spool.acknowledge, batch)
@@ -82,27 +211,6 @@ class Drain:
             self.counts["spool_ack_errors"] += 1
             return 0
         return len(batch)
-
-    async def _loss_snapshots(self, db: AsyncConnection, stats: dict[str, Any]) -> None:
-        for loss in stats["losses"]:
-            evidence = {"generation": stats["generation"], **loss}
-            digest = hashlib.sha256(json_text(evidence).encode()).hexdigest()
-            await db.execute(
-                text("""
-                INSERT INTO weather.telemetry_loss_snapshot
-                  (generation,reason,first_ns,last_ns,lost_count,snapshot_sha256)
-                VALUES(:generation,:reason,:first,:last,:count,:sha)
-                ON CONFLICT(snapshot_sha256) DO NOTHING
-            """),
-                {
-                    "generation": uuid.UUID(stats["generation"]),
-                    "reason": loss["reason"],
-                    "first": int(loss["first_ns"]),
-                    "last": int(loss["last_ns"]),
-                    "count": loss["count"],
-                    "sha": digest,
-                },
-            )
 
     async def run(self, stop: asyncio.Event) -> None:
         while not stop.is_set():
@@ -118,342 +226,51 @@ class Drain:
         )
         if receipt.quarantine_reason is not None:
             packet = replace(packet, state="quarantined", rows=(), reason=receipt.quarantine_reason)
-        received_at = EPOCH + timedelta(microseconds=receipt.received_ns // 1000)
-        inserted = (
-            await db.execute(
-                text("""
-            INSERT INTO weather.telemetry_receipt
-              (id,received_at,raw_bytes,parsed_json,sha256,parse_state,parser_revision,receiver_incarnation)
-            VALUES(:id,:received,:raw,CAST(:parsed AS jsonb),:sha,:state,:parser,:incarnation)
-            ON CONFLICT(id) DO NOTHING RETURNING id
-        """),
-                {
-                    "id": receipt.id,
-                    "received": received_at,
-                    "raw": receipt.raw,
-                    "parsed": json_text(packet.envelope)
-                    if compatible(packet.envelope) and packet.envelope is not None
-                    else None,
-                    "sha": receipt.sha256,
-                    "state": packet.state,
-                    "parser": PARSER_REVISION,
-                    "incarnation": receipt.receiver_incarnation,
-                },
-            )
-        ).first()
-        if inserted is None:
-            await self._check_replay(db, receipt, received_at)
+        if not await store(db, receipt, packet.state, packet.reason):
             return 0, 0
-        private_id = packet.envelope.get("serial_number") if packet.envelope else None
-        device = None
-        if isinstance(private_id, str) and compatible(private_id):
-            device = (
-                await db.execute(
-                    text("SELECT id FROM weather.device WHERE private_id=:private"),
-                    {"private": private_id},
-                )
-            ).scalar_one_or_none()
-        await db.execute(
-            text("""
-            INSERT INTO weather.receipt_transport
-              (receipt_id,metadata,metadata_sha256,family,device_id,cadence)
-            VALUES(:id,CAST(:metadata AS jsonb),:sha,:family,:device,CAST(:cadence AS jsonb))
-        """),
-            {
-                "id": receipt.id,
-                "metadata": receipt.metadata_json,
-                "sha": hashlib.sha256(receipt.metadata_json.encode()).hexdigest(),
-                "family": packet.family,
-                "device": device,
-                "cadence": encoded(self._packet_cadence(packet)),
-            },
-        )
-        await self._coverage(db, receipt, packet, device)
-        rows = 0
-        for row in packet.rows:
-            rows += await self._row(db, receipt, packet, row, private_id, received_at)
-        return 1, rows
+        return 1, await project(db, receipt.id, packet, self.counts)
 
-    @staticmethod
-    def _packet_cadence(packet: Packet) -> dict[str, Any]:
-        intervals = [
-            Decimal(str(row.fields["report_interval"].canonical)) * 60
-            for row in packet.rows
-            if "report_interval" in row.fields
-            and row.fields["report_interval"].state == "valid"
-            and Decimal(str(row.fields["report_interval"].canonical)) * 60 <= 86400
-        ]
-        return {
-            "seconds": max(intervals) if intervals else None,
-            "state": "normal" if intervals else "unknown",
-            "policy": "reported-interval-transport-1",
-        }
 
-    async def _coverage(
-        self, db: AsyncConnection, receipt: Receipt, packet: Packet, device: uuid.UUID | None
-    ) -> None:
-        evidence = self._packet_cadence(packet)
-        cadence = Cadence(evidence["seconds"], evidence["state"])
-        intervals = []
-        if packet.state == "quarantined" or any(row.quarantine_reason for row in packet.rows):
-            intervals.append(
-                DiagnosticInterval(
-                    receipt.received_ns, receipt.received_ns, "parse_failure", "parser-receipt-1"
-                )
-            )
-        if device is not None:
-            previous = (
+async def reproject(
+    engine: AsyncEngine,
+    since: datetime,
+    future_seconds: int = 120,
+    page: int = 500,
+) -> tuple[int, int, Counter[str]]:
+    """Rebuild typed rows from retained raw bytes; existing rows are never changed."""
+    counts: Counter[str] = Counter()
+    receipts = rows = 0
+    cursor: tuple[datetime, uuid.UUID] = (since, uuid.UUID(int=0))
+    while True:
+        async with asyncio.timeout(60), engine.begin() as db:
+            batch = (
                 await db.execute(
                     text("""
-                SELECT metadata,cadence::text AS cadence_json FROM weather.receipt_transport
-                WHERE device_id=:device AND family=:family AND receipt_id<>:receipt
-                  AND metadata->>'receiver_incarnation'=:incarnation
-                  AND (metadata->>'monotonic_ns')::bigint<:mono
-                ORDER BY (metadata->>'monotonic_ns')::bigint DESC LIMIT 1
+                SELECT id,received_at,raw_bytes FROM weather.telemetry_receipt
+                WHERE received_at>=:since AND (received_at,id)>(:at,:id)
+                  AND coalesce(parse_reason,'')<>:skip
+                ORDER BY received_at,id LIMIT :page
             """),
                     {
-                        "device": device,
-                        "family": packet.family,
-                        "receipt": receipt.id,
-                        "incarnation": receipt.receiver_incarnation,
-                        "mono": receipt.monotonic_ns,
+                        "since": since,
+                        "at": cursor[0],
+                        "id": cursor[1],
+                        "skip": ADMISSION_QUARANTINE,
+                        "page": page,
                     },
                 )
-            ).first()
-            if previous is not None:
-                prior = previous.metadata
-                wall_delta = receipt.received_ns - int(prior["received_ns"])
-                mono_delta = receipt.monotonic_ns - int(prior["monotonic_ns"])
-                if abs(wall_delta - mono_delta) <= 1_000_000_000:
-                    old = json.loads(previous.cadence_json, parse_float=Decimal, parse_int=Decimal)
-                    old_cadence = Cadence(old["seconds"], old["state"])
-                    if (
-                        cadence.seconds is not None
-                        and old_cadence.seconds is not None
-                        and cadence.seconds > old_cadence.seconds
-                    ):
-                        cadence = Cadence(cadence.seconds, "reduced")
-                    gap = arrival_interval(
-                        int(prior["received_ns"]), receipt.received_ns, old_cadence, cadence
-                    )
-                    if gap is not None:
-                        intervals.append(gap)
-                else:
-                    intervals.append(
-                        DiagnosticInterval(
-                            min(int(prior["received_ns"]), receipt.received_ns),
-                            max(int(prior["received_ns"]), receipt.received_ns),
-                            "receiver_clock_discontinuity",
-                            "receive-clock-delta-1",
-                            True,
-                        )
-                    )
-        now_ns = time.time_ns()
-        if now_ns - receipt.received_ns > 120_000_000_000:
-            intervals.append(
-                DiagnosticInterval(
-                    receipt.received_ns, now_ns, "db_backlog", "receive-to-drain-120s-1"
+            ).all()
+            for item in batch:
+                micros = (item.received_at - EPOCH) // timedelta(microseconds=1)
+                packet = parse_packet(
+                    item.raw_bytes, Decimal(micros) / 1_000_000, future_seconds
                 )
-            )
-        for interval in intervals:
-            await db.execute(
-                text("""
-                INSERT INTO weather.telemetry_coverage_interval
-                  (receipt_id,device_id,family,starts_ns,ends_ns,reason,policy,lost_count)
-                VALUES(:receipt,:device,:family,:start,:end,:reason,:policy,:count)
-                ON CONFLICT(receipt_id,family,starts_ns,ends_ns,reason) DO NOTHING
-            """),
-                {
-                    "receipt": receipt.id,
-                    "device": device,
-                    "family": packet.family,
-                    "start": interval.start_ns,
-                    "end": interval.end_ns,
-                    "reason": interval.reason,
-                    "policy": interval.policy,
-                    "count": None,
-                },
-            )
-
-    async def _check_replay(
-        self, db: AsyncConnection, receipt: Receipt, received_at: datetime
-    ) -> None:
-        existing = (
-            await db.execute(
-                text("""
-            SELECT r.sha256,r.raw_bytes,t.metadata FROM weather.telemetry_receipt r
-            LEFT JOIN weather.receipt_transport t ON t.receipt_id=r.id WHERE r.id=:id
-        """),
-                {"id": receipt.id},
-            )
-        ).one()
-        if (
-            existing.sha256 == receipt.sha256
-            and existing.raw_bytes == receipt.raw
-            and existing.metadata == receipt.metadata
-        ):
-            return
-        await db.execute(
-            text("""
-            INSERT INTO weather.receipt_integrity_incident
-              (receipt_id,alternate_raw,alternate_sha256,alternate_metadata,
-               alternate_metadata_sha256,received_at)
-            VALUES(:id,:raw,:sha,CAST(:metadata AS jsonb),:metadata_sha,:received)
-            ON CONFLICT(receipt_id,alternate_sha256,alternate_metadata_sha256) DO NOTHING
-        """),
-            {
-                "id": receipt.id,
-                "raw": receipt.raw,
-                "sha": receipt.sha256,
-                "metadata": receipt.metadata_json,
-                "metadata_sha": hashlib.sha256(receipt.metadata_json.encode()).hexdigest(),
-                "received": received_at,
-            },
-        )
-        self.counts["integrity_incident_attempts"] += 1
-
-    async def _row(
-        self,
-        db: AsyncConnection,
-        receipt: Receipt,
-        packet: Packet,
-        row: Row,
-        private_id: Any,
-        received_at: datetime,
-    ) -> int:
-        if row.family not in FAMILIES:
-            raise ValueError("Unsupported canonical family")
-        source_at = instant(row.source_ts) if row.source_ts is not None else None
-        reason = row.quarantine_reason
-        if source_at is None:
-            reason = reason or "source_time_precision_unsupported"
-        device = None
-        if source_at is not None and isinstance(private_id, str) and compatible(private_id):
-            device = (
-                await db.execute(
-                    text("""
-                SELECT id FROM weather.device WHERE private_id=:private
-                AND valid_from<=:source AND (valid_until IS NULL OR :source<valid_until)
-            """),
-                    {"private": private_id, "source": source_at},
-                )
-            ).scalar_one_or_none()
-        if device is None:
-            reason = reason or "device_validity_unqualified"
-        canonical = None
-        new_row = 0
-        if reason is None:
-            canonical = (
-                await db.execute(
-                    text(f"""
-                INSERT INTO weather.{row.family}
-                  (id,device_id,receipt_id,message_type,source_ts,row_idx,"values",quality)
-                VALUES(:id,:device,:receipt,:family,:source,:idx,CAST(:values AS jsonb),
-                       CAST(:quality AS jsonb))
-                ON CONFLICT(device_id,message_type,source_ts,row_idx) DO NOTHING RETURNING id
-            """),
-                    {
-                        "id": uuid.uuid4(),
-                        "device": device,
-                        "receipt": receipt.id,
-                        "family": row.family,
-                        "source": source_at,
-                        "idx": row.ordinal,
-                        "values": encoded(row.values),
-                        "quality": encoded(row.quality),
-                    },
-                )
-            ).scalar_one_or_none()
-            new_row = int(canonical is not None)
-            if canonical is None:
-                first = (
-                    await db.execute(
-                        text(f"""
-                    SELECT id,receipt_id,quality::text AS quality_json FROM weather.{row.family}
-                    WHERE device_id=:device AND message_type=:family AND source_ts=:source
-                    AND row_idx=:idx
-                """),
-                        {
-                            "device": device,
-                            "family": row.family,
-                            "source": source_at,
-                            "idx": row.ordinal,
-                        },
-                    )
-                ).one()
-                canonical = first.id
-                first_quality = json.loads(
-                    first.quality_json, parse_float=Decimal, parse_int=Decimal
-                )
-                fields = disputed_fields(first_quality, private_storage(row.quality))
-                if fields or first_quality.get("row_fingerprint") != row.fingerprint:
-                    await self._conflict(
-                        db,
-                        row,
-                        first.id,
-                        first.receipt_id,
-                        receipt.id,
-                        source_at,
-                        received_at,
-                        fields,
-                    )
-        await db.execute(
-            text("""
-            INSERT INTO weather.receipt_row_provenance
-              (receipt_id,family,row_idx,parser_revision,observation_id,fingerprint,
-               row_evidence,quarantine_reason)
-            VALUES(:receipt,:family,:idx,:parser,:canonical,:fingerprint,
-                   CAST(:evidence AS jsonb),:reason)
-            ON CONFLICT(receipt_id,family,row_idx,parser_revision) DO NOTHING
-        """),
-            {
-                "receipt": receipt.id,
-                "family": row.family,
-                "idx": row.ordinal,
-                "parser": PARSER_REVISION,
-                "canonical": canonical,
-                "fingerprint": row.fingerprint,
-                "evidence": encoded({"raw_row": row.raw_row, "quality": row.quality}),
-                "reason": reason,
-            },
-        )
-        if canonical is not None and row.family == "evt_strike":
-            await db.execute(
-                text("SELECT weather.mark_strike_multiplicity(:id)"), {"id": canonical}
-            )
-        return new_row
-
-    async def _conflict(
-        self,
-        db: AsyncConnection,
-        row: Row,
-        observation: uuid.UUID,
-        first_receipt: uuid.UUID,
-        second_receipt: uuid.UUID,
-        source_at: datetime | None,
-        received_at: datetime,
-        fields: list[str],
-    ) -> None:
-        incident = (
-            await db.execute(
-                text("""
-            INSERT INTO weather.observation_conflict
-              (family,observation_id,first_receipt_id,conflicting_receipt_id,fields,source_ts,received_at)
-            VALUES(:family,:observation,:first,:second,:fields,:source,:received)
-            ON CONFLICT(family,observation_id,conflicting_receipt_id) DO NOTHING RETURNING id
-        """),
-                {
-                    "family": row.family,
-                    "observation": observation,
-                    "first": first_receipt,
-                    "second": second_receipt,
-                    "fields": fields,
-                    "source": source_at,
-                    "received": received_at,
-                },
-            )
-        ).scalar_one_or_none()
-        if incident is not None:
-            await db.execute(
-                text("SELECT weather.qualify_telemetry_conflict(:id)"), {"id": incident}
-            )
+                try:
+                    async with db.begin_nested():
+                        rows += await project(db, item.id, packet, counts)
+                except Exception:
+                    counts["reproject_errors"] += 1
+            receipts += len(batch)
+        if len(batch) < page:
+            return receipts, rows, counts
+        cursor = (batch[-1].received_at, batch[-1].id)
