@@ -196,6 +196,11 @@ The recipe copies `/opt/ffmpeg` from the qualified digest-pinned application
 image, retaining its licenses. Its final UID 1001 build step verifies FFmpeg
 9.0.2 and libx264 on Debian 13, PostgreSQL 16.15, and all browser executable
 paths. Browser launch and fixture qualification remain in fleet browser tests.
+Before apt changes, the recipe retains the production base's tzdata package
+version and Denver TZif checksum. Both the final image build and integration
+runner verify that exact file remains unchanged. Integration reports base and
+current package versions alongside pinned Python tzdata/IANA versions; it never
+changes global timezone configuration or `TZPATH`.
 It is a fleet validation image, not an application runtime or another database
 service. Build it through the registry-owned `weather-ci` repo-build profile,
 pin its actual returned digest in the agents validation profile, and run the

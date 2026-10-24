@@ -5,7 +5,10 @@ FROM registry.vallery.net/jvallery/weather-app@sha256:30adc5315ae33e453adde65910
 
 FROM registry.vallery.net/jvallery/mirror-ghcr-io-cloudnative-pg-postgresql-777ad6774e00fff6@sha256:d66df406385b9f3c43c47e94fe3a0002278ef56d21b82a8c9d3a22f91aa9c3f0
 USER 0
-RUN printf '%s\n' \
+RUN mkdir -p /usr/share/doc/weather-ci \
+ && dpkg-query -W -f='${Package} ${Version}\n' tzdata > /usr/share/doc/weather-ci/production-tzdata.txt \
+ && sha256sum /usr/share/zoneinfo/America/Denver > /usr/share/doc/weather-ci/production-denver.sha256 \
+ && printf '%s\n' \
  'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20261023T000000Z trixie main' \
  'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20261023T000000Z trixie-updates main' \
  'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/20261023T000000Z trixie-security main' > /etc/apt/sources.list \
@@ -43,7 +46,8 @@ ENV PATH=/usr/lib/postgresql/16/bin:/opt/ffmpeg/bin:$PATH \
     LD_LIBRARY_PATH=/opt/ffmpeg/lib HOME=/home/weatherci \
     UV_PYTHON=/usr/local/bin/python3 UV_PYTHON_DOWNLOADS=never
 USER 1001:1001
-RUN postgres --version | grep -F 'PostgreSQL) 16.15' \
+RUN sha256sum -c /usr/share/doc/weather-ci/production-denver.sha256 \
+ && postgres --version | grep -F 'PostgreSQL) 16.15' \
  && ffmpeg -version | grep -E '^ffmpeg version 9[.]0[.]2 ' \
  && ffmpeg -hide_banner -encoders | grep -E '[[:space:]]libx264[[:space:]]' \
  && node -e "const fs=require('node:fs'); const p=require('/opt/weather-browser-tools/node_modules/playwright'); for(const b of [p.chromium,p.webkit,p.firefox]) fs.accessSync(b.executablePath(),fs.constants.X_OK)"
