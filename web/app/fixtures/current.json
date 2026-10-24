@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-01T08:15:00Z",
+  "station_alias": "Synthetic test station",
+  "data_state": "live",
+  "metrics": [
+    {
+      "metric": "temperature",
+      "value": 0,
+      "unit": "degC",
+      "observed_at": "2026-11-01T08:15:00Z",
+      "received_at": "2026-11-01T08:15:01Z",
+      "expected_interval_seconds": 60,
+      "valid_until": "2026-11-01T08:16:30Z",
+      "quality": "valid",
+      "freshness": "fresh",
+      "reason": null
+    },
+    {
+      "metric": "wind_gust",
+      "value": 5,
+      "unit": "m/s",
+      "observed_at": "2026-11-01T07:15:00Z",
+      "received_at": "2026-11-01T07:15:01Z",
+      "expected_interval_seconds": 60,
+      "valid_until": "2026-11-01T07:16:30Z",
+      "quality": "valid",
+      "freshness": "stale",
+      "reason": "Synthetic fixture: no recent wind report"
+    },
+    {
+      "metric": "humidity",
+      "value": null,
+      "unit": "%",
+      "observed_at": null,
+      "received_at": null,
+      "expected_interval_seconds": 60,
+      "valid_until": null,
+      "quality": "missing",
+      "freshness": "unavailable",
+      "reason": "Synthetic fixture: missing support"
+    }
+  ]
+}

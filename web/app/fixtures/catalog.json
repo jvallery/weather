@@ -1,0 +1,1261 @@
+{
+  "generated_at": "2026-11-01T08:15:00Z",
+  "revision": "synthetic-catalog-v1",
+  "items": [
+    {
+      "schema_version": 1,
+      "video_id": "synthetic-skycam_east-daytime",
+      "camera": "skycam_east",
+      "cycle_date": "2026-10-31",
+      "segment": "daytime",
+      "media_revision": 1,
+      "metadata_revision": 1,
+      "state": "published",
+      "reason": null,
+      "updated_at": "2026-11-01T08:15:00Z",
+      "source_interval": {
+        "start": "2026-10-31T12:50:00Z",
+        "end": "2026-11-01T00:30:00Z"
+      },
+      "local_start_label": "2026-10-31 06:50 UTC-06:00",
+      "local_end_label": "2026-10-31 18:30 UTC-06:00",
+      "timezone": "America/Denver",
+      "twilight_model": "civil-six-degrees",
+      "allocated_frames": 3500,
+      "fps": {
+        "numerator": 60,
+        "denominator": 1
+      },
+      "duration": {
+        "numerator": 3500,
+        "denominator": 60
+      },
+      "time_map": [],
+      "expected_slots": 43200,
+      "accepted_slots": 41040,
+      "cadence_epochs": [
+        {
+          "interval": {
+            "start": "2026-10-31T12:50:00Z",
+            "end": "2026-11-01T00:30:00Z"
+          },
+          "interval_seconds": 1
+        }
+      ],
+      "source_time_basis": "synthetic-fixture",
+      "coverage": {
+        "fraction": 0.95,
+        "support_seconds": 41040,
+        "expected_seconds": 43200,
+        "algorithm_revision": "synthetic-coverage-v1",
+        "gaps": []
+      },
+      "caveats": [
+        "Synthetic fixture; no household imagery"
+      ],
+      "renditions": [
+        {
+          "role": "native",
+          "asset": {
+            "asset_id": "synthetic-skycam_east-daytime-native",
+            "class": "video",
+            "url": "/media/synthetic-skycam_east-daytime-native",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 4096,
+            "height": 1856
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3500,
+          "duration": {
+            "numerator": 3500,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        },
+        {
+          "role": "web",
+          "asset": {
+            "asset_id": "synthetic-skycam_east-daytime-web",
+            "class": "video",
+            "url": "/media/synthetic-skycam_east-daytime-web",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 1920,
+            "height": 870
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3500,
+          "duration": {
+            "numerator": 3500,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        },
+        {
+          "role": "mobile",
+          "asset": {
+            "asset_id": "synthetic-skycam_east-daytime-mobile",
+            "class": "video",
+            "url": "/media/synthetic-skycam_east-daytime-mobile",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 1280,
+            "height": 580
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3500,
+          "duration": {
+            "numerator": 3500,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        }
+      ],
+      "poster": {
+        "asset": {
+          "asset_id": "synthetic-skycam_east-daytime-poster",
+          "class": "poster",
+          "url": "/media/synthetic-skycam_east-daytime-poster",
+          "mime": "image/jpeg",
+          "bytes": 100000,
+          "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "width": 1280,
+          "height": 580
+        },
+        "source_interval": {
+          "start": "2026-10-31T12:50:00Z",
+          "end": "2026-11-01T00:30:00Z"
+        },
+        "output_pts": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "source_kind": "decoded_output_frame",
+        "recipe_revision": "synthetic-render-v1"
+      },
+      "native_download_url": "/downloads/synthetic-skycam_east-daytime/native",
+      "keogram_id": null,
+      "keogram_state": "pending",
+      "calendar_day_ids": [
+        "synthetic-calendar-2026-10-31"
+      ],
+      "public_still_ids": [],
+      "event_ids": [],
+      "weather": [],
+      "analysis": {
+        "state": "pending",
+        "mode": "none",
+        "claims": [],
+        "limitations": [
+          "AI analysis not commissioned"
+        ],
+        "prompt_revision": null,
+        "schema_revision": "synthetic-analysis-v1",
+        "capability_revision": null,
+        "evidence_revision": null,
+        "coverage": {
+          "fraction": 0,
+          "support_seconds": 0,
+          "expected_seconds": 43200,
+          "algorithm_revision": "synthetic-analysis-coverage-v1",
+          "gaps": [
+            {
+              "start": "2026-10-31T12:50:00Z",
+              "end": "2026-11-01T00:30:00Z"
+            }
+          ]
+        },
+        "execution_state": "pending",
+        "reason": "Not commissioned"
+      },
+      "editorial": {
+        "effective_revision": 1,
+        "human_edited": false,
+        "updated_at": "2026-11-01T08:15:00Z",
+        "public_tags": [],
+        "description": "Synthetic fixture: recorded clouds across the source interval."
+      },
+      "search": {
+        "state": "pending",
+        "profile_id": null,
+        "generation_id": null,
+        "metadata_revision": 1
+      },
+      "input_manifest_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "recipe_revision": "synthetic-render-v1",
+      "build_identity": "synthetic-build",
+      "publication_generation": 1
+    },
+    {
+      "schema_version": 1,
+      "video_id": "synthetic-skycam_east-overnight",
+      "camera": "skycam_east",
+      "cycle_date": "2026-10-31",
+      "segment": "overnight",
+      "media_revision": 1,
+      "metadata_revision": 1,
+      "state": "published",
+      "reason": null,
+      "updated_at": "2026-11-01T08:15:00Z",
+      "source_interval": {
+        "start": "2026-11-01T00:30:00Z",
+        "end": "2026-11-01T13:30:00Z"
+      },
+      "local_start_label": "2026-10-31 18:30 UTC-06:00",
+      "local_end_label": "2026-11-01 06:30 UTC-07:00",
+      "timezone": "America/Denver",
+      "twilight_model": "civil-six-degrees",
+      "allocated_frames": 3700,
+      "fps": {
+        "numerator": 60,
+        "denominator": 1
+      },
+      "duration": {
+        "numerator": 3700,
+        "denominator": 60
+      },
+      "time_map": [],
+      "expected_slots": 43200,
+      "accepted_slots": 41040,
+      "cadence_epochs": [
+        {
+          "interval": {
+            "start": "2026-11-01T00:30:00Z",
+            "end": "2026-11-01T13:30:00Z"
+          },
+          "interval_seconds": 1
+        }
+      ],
+      "source_time_basis": "synthetic-fixture",
+      "coverage": {
+        "fraction": 0.95,
+        "support_seconds": 41040,
+        "expected_seconds": 43200,
+        "algorithm_revision": "synthetic-coverage-v1",
+        "gaps": []
+      },
+      "caveats": [
+        "Synthetic fixture; no household imagery"
+      ],
+      "renditions": [
+        {
+          "role": "native",
+          "asset": {
+            "asset_id": "synthetic-skycam_east-overnight-native",
+            "class": "video",
+            "url": "/media/synthetic-skycam_east-overnight-native",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 4096,
+            "height": 1856
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3700,
+          "duration": {
+            "numerator": 3700,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        },
+        {
+          "role": "web",
+          "asset": {
+            "asset_id": "synthetic-skycam_east-overnight-web",
+            "class": "video",
+            "url": "/media/synthetic-skycam_east-overnight-web",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 1920,
+            "height": 870
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3700,
+          "duration": {
+            "numerator": 3700,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        },
+        {
+          "role": "mobile",
+          "asset": {
+            "asset_id": "synthetic-skycam_east-overnight-mobile",
+            "class": "video",
+            "url": "/media/synthetic-skycam_east-overnight-mobile",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 1280,
+            "height": 580
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3700,
+          "duration": {
+            "numerator": 3700,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        }
+      ],
+      "poster": {
+        "asset": {
+          "asset_id": "synthetic-skycam_east-overnight-poster",
+          "class": "poster",
+          "url": "/media/synthetic-skycam_east-overnight-poster",
+          "mime": "image/jpeg",
+          "bytes": 100000,
+          "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "width": 1280,
+          "height": 580
+        },
+        "source_interval": {
+          "start": "2026-11-01T00:30:00Z",
+          "end": "2026-11-01T13:30:00Z"
+        },
+        "output_pts": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "source_kind": "decoded_output_frame",
+        "recipe_revision": "synthetic-render-v1"
+      },
+      "native_download_url": "/downloads/synthetic-skycam_east-overnight/native",
+      "keogram_id": null,
+      "keogram_state": "pending",
+      "calendar_day_ids": [
+        "synthetic-calendar-2026-10-31"
+      ],
+      "public_still_ids": [],
+      "event_ids": [],
+      "weather": [],
+      "analysis": {
+        "state": "pending",
+        "mode": "none",
+        "claims": [],
+        "limitations": [
+          "AI analysis not commissioned"
+        ],
+        "prompt_revision": null,
+        "schema_revision": "synthetic-analysis-v1",
+        "capability_revision": null,
+        "evidence_revision": null,
+        "coverage": {
+          "fraction": 0,
+          "support_seconds": 0,
+          "expected_seconds": 43200,
+          "algorithm_revision": "synthetic-analysis-coverage-v1",
+          "gaps": [
+            {
+              "start": "2026-11-01T00:30:00Z",
+              "end": "2026-11-01T13:30:00Z"
+            }
+          ]
+        },
+        "execution_state": "pending",
+        "reason": "Not commissioned"
+      },
+      "editorial": {
+        "effective_revision": 1,
+        "human_edited": false,
+        "updated_at": "2026-11-01T08:15:00Z",
+        "public_tags": [],
+        "description": "Synthetic fixture: recorded clouds across the source interval."
+      },
+      "search": {
+        "state": "pending",
+        "profile_id": null,
+        "generation_id": null,
+        "metadata_revision": 1
+      },
+      "input_manifest_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "recipe_revision": "synthetic-render-v1",
+      "build_identity": "synthetic-build",
+      "publication_generation": 1
+    },
+    {
+      "schema_version": 1,
+      "video_id": "synthetic-skycam_west-daytime",
+      "camera": "skycam_west",
+      "cycle_date": "2026-10-31",
+      "segment": "daytime",
+      "media_revision": 1,
+      "metadata_revision": 1,
+      "state": "published",
+      "reason": null,
+      "updated_at": "2026-11-01T08:15:00Z",
+      "source_interval": {
+        "start": "2026-10-31T12:50:00Z",
+        "end": "2026-11-01T00:30:00Z"
+      },
+      "local_start_label": "2026-10-31 06:50 UTC-06:00",
+      "local_end_label": "2026-10-31 18:30 UTC-06:00",
+      "timezone": "America/Denver",
+      "twilight_model": "civil-six-degrees",
+      "allocated_frames": 3500,
+      "fps": {
+        "numerator": 60,
+        "denominator": 1
+      },
+      "duration": {
+        "numerator": 3500,
+        "denominator": 60
+      },
+      "time_map": [],
+      "expected_slots": 43200,
+      "accepted_slots": 41040,
+      "cadence_epochs": [
+        {
+          "interval": {
+            "start": "2026-10-31T12:50:00Z",
+            "end": "2026-11-01T00:30:00Z"
+          },
+          "interval_seconds": 1
+        }
+      ],
+      "source_time_basis": "synthetic-fixture",
+      "coverage": {
+        "fraction": 0.95,
+        "support_seconds": 41040,
+        "expected_seconds": 43200,
+        "algorithm_revision": "synthetic-coverage-v1",
+        "gaps": []
+      },
+      "caveats": [
+        "Synthetic fixture; no household imagery"
+      ],
+      "renditions": [
+        {
+          "role": "native",
+          "asset": {
+            "asset_id": "synthetic-skycam_west-daytime-native",
+            "class": "video",
+            "url": "/media/synthetic-skycam_west-daytime-native",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 4096,
+            "height": 1856
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3500,
+          "duration": {
+            "numerator": 3500,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        },
+        {
+          "role": "web",
+          "asset": {
+            "asset_id": "synthetic-skycam_west-daytime-web",
+            "class": "video",
+            "url": "/media/synthetic-skycam_west-daytime-web",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 1920,
+            "height": 870
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3500,
+          "duration": {
+            "numerator": 3500,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        },
+        {
+          "role": "mobile",
+          "asset": {
+            "asset_id": "synthetic-skycam_west-daytime-mobile",
+            "class": "video",
+            "url": "/media/synthetic-skycam_west-daytime-mobile",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 1280,
+            "height": 580
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3500,
+          "duration": {
+            "numerator": 3500,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        }
+      ],
+      "poster": {
+        "asset": {
+          "asset_id": "synthetic-skycam_west-daytime-poster",
+          "class": "poster",
+          "url": "/media/synthetic-skycam_west-daytime-poster",
+          "mime": "image/jpeg",
+          "bytes": 100000,
+          "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "width": 1280,
+          "height": 580
+        },
+        "source_interval": {
+          "start": "2026-10-31T12:50:00Z",
+          "end": "2026-11-01T00:30:00Z"
+        },
+        "output_pts": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "source_kind": "decoded_output_frame",
+        "recipe_revision": "synthetic-render-v1"
+      },
+      "native_download_url": "/downloads/synthetic-skycam_west-daytime/native",
+      "keogram_id": null,
+      "keogram_state": "pending",
+      "calendar_day_ids": [
+        "synthetic-calendar-2026-10-31"
+      ],
+      "public_still_ids": [],
+      "event_ids": [],
+      "weather": [],
+      "analysis": {
+        "state": "pending",
+        "mode": "none",
+        "claims": [],
+        "limitations": [
+          "AI analysis not commissioned"
+        ],
+        "prompt_revision": null,
+        "schema_revision": "synthetic-analysis-v1",
+        "capability_revision": null,
+        "evidence_revision": null,
+        "coverage": {
+          "fraction": 0,
+          "support_seconds": 0,
+          "expected_seconds": 43200,
+          "algorithm_revision": "synthetic-analysis-coverage-v1",
+          "gaps": [
+            {
+              "start": "2026-10-31T12:50:00Z",
+              "end": "2026-11-01T00:30:00Z"
+            }
+          ]
+        },
+        "execution_state": "pending",
+        "reason": "Not commissioned"
+      },
+      "editorial": {
+        "effective_revision": 1,
+        "human_edited": false,
+        "updated_at": "2026-11-01T08:15:00Z",
+        "public_tags": [],
+        "description": "Synthetic fixture: recorded clouds across the source interval."
+      },
+      "search": {
+        "state": "pending",
+        "profile_id": null,
+        "generation_id": null,
+        "metadata_revision": 1
+      },
+      "input_manifest_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "recipe_revision": "synthetic-render-v1",
+      "build_identity": "synthetic-build",
+      "publication_generation": 1
+    },
+    {
+      "schema_version": 1,
+      "video_id": "synthetic-skycam_west-overnight",
+      "camera": "skycam_west",
+      "cycle_date": "2026-10-31",
+      "segment": "overnight",
+      "media_revision": 1,
+      "metadata_revision": 1,
+      "state": "published",
+      "reason": null,
+      "updated_at": "2026-11-01T08:15:00Z",
+      "source_interval": {
+        "start": "2026-11-01T00:30:00Z",
+        "end": "2026-11-01T13:30:00Z"
+      },
+      "local_start_label": "2026-10-31 18:30 UTC-06:00",
+      "local_end_label": "2026-11-01 06:30 UTC-07:00",
+      "timezone": "America/Denver",
+      "twilight_model": "civil-six-degrees",
+      "allocated_frames": 3700,
+      "fps": {
+        "numerator": 60,
+        "denominator": 1
+      },
+      "duration": {
+        "numerator": 3700,
+        "denominator": 60
+      },
+      "time_map": [],
+      "expected_slots": 43200,
+      "accepted_slots": 41040,
+      "cadence_epochs": [
+        {
+          "interval": {
+            "start": "2026-11-01T00:30:00Z",
+            "end": "2026-11-01T13:30:00Z"
+          },
+          "interval_seconds": 1
+        }
+      ],
+      "source_time_basis": "synthetic-fixture",
+      "coverage": {
+        "fraction": 0.95,
+        "support_seconds": 41040,
+        "expected_seconds": 43200,
+        "algorithm_revision": "synthetic-coverage-v1",
+        "gaps": []
+      },
+      "caveats": [
+        "Synthetic fixture; no household imagery"
+      ],
+      "renditions": [
+        {
+          "role": "native",
+          "asset": {
+            "asset_id": "synthetic-skycam_west-overnight-native",
+            "class": "video",
+            "url": "/media/synthetic-skycam_west-overnight-native",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 4096,
+            "height": 1856
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3700,
+          "duration": {
+            "numerator": 3700,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        },
+        {
+          "role": "web",
+          "asset": {
+            "asset_id": "synthetic-skycam_west-overnight-web",
+            "class": "video",
+            "url": "/media/synthetic-skycam_west-overnight-web",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 1920,
+            "height": 870
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3700,
+          "duration": {
+            "numerator": 3700,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        },
+        {
+          "role": "mobile",
+          "asset": {
+            "asset_id": "synthetic-skycam_west-overnight-mobile",
+            "class": "video",
+            "url": "/media/synthetic-skycam_west-overnight-mobile",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 1280,
+            "height": 580
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3700,
+          "duration": {
+            "numerator": 3700,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        }
+      ],
+      "poster": {
+        "asset": {
+          "asset_id": "synthetic-skycam_west-overnight-poster",
+          "class": "poster",
+          "url": "/media/synthetic-skycam_west-overnight-poster",
+          "mime": "image/jpeg",
+          "bytes": 100000,
+          "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "width": 1280,
+          "height": 580
+        },
+        "source_interval": {
+          "start": "2026-11-01T00:30:00Z",
+          "end": "2026-11-01T13:30:00Z"
+        },
+        "output_pts": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "source_kind": "decoded_output_frame",
+        "recipe_revision": "synthetic-render-v1"
+      },
+      "native_download_url": "/downloads/synthetic-skycam_west-overnight/native",
+      "keogram_id": null,
+      "keogram_state": "pending",
+      "calendar_day_ids": [
+        "synthetic-calendar-2026-10-31"
+      ],
+      "public_still_ids": [],
+      "event_ids": [],
+      "weather": [],
+      "analysis": {
+        "state": "pending",
+        "mode": "none",
+        "claims": [],
+        "limitations": [
+          "AI analysis not commissioned"
+        ],
+        "prompt_revision": null,
+        "schema_revision": "synthetic-analysis-v1",
+        "capability_revision": null,
+        "evidence_revision": null,
+        "coverage": {
+          "fraction": 0,
+          "support_seconds": 0,
+          "expected_seconds": 43200,
+          "algorithm_revision": "synthetic-analysis-coverage-v1",
+          "gaps": [
+            {
+              "start": "2026-11-01T00:30:00Z",
+              "end": "2026-11-01T13:30:00Z"
+            }
+          ]
+        },
+        "execution_state": "pending",
+        "reason": "Not commissioned"
+      },
+      "editorial": {
+        "effective_revision": 1,
+        "human_edited": false,
+        "updated_at": "2026-11-01T08:15:00Z",
+        "public_tags": [],
+        "description": "Synthetic fixture: recorded clouds across the source interval."
+      },
+      "search": {
+        "state": "pending",
+        "profile_id": null,
+        "generation_id": null,
+        "metadata_revision": 1
+      },
+      "input_manifest_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "recipe_revision": "synthetic-render-v1",
+      "build_identity": "synthetic-build",
+      "publication_generation": 1
+    },
+    {
+      "schema_version": 1,
+      "video_id": "synthetic-frontyard_1-daytime",
+      "camera": "frontyard_1",
+      "cycle_date": "2026-10-31",
+      "segment": "daytime",
+      "media_revision": 1,
+      "metadata_revision": 1,
+      "state": "published",
+      "reason": null,
+      "updated_at": "2026-11-01T08:15:00Z",
+      "source_interval": {
+        "start": "2026-10-31T12:50:00Z",
+        "end": "2026-11-01T00:30:00Z"
+      },
+      "local_start_label": "2026-10-31 06:50 UTC-06:00",
+      "local_end_label": "2026-10-31 18:30 UTC-06:00",
+      "timezone": "America/Denver",
+      "twilight_model": "civil-six-degrees",
+      "allocated_frames": 3500,
+      "fps": {
+        "numerator": 60,
+        "denominator": 1
+      },
+      "duration": {
+        "numerator": 3500,
+        "denominator": 60
+      },
+      "time_map": [],
+      "expected_slots": 43200,
+      "accepted_slots": 41040,
+      "cadence_epochs": [
+        {
+          "interval": {
+            "start": "2026-10-31T12:50:00Z",
+            "end": "2026-11-01T00:30:00Z"
+          },
+          "interval_seconds": 1
+        }
+      ],
+      "source_time_basis": "synthetic-fixture",
+      "coverage": {
+        "fraction": 0.95,
+        "support_seconds": 41040,
+        "expected_seconds": 43200,
+        "algorithm_revision": "synthetic-coverage-v1",
+        "gaps": []
+      },
+      "caveats": [
+        "Synthetic fixture; no household imagery"
+      ],
+      "renditions": [
+        {
+          "role": "native",
+          "asset": {
+            "asset_id": "synthetic-frontyard_1-daytime-native",
+            "class": "video",
+            "url": "/media/synthetic-frontyard_1-daytime-native",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 4096,
+            "height": 1856
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3500,
+          "duration": {
+            "numerator": 3500,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        },
+        {
+          "role": "web",
+          "asset": {
+            "asset_id": "synthetic-frontyard_1-daytime-web",
+            "class": "video",
+            "url": "/media/synthetic-frontyard_1-daytime-web",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 1920,
+            "height": 870
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3500,
+          "duration": {
+            "numerator": 3500,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        },
+        {
+          "role": "mobile",
+          "asset": {
+            "asset_id": "synthetic-frontyard_1-daytime-mobile",
+            "class": "video",
+            "url": "/media/synthetic-frontyard_1-daytime-mobile",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 1280,
+            "height": 580
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3500,
+          "duration": {
+            "numerator": 3500,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        }
+      ],
+      "poster": {
+        "asset": {
+          "asset_id": "synthetic-frontyard_1-daytime-poster",
+          "class": "poster",
+          "url": "/media/synthetic-frontyard_1-daytime-poster",
+          "mime": "image/jpeg",
+          "bytes": 100000,
+          "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "width": 1280,
+          "height": 580
+        },
+        "source_interval": {
+          "start": "2026-10-31T12:50:00Z",
+          "end": "2026-11-01T00:30:00Z"
+        },
+        "output_pts": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "source_kind": "decoded_output_frame",
+        "recipe_revision": "synthetic-render-v1"
+      },
+      "native_download_url": "/downloads/synthetic-frontyard_1-daytime/native",
+      "keogram_id": null,
+      "keogram_state": "pending",
+      "calendar_day_ids": [
+        "synthetic-calendar-2026-10-31"
+      ],
+      "public_still_ids": [],
+      "event_ids": [],
+      "weather": [],
+      "analysis": {
+        "state": "pending",
+        "mode": "none",
+        "claims": [],
+        "limitations": [
+          "AI analysis not commissioned"
+        ],
+        "prompt_revision": null,
+        "schema_revision": "synthetic-analysis-v1",
+        "capability_revision": null,
+        "evidence_revision": null,
+        "coverage": {
+          "fraction": 0,
+          "support_seconds": 0,
+          "expected_seconds": 43200,
+          "algorithm_revision": "synthetic-analysis-coverage-v1",
+          "gaps": [
+            {
+              "start": "2026-10-31T12:50:00Z",
+              "end": "2026-11-01T00:30:00Z"
+            }
+          ]
+        },
+        "execution_state": "pending",
+        "reason": "Not commissioned"
+      },
+      "editorial": {
+        "effective_revision": 1,
+        "human_edited": false,
+        "updated_at": "2026-11-01T08:15:00Z",
+        "public_tags": [],
+        "description": "Synthetic fixture: recorded clouds across the source interval."
+      },
+      "search": {
+        "state": "pending",
+        "profile_id": null,
+        "generation_id": null,
+        "metadata_revision": 1
+      },
+      "input_manifest_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "recipe_revision": "synthetic-render-v1",
+      "build_identity": "synthetic-build",
+      "publication_generation": 1
+    },
+    {
+      "schema_version": 1,
+      "video_id": "synthetic-frontyard_1-overnight",
+      "camera": "frontyard_1",
+      "cycle_date": "2026-10-31",
+      "segment": "overnight",
+      "media_revision": 1,
+      "metadata_revision": 1,
+      "state": "published",
+      "reason": null,
+      "updated_at": "2026-11-01T08:15:00Z",
+      "source_interval": {
+        "start": "2026-11-01T00:30:00Z",
+        "end": "2026-11-01T13:30:00Z"
+      },
+      "local_start_label": "2026-10-31 18:30 UTC-06:00",
+      "local_end_label": "2026-11-01 06:30 UTC-07:00",
+      "timezone": "America/Denver",
+      "twilight_model": "civil-six-degrees",
+      "allocated_frames": 3700,
+      "fps": {
+        "numerator": 60,
+        "denominator": 1
+      },
+      "duration": {
+        "numerator": 3700,
+        "denominator": 60
+      },
+      "time_map": [],
+      "expected_slots": 43200,
+      "accepted_slots": 41040,
+      "cadence_epochs": [
+        {
+          "interval": {
+            "start": "2026-11-01T00:30:00Z",
+            "end": "2026-11-01T13:30:00Z"
+          },
+          "interval_seconds": 1
+        }
+      ],
+      "source_time_basis": "synthetic-fixture",
+      "coverage": {
+        "fraction": 0.95,
+        "support_seconds": 41040,
+        "expected_seconds": 43200,
+        "algorithm_revision": "synthetic-coverage-v1",
+        "gaps": []
+      },
+      "caveats": [
+        "Synthetic fixture; no household imagery"
+      ],
+      "renditions": [
+        {
+          "role": "native",
+          "asset": {
+            "asset_id": "synthetic-frontyard_1-overnight-native",
+            "class": "video",
+            "url": "/media/synthetic-frontyard_1-overnight-native",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 4096,
+            "height": 1856
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3700,
+          "duration": {
+            "numerator": 3700,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        },
+        {
+          "role": "web",
+          "asset": {
+            "asset_id": "synthetic-frontyard_1-overnight-web",
+            "class": "video",
+            "url": "/media/synthetic-frontyard_1-overnight-web",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 1920,
+            "height": 870
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3700,
+          "duration": {
+            "numerator": 3700,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        },
+        {
+          "role": "mobile",
+          "asset": {
+            "asset_id": "synthetic-frontyard_1-overnight-mobile",
+            "class": "video",
+            "url": "/media/synthetic-frontyard_1-overnight-mobile",
+            "mime": "video/mp4",
+            "bytes": 100000,
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "width": 1280,
+            "height": 580
+          },
+          "codec": "h264",
+          "profile": "High",
+          "level": "4.2",
+          "fps": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "frame_count": 3700,
+          "duration": {
+            "numerator": 3700,
+            "denominator": 60
+          },
+          "track_timescale": 60000,
+          "movie_timescale": 60000
+        }
+      ],
+      "poster": {
+        "asset": {
+          "asset_id": "synthetic-frontyard_1-overnight-poster",
+          "class": "poster",
+          "url": "/media/synthetic-frontyard_1-overnight-poster",
+          "mime": "image/jpeg",
+          "bytes": 100000,
+          "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "width": 1280,
+          "height": 580
+        },
+        "source_interval": {
+          "start": "2026-11-01T00:30:00Z",
+          "end": "2026-11-01T13:30:00Z"
+        },
+        "output_pts": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "source_kind": "decoded_output_frame",
+        "recipe_revision": "synthetic-render-v1"
+      },
+      "native_download_url": "/downloads/synthetic-frontyard_1-overnight/native",
+      "keogram_id": null,
+      "keogram_state": "pending",
+      "calendar_day_ids": [
+        "synthetic-calendar-2026-10-31"
+      ],
+      "public_still_ids": [],
+      "event_ids": [],
+      "weather": [],
+      "analysis": {
+        "state": "pending",
+        "mode": "none",
+        "claims": [],
+        "limitations": [
+          "AI analysis not commissioned"
+        ],
+        "prompt_revision": null,
+        "schema_revision": "synthetic-analysis-v1",
+        "capability_revision": null,
+        "evidence_revision": null,
+        "coverage": {
+          "fraction": 0,
+          "support_seconds": 0,
+          "expected_seconds": 43200,
+          "algorithm_revision": "synthetic-analysis-coverage-v1",
+          "gaps": [
+            {
+              "start": "2026-11-01T00:30:00Z",
+              "end": "2026-11-01T13:30:00Z"
+            }
+          ]
+        },
+        "execution_state": "pending",
+        "reason": "Not commissioned"
+      },
+      "editorial": {
+        "effective_revision": 1,
+        "human_edited": false,
+        "updated_at": "2026-11-01T08:15:00Z",
+        "public_tags": [],
+        "description": "Synthetic fixture: recorded clouds across the source interval."
+      },
+      "search": {
+        "state": "pending",
+        "profile_id": null,
+        "generation_id": null,
+        "metadata_revision": 1
+      },
+      "input_manifest_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "recipe_revision": "synthetic-render-v1",
+      "build_identity": "synthetic-build",
+      "publication_generation": 1
+    }
+  ],
+  "next_cursor": null
+}
