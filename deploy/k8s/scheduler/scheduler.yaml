@@ -19,6 +19,7 @@ spec:
     metadata:
       labels: *id001
     spec:
+      enableServiceLinks: false
       automountServiceAccountToken: false
       serviceAccountName: scheduler
       imagePullSecrets:
