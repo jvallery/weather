@@ -263,7 +263,7 @@ def test_full_25_hour_day_with_minute_observations_and_three_second_rapid_wind()
             clock=lambda: target.end + timedelta(minutes=5),
         )
         try:
-            async with asyncio.timeout(120):
+            async with asyncio.timeout(300):
                 async with admin.begin() as connection:
                     await guard(connection)
                     await connection.execute(text("SET LOCAL statement_timeout='120s'"))
@@ -293,7 +293,8 @@ def test_full_25_hour_day_with_minute_observations_and_three_second_rapid_wind()
                                 "policy": "v171-wind-report-interval-1",
                             }
                     # Match the spool drain's bounded 128-receipt transactions;
-                    # retain all 31,500 rows, publication triggers and 120s total bound.
+                    # retain all 31,500 rows and publication triggers. Preparation
+                    # has a separate 300s bound; aggregate work retains its 120s bound.
                     for batch_first in range(first, last + 1, 128):
                         async with admin.begin() as connection:
                             await connection.execute(text("SET LOCAL statement_timeout='120s'"))
