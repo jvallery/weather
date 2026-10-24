@@ -12,7 +12,9 @@ document, because Today reads current conditions and the metric registry concurr
 document/data responses have four slots and a 15-second absolute deadline, matching the initial
 512 MiB web memory limit. Static files, process health, the loader-less About and Search pages and the
 lazy route manifest (`/__manifest`) do not consume those slots. Overload is reported as "Weather is
-busy" with `503` and `Retry-After: 5`, never as "API unavailable". Failures render
+busy" with `503` and `Retry-After: 5`, never as "API unavailable": a document request gets that text, and
+a hydrated client navigation's `.data` request gets the body `busy`, which the root error boundary
+renders as the same busy state. Failures render
 sanitized unavailable states. The process has no database, camera, object-store or model credential.
 
 HTTP is on `PORT` (3000); metrics use a separate `METRICS_PORT` (9000). `/healthz` and `/readyz` identify
@@ -83,7 +85,8 @@ filename collisions with different content. The closure is limited to 512 files 
 8 MiB per file; older ancestors do not accumulate. The original scaffold image has one explicit
 legacy-inventory exception; remove that flag when repinning to the first inventoried web image.
 A held tab that requests a chunk the new build no longer has reloads exactly once
-(`app/lib/chunk-reload.ts`, guarded by `sessionStorage`); a second failure surfaces instead of looping.
+(`app/lib/chunk-reload.ts`, guarded by a `sessionStorage` timestamp); a second failure within 60 seconds
+surfaces instead of looping, and a tab still open at a later promotion gets one fresh recovery.
 The e2e fixture ingress mirrors `deploy/k8s/ingress.yaml` routing: `/api/` to api, everything else to
 web. `/media/` and `/downloads/` are added there only when #20 routes them in production.
 

@@ -4,11 +4,16 @@ const KEY = "weather:chunk-reload";
 // Chromium, Firefox and WebKit wordings for a failed dynamic import.
 const FAILED_IMPORT = /dynamically imported module|Importing a module script failed/i;
 
-/** Reload once per tab session. Without a recordable guard, never reload (no loops). */
+// A reload that fails again inside this window surfaces the error; a later rollout gets a fresh recovery.
+const WINDOW_MS = 60_000;
+
+/** Reload at most once per window. Without a recordable guard, never reload (no loops). */
 export function reloadOnce(target: Window): boolean {
+  const now = Date.now();
   try {
-    if (target.sessionStorage.getItem(KEY)) return false;
-    target.sessionStorage.setItem(KEY, "1");
+    const last = Number(target.sessionStorage.getItem(KEY));
+    if (last && Math.abs(now - last) < WINDOW_MS) return false;
+    target.sessionStorage.setItem(KEY, String(now));
   } catch { return false; }
   target.location.reload();
   return true;

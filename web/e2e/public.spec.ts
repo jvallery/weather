@@ -10,6 +10,7 @@ async function syntheticMedia(page: Page) {
 }
 const paths = ["/", "/about/", "/archive/?month=2026-10", "/archive/2026/10/", "/day/2026-10-31/", "/timelapses/skycam_east/2026-10-31/daytime/", "/weather/history/", "/search/"];
 test.beforeEach(async ({ request, page }) => {
+  await syntheticMedia(page);
   await page.addInitScript(() => { const violations: string[] = []; (window as Window & { cspViolations?: string[] }).cspViolations = violations; document.addEventListener("securitypolicyviolation", (event) => violations.push(event.effectiveDirective)); }); await request.post("http://localhost:4174/__control", { data: {} }); });
 for (const width of [320, 768, 1440]) for (const path of paths) {
   test(`${path} · ${width}px · WCAG 2.2 AA`, async ({ page, browserName }) => {
@@ -79,7 +80,6 @@ test("placeholders, About topics, repeated hour, source-only network and reduced
   expect(unexpected).toEqual([]);
 });
 test("safe interpretation text, lifecycle states and quality preservation", async ({ page, request }) => {
-  await syntheticMedia(page);
   await request.post("http://localhost:4174/__control", { data: { description: "<script>window.SYNTHETIC_XSS=1</script>" } });
   await page.goto("/timelapses/skycam_east/2026-10-31/daytime/");
   expect(await page.evaluate(() => (window as Window & { SYNTHETIC_XSS?: number }).SYNTHETIC_XSS)).toBeUndefined();
@@ -151,14 +151,24 @@ test("degraded SSR is observable and public errors stay sanitized", async ({ pag
     expect(await response.text()).not.toMatch(/http:\/\/api|localhost:4174|API_ORIGIN|node_modules|Error:|\bat [A-Za-z].*\.js:/);
   }
 });
-test("SSR admission: loader-less routes and the route manifest stay available while API-backed slots are full", async ({ request }) => {
-  await request.post("http://localhost:4174/__control", { data: { delayMs: 4000 } });
+test("SSR admission: loader-less routes and the route manifest stay available while API-backed slots are full", async ({ page, request }) => {
+  // Hydrate first: the later navigation is a client-side single-fetch .data request.
+  await page.goto("/about/");
+  const version = await page.evaluate(() => (window as Window & { __reactRouterManifest?: { version: string } }).__reactRouterManifest?.version);
+  expect(version).toBeTruthy();
+  await request.post("http://localhost:4174/__control", { data: { delayMs: 5000 } });
   const held = Array.from({ length: 4 }, () => request.get("/"));
   await expect.poll(async () => (await request.get("http://localhost:9175/metrics")).text()).toMatch(/^weather_web_ssr_inflight 4$/m);
   const busy = await request.get("/archive/");
   expect(busy.status()).toBe(503); expect(busy.headers()["retry-after"]).toBe("5"); expect(await busy.text()).toMatch(/busy/i);
   for (const path of ["/about/", "/search/"]) expect((await request.get(path)).status()).toBe(200);
-  expect((await request.get("/__manifest?p=%2Fabout%2F")).status()).not.toBe(503);
+  // The lazy route manifest request exactly as the fog-of-war client sends it.
+  const manifest = await request.get(`/__manifest?paths=${encodeURIComponent("/search/")}&version=${encodeURIComponent(version || "")}`);
+  expect(manifest.status()).toBe(200);
+  expect(await manifest.json()).toMatchObject({ "routes/not-ready": { path: "search" } });
+  await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Archive" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Weather is busy" })).toBeVisible();
+  await expect(page.getByText(/Please retry in a few seconds/)).toBeVisible();
   for (const response of await Promise.all(held)) expect(response.status()).toBe(200);
 });
 test("a failed lazy chunk reloads the page exactly once", async ({ page, request }) => {
@@ -174,5 +184,5 @@ test("a failed lazy chunk reloads the page exactly once", async ({ page, request
   await expect.poll(() => loads).toBe(2);
   await page.waitForTimeout(3000);
   expect(loads).toBe(2); expect(aborted).toBeGreaterThanOrEqual(2);
-  expect(await page.evaluate(() => sessionStorage.getItem("weather:chunk-reload"))).toBe("1");
+  expect(Number(await page.evaluate(() => sessionStorage.getItem("weather:chunk-reload")))).toBeGreaterThan(0);
 });

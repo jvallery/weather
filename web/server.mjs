@@ -52,7 +52,9 @@ const activeRenders = new Gauge({ name: "weather_web_ssr_inflight", help: "Activ
 const UNMETERED = /^\/(?:(?:about|search)(?:\/|\/_\.data|\.data)?|__manifest)$/;
 app.use((req, res, next) => {
   if (UNMETERED.test(req.path)) return next();
-  if (rendering >= 4) { renderFailures.labels("overloaded").inc(); res.setHeader("Retry-After", "5"); return res.status(503).type("text").send("Weather is busy. Please retry shortly."); }
+  // A hydrated client turns a plain 503 on its single-fetch .data request into a route error response
+  // whose data is this body; "busy" is the marker the root ErrorBoundary renders as the busy state.
+  if (rendering >= 4) { renderFailures.labels("overloaded").inc(); res.setHeader("Retry-After", "5"); return res.status(503).type("text").send(req.path.endsWith(".data") ? "busy" : "Weather is busy. Please retry shortly."); }
   rendering += 1; activeRenders.inc();
   let released = false;
   const timer = setTimeout(() => { renderFailures.labels("deadline").inc(); res.destroy(); }, 15_000); timer.unref();

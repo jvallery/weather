@@ -19,9 +19,10 @@ function rejection(reason: unknown) {
   Object.defineProperty(event, "reason", { value: reason });
   return event;
 }
-afterEach(() => { vi.restoreAllMocks(); });
+afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
-test("a failed preload or dynamic import reloads exactly once per tab session", () => {
+test("a failed preload or dynamic import reloads exactly once, and a later rollout recovers again", () => {
+  vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-10-31T18:00:00Z"));
   const { target, reload } = fakeWindow(memoryStorage());
   installChunkReload(target);
   const preload = new Event("vite:preloadError", { cancelable: true });
@@ -32,6 +33,14 @@ test("a failed preload or dynamic import reloads exactly once per tab session", 
   target.dispatchEvent(again);
   target.dispatchEvent(rejection(new TypeError("Failed to fetch dynamically imported module: https://weather.example/assets/x.js")));
   expect(reload).toHaveBeenCalledOnce(); expect(again.defaultPrevented).toBe(false);
+  vi.advanceTimersByTime(59_000);
+  target.dispatchEvent(new Event("vite:preloadError", { cancelable: true }));
+  expect(reload).toHaveBeenCalledOnce();
+  // The same tab, still open at the next promotion, gets one fresh recovery reload.
+  vi.advanceTimersByTime(2_000);
+  const later = new Event("vite:preloadError", { cancelable: true });
+  target.dispatchEvent(later);
+  expect(reload).toHaveBeenCalledTimes(2); expect(later.defaultPrevented).toBe(true);
 });
 
 test.each([
