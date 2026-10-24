@@ -149,7 +149,8 @@ scripts/restore-drill.sh --operation pitr-20261024-r1 \
 ```
 
 After the native dependencies close and safe capacity/current prerequisites
-are verified, run the same operation with `--run`. The script inserts three
+are verified, run the same operation/evidence path with `--run` and omit the
+plan-only `--target` option. The script inserts three
 retained `weather_recovery_drill.sentinel` rows in production, one per minute,
 selects a target between the second and third commits, forces and waits for WAL
 archival, and recovers using the independent reader. It requires exactly
