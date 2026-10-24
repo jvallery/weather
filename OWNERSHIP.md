@@ -21,9 +21,24 @@ State as of 2026-10-24: namespace guardrails are deployed at `bed09184608c947dc0
 | api, web | Workloads (2 replicas each) | `weather` | WX-01 | Running; point-in-time public/metrics/isolation and tokenless checks passed; continuous edge reliability pending; no station data yet |
 | Collectors ×3, receiver, pipelines ×3, scheduler, intel | Workloads | `weather` | Slice issues | Planned |
 | Weather monitoring | Scrape, probes, rules, dashboards | monitoring-stack | monitoring-stack#1072 + slice launches | Planned |
-| Secrets (camera, B2, Garage, Cortex, DB) | KSOPS | agents `secrets-ksops/weather` | owner issues above | Planned |
+| Secrets (camera, B2, Garage, Cortex, DB, API cursor) | KSOPS | agents `secrets-ksops/weather` | owner issues above | Planned |
 
 Adjacent items this repo consumes but does not own: Tempest hub (homeassistant), cameras (sentinel), Cortex routes (cortex-ai-compute), `ak-forwardauth` (network-infra), vallery.net homepage (VerdifyConsultancy/wordpress).
+
+## Current/publication database source (WX-13)
+
+| Item | Source | State |
+|---|---|---|
+| `metric_binding`, `metric_current` | Immutable `db/schema_v3.py`, migration `0003_current_publication` | Source preparation; pointers/revisions only, safe values join v2 qualification |
+| `telemetry_publication_clock`, `telemetry_publication` | Same migration and `db/ddl_v3.py` | Transactional export membership; private application writes denied |
+| Safe current/publication views, scalar watermark and clock-first telemetry triggers | `public_api.metric_current`, `public_api.telemetry_publications`, `public_api.telemetry_snapshot_watermark()` | PostgreSQL integration unrun; no workload enabled |
+| Read-only API connection, safe DTO mapping and SQL source | `db/public_connection.py`, `db/public_mapping.py`, `db/public_source.py` | Bounded verified-TLS source prep; 8 focused pure checks pass, 3 PostgreSQL reader cases unrun; no HTTP/cache/HMAC or deployment |
+| Complete-window safe evidence reader | `db/public_evidence.py` | Explicit calibrated bookends and exact decimals; no authority/statistic math; cumulative 10 pure checks pass, 4 reader PostgreSQL cases unrun |
+
+These are application-owned database objects inside Weather's existing namespace
+ownership, not new infrastructure or access identities. Activation and remaining
+model/test integration belong to #14 after #9/#12; see
+[current/publication operations](docs/operations/current-publication.md).
 
 ## Snapshot collector source (WX-10)
 
@@ -61,6 +76,24 @@ bounded lifecycle: `docs/operations/garage-commissioning.md`.
 These namespace-rendered application objects inherit the central `namespace:weather`
 ownership declaration. Fleet validation/profile declarations and the CI image digest
 pin are agents-owned; source/tests, schema and runtime image contents remain here.
+
+The WX-13 cursor integrity Secret `weather-api-cursor` (`CURSOR_HMAC_KEY`) is
+prepared in agents PR #5469: generated once, SOPS sealed and independently
+restore-read on the operator Mac. It is not mounted or enabled here; only API
+pods consume it when WX-13 is commissioned. No credential value is stored in
+this repository.
+
+The opt-in API factory owns the startup policy/key readers, bounded background cache lifecycle,
+public discovery cadence and read-only API pool wiring. It remains disabled by default and changes
+no live mount, label, image pin or replica count. See [API runtime](docs/operations/api-runtime.md).
+
+Weather also owns immutable safe telemetry qualification history (migration 0004), retained aggregate
+revisions and fenced heads (0005), and their read-only public projections. These remain prepared
+source until the WX-13 cluster/database qualification and disabled scheduler commissioning complete.
+
+The excluded `deploy/k8s/api-data` component prepares the namespace-owned public policy ConfigMap,
+API-only credential mounts and singleton scheduler activation. Its public policy files contain no
+station identity or location coordinates. The root render does not enable this component.
 Database objects rendered only when #6 commissions `deploy/k8s/database/`:
 `NetworkPolicy/weather-pg`, `NetworkPolicy/weather-database-clients`, and
 `ConfigMap/weather-database-policy` accompany the Cluster/ObjectStore/backup.

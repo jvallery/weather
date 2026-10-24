@@ -2,7 +2,7 @@
 
 Source for **[weather.vallery.net](https://weather.vallery.net)**: a public weather history and timelapse service built from three cameras, direct Tempest UDP telemetry, CNPG PostgreSQL, Garage object storage and local inference. It is MIT licensed, fleet-first and has documented customization points.
 
-**Status (2026-10-24):** implementation is starting. Nothing is deployed. The plan was re-cut after an adversarial audit against live estate evidence, and the [simplification record](docs/decisions/2026-10-24-simplification.md) holds Jason's decisions O1–O4. Work is tracked in GitHub issues with native dependencies; see the [generated backlog](docs/implementation/backlog.md).
+**Status (2026-10-24):** the public walking skeleton is deployed; live-weather delivery and current acceptance evidence are tracked in [WX-47 (#48)](https://github.com/jvallery/weather/issues/48). The [simplification record](docs/decisions/2026-10-24-simplification.md) holds Jason's decisions O1–O4. Work is tracked in GitHub issues with native dependencies; see the [generated backlog](docs/implementation/backlog.md).
 
 ## Start here
 

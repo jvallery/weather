@@ -19,6 +19,15 @@ while (( $# )); do
       uv run --frozen python scripts/lint_repository.py
       uv run --frozen python scripts/check_web_assets.py
       (cd web && pnpm install --frozen-lockfile --ignore-scripts && pnpm lint)
+      pnpm --dir web/contract-tools install --frozen-lockfile --ignore-scripts
+      uv run --frozen python scripts/generate_api_contracts.py
+      ;;
+    contracts)
+      if [[ "${1:-}" == "--write" ]]; then
+        shift; uv run --frozen python scripts/generate_api_contracts.py --write
+      else
+        uv run --frozen python scripts/generate_api_contracts.py
+      fi
       ;;
     typecheck)
       uv run --frozen mypy

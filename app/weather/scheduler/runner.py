@@ -124,7 +124,7 @@ async def serve(engine: AsyncEngine, registry: Registry, stop: asyncio.Event) ->
             await asyncio.wait_for(stop.wait(), timeout=1)
 
 
-def installed_registry() -> Registry:
+def installed_registry(engine: AsyncEngine) -> Registry:
     registry = Registry()
     # This is a fixed source-owned module, never a path/module from request data.
     try:
@@ -133,7 +133,7 @@ def installed_registry() -> Registry:
         if error.name != "weather.scheduler.handlers":
             raise
     else:
-        handlers.register(registry)
+        handlers.register(registry, engine)
     return registry
 
 
@@ -144,7 +144,7 @@ async def run() -> None:
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stop.set)
     try:
-        await serve(engine, installed_registry(), stop)
+        await serve(engine, installed_registry(engine), stop)
     finally:
         await engine.dispose()
 
