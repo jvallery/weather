@@ -143,8 +143,10 @@ def statements(table_names: list[str]) -> list[str]:
                ('valid','missing','invalid','suspect','unknown','source_clock_invalid',
                 'source_time_missing','stale','unsupported','out_of_range','duplicate')
                THEN p_quality->>'reason' ELSE 'unknown' END) $$""",
-        """CREATE VIEW public_api.stations WITH (security_barrier=true) AS SELECT id,alias,site FROM weather.station""",
-        """CREATE VIEW public_api.devices WITH (security_barrier=true) AS SELECT d.id,d.alias,s.alias AS station_alias,
+        """CREATE VIEW public_api.stations WITH (security_barrier=true) AS
+           SELECT id,alias,site FROM weather.station""",
+        """CREATE VIEW public_api.devices WITH (security_barrier=true) AS
+           SELECT d.id,d.alias,s.alias AS station_alias,
            d.valid_from,d.valid_until FROM weather.device d
            JOIN weather.station s ON s.id=d.station_id""",
         """CREATE VIEW public_api.weather_days WITH (security_barrier=true) AS
@@ -152,7 +154,8 @@ def statements(table_names: list[str]) -> list[str]:
         """CREATE VIEW public_api.hour_slots WITH (security_barrier=true) AS
            SELECT id,weather_day_id,site,starts_at,ends_at,local_label,utc_offset_minutes,fold
            FROM weather.archive_hour_slot""",
-        """CREATE VIEW public_api.cameras WITH (security_barrier=true) AS SELECT id,label FROM weather.camera""",
+        """CREATE VIEW public_api.cameras WITH (security_barrier=true) AS
+           SELECT id,label FROM weather.camera""",
         """CREATE VIEW public_api.assets WITH (security_barrier=true) AS
            SELECT id,class,sha256,extension,bytes,content_type,width,height,
                   public_not_before,published_at,created_at

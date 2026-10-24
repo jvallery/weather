@@ -7,7 +7,6 @@ from typing import Any
 
 from alembic import context
 from sqlalchemy import Connection
-
 from weather.db.connection import create_database_engine
 from weather.db.models import metadata
 
