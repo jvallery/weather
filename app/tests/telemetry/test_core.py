@@ -269,3 +269,11 @@ def test_jsonb_unrepresentable_private_evidence_is_explicit_not_silently_coerced
         assert "_weather_exact_private_json_text" in wrapped
         assert compatible(wrapped)
     assert private_storage({"ordinary": Decimal(".1")}) == {"ordinary": Decimal(".1")}
+
+
+def test_revision_ddl_has_no_accidental_sqlalchemy_value_bindings() -> None:
+    from sqlalchemy import text
+    from weather.telemetry.ddl_v2 import statements
+
+    for statement in statements():
+        assert not text(statement)._bindparams

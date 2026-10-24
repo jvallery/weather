@@ -4,6 +4,7 @@
 import asyncio
 import hashlib
 import json
+import re
 import time
 import uuid
 from collections import Counter
@@ -45,6 +46,7 @@ class Drain:
         self.spool, self.engine, self.future_seconds = spool, engine, future_seconds
         self.counts: Counter[str] = Counter()
         self.last_commit_ns: int | None = None
+        self.last_error_code: str | None = None
 
     async def once(self) -> int:
         try:
@@ -59,7 +61,13 @@ class Drain:
                     committed += new_receipt
                     projected += new_rows
                 await self._loss_snapshots(connection, stats)
-        except Exception:
+        except Exception as error:
+            code = getattr(getattr(error, "orig", None), "sqlstate", None)
+            self.last_error_code = (
+                code
+                if isinstance(code, str) and re.fullmatch(r"[0-9A-Z]{5}", code)
+                else "UNAVAILABLE"
+            )
             self.counts["drain_errors"] += 1
             # Never log exceptions: DB errors may include parameters/raw/private identities.
             return 0

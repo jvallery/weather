@@ -372,3 +372,68 @@ def test_db_transport_outage_receiving_continues_and_source_time_unchanged(tmp_p
             await db.dispose()
 
     asyncio.run(check())
+
+
+def test_t18_t20_source_reset_and_equal_values_are_distinct_source_keys(tmp_path: Path) -> None:
+    async def check() -> None:
+        db = engine("weather_ingest")
+        spool = Spool(tmp_path / "spool", 1 << 20)
+        try:
+            for stamp in [1700000000, 1699999900, 1700000000, 1700000003]:
+                append(spool, payload(ob=[stamp, 2.3, 128]))
+            drain = Drain(spool, db)
+            assert await drain.once() == 4, drain.last_error_code
+            assert await counts(db) == (4, 3, 4)
+            async with db.connect() as c:
+                times = (
+                    (
+                        await c.execute(
+                            text("""
+                    SELECT extract(epoch FROM source_ts)::bigint FROM weather.rapid_wind
+                    ORDER BY source_ts
+                """)
+                        )
+                    )
+                    .scalars()
+                    .all()
+                )
+                assert times == [1699999900, 1700000000, 1700000003]
+        finally:
+            spool.close()
+            await db.dispose()
+
+    asyncio.run(check())
+
+
+def test_t16_uncommitted_sqlite_tail_is_not_an_invented_receipt(tmp_path: Path) -> None:
+    source = """
+import os,time
+from pathlib import Path
+from weather.telemetry.spool import Spool,Receipt
+spool=Spool(Path(os.environ["SYNTHETIC_SPOOL"]),1<<20)
+for raw in [b"synthetic-committed-1",b"synthetic-committed-2"]:
+    assert spool.append(Receipt.create(raw,spool.incarnation,1700000001000000000,
+        time.monotonic_ns(),7,"192.0.2.1",50222))
+db=spool._conn_required()
+db.execute("BEGIN IMMEDIATE")
+db.execute("INSERT INTO receipt(receipt_id,metadata_json,metadata_sha256,sha256,raw,charge) "
+           "SELECT receipt_id,metadata_json,metadata_sha256,sha256,raw,charge FROM receipt LIMIT 1")
+os._exit(17)
+"""
+    env = {
+        **os.environ,
+        "SYNTHETIC_SPOOL": str(tmp_path / "spool"),
+        "PYTHONPATH": str(Path("app").resolve()),
+    }
+    child = subprocess.run([sys.executable, "-c", source], env=env, capture_output=True, timeout=10)
+    assert child.returncode == 17
+    spool = Spool(tmp_path / "spool", 1 << 20)
+    try:
+        assert [item.receipt.raw for item in spool.batch()] == [
+            b"synthetic-committed-1",
+            b"synthetic-committed-2",
+        ]
+        assert spool.stats()["volatile_loss_unknown"]
+        assert not (tmp_path / "spool" / "quarantine").exists()
+    finally:
+        spool.close()

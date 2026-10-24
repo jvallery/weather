@@ -78,7 +78,7 @@ def statements() -> list[str]:
               RAISE EXCEPTION 'invalid conflicting field';
             END IF;
             q := jsonb_set(q,ARRAY['fields',item],(q->'fields'->item) ||
-                 '{{"eligible":false,"valid":false,"reason":"payload_conflict"}}'::jsonb);
+                 jsonb_build_object('eligible',false,'valid',false,'reason','payload_conflict'));
             changed := true;
           END LOOP;
           IF changed THEN
