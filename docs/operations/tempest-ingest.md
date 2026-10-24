@@ -54,17 +54,18 @@ A row that cannot be decoded (checksum or type mismatch) is moved alone to `quar
 
 ## Drain errors
 
-The drain sends up to 128 rows per transaction and acknowledges (deletes) spool rows only after the CNPG commit returns. Each receipt runs in its own SAVEPOINT: a receipt that fails deterministically is stored raw-only as `parse_state='quarantined'`, `parse_reason='drain_failed'` (`weather_telemetry_drain_quarantined_total`) and the batch continues.
+The drain sends up to 128 rows per transaction and acknowledges (deletes) spool rows only after the CNPG commit returns. Each receipt runs in its own SAVEPOINT: a receipt that fails deterministically (parser or data error) is stored raw-only as `parse_state='quarantined'`, `parse_reason='drain_failed'` (or its admission reason, such as `missing_hub_identity`), counted in `weather_telemetry_drain_quarantined_total`, and the batch continues. Connection loss, deadlock or serialization failure, resource exhaustion, statement or lock timeout, and missing privileges (SQLSTATE classes 08, 40, 53, 57, codes 42501 and 55P03) are not the receipt's fault: they fail the whole batch, nothing is acknowledged, and the spool retries it. Counters advance only after the commit.
 
 - `weather_telemetry_drain_errors_total` rising with a growing `weather_telemetry_spool_depth` and `weather_telemetry_drain_lag_seconds`: the database is unreachable or rejecting the ingest role. Leave the receiver running; it retries the same receipt IDs when access returns. Recovery is complete when the spool depth is 0 and the receipt counts in CNPG match.
+- `weather_telemetry_drain_quarantined_total` rising: a code or schema defect rejects some receipts. Their raw bytes are kept and the spool keeps emptying, but their typed rows are missing until the cause is fixed and `reproject` runs (below). Recovered receipts keep `parse_state='quarantined'`, because the ingest role cannot update receipts.
 - `weather_telemetry_unprojected_total` rising: rows have no matching device (Secret serials and `weather.device` disagree) or no valid source time. Raw receipts are kept.
-- After fixing either cause, rebuild typed rows from retained raw bytes inside the receiver pod:
+- After fixing the cause, rebuild typed rows from retained raw bytes inside the receiver pod:
 
   ```sh
   weather tempest-receiver reproject --since 2026-10-24T00:00Z
   ```
 
-  It seeds devices from the Secret, re-parses every receipt received since that time (except `missing_hub_identity`) and inserts missing rows with `ON CONFLICT DO NOTHING`. Existing rows are never changed, so running it twice is safe.
+  It seeds devices from the Secret, re-parses every receipt received since that time (except `missing_hub_identity`) in pages along the `(received_at, id)` btree, and inserts missing rows with `ON CONFLICT DO NOTHING`. Existing rows are never changed, so running it twice is safe.
 
 ## Clock offset
 

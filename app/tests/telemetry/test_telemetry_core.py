@@ -325,6 +325,35 @@ def test_metrics_scrape_never_mutates_the_spool(tmp_path: Path) -> None:
         spool.close()
 
 
+@pytest.mark.parametrize(
+    ("code", "invalidated", "expected"),
+    [
+        ("08006", False, True),
+        ("40P01", False, True),
+        ("40001", False, True),
+        ("53300", False, True),
+        ("57014", False, True),
+        ("57P01", False, True),
+        ("42501", False, True),
+        ("55P03", False, True),
+        (None, True, True),
+        ("23514", False, False),
+        ("22P02", False, False),
+        ("42P01", False, False),
+        (None, False, False),
+    ],
+)
+def test_systemic_database_errors_fail_the_batch_instead_of_quarantining(
+    code: str | None, invalidated: bool, expected: bool
+) -> None:
+    from types import SimpleNamespace
+
+    from weather.telemetry.drain import systemic
+
+    error = SimpleNamespace(orig=SimpleNamespace(sqlstate=code), connection_invalidated=invalidated)
+    assert systemic(error) is expected  # type: ignore[arg-type]
+
+
 def test_spool_owner_and_invalid_capacity(tmp_path: Path) -> None:
     root = tmp_path / "spool"
     spool = Spool(root, 1 << 20)

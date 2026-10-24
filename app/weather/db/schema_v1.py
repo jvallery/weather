@@ -178,11 +178,8 @@ def build_metadata() -> MetaData:
             name="parse_state",
         ),
     )
-    Index(
-        "ix_telemetry_receipt_received_brin",
-        receipt.c.received_at,
-        postgresql_using="brin",
-    )
+    # Btree, not BRIN: reproject pages by the (received_at, id) keyset.
+    Index("ix_telemetry_receipt_received_id", receipt.c.received_at, receipt.c.id)
     for family in (
         "obs_st",
         "rapid_wind",

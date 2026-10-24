@@ -262,7 +262,17 @@ def test_one_receipt_raises_while_the_others_commit(
             raise RuntimeError("synthetic deterministic failure")
         return await original(db, receipt_id, packet, counts)
 
+    original_store, failed = drain_module.store, []
+
+    async def flaky(db: Any, receipt: Any, state: str, reason: str | None) -> bool:
+        # The first store of an admission-quarantined receipt fails, sending it to the fallback.
+        if reason == "missing_hub_identity" and not failed:
+            failed.append(receipt.id)
+            raise RuntimeError("synthetic store failure")
+        return await original_store(db, receipt, state, reason)
+
     monkeypatch.setattr(drain_module, "project", poisoned)
+    monkeypatch.setattr(drain_module, "store", flaky)
 
     async def check() -> None:
         db = engine("weather_ingest")
@@ -270,15 +280,24 @@ def test_one_receipt_raises_while_the_others_commit(
         try:
             for stamp in (1700000000, 1700000003, 1700000006):
                 append(spool, payload(ob=[stamp, 2.3, 128]))
+            raw = payload(ob=[1700000009, 2.3, 128])
+            append(spool, raw, quarantine_reason="missing_hub_identity")
             drain = seeded(spool, db)
-            assert await drain.once() == 3, drain.last_error_code
-            assert spool.stats()["depth"] == 0 and drain.counts["drain_quarantined"] == 1
+            assert await drain.once() == 4, drain.last_error_code
+            assert spool.stats()["depth"] == 0 and drain.counts["drain_quarantined"] == 2
+            assert drain.counts["committed"] == 4 and drain.counts["projected"] == 2
             assert await source_epochs(db) == [1700000000, 1700000006]
-            assert await scalar(
-                db,
-                "SELECT parse_reason FROM weather.telemetry_receipt "
-                "WHERE parse_state='quarantined'",
-            ) == "drain_failed"
+            async with db.connect() as c:
+                reasons = (
+                    await c.execute(
+                        text("""
+                    SELECT parse_reason FROM weather.telemetry_receipt
+                    WHERE parse_state='quarantined' ORDER BY parse_reason
+                """)
+                    )
+                ).scalars().all()
+            # The fallback keeps the admission reason, so reproject still never projects it.
+            assert reasons == ["drain_failed", "missing_hub_identity"]
             # Once the defect is fixed, reproject recovers the quarantined receipt's row.
             monkeypatch.setattr(drain_module, "project", original)
             receipts, rows, _ = await reproject(db, datetime(2023, 1, 1, tzinfo=UTC))
@@ -325,6 +344,7 @@ def test_abrupt_kill_replays_exactly_once(tmp_path: Path, point: str) -> None:
 import asyncio,os
 from pathlib import Path
 from test_ingest_integration import DEVICES,HUB,engine,payload
+from collections import Counter
 from weather.telemetry.drain import Drain,seed
 from weather.telemetry.spool import Spool,Receipt
 async def run():
@@ -335,7 +355,7 @@ async def run():
         db=engine("weather_ingest")
         async with db.begin() as c:
             await seed(c,HUB,DEVICES)
-            await Drain(spool,db)._receipt(c,receipt)
+            await Drain(spool,db)._receipt(c,receipt,Counter())
     os._exit(17)
 asyncio.run(run())
 """
@@ -370,9 +390,13 @@ asyncio.run(run())
     asyncio.run(check())
 
 
-def test_database_outage_then_recovery_loses_nothing(tmp_path: Path) -> None:
+def test_database_outage_then_recovery_loses_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original = drain_module.project
+
     async def check() -> None:
-        db = engine("weather_ingest")
+        admin, db, doomed = engine(), engine("weather_ingest"), engine("weather_ingest")
         await guard(db)
         url = make_url(os.environ["WEATHER_CI_ADMIN_DATABASE_URL"]).set(username="weather_ingest")
         unavailable = create_async_engine(
@@ -383,7 +407,8 @@ def test_database_outage_then_recovery_loses_nothing(tmp_path: Path) -> None:
         spool = Spool(tmp_path / "spool", 1 << 20)
         try:
             receiver = Receiver(AdmissionConfig(7, HUB, DEVICES), spool)
-            down = Drain(spool, unavailable, 120, HUB, DEVICES)
+            # Already seeded, so every attempt reaches spool.batch() and the batch transaction.
+            down = Drain(spool, unavailable)
             for n in range(3):
                 r = receiver.accept(
                     Datagram(
@@ -398,17 +423,38 @@ def test_database_outage_then_recovery_loses_nothing(tmp_path: Path) -> None:
                 # Receiving continues during the outage; nothing is acknowledged.
                 assert await down.once() == 0
                 assert spool.stats()["depth"] == n + 1
-            assert down.counts["drain_errors"] == 3
+            assert down.counts["drain_errors"] == 3 and down.counts["spool_ack_errors"] == 0
+
+            async def terminated(db: Any, receipt_id: uuid.UUID, packet: Any, counts: Any) -> int:
+                # Every receipt is written inside the batch; the connection dies before COMMIT.
+                rows = await original(db, receipt_id, packet, counts)
+                if packet.rows[0].source_ts == 1700000006:
+                    pid = (await db.execute(text("SELECT pg_backend_pid()"))).scalar_one()
+                    async with admin.connect() as c:
+                        stmt = text("SELECT pg_terminate_backend(:pid,5000)")
+                        assert (await c.execute(stmt, {"pid": pid})).scalar_one()
+                return rows
+
+            monkeypatch.setattr(drain_module, "project", terminated)
+            # Unseeded, so project() also counts unprojected rows that must never be reported.
+            lost = Drain(spool, doomed)
+            assert await lost.once() == 0
+            monkeypatch.setattr(drain_module, "project", original)
+            assert lost.counts["drain_errors"] == 1 and lost.counts["spool_ack_errors"] == 0
+            assert lost.counts["committed"] == lost.counts["unprojected"] == 0
+            assert spool.stats()["depth"] == 3
             assert await counts(db) == (0, 0)
             up = seeded(spool, db)
             assert await up.once() == 3, up.last_error_code
             assert spool.stats()["depth"] == 0
+            assert up.counts["committed"] == up.counts["projected"] == 3
             assert await counts(db) == (3, 3)
             assert await source_epochs(db) == [1700000000, 1700000003, 1700000006]
+            assert await up.once() == 0 and await counts(db) == (3, 3)
         finally:
             spool.close()
-            await unavailable.dispose()
-            await db.dispose()
+            for item in (unavailable, doomed, db, admin):
+                await item.dispose()
 
     asyncio.run(check())
 
