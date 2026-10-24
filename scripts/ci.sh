@@ -24,7 +24,8 @@ while (( $# )); do
       (cd web && pnpm typecheck)
       ;;
     unit)
-      uv run --frozen pytest -m 'not integration'
+      uv run --frozen pytest -m 'not integration' \
+        --cov=weather.timemodel --cov-report=term-missing --cov-fail-under=95
       (cd web && pnpm test)
       ;;
     integration)

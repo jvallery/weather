@@ -2514,6 +2514,13 @@
   },
   {
     "ecosystem": "pypi",
+    "name": "coverage",
+    "version": "7.17.0",
+    "license": "Apache-2.0",
+    "source": "https://pypi.org/pypi/coverage/7.17.0/json"
+  },
+  {
+    "ecosystem": "pypi",
     "name": "fastapi",
     "version": "0.162.0",
     "license": "MIT",
@@ -2672,6 +2679,13 @@
     "version": "9.0.2",
     "license": "MIT",
     "source": "https://pypi.org/pypi/pytest/9.0.2/json"
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "pytest-cov",
+    "version": "7.1.0",
+    "license": "MIT",
+    "source": "https://pypi.org/pypi/pytest-cov/7.1.0/json"
   },
   {
     "ecosystem": "pypi",
