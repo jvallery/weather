@@ -6,7 +6,8 @@ import { setTimeout as delay } from "node:timers/promises";
 if (process.platform !== "linux" || process.env.WEATHER_CI_IN_CLUSTER !== "1") throw new Error("Fixture API requires approved in-cluster CI");
 const current = JSON.parse(readFileSync(new URL("../app/fixtures/current.json", import.meta.url)));
 const registry = JSON.parse(readFileSync(new URL("../app/fixtures/metric-registry.json", import.meta.url)));
-const history = JSON.parse(readFileSync(new URL("../app/fixtures/history.json", import.meta.url)));
+const aggregates = JSON.parse(readFileSync(new URL("../app/fixtures/aggregates.json", import.meta.url)));
+const observations = JSON.parse(readFileSync(new URL("../app/fixtures/observations.json", import.meta.url)));
 const catalog = JSON.parse(readFileSync(new URL("../app/fixtures/catalog.json", import.meta.url)));
 const media = new URL("../.test-media/clip.mp4", import.meta.url);
 const poster = new URL("../.test-media/poster.jpg", import.meta.url);
@@ -72,7 +73,8 @@ createServer(async (req, res) => {
     return json(res, value);
   }
   if (url.pathname === "/api/v1/weather/metrics") return json(res, registry);
-  if (url.pathname === "/api/v1/weather/observations") return json(res, history);
+  if (url.pathname === "/api/v1/weather/aggregates") return json(res, aggregates);
+  if (url.pathname === "/api/v1/weather/observations") return json(res, observations);
   if (url.pathname === "/api/v1/timelapses") {
     const value = snapshot();
     for (const key of ["camera", "cycle_date", "segment", "state"]) if (url.searchParams.has(key)) value.items = value.items.filter((video) => video[key] === url.searchParams.get(key));

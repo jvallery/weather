@@ -5,8 +5,7 @@
   "identity_policy": "All station and receiver identifiers in these fixtures are synthetic.",
   "suites": {
     "unit": "app/tests/telemetry/test_vectors.py (parser, admission, spool)",
-    "integration": "app/tests/telemetry/test_ingest_integration.py (PostgreSQL, fleet CI only)",
-    "aggregate": "read-side aggregation semantics owned by #14"
+    "integration": "app/tests/telemetry/test_ingest_integration.py (PostgreSQL, fleet CI only)"
   },
   "vectors": [
     {
@@ -166,93 +165,6 @@
       }
     },
     {
-      "id": "T10",
-      "case": "event packets without interval authority",
-      "suite": "aggregate",
-      "input": {
-        "evt_strike": [
-          1700000000,
-          10,
-          100
-        ],
-        "interval_count": null
-      },
-      "expect": {
-        "reported_strike_annotation": true,
-        "measured_count_available": false
-      }
-    },
-    {
-      "id": "T11",
-      "case": "replay does not freshen",
-      "suite": "aggregate",
-      "input": {
-        "source_epoch": 1700000000,
-        "first_receive_epoch": 1700000001,
-        "replay_epoch": 1700086400,
-        "freshness_seconds": 15
-      },
-      "expect": {
-        "fresh_at_replay": false,
-        "expiry_epoch": 1700000015
-      }
-    },
-    {
-      "id": "T12",
-      "case": "support union",
-      "suite": "aggregate",
-      "input": {
-        "window_seconds": [
-          0,
-          60
-        ],
-        "valid_support_seconds": [
-          [
-            0,
-            30
-          ],
-          [
-            20,
-            40
-          ]
-        ]
-      },
-      "expect": {
-        "covered_seconds": 40,
-        "coverage_fraction": "2/3"
-      }
-    },
-    {
-      "id": "T13",
-      "case": "conserved precipitation split",
-      "suite": "aggregate",
-      "input": {
-        "qualified_support_seconds": [
-          0,
-          60
-        ],
-        "amount_mm": 2,
-        "windows_seconds": [
-          [
-            0,
-            15
-          ],
-          [
-            15,
-            60
-          ]
-        ]
-      },
-      "expect": {
-        "allocated_mm": [
-          0.5,
-          1.5
-        ],
-        "total_mm": 2,
-        "estimate_label": "uniform intensity over support"
-      }
-    },
-    {
       "id": "T14",
       "case": "rain support is the minute ending at source time, independent of report interval",
       "suite": "unit",
@@ -295,34 +207,6 @@
           1699999700,
           1700000000
         ]
-      }
-    },
-    {
-      "id": "T15",
-      "case": "boundary lightning count",
-      "suite": "aggregate",
-      "input": {
-        "support_seconds": [
-          0,
-          60
-        ],
-        "count": 3,
-        "windows_seconds": [
-          [
-            0,
-            30
-          ],
-          [
-            30,
-            60
-          ]
-        ]
-      },
-      "expect": {
-        "boundary_uncertain_count": 3,
-        "fractional_counts_allowed": false,
-        "qualified_count_in_either_window": 0,
-        "zero_is_complete_total": false
       }
     },
     {

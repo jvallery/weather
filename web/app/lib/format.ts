@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-import type { Metric, MetricDefinition, Units } from "./contracts";
+import type { Units } from "./contracts";
+import type { Metric, MetricDefinition } from "./weather-api";
 
 export const CAMERA_LABELS = { skycam_east: "East sky", skycam_west: "West sky", frontyard_1: "Front yard" } as const;
 export function localTime(instant: string): string {

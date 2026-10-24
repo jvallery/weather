@@ -99,9 +99,9 @@ After a real production recovery, give the recovered cluster a new Barman
 ## Schema, migrations and durable work
 
 Weather owns the `weather` schema and the `public_api` views inside its
-dedicated `weather` database. The one Alembic revision is `0001_baseline`
-(#74). It holds the slice-1 schema as inline DDL and imports no application
-module. The restore-drill schema `weather_recovery_drill` is not Alembic's;
+dedicated `weather` database. Revision `0001_baseline` (#74) holds the
+slice-1 schema and `0002_api` (#14) adds the API's views; both are inline DDL
+and import no application module. The restore-drill schema `weather_recovery_drill` is not Alembic's;
 the baseline and `alembic check` leave it alone.
 
 | Relation | Purpose |
@@ -111,9 +111,10 @@ the baseline and `alembic check` leave it alone.
 | `obs_st`, `rapid_wind`, `evt_precip`, `evt_strike`, `device_status`, `hub_status`, `obs_air`, `obs_sky` | Typed family rows; unique `(device_id, message_type, source_ts, row_idx)` |
 | `weather_day` | One row per America/Denver day, keyed by `local_date` (23, 24 or 25 hours) |
 | `job`, `outbox` | Durable work and causal events |
-| `public_api.observations` | The one public view (security barrier) |
+| `public_api.observations` | Public union view of all families (security barrier) |
+| `public_api.obs_st`, `public_api.rapid_wind`, `public_api.station` | API views (0002): typed, gated double-precision columns plus `received_at`, `inserted_at`, `valid` and the allowlisted `invalid_fields`; the station alias. No row filter, so no security barrier; that keeps them flattenable onto the `source_ts` btrees |
 
-`obs_st` and `rapid_wind` carry a btree on `source_ts`, so current conditions
+`obs_st` and `rapid_wind` also carry `inserted_at` (0002; `clock_timestamp()` on insert, `-infinity` for older rows), which export cursors snapshot on. They carry a btree on `source_ts`, so current conditions
 (#14) read the newest row by index. The other families use BRIN.
 
 ### Slice-2/3 DDL removed from the baseline
@@ -148,7 +149,7 @@ every second while the spool holds receipts.
 | `weather_migrator` | Database/schema owner, DDL and migrations |
 | `weather_ingest` | Insert on station and device, select on their non-private columns (not `private_configuration`); select/insert on receipts and family rows; no update/delete |
 | `weather_worker` | Read/write `job` and `outbox`; select/insert `weather_day`; no telemetry access |
-| `weather_api` | Select `public_api.observations` and execute its two value-gating functions; no base-table access |
+| `weather_api` | Select the `public_api` views and execute the two value-gating functions; no base-table access or `weather` schema usage |
 | `weather_editor` | Login only. No editorial functions exist yet; #44 adds them and grants EXECUTE to this role alone |
 
 Neither ingest nor API can delete telemetry. No telemetry retention trigger,
@@ -159,7 +160,7 @@ migrator creates, so a later function is private until granted.
 
 ## Expand/contract migrations
 
-The head is `0001_baseline`. Once it has run on production, every change is
+The head is `0002_api`. `0001_baseline` has run on production, so every change is
 expand/contract. Add a new revision with inline DDL; never edit an applied
 revision or import current application modules into one. `models.metadata`
 describes the current schema for `alembic check` and must change in the same

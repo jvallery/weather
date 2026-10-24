@@ -27,6 +27,7 @@ from weather.timemodel import weather_day
 pytestmark = pytest.mark.integration
 
 ROLES = ("weather_migrator", "weather_ingest", "weather_worker", "weather_api", "weather_editor")
+API_VIEWS = ("public_api.obs_st", "public_api.rapid_wind", "public_api.station")
 TELEMETRY = (
     "station",
     "device",
@@ -117,8 +118,8 @@ def test_baseline_head_roles_and_least_privilege() -> None:
             async with admin.begin() as connection:
                 assert await scalar(
                     connection, "SELECT version_num FROM public.alembic_version"
-                ) == ("0001_baseline")
-                # The baseline creates only slice-1 relations and one public view.
+                ) == ("0002_api")
+                # Slice-1 relations, the observations view and the API's views (0002).
                 relations = (
                     await connection.execute(
                         text("""
@@ -134,6 +135,7 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     "weather.job",
                     "weather.outbox",
                     "public_api.observations",
+                    *API_VIEWS,
                 }
                 options = await scalar(
                     connection,
@@ -179,9 +181,11 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                         assert not await table(role, relation, "SELECT")
                 assert await table("weather_worker", "weather.weather_day", "INSERT")
                 assert not await table("weather_worker", "weather.weather_day", "UPDATE")
-                assert await table("weather_api", "public_api.observations", "SELECT")
-                for role in ("weather_ingest", "weather_worker", "weather_editor"):
-                    assert not await table(role, "public_api.observations", "SELECT")
+                for view in ("public_api.observations", *API_VIEWS):
+                    assert await table("weather_api", view, "SELECT")
+                    assert not await table("weather_api", view, "INSERT")
+                    for role in ("weather_ingest", "weather_worker", "weather_editor"):
+                        assert not await table(role, view, "SELECT")
                 # No editorial functions exist yet; weather_editor has no schema access (#44).
                 for role, schema in (
                     ("weather_api", "weather"),

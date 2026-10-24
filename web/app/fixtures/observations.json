@@ -1,0 +1,38 @@
+{
+  "generated_at": "2026-11-01T10:00:00Z",
+  "start": "2026-11-01T06:00:00Z",
+  "end": "2026-11-01T10:00:00Z",
+  "metrics": [
+    "temperature"
+  ],
+  "points": [
+    {
+      "id": "00000000-0000-4000-8000-000000000000",
+      "observed_at": "2026-11-01T07:15:00Z",
+      "received_at": "2026-11-01T07:15:01Z",
+      "metric": "temperature",
+      "value": 0.0,
+      "unit": "degC",
+      "quality": "valid"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "observed_at": "2026-11-01T07:50:00Z",
+      "received_at": "2026-11-01T07:50:01Z",
+      "metric": "temperature",
+      "value": null,
+      "unit": "degC",
+      "quality": "missing"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "observed_at": "2026-11-01T08:15:00Z",
+      "received_at": "2026-11-01T08:15:01Z",
+      "metric": "temperature",
+      "value": 2.0,
+      "unit": "degC",
+      "quality": "valid"
+    }
+  ],
+  "next_cursor": null
+}

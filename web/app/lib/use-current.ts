@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { currentSchema, type Current } from "./contracts";
+import { parseCurrent, type Current } from "./weather-api";
 import { CURRENT_QUERY_KEY, nextPollDelay } from "./polling";
 
 export type CurrentPollingOptions = { refreshOnResume?: boolean; jitterFraction?: number };
@@ -50,7 +50,8 @@ export function useCurrent(initial: Current, apiUnavailable = false, options: Cu
       try {
         const response = await fetch("/api/v1/weather/current", { signal: AbortSignal.any([signal, AbortSignal.timeout(6000)]), cache: "no-store", headers: { Accept: "application/json" } });
         if (!response.ok) throw new Error("Current conditions unavailable");
-        const current = currentSchema.parse(await response.json());
+        const current = parseCurrent(await response.json());
+        if (current === null) throw new Error("Current conditions response was not understood");
         failures.current = 0;
         setSuccessfulPoll(true);
         return current;

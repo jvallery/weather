@@ -4,13 +4,14 @@ import { StrictMode, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider, focusManager } from "@tanstack/react-query";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { currentSchema } from "./contracts";
+import { parseCurrent, type Current } from "./weather-api";
 import currentFixture from "../fixtures/current.json";
 import { useCurrent } from "./use-current";
 import { CURRENT_QUERY_KEY, nextPollDelay } from "./polling";
 import { CurrentConditions } from "../components/current-conditions";
 
-const current = currentSchema.parse(currentFixture);
+const current = parseCurrent(currentFixture)!;
+const asCurrent = (value: unknown): Current => parseCurrent(value)!;
 function Probe() {
   const result = useCurrent(current);
   return <p data-testid="source">{result.data.metrics[0].observed_at} · {result.isError ? "API unavailable" : "available"}</p>;
@@ -76,7 +77,7 @@ test("outage values keep aging without repeating the live-region announcement", 
 
 test("authoritative unavailable data clears older cached numbers without claiming an HTTP failure", async () => {
   client.setQueryData(CURRENT_QUERY_KEY, current);
-  const unavailable = currentSchema.parse({ ...current, data_state: "unavailable", metrics: current.metrics.map((metric) => ({ ...metric, value: null, freshness: "unavailable", reason: "Source evidence invalidated" })) });
+  const unavailable = asCurrent({ ...current, data_state: "unavailable", metrics: current.metrics.map((metric) => ({ ...metric, value: null, freshness: "unavailable", reason: "Source evidence invalidated" })) });
   render(<QueryClientProvider client={client}><CurrentConditions initial={unavailable} renderedAt={Date.now()} units="us" /></QueryClientProvider>);
   await advance(0);
   expect(client.getQueryData(CURRENT_QUERY_KEY)).toEqual(unavailable);
@@ -85,7 +86,7 @@ test("authoritative unavailable data clears older cached numbers without claimin
 });
 test("loader transport failure preserves cached source timestamps until polling succeeds", async () => {
   client.setQueryData(CURRENT_QUERY_KEY, current);
-  const unavailable = currentSchema.parse({ ...current, data_state: "unavailable", metrics: [] });
+  const unavailable = asCurrent({ ...current, data_state: "unavailable", metrics: [] });
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(unavailable))));
   render(<QueryClientProvider client={client}><CurrentConditions initial={unavailable} apiUnavailable renderedAt={Date.now()} units="us" /></QueryClientProvider>);
   expect(client.getQueryData(CURRENT_QUERY_KEY)).toEqual(current);
@@ -112,7 +113,7 @@ test("a canceled old poll cannot resurrect numbers after authoritative source in
   let finish: ((response: Response) => void) | undefined;
   let signal: AbortSignal | undefined;
   vi.stubGlobal("fetch", vi.fn((_url, init) => { signal = init.signal; return new Promise<Response>((resolve) => { finish = resolve; }); }));
-  const unavailable = currentSchema.parse({ ...current, data_state: "unavailable", metrics: [] });
+  const unavailable = asCurrent({ ...current, data_state: "unavailable", metrics: [] });
   const tree = (initial: typeof current) => <QueryClientProvider client={client}><CurrentConditions initial={initial} renderedAt={Date.now()} units="us" /></QueryClientProvider>;
   const view = render(tree(current));
   await advance(15_000);

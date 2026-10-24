@@ -1,0 +1,224 @@
+{
+  "generated_at": "2026-11-01T10:00:00Z",
+  "start": "2026-11-01T06:00:00Z",
+  "end": "2026-11-01T10:00:00Z",
+  "resolution": "3600",
+  "items": [
+    {
+      "metric": "temperature",
+      "statistic": "mean",
+      "start": "2026-11-01T06:00:00Z",
+      "end": "2026-11-01T07:00:00Z",
+      "value": 0.0,
+      "unit": "degC",
+      "coverage": {
+        "fraction": 1.0,
+        "support_seconds": 3600.0,
+        "expected_seconds": 3600.0
+      },
+      "evidence_count": 60,
+      "evidence_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": null,
+      "direction_state": null,
+      "rose": null
+    },
+    {
+      "metric": "temperature",
+      "statistic": "min",
+      "start": "2026-11-01T06:00:00Z",
+      "end": "2026-11-01T07:00:00Z",
+      "value": -1.5,
+      "unit": "degC",
+      "coverage": {
+        "fraction": 1.0,
+        "support_seconds": 3600.0,
+        "expected_seconds": 3600.0
+      },
+      "evidence_count": 60,
+      "evidence_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": null,
+      "direction_state": null,
+      "rose": null
+    },
+    {
+      "metric": "temperature",
+      "statistic": "max",
+      "start": "2026-11-01T06:00:00Z",
+      "end": "2026-11-01T07:00:00Z",
+      "value": 1.0,
+      "unit": "degC",
+      "coverage": {
+        "fraction": 1.0,
+        "support_seconds": 3600.0,
+        "expected_seconds": 3600.0
+      },
+      "evidence_count": 60,
+      "evidence_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": null,
+      "direction_state": null,
+      "rose": null
+    },
+    {
+      "metric": "temperature",
+      "statistic": "mean",
+      "start": "2026-11-01T07:00:00Z",
+      "end": "2026-11-01T08:00:00Z",
+      "value": null,
+      "unit": "degC",
+      "coverage": {
+        "fraction": 0.0,
+        "support_seconds": 0.0,
+        "expected_seconds": 3600.0
+      },
+      "evidence_count": 0,
+      "evidence_hash": null,
+      "reason": "No valid observations in this interval.",
+      "direction_state": null,
+      "rose": null
+    },
+    {
+      "metric": "temperature",
+      "statistic": "min",
+      "start": "2026-11-01T07:00:00Z",
+      "end": "2026-11-01T08:00:00Z",
+      "value": null,
+      "unit": "degC",
+      "coverage": {
+        "fraction": 0.0,
+        "support_seconds": 0.0,
+        "expected_seconds": 3600.0
+      },
+      "evidence_count": 0,
+      "evidence_hash": null,
+      "reason": "No valid observations in this interval.",
+      "direction_state": null,
+      "rose": null
+    },
+    {
+      "metric": "temperature",
+      "statistic": "max",
+      "start": "2026-11-01T07:00:00Z",
+      "end": "2026-11-01T08:00:00Z",
+      "value": null,
+      "unit": "degC",
+      "coverage": {
+        "fraction": 0.0,
+        "support_seconds": 0.0,
+        "expected_seconds": 3600.0
+      },
+      "evidence_count": 0,
+      "evidence_hash": null,
+      "reason": "No valid observations in this interval.",
+      "direction_state": null,
+      "rose": null
+    },
+    {
+      "metric": "temperature",
+      "statistic": "mean",
+      "start": "2026-11-01T08:00:00Z",
+      "end": "2026-11-01T09:00:00Z",
+      "value": 2.0,
+      "unit": "degC",
+      "coverage": {
+        "fraction": 1.0,
+        "support_seconds": 3600.0,
+        "expected_seconds": 3600.0
+      },
+      "evidence_count": 60,
+      "evidence_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": null,
+      "direction_state": null,
+      "rose": null
+    },
+    {
+      "metric": "temperature",
+      "statistic": "min",
+      "start": "2026-11-01T08:00:00Z",
+      "end": "2026-11-01T09:00:00Z",
+      "value": 1.0,
+      "unit": "degC",
+      "coverage": {
+        "fraction": 1.0,
+        "support_seconds": 3600.0,
+        "expected_seconds": 3600.0
+      },
+      "evidence_count": 60,
+      "evidence_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": null,
+      "direction_state": null,
+      "rose": null
+    },
+    {
+      "metric": "temperature",
+      "statistic": "max",
+      "start": "2026-11-01T08:00:00Z",
+      "end": "2026-11-01T09:00:00Z",
+      "value": 3.5,
+      "unit": "degC",
+      "coverage": {
+        "fraction": 1.0,
+        "support_seconds": 3600.0,
+        "expected_seconds": 3600.0
+      },
+      "evidence_count": 60,
+      "evidence_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": null,
+      "direction_state": null,
+      "rose": null
+    },
+    {
+      "metric": "temperature",
+      "statistic": "mean",
+      "start": "2026-11-01T09:00:00Z",
+      "end": "2026-11-01T10:00:00Z",
+      "value": 1.5,
+      "unit": "degC",
+      "coverage": {
+        "fraction": 1.0,
+        "support_seconds": 3600.0,
+        "expected_seconds": 3600.0
+      },
+      "evidence_count": 60,
+      "evidence_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": null,
+      "direction_state": null,
+      "rose": null
+    },
+    {
+      "metric": "temperature",
+      "statistic": "min",
+      "start": "2026-11-01T09:00:00Z",
+      "end": "2026-11-01T10:00:00Z",
+      "value": 0.5,
+      "unit": "degC",
+      "coverage": {
+        "fraction": 1.0,
+        "support_seconds": 3600.0,
+        "expected_seconds": 3600.0
+      },
+      "evidence_count": 60,
+      "evidence_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": null,
+      "direction_state": null,
+      "rose": null
+    },
+    {
+      "metric": "temperature",
+      "statistic": "max",
+      "start": "2026-11-01T09:00:00Z",
+      "end": "2026-11-01T10:00:00Z",
+      "value": 2.5,
+      "unit": "degC",
+      "coverage": {
+        "fraction": 1.0,
+        "support_seconds": 3600.0,
+        "expected_seconds": 3600.0
+      },
+      "evidence_count": 60,
+      "evidence_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": null,
+      "direction_state": null,
+      "rose": null
+    }
+  ]
+}
