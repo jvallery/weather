@@ -3,12 +3,16 @@
 
 import asyncio
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 from prometheus_client import CollectorRegistry, generate_latest
 from weather.api import build_application, runtime
+from weather.api.cursors import CursorCodec, Snapshot
+from weather.api.metric_registry import PublicInputError
+from weather.api.public_models import AggregateQuery, ObservationQuery
 from weather.config import ConfigurationError, load_settings
 from weather.db.public_mapping import FreshnessPolicy
 
@@ -95,11 +99,37 @@ def test_policy_revision_changes_when_source_hold_changes(tmp_path: Path):
     )
     policies = runtime.load_policies(path)
     assert policies["temperature"] == FreshnessPolicy(60, 90)
-    assert runtime.policy_revision(policies) != runtime.policy_revision(
+    original = runtime.policy_revision(policies, station_alias="Synthetic fixture")
+    assert original != runtime.policy_revision(
         {
             "temperature": FreshnessPolicy(60, 120),
-        }
+        },
+        station_alias="Synthetic fixture",
     )
+
+
+@pytest.mark.parametrize("aggregate", [False, True])
+def test_signed_continuation_cannot_cross_configured_station(aggregate: bool):
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    values = {"start": start, "end": start + timedelta(hours=1), "metrics": ["temperature"]}
+    query = (
+        AggregateQuery(**values, resolution_seconds=60, statistic="mean")
+        if aggregate
+        else ObservationQuery(**values)
+    )
+    policies = {"temperature": FreshnessPolicy(60, 90)}
+    key = b"synthetic-fixture-signing-key-32bytes"
+    first = CursorCodec(
+        key, policy_revision=runtime.policy_revision(policies, station_alias="Synthetic first")
+    )
+    second = CursorCodec(
+        key, policy_revision=runtime.policy_revision(policies, station_alias="Synthetic second")
+    )
+    token = first.encode(query, Snapshot(watermark="17", position="synthetic-position"), now=start)
+    assert first.decode(token, query, now=start).watermark == "17"
+    with pytest.raises(PublicInputError) as failure:
+        second.decode(token, query, now=start)
+    assert failure.value.code == "invalid_cursor"
 
 
 def test_key_failure_precedes_pool_allocation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

@@ -90,15 +90,19 @@ def load_cursor_key(path: Path) -> bytes:
 
 
 def policy_revision(
-    policies: dict[str, FreshnessPolicy], aggregate_revision: str | None = None
+    policies: dict[str, FreshnessPolicy],
+    aggregate_revision: str | None = None,
+    *,
+    station_alias: str,
 ) -> str:
     data = [
         REGISTRY_REVISION,
+        station_alias,
         {name: asdict(value) for name, value in policies.items()},
         aggregate_revision,
     ]
     return (
-        "api_policy_v1_"
+        "api_policy_v2_"
         + hashlib.sha256(
             json.dumps(
                 data,
@@ -123,6 +127,7 @@ def public_lifespan(
         service = None
         aggregate = None
         try:
+            station_alias = settings.api_station_alias or ""
 
             async def read_aggregates(
                 query: AggregateQuery, snapshot: Snapshot | None
@@ -133,7 +138,7 @@ def public_lifespan(
 
             source = PublicSqlSource(
                 engine,
-                station_alias=settings.api_station_alias or "",
+                station_alias=station_alias,
                 maximum_raw_seconds=settings.api_raw_window_seconds,
                 policies=policies,
                 aggregate_source=read_aggregates,
@@ -147,7 +152,12 @@ def public_lifespan(
             )
             service = PublicWeatherService(
                 source,
-                CursorCodec(key, policy_revision=policy_revision(policies, calibration.revision)),
+                CursorCodec(
+                    key,
+                    policy_revision=policy_revision(
+                        policies, calibration.revision, station_alias=station_alias
+                    ),
+                ),
                 maximum_raw_seconds=settings.api_raw_window_seconds,
                 metrics=PublicMetrics(registry),
                 metric_registry=discovery(

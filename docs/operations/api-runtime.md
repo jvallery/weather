@@ -27,6 +27,8 @@ metric has no inferred freshness policy: persisted valid numbers stay visibly un
 Commission cadence and hold bounds from actual receiver evidence rather than HTTP poll time or
 protocol report-interval guesses. Discovery and Current share those commissioned cadence values.
 Policy changes alter discovery identities and signed cursor binding.
+The cursor binding also includes the configured public station alias. Changing stations rejects
+old signed continuations even when the signing key and cadence policies are retained.
 
 `WEATHER_API_RAW_WINDOW_SECONDS` defaults to 31 days, allows configuration from one minute through
 366 days, and never changes a requested statistic implicitly. The reader still limits each page to
