@@ -5,6 +5,7 @@ import hashlib
 import io
 import os
 import platform
+import subprocess
 import tarfile
 import urllib.request
 import zipfile
@@ -36,6 +37,16 @@ if not (root / "uv").exists():
     member = next(x for x in archive.namelist() if x.endswith("/scripts/uv"))
     (root / "uv").write_bytes(archive.read(member))
     (root / "uv").chmod(0o755)
+# The admitted toolbox may start on an older Python without safe tar filters.
+# Bootstrap the already-selected interpreter before extracting any tar archive.
+if not hasattr(tarfile, "data_filter"):
+    os.environ["UV_PYTHON_INSTALL_DIR"] = str(root / "python")
+    subprocess.run([str(root / "uv"), "python", "install", "3.14.9"], check=True)
+    interpreter = subprocess.check_output(
+        [str(root / "uv"), "python", "find", "--managed-python", "3.14.9"], text=True
+    ).strip()
+    os.execv(interpreter, [interpreter, str(Path(__file__).resolve())])
+
 if not (root / "node-v24.22.1-linux-x64/bin/node").exists():
     archive = tarfile.open(
         fileobj=io.BytesIO(
