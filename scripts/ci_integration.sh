@@ -54,7 +54,9 @@ export WEATHER_CI_DATABASE_URL="postgresql+asyncpg://weather_migrator@/weather_c
 uv run --frozen python -m alembic upgrade head
 uv run --frozen python -m alembic check
 uv run --frozen python -m alembic current --check-heads
-echo "PostgreSQL timezone package: $(dpkg-query -W -f='${Version}' tzdata)"
+echo "Production PostgreSQL timezone package: $(cat /usr/share/doc/weather-ci/production-tzdata.txt)"
+sha256sum -c /usr/share/doc/weather-ci/production-denver.sha256
+echo "CI timezone package: $(dpkg-query -W -f='${Version}' tzdata)"
 uv run --frozen python - <<'PY'
 from weather.timemodel.site import IANA_VERSION, TZDATA_VERSION
 print(f'Python timezone package: tzdata {TZDATA_VERSION}, IANA {IANA_VERSION}')
