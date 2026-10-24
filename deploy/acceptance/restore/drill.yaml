@@ -79,6 +79,15 @@ spec:
     limits: {cpu: '2', memory: 4Gi}
   monitoring:
     enablePodMonitor: false
+  postgresql:
+    parameters:
+      log_error_verbosity: terse
+      log_parameter_max_length: '0'
+      log_parameter_max_length_on_error: '0'
+      log_statement: none
+      log_min_error_statement: panic
+      log_min_duration_statement: '-1'
+      log_duration: 'off'
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
