@@ -17,6 +17,7 @@ while (( $# )); do
       trap - EXIT
       uv run --frozen ruff check app scripts
       uv run --frozen python scripts/lint_repository.py
+      uv run --frozen python scripts/check_web_assets.py
       (cd web && pnpm install --frozen-lockfile --ignore-scripts && pnpm lint)
       ;;
     typecheck)
@@ -26,6 +27,7 @@ while (( $# )); do
     unit)
       uv run --frozen pytest -m 'not integration' \
         --cov=weather.timemodel --cov-report=term-missing --cov-fail-under=95
+      node --test scripts/retain-web-assets.test.mjs
       (cd web && pnpm test)
       ;;
     integration)
@@ -37,6 +39,10 @@ while (( $# )); do
         [[ "$result" == 5 ]] || exit "$result"
         echo 'No integration tests collected; service suites arrive in later issues'
       fi
+      ;;
+    browser)
+      [[ "${WEATHER_CI_IN_CLUSTER:-}" == "1" ]] || { echo 'Browser checks require fleet CI in-cluster' >&2; exit 2; }
+      bash scripts/web-browser.sh
       ;;
     supply-chain)
       gitleaks dir --redact --no-banner --config .gitleaks.toml .

@@ -5,3 +5,6 @@
 web/build
 artifacts
 docs/archive
+
+web/.test-media
+web/test-results
