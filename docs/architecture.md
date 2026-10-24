@@ -23,7 +23,8 @@ All application workloads run in namespace `weather` and are rendered from `depl
 | `pipeline-<camera>` ×3 | Deployment, replicas 1 | Streaming exposure accumulation → mezzanine, keogram columns, hourly candidates, preview; segment finalize/encode/validate/publish | NFS staging + previews | CNPG, Garage |
 | `scheduler` | Deployment, replicas 1 | Solar schedule, job queue/outbox, hour-slot finalization, cleanup, reconciliation, GC | – | CNPG, Garage |
 | `intel` | Deployment, replicas 1 | AI descriptions, embeddings, search documents | – | CNPG, Cortex (`cortex.vallery.net/v1`) |
-| `api` | Deployment ×2 | FastAPI public API, media origin (GET/HEAD/range), operator API | – | CNPG, Garage `weather-media` (read-only), Cortex embed (query) |
+| `api` | Deployment ×2 | FastAPI public API, media origin (GET/HEAD/range), operator API; mounts no NFS | – | CNPG, Garage `weather-media` (read-only), Cortex embed (query) |
+| `weather-preview` | Deployment, replicas 1 | Serves eligible delayed previews only (same image, shared origin code); the only public-path pod that mounts staging | NFS `previews/` (read-only) | CNPG |
 | `web` | Deployment ×2 | React Router SSR + client navigation | – | `api` only |
 | `weather-pg` | CNPG Cluster, 3 instances | Canonical store; Barman → B2 | `longhorn-v1-rwo` | B2 |
 | `migrate` | Argo Sync hook Job, wave 1 (DB clients at wave ≥2) | Alembic migrations (migrator role) | – | CNPG |
@@ -57,7 +58,7 @@ flowchart LR
 | `weather-pg` | Telemetry raw + normalized, catalog, jobs/outbox, events, editorial revisions, search documents/vectors | migrator, ingest, worker roles; api operator functions | api role (public views), worker roles | Barman → dedicated B2 bucket, PITR, `archive_timeout` 300 s |
 | Garage `weather-media` (garage-hdd) | Renditions, posters, keograms, sanitized stills, sidecars; content-addressed and immutable | pipeline, scheduler (GC) | api (read-only key) | custody `mirror` → B2 |
 | Garage `weather-originals` (garage-hdd) | One native JPEG per camera per local hour (5 years) | pipeline only | none online; custody | custody `mirror` → B2 |
-| NFS `weather-staging` | Sealed chunks, per-segment mezzanine, `previews/` | collectors (own dir), pipelines | pipelines; api (previews, read-only) | Disposable; never backed up |
+| NFS `weather-staging` | Sealed chunks, per-segment mezzanine, `previews/` | collectors (own dir), pipelines | pipelines; `weather-preview` (previews, read-only) | Disposable; never backed up |
 | Spool PVC | Undrained UDP datagrams | receiver | receiver | Drains to CNPG |
 
 R18 holds natively: browsers never see S3, the media origin serves only committed allowlisted asset IDs, and no web identity can read backups or originals. The PITR window is 30 days and object GC grace is 90 days. After a restore, a reconcile job marks missing objects `unavailable`.
