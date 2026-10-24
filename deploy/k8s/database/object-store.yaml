@@ -26,8 +26,9 @@ spec:
     wal:
       compression: gzip
       maxParallel: 2
-  # No retentionPolicy: the application identity cannot permanently delete.
-  # B2 cnpg/ lifecycle owns the 30-day PITR retention window.
+  # Omit retentionPolicy: v0.14.0 skips cloud pruning only for an empty policy.
+  # B2 writeFiles still permits hide-by-name; no deleteFiles blocks version erasure.
+  # The cnpg/ provider lifecycle alone schedules archive expiry (33d hide + 7d).
   instanceSidecarConfiguration:
     logLevel: info
     resources:

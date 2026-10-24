@@ -65,6 +65,7 @@ class DatabaseManifestTests(unittest.TestCase):
         self.assertEqual(parameters["log_min_duration_statement"], "-1")
         self.assertEqual(parameters["log_duration"], "off")
         self.assertNotIn("retentionPolicy", store["spec"])
+        self.assertNotIn("retentionPolicy", cluster["spec"].get("backup", {}))
         self.assertEqual(
             {r["name"] for r in store["spec"]["configuration"]["s3Credentials"].values()},
             {"weather-pg-backup-b2-writer"},
