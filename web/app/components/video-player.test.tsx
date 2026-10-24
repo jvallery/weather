@@ -24,10 +24,25 @@ test("native controls never autoplay, one player, quality change preserves the p
   expect(element.currentTime).toBe(12.5);
   expect(element.src).toContain("native"); expect(screen.getByRole("link", { name: /Download native/ }).getAttribute("href")).toContain("/native");
 });
-test.each(["partial", "unavailable", "expired"] as const)("%s exposes no player or poster", (state) => {
+test("a partial-coverage recording plays with a visible coverage label", () => {
+  const published = catalogSchema.parse(catalog).items[0];
+  const video = catalogSchema.parse({ ...catalog, items: [{ ...published, state: "partial", coverage: { ...published.coverage, fraction: 0.625 } }] }).items[0];
+  const view = render(<VideoPlayer video={video} />);
+  const element = view.container.querySelector("video")!;
+  expect(element.getAttribute("poster")).toBe(video.poster!.asset.url);
+  expect(screen.getByText(/^Partial coverage · 62\.5% of the source interval was captured/)).toBeTruthy();
+  expect(element.getAttribute("aria-describedby")).toContain("coverage-label");
+  expect(screen.getByRole("link", { name: /Download native/ })).toBeTruthy();
+});
+test("partial products must carry the playable media set", () => {
+  const published = catalogSchema.parse(catalog).items[0];
+  expect(catalogSchema.safeParse({ ...catalog, items: [{ ...published, state: "partial", poster: null }] }).success).toBe(false);
+});
+test.each(["unavailable", "expired"] as const)("%s exposes no player or poster", (state) => {
   const video = catalogSchema.parse(catalog).items[0];
   const view = render(<VideoPlayer video={{ ...video, state }} />);
   expect(view.container.querySelector("video, img")).toBeNull();
+  expect(screen.queryByText(/Partial coverage/)).toBeNull();
 });
 test("playing a recording pauses any other player", () => {
   const video = catalogSchema.parse(catalog).items[0]; const view = render(<><video data-testid="other" /><VideoPlayer video={video} /></>);

@@ -9,6 +9,7 @@ test("framework failures expose only bounded metrics, never URLs or stack diagno
   const request = new Request("https://weather.invalid/unrecognized?synthetic=private");
   handleError(new Error("Synthetic private diagnostic"), { request });
   handleError({ status: 404, statusText: "Not Found", internal: false, data: "Synthetic private path" }, { request });
+  handleError({ status: 503, statusText: "Service Unavailable", internal: false, data: "busy" }, { request });
   const abort = new AbortController(); abort.abort();
   handleError(new Error("Synthetic aborted request"), { request: new Request(request, { signal: abort.signal }) });
   expect((await counter.get()).values).toEqual([{ value: 1, labels: { reason: "render_error" } }]);

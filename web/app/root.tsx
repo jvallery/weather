@@ -1,9 +1,15 @@
 // SPDX-License-Identifier: MIT
 import { useRef, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Links, Meta, NavLink, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse, useLoaderData, useRouteError, type LoaderFunctionArgs } from "react-router";
+import { Links, Meta, NavLink, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse, useLoaderData, useRouteError, type HeadersFunction, type LoaderFunctionArgs } from "react-router";
 import styles from "./styles.css?url";
 export const links = () => [{ rel: "stylesheet", href: styles }];
+export const headers: HeadersFunction = ({ errorHeaders }) => {
+  const headers = new Headers();
+  const retry = errorHeaders?.get("Retry-After");
+  if (retry) headers.set("Retry-After", retry);
+  return headers;
+};
 export function loader({ request }: LoaderFunctionArgs) {
   return { nonce: request.headers.get("x-weather-csp-nonce") || "" };
 }
@@ -17,5 +23,6 @@ export default function Root() {
 export function ErrorBoundary() {
   const error = useRouteError();
   const status = isRouteErrorResponse(error) ? error.status : 503;
-  return <html lang="en"><head><meta charSet="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Weather unavailable</title><Links /></head><body><main className="shell"><h1>{status === 404 ? "Page not found" : status === 400 ? "Check the requested dates or filters" : "Weather is temporarily unavailable"}</h1><p>The requested page could not be loaded. No internal service details are included here.</p><a href="/">Return to Today</a></main></body></html>;
+  const busy = isRouteErrorResponse(error) && error.status === 503 && error.data === "busy";
+  return <html lang="en"><head><meta charSet="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>{busy ? "Weather is busy" : "Weather unavailable"}</title><Links /></head><body><main className="shell"><h1>{busy ? "Weather is busy" : status === 404 ? "Page not found" : status === 400 ? "Check the requested dates or filters" : "Weather is temporarily unavailable"}</h1><p>{busy ? "Too many pages are loading at once. Please retry in a few seconds." : "The requested page could not be loaded. No internal service details are included here."}</p><a href="/">Return to Today</a></main></body></html>;
 }

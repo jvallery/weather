@@ -24,15 +24,18 @@ test("concurrent requests retain their own result and receive no cookie forwardi
   expect(fetch.mock.calls.every((call) => Object.keys(call[1].headers).join() === "Accept")).toBe(true);
 });
 
-test("SSR API admission is bounded and releases capacity after completion", async () => {
+test("SSR API admission is bounded, reports overload as busy and releases capacity after completion", async () => {
   vi.stubEnv("API_ORIGIN", "http://api");
   const complete: Array<(response: Response) => void> = [];
   const fetch = vi.fn(() => new Promise<Response>((resolve) => complete.push(resolve)));
   vi.stubGlobal("fetch", fetch);
-  const work = Array.from({ length: 6 }, () => publicRead("/api/v1/weather/current", currentSchema, new AbortController().signal));
-  expect(fetch).toHaveBeenCalledTimes(4);
+  const work = Array.from({ length: 10 }, () => publicRead("/api/v1/weather/current", currentSchema, new AbortController().signal));
+  expect(fetch).toHaveBeenCalledTimes(8);
   for (const resolve of complete) resolve(new Response(JSON.stringify(fixture)));
-  expect((await Promise.all(work)).filter(Boolean)).toHaveLength(4);
+  const settled = await Promise.allSettled(work);
+  expect(settled.filter((result) => result.status === "fulfilled" && result.value)).toHaveLength(8);
+  // Overload is a distinct retryable state, never "API unavailable".
+  expect(settled.filter((result) => result.status === "rejected").map((result) => (result as PromiseRejectedResult).reason)).toEqual(Array(2).fill(expect.objectContaining({ data: "busy", init: expect.objectContaining({ status: 503 }) })));
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(fixture))));
   expect(await publicRead("/api/v1/weather/current", currentSchema, new AbortController().signal)).not.toBeNull();
 });

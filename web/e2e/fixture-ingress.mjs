@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
-/** CI-only, fixed local equivalent of the public Traefik service split. */
+/** CI-only, fixed local equivalent of the deploy/k8s/ingress.yaml service split: /api/ → api, everything else
+ * (including /assets/ and /fonts/) → web. Add /media/ and /downloads/ only when #20 routes them in production. */
 import { createServer, request } from "node:http";
 if (process.platform !== "linux" || process.env.WEATHER_CI_IN_CLUSTER !== "1") throw new Error("Fixture ingress requires approved in-cluster CI");
 createServer((incoming, outgoing) => {
-  const api = /^\/(?:api\/|media\/|downloads\/)/.test(incoming.url || "");
+  const api = (incoming.url || "").startsWith("/api/");
   const upstream = request({ hostname: "localhost", port: api ? 4174 : 4175, path: incoming.url, method: incoming.method, headers: incoming.headers, timeout: 10_000 }, (response) => {
     outgoing.writeHead(response.statusCode || 503, response.headers); response.pipe(outgoing);
   });

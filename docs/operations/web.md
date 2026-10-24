@@ -7,9 +7,14 @@ persistent browser cache for weather data.
 
 The read-only server consumes only the fixed `API_ORIGIN=http://api` Service on port 80. It forwards no
 cookies or authorization headers, follows no redirects, allows only the listed public API paths, and
-bounds each request to 6 seconds and 4 MiB. At most four upstream requests run at once. Dynamic document/data responses also have four slots and a 15-second absolute deadline,
-matching the initial 512 MiB web memory limit. Static files and process health do not consume those
-slots. Failures render
+bounds each request to 6 seconds and 4 MiB. At most eight upstream requests run at once: two per
+document, because Today reads current conditions and the metric registry concurrently. API-backed
+document/data responses have four slots and a 15-second absolute deadline, matching the initial
+512 MiB web memory limit. Static files, process health, the loader-less About and Search pages and the
+lazy route manifest (`/__manifest`) do not consume those slots. Overload is reported as "Weather is
+busy" with `503` and `Retry-After: 5`, never as "API unavailable": a document request gets that text, and
+a hydrated client navigation's `.data` request gets the body `busy`, which the root error boundary
+renders as the same busy state. Failures render
 sanitized unavailable states. The process has no database, camera, object-store or model credential.
 
 HTTP is on `PORT` (3000); metrics use a separate `METRICS_PORT` (9000). `/healthz` and `/readyz` identify
@@ -45,8 +50,9 @@ following a cursor or choosing another interval exposes older retained data. The
 selects solar-cycle dates; its separate bounded catalog clearly labels its filter/pagination scope.
 Day pages retain three cameras by two segments, with honest uncommissioned metadata states.
 
-Only published, validated video products receive a native player. Partial/unavailable/expired products
-retain text and coverage but expose no player. The player never autoplays; quality changes retain the
+Published and partial-coverage video products receive a native player; a partial product shows a
+visible coverage label. Unavailable/expired products retain text and coverage but expose no player
+or poster. The player never autoplays; quality changes retain the
 playhead and pause other players. Native downloads and the JSON sidecar stay on the same origin.
 
 Fonts are the exact approved Fontsource 5.3.0 IBM Plex Sans Variable and Mono members. Their original
@@ -62,54 +68,8 @@ browsers and system libraries, and qualified FFmpeg 9.0.2; `bootstrap-browser.sh
 readable `/opt/ms-playwright` closure and generates synthetic fixtures as UID1001. It never runs apt
 or installs system libraries at validation runtime. The browser check also scans every compiled client
 asset, including lazy routes, for private endpoints/configuration, fixture identifiers and source maps
-without printing asset contents. WX-20 is not complete until the three-engine responsive/axe/JS-off/rollout checks
+without printing asset contents. WX-20 is not complete until the three-engine responsive/axe/JS-off/chunk-reload checks
 and live pinned web image have passed. Source tests alone do not establish those outcomes.
-
-## Operator rolling-deployment qualification
-
-This is a separate ROOT-submitted `repo-validate` qualification after image build, never a required
-PR/event check that would wait for its own promotion. It uses the existing immutable repo-validate
-template and pinned Weather CI image, no additional identity/RBAC/image, and a stable operation ID.
-The source revision and both web image digests are fixed before the run. Browser execution is Linux
-in-cluster only. `scripts/web-rollout.sh` verifies the pinned baked browser closure and invokes
-`web/e2e/rollout.mjs`; it does not submit or promote anything.
-
-Command interface (run through `scripts/bootstrap-ci.sh` in the supported qualification):
-
-```
-WEATHER_CI_IN_CLUSTER=1 bash scripts/bootstrap-ci.sh bash scripts/web-rollout.sh \
-  --operation-id <stable-id> --source-revision <exact-source-sha> \
-  --old-image-digest sha256:<old-web-digest> \
-  --expected-image-digest sha256:<new-web-digest> \
-  --deadline-seconds 1200 --output-dir /workspace/weather-web-rollout \
-  --report /workspace/ci-test-report.json
-```
-
-The script opens the current public page in Chromium, WebKit and Firefox, retains those exact pages,
-and captures their route modules/assets with SHA-256 and byte counts. It emits a `READY` record and
-`/workspace/weather-web-rollout/ready.json`. Only then does ROOT promote. ROOT writes an atomic
-`promotion-intent.json` in that same directory, first with:
-
-```
-{"phase":"intent","operation_id":"<same-id>","intended_revision":"<promotion-sha>",
- "expected_image_digest":"sha256:<new-web-digest>"}
-```
-
-Once authoritative Argo/readiness/image checks pass, ROOT replaces it with the same identities and
-`phase:"promoted"`, `synced_revision`, `argo_sync:"Synced"`, `argo_health:"Healthy"`,
-`running_image_digest`, `web_pods:[{uid,ready:true,image_digest}, ...]` for both ready web Pods, and
-`origin_assets:[{path,sha256,bytes}, ...]`. The latter comes from reading the captured public asset
-paths inside an actual running web container. It prevents a CDN cache hit from masquerading as
-previous-build content retained in the new image. Never copy unrelated Kubernetes or Secret JSON.
-
-The qualification then cache-busts and hashes every captured old asset, dynamically imports an old
-route module under a new module-cache identity in every held tab, checks those tabs remain readable,
-and proves the promoted Today page hydrates and navigates to About without a document reload.
-The bounded result is `/workspace/ci-test-report.json` (under 60 KiB); retain it from Workflow output
-and collect before the existing 60-second PodGC. The report distinguishes ROOT's promotion readback
-from browser observations. A timeout, changed intended revision, missing origin asset, mismatched
-running digest, browser error or failed late import fails the run; observation timeout never justifies
-recreating a still-live qualification handle.
 
 Metrics `weather_web_api_requests_total{route,result}`, `weather_web_api_inflight` and
 `weather_web_ssr_inflight` distinguish API transport/shape/body-budget/admission failures from an HTTP
@@ -124,7 +84,11 @@ one predecessor. Subsequent builds read that inventory, verify every predecessor
 filename collisions with different content. The closure is limited to 512 files / 64 MiB total and
 8 MiB per file; older ancestors do not accumulate. The original scaffold image has one explicit
 legacy-inventory exception; remove that flag when repinning to the first inventoried web image.
-The rolling qualification checks immutable public cache headers as well as bytes and origin custody.
+A held tab that requests a chunk the new build no longer has reloads exactly once
+(`app/lib/chunk-reload.ts`, guarded by a `sessionStorage` timestamp); a second failure within 60 seconds
+surfaces instead of looping, and a tab still open at a later promotion gets one fresh recovery.
+The e2e fixture ingress mirrors `deploy/k8s/ingress.yaml` routing: `/api/` to api, everything else to
+web. `/media/` and `/downloads/` are added there only when #20 routes them in production.
 
 `ci.sh browser` runs the single-worker fixture matrix in all three engines, then writes the existing
 `/workspace/ci-test-report.json` output parameter. It requires every configured case to pass without

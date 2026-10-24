@@ -1,10 +1,16 @@
 // SPDX-License-Identifier: MIT
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+// Production routes only /api/ to the api (deploy/k8s/ingress.yaml); /media/ and /downloads/ arrive with #20.
+// Until then the page under test receives the synthetic media directly from the fixture API.
+async function syntheticMedia(page: Page) {
+  await page.route(/^http:\/\/localhost:4173\/(?:media|downloads)\//, async (route) => route.fulfill({ response: await route.fetch({ url: `http://localhost:4174${new URL(route.request().url()).pathname}` }) }));
+}
 const paths = ["/", "/about/", "/archive/?month=2026-10", "/archive/2026/10/", "/day/2026-10-31/", "/timelapses/skycam_east/2026-10-31/daytime/", "/weather/history/", "/search/"];
 test.beforeEach(async ({ request, page }) => {
+  await syntheticMedia(page);
   await page.addInitScript(() => { const violations: string[] = []; (window as Window & { cspViolations?: string[] }).cspViolations = violations; document.addEventListener("securitypolicyviolation", (event) => violations.push(event.effectiveDirective)); }); await request.post("http://localhost:4174/__control", { data: {} }); });
 for (const width of [320, 768, 1440]) for (const path of paths) {
   test(`${path} · ${width}px · WCAG 2.2 AA`, async ({ page, browserName }) => {
@@ -85,7 +91,13 @@ test("safe interpretation text, lifecycle states and quality preservation", asyn
   await page.getByLabel("Playback quality").selectOption("mobile");
   await expect(video).toHaveAttribute("src", /mobile$/);
   await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime)).toBeCloseTo(12, 0);
-  for (const state of ["partial", "unavailable", "expired"]) {
+  // A partial-coverage recording stays playable and says so (C6).
+  await request.post("http://localhost:4174/__control", { data: { productState: "partial" } });
+  await page.reload(); await expect(page.locator("video")).toHaveCount(1);
+  await expect(page.getByText(/^Partial coverage · 95\.0% of the source interval was captured/)).toBeVisible();
+  await expect(page.getByText(/^Partial/).first()).toBeVisible();
+  await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.readyState)).toBeGreaterThanOrEqual(1);
+  for (const state of ["unavailable", "expired"]) {
     await request.post("http://localhost:4174/__control", { data: { productState: state } });
     await page.reload(); await expect(page.locator("video, main img")).toHaveCount(0);
     await expect(page.getByText(new RegExp(`^${state[0].toUpperCase() + state.slice(1)}`)).first()).toBeVisible();
@@ -138,4 +150,39 @@ test("degraded SSR is observable and public errors stay sanitized", async ({ pag
     expect(response.headers()["x-frame-options"]).toBe("DENY");
     expect(await response.text()).not.toMatch(/http:\/\/api|localhost:4174|API_ORIGIN|node_modules|Error:|\bat [A-Za-z].*\.js:/);
   }
+});
+test("SSR admission: loader-less routes and the route manifest stay available while API-backed slots are full", async ({ page, request }) => {
+  // Hydrate first: the later navigation is a client-side single-fetch .data request.
+  await page.goto("/about/");
+  const version = await page.evaluate(() => (window as Window & { __reactRouterManifest?: { version: string } }).__reactRouterManifest?.version);
+  expect(version).toBeTruthy();
+  await request.post("http://localhost:4174/__control", { data: { delayMs: 5000 } });
+  const held = Array.from({ length: 4 }, () => request.get("/"));
+  await expect.poll(async () => (await request.get("http://localhost:9175/metrics")).text()).toMatch(/^weather_web_ssr_inflight 4$/m);
+  const busy = await request.get("/archive/");
+  expect(busy.status()).toBe(503); expect(busy.headers()["retry-after"]).toBe("5"); expect(await busy.text()).toMatch(/busy/i);
+  for (const path of ["/about/", "/search/"]) expect((await request.get(path)).status()).toBe(200);
+  // The lazy route manifest request exactly as the fog-of-war client sends it.
+  const manifest = await request.get(`/__manifest?paths=${encodeURIComponent("/search/")}&version=${encodeURIComponent(version || "")}`);
+  expect(manifest.status()).toBe(200);
+  expect(await manifest.json()).toMatchObject({ "routes/not-ready": { path: "search" } });
+  await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Archive" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Weather is busy" })).toBeVisible();
+  await expect(page.getByText(/Please retry in a few seconds/)).toBeVisible();
+  for (const response of await Promise.all(held)) expect(response.status()).toBe(200);
+});
+test("a failed lazy chunk reloads the page exactly once", async ({ page, request }) => {
+  // Every module the document names loads; the lazily imported chart chunk is gone, as after a rollout.
+  const documentAssets = new Set([...(await (await request.get("/weather/history/")).text()).matchAll(/\/assets\/[^"'\s]+\.js/g)].map((match) => match[0]));
+  let aborted = 0, loads = 0;
+  page.on("load", () => { loads += 1; });
+  await page.route(/\/assets\/[^/]+\.js$/, (route) => {
+    if (documentAssets.has(new URL(route.request().url()).pathname)) return route.continue();
+    aborted += 1; return route.abort();
+  });
+  await page.goto("/weather/history/");
+  await expect.poll(() => loads).toBe(2);
+  await page.waitForTimeout(3000);
+  expect(loads).toBe(2); expect(aborted).toBeGreaterThanOrEqual(2);
+  expect(Number(await page.evaluate(() => sessionStorage.getItem("weather:chunk-reload")))).toBeGreaterThan(0);
 });
