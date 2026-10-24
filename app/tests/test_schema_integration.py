@@ -327,6 +327,21 @@ def test_still_relationships_active_uniqueness_and_retention() -> None:
                         text(STILL_INSERT), {**graph, "revision": 1}
                     )
                 ).scalar_one()
+                retry = STILL_INSERT.replace(
+                    "RETURNING id", "ON CONFLICT DO NOTHING RETURNING id"
+                )
+                assert (
+                    await connection.execute(text(retry), {**graph, "revision": 1})
+                ).scalar_one_or_none() is None
+                assert (
+                    await connection.execute(
+                        text(
+                            "SELECT id FROM weather.archival_still "
+                            "WHERE camera_id='frontyard_1' AND hour_slot_id=:slot AND state='active'"
+                        ),
+                        {"slot": graph["slot"]},
+                    )
+                ).scalar_one() == first
                 await rejects(
                     connection, STILL_INSERT, {**graph, "revision": 2}, "23505"
                 )
