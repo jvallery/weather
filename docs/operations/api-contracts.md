@@ -168,3 +168,47 @@ pressure endpoint evidence remain attached to the internal computation for later
 split across a support boundary carries an explicit estimate reason. Conversion to JSON numbers
 happens only after exact engine arithmetic; unsupported values remain reasoned nulls. These pure
 calculations do not establish database snapshot membership or activate the revision worker.
+
+
+## Complete-window support assembly
+
+`weather.api.support_assembly` is a pure boundary between `read_evidence_window` and the shared
+aggregate engine/public projection. It never queries SQL, reads an observation page, changes a
+worker, or installs a runtime handler. Its `SupportPolicy` has an explicit mode and version:
+
+- `forward_hold` requires a commissioned per-metric cap, with whole-microsecond precision. Only
+  instantaneous samples can qualify a forward hold. Every eligible source-time sample in its
+  device/family/metric stream, including invalid/null samples, terminates the preceding hold.
+- `reported_interval` requires approved qualified policy identities and an explicit maximum report
+  span for the complete reader. The evidence must already carry a qualified interval ending at
+  source time with exactly the reported duration. Unknown/unqualified support remains unsupported;
+  packet cadence, receipt gaps and `report_interval` alone never create it.
+- Precipitation and lightning counts require reported-interval mode and one explicit family
+  authority. Current unqualified rain policy tags cannot be promoted by configuration. Events never
+  silently substitute for interval counts. Existing overlapping-amount reconciliation errors remain
+  errors; no independent reports are silently summed or prorated as strike fractions.
+
+Call `required_read_spans(policies)` and pass both returned bounds to the complete-window reader.
+Read the full requested interval, including its bookends and following reports, before assembling
+any output bucket. Never form `EvidenceWindow` from a public raw page, its cursor or its limit. The
+reader fails oversized full inputs rather than returning a partial series. Source-time-ineligible
+rows remain in revision provenance but do not create or terminate support. All eligible ties remain;
+competing values form gaps in the shared engine, and an invalid/null tie cannot leave another member
+as an implicit winner. Equal observations do not double their covered duration. Holds are per stream;
+a newer sample from another device/family cannot silently truncate or select its competitor.
+
+`assemble(engine_interval, evidence_window, policies)` returns immutable supports, policies and
+revisions. `compute_window(assembly, metric, statistic, ...)` uses the existing aggregate adapter,
+retains exact Decimal/Fraction results for downstream ranking, and supplies the commissioned
+lightning authority. Pressure trend still requires explicit endpoint width/minimum coverage.
+Boundary-straddling qualified rain is conserved and labelled as a uniform-intensity estimate;
+lightning remains an integer contained subtotal with separate boundary uncertainty.
+
+The evidence revision binds the UTC window, membership watermark, every canonical source identity,
+full safe quality fingerprint, exact value, source/receipt times, support metadata and every effective
+policy. It is order-independent and collapses only byte-equivalent repeated evidence identities;
+differing inputs under one evidence identity fail closed. A quality correction changes this revision
+even when its publication watermark and numeric output do not change. Assembly and registry recipes
+are versioned separately. Formula/support-policy changes therefore invalidate aggregate identities,
+while private metadata is never emitted. This does not implement ledger/outbox recomputation or prove
+PostgreSQL snapshot consistency; those remain the root integration/qualification responsibility.
