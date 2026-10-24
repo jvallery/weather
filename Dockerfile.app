@@ -30,6 +30,8 @@ COPY --from=dependencies /opt/python /opt/python
 COPY --from=ffmpeg /opt/ffmpeg /opt/ffmpeg
 WORKDIR /app
 COPY app/weather app/weather
+COPY app/migrations app/migrations
+COPY alembic.ini ./
 COPY scripts/weather /usr/local/bin/weather
 RUN chmod 0755 /usr/local/bin/weather
 COPY LICENSE THIRD_PARTY_NOTICES.md ./
