@@ -24,6 +24,19 @@ State as of 2026-10-24: namespace guardrails are deployed at `bed09184608c947dc0
 
 Adjacent items this repo consumes but does not own: Tempest hub (homeassistant), cameras (sentinel), Cortex routes (cortex-ai-compute), `ak-forwardauth` (network-infra), vallery.net homepage (VerdifyConsultancy/wordpress).
 
+## Current/publication database source (WX-13)
+
+| Item | Source | State |
+|---|---|---|
+| `metric_binding`, `metric_current` | Immutable `db/schema_v3.py`, migration `0003_current_publication` | Source preparation; pointers/revisions only, safe values join v2 qualification |
+| `telemetry_publication_clock`, `telemetry_publication` | Same migration and `db/ddl_v3.py` | Transactional export membership; private application writes denied |
+| Safe current/publication views, scalar watermark and clock-first telemetry triggers | `public_api.metric_current`, `public_api.telemetry_publications`, `public_api.telemetry_snapshot_watermark()` | PostgreSQL integration unrun; no workload enabled |
+
+These are application-owned database objects inside Weather's existing namespace
+ownership, not new infrastructure or access identities. Activation and remaining
+model/test integration belong to #14 after #9/#12; see
+[current/publication operations](docs/operations/current-publication.md).
+
 ## Snapshot collector source (WX-10)
 
 `app/weather/capture` owns the isolated channel-1 snapshot client, absolute timer,
