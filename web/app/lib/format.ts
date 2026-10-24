@@ -18,11 +18,13 @@ const preferredUS: Record<string, string> = { degC: "degF", "m/s": "mph", mm: "i
 export function conversionAvailable(unit: string, units: Units, definition?: MetricDefinition): boolean {
   return units !== "us" || !preferredUS[unit] || (definition?.canonical_unit === unit && definition.conversions.some((recipe) => recipe.unit === preferredUS[unit]));
 }
-export function metricValue(value: number | null, unit: string, units: Units, definition?: MetricDefinition): string {
+/** A difference between two values converts by scale only (a 1 °C change is 1.8 °F, not 33.8 °F). */
+export function metricValue(value: number | null, unit: string, units: Units, definition?: MetricDefinition, difference = false): string {
   if (value === null) return "—";
   const target = units === "us" ? preferredUS[unit] || unit : unit;
   const recipe = definition?.canonical_unit === unit ? definition.conversions.find((item) => item.unit === target) : undefined;
-  const converted = recipe ? value * recipe.scale_numerator / recipe.scale_denominator + recipe.offset_numerator / recipe.offset_denominator : value;
+  const offset = recipe && !difference ? recipe.offset_numerator / recipe.offset_denominator : 0;
+  const converted = recipe ? value * recipe.scale_numerator / recipe.scale_denominator + offset : value;
   const selected = recipe?.unit || unit;
   const label = ({ degC: "°C", degF: "°F", deg: "°", "W/m2": "W/m²", "1": "", index: "" } as Record<string, string>)[selected] ?? selected;
   return `${new Intl.NumberFormat("en-US", { maximumFractionDigits: ["mm", "hPa"].includes(unit) ? 2 : 1 }).format(converted)}${label && selected !== "%" ? " " : ""}${label}`;

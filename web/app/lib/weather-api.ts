@@ -18,6 +18,14 @@ export type MetricRegistry = Schemas["MetricRegistry"];
 export type Aggregates = Schemas["Aggregates"];
 export type Aggregate = Schemas["Aggregate"];
 export type Problem = Schemas["Problem"];
+export type Almanac = Schemas["Almanac"];
+export type AlmanacItem = Almanac["items"][number];
+export type RecordItem = Schemas["RecordItem"];
+export type RainDayItem = Schemas["RainDayItem"];
+export type WindRoseBinItem = Schemas["WindRoseBinItem"];
+export type AstronomyItem = Schemas["AstronomyItem"];
+export type ComparisonItem = Schemas["ComparisonItem"];
+export type ComparisonWindow = Schemas["ComparisonWindow"];
 
 const text = z.string();
 // A new server enum value degrades that one field instead of rejecting the whole response.
@@ -51,13 +59,48 @@ const aggregate = z.object({
   rose: z.array(rose).nullable().default(null),
 });
 const aggregates = z.object({ generated_at: text, start: text, end: text, resolution: text, items: z.array(aggregate) });
+// Almanac (#42): a reason code the UI does not know yet is dropped rather than failing the page.
+type AlmanacReason = Schemas["RecordItem"]["missing_reasons"][number];
+const REASONS = ["no_observations", "partial_coverage", "below_record_coverage", "before_history", "inadequate_coverage", "site_not_configured", "solar_events_unavailable", "no_moonrise", "no_moonset"] as const satisfies readonly AlmanacReason[];
+const reasons = z.array(z.string()).transform((values) => values.filter((value): value is AlmanacReason => (REASONS as readonly string[]).includes(value)));
+const interval = z.object({ start: text, end: text });
+const instant = text.nullable();
+const day = { local_date: text, start: text, end: text };
+const observed = { value: number, coverage, evidence_count: z.number(), evidence_hash: text.nullable().default(null), missing_reasons: reasons };
+const recordItem = z.object({ product: z.literal("record"), ...day, ...observed, ranking_eligible: z.boolean(), rank: number });
+const rainDayItem = z.object({ product: z.literal("rain_day"), ...day, ...observed, complete: z.boolean() });
+const roseItem = z.object({
+  product: z.literal("wind_rose_bin"), category: lenient(["directional", "calm", "variable", "missing"], "missing"),
+  sector_start: number, sector_end: number, speed_min: number, speed_max: number, duration_seconds: z.number(), denominator_seconds: z.number(),
+});
+const astronomyItem = z.object({
+  product: z.literal("astronomy"), ...day, civil_dawn: instant, sunrise: instant, solar_noon: instant, sunset: instant, civil_dusk: instant,
+  day_length_seconds: number, moon_phase: number,
+  moon_phase_name: z.enum(["new", "waxing_crescent", "first_quarter", "waxing_gibbous", "full", "waning_gibbous", "last_quarter", "waning_crescent"]).nullable().catch(null),
+  moonrise: instant, moonset: instant, missing_reasons: reasons,
+});
+const comparisonWindow = z.object({
+  start: text, end: text, duration_seconds: z.number(), ...observed, adequate: z.boolean(), missing_days: z.array(text), partial_days: z.array(text),
+});
+const comparisonItem = z.object({ product: z.literal("comparison"), first: comparisonWindow, second: comparisonWindow, difference: number, reason: z.enum(REASONS).nullable().catch(null) });
+// Items of an unknown future product are dropped, not fatal.
+const almanacItem = z.union([recordItem, rainDayItem, roseItem, astronomyItem, comparisonItem]).nullable().catch(null);
+const almanac = z.object({
+  generated_at: text, product: z.enum(["record", "rain_day", "wind_rose_bin", "astronomy", "comparison"]), interval,
+  comparison_interval: interval.nullable().default(null), history_interval: interval.nullable(), timezone: z.literal("America/Denver"),
+  label: text, derived: z.boolean(), metric: text.nullable(), statistic: text.nullable(), unit: text.nullable(),
+  formula_revision: text, library_revision: text, evidence_count: z.number(), evidence_hash: text.nullable().default(null),
+  coverage: coverage.nullable().default(null), missing_reasons: reasons, next_cursor: text.nullable().default(null),
+  items: z.array(almanacItem).transform((items) => items.filter((item) => item !== null)),
+});
 
 // The parsed shapes must stay assignable to the generated types; tsc fails on drift.
 const checks: [
   (value: z.infer<typeof current>) => Current,
   (value: z.infer<typeof registry>) => MetricRegistry,
   (value: z.infer<typeof aggregates>) => Aggregates,
-] = [(value) => value, (value) => value, (value) => value];
+  (value: z.infer<typeof almanac>) => Almanac,
+] = [(value) => value, (value) => value, (value) => value, (value) => value];
 void checks;
 
 export type Parser<T> = (value: unknown) => T | null;
@@ -67,3 +110,4 @@ export function parser<T>(schema: z.ZodType<T>): Parser<T> {
 export const parseCurrent: Parser<Current> = parser(current);
 export const parseRegistry: Parser<MetricRegistry> = parser(registry);
 export const parseAggregates: Parser<Aggregates> = parser(aggregates);
+export const parseAlmanac: Parser<Almanac> = parser(almanac);

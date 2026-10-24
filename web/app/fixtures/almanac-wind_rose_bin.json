@@ -1,0 +1,864 @@
+{
+ "generated_at": "2026-10-31T18:00:00Z",
+ "product": "wind_rose_bin",
+ "interval": {
+  "start": "2026-10-01T06:00:00Z",
+  "end": "2026-11-01T06:00:00Z"
+ },
+ "comparison_interval": null,
+ "history_interval": {
+  "start": "2026-10-03T15:12:00Z",
+  "end": "2026-10-31T18:00:00Z"
+ },
+ "timezone": "America/Denver",
+ "label": "Duration-weighted wind rose; calm, variable and missing time share the whole-interval denominator",
+ "derived": false,
+ "metric": "wind_direction",
+ "statistic": "rose",
+ "unit": "m/s",
+ "formula_revision": "almanac-v1",
+ "library_revision": "astral 3.2; tzdata 2026.5 (IANA 2026e)",
+ "evidence_count": 30000,
+ "evidence_hash": "58c06a86683e98b2908881798daa0e431efacd564d16608ed3996d4718d69669",
+ "coverage": {
+  "fraction": 0.709379,
+  "support_seconds": 1900000.0,
+  "expected_seconds": 2678400.0
+ },
+ "missing_reasons": [
+  "partial_coverage"
+ ],
+ "items": [
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 348.75,
+   "sector_end": 11.25,
+   "speed_min": 0.5,
+   "speed_max": 2.0,
+   "duration_seconds": 120000.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 348.75,
+   "sector_end": 11.25,
+   "speed_min": 2.0,
+   "speed_max": 5.0,
+   "duration_seconds": 300000.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 348.75,
+   "sector_end": 11.25,
+   "speed_min": 5.0,
+   "speed_max": 10.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 348.75,
+   "sector_end": 11.25,
+   "speed_min": 10.0,
+   "speed_max": 20.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 348.75,
+   "sector_end": 11.25,
+   "speed_min": 20.0,
+   "speed_max": null,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 11.25,
+   "sector_end": 33.75,
+   "speed_min": 0.5,
+   "speed_max": 2.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 11.25,
+   "sector_end": 33.75,
+   "speed_min": 2.0,
+   "speed_max": 5.0,
+   "duration_seconds": 90000.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 11.25,
+   "sector_end": 33.75,
+   "speed_min": 5.0,
+   "speed_max": 10.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 11.25,
+   "sector_end": 33.75,
+   "speed_min": 10.0,
+   "speed_max": 20.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 11.25,
+   "sector_end": 33.75,
+   "speed_min": 20.0,
+   "speed_max": null,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 33.75,
+   "sector_end": 56.25,
+   "speed_min": 0.5,
+   "speed_max": 2.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 33.75,
+   "sector_end": 56.25,
+   "speed_min": 2.0,
+   "speed_max": 5.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 33.75,
+   "sector_end": 56.25,
+   "speed_min": 5.0,
+   "speed_max": 10.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 33.75,
+   "sector_end": 56.25,
+   "speed_min": 10.0,
+   "speed_max": 20.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 33.75,
+   "sector_end": 56.25,
+   "speed_min": 20.0,
+   "speed_max": null,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 56.25,
+   "sector_end": 78.75,
+   "speed_min": 0.5,
+   "speed_max": 2.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 56.25,
+   "sector_end": 78.75,
+   "speed_min": 2.0,
+   "speed_max": 5.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 56.25,
+   "sector_end": 78.75,
+   "speed_min": 5.0,
+   "speed_max": 10.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 56.25,
+   "sector_end": 78.75,
+   "speed_min": 10.0,
+   "speed_max": 20.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 56.25,
+   "sector_end": 78.75,
+   "speed_min": 20.0,
+   "speed_max": null,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 78.75,
+   "sector_end": 101.25,
+   "speed_min": 0.5,
+   "speed_max": 2.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 78.75,
+   "sector_end": 101.25,
+   "speed_min": 2.0,
+   "speed_max": 5.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 78.75,
+   "sector_end": 101.25,
+   "speed_min": 5.0,
+   "speed_max": 10.0,
+   "duration_seconds": 60000.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 78.75,
+   "sector_end": 101.25,
+   "speed_min": 10.0,
+   "speed_max": 20.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 78.75,
+   "sector_end": 101.25,
+   "speed_min": 20.0,
+   "speed_max": null,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 101.25,
+   "sector_end": 123.75,
+   "speed_min": 0.5,
+   "speed_max": 2.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 101.25,
+   "sector_end": 123.75,
+   "speed_min": 2.0,
+   "speed_max": 5.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 101.25,
+   "sector_end": 123.75,
+   "speed_min": 5.0,
+   "speed_max": 10.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 101.25,
+   "sector_end": 123.75,
+   "speed_min": 10.0,
+   "speed_max": 20.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 101.25,
+   "sector_end": 123.75,
+   "speed_min": 20.0,
+   "speed_max": null,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 123.75,
+   "sector_end": 146.25,
+   "speed_min": 0.5,
+   "speed_max": 2.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 123.75,
+   "sector_end": 146.25,
+   "speed_min": 2.0,
+   "speed_max": 5.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 123.75,
+   "sector_end": 146.25,
+   "speed_min": 5.0,
+   "speed_max": 10.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 123.75,
+   "sector_end": 146.25,
+   "speed_min": 10.0,
+   "speed_max": 20.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 123.75,
+   "sector_end": 146.25,
+   "speed_min": 20.0,
+   "speed_max": null,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 146.25,
+   "sector_end": 168.75,
+   "speed_min": 0.5,
+   "speed_max": 2.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 146.25,
+   "sector_end": 168.75,
+   "speed_min": 2.0,
+   "speed_max": 5.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 146.25,
+   "sector_end": 168.75,
+   "speed_min": 5.0,
+   "speed_max": 10.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 146.25,
+   "sector_end": 168.75,
+   "speed_min": 10.0,
+   "speed_max": 20.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 146.25,
+   "sector_end": 168.75,
+   "speed_min": 20.0,
+   "speed_max": null,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 168.75,
+   "sector_end": 191.25,
+   "speed_min": 0.5,
+   "speed_max": 2.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 168.75,
+   "sector_end": 191.25,
+   "speed_min": 2.0,
+   "speed_max": 5.0,
+   "duration_seconds": 150000.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 168.75,
+   "sector_end": 191.25,
+   "speed_min": 5.0,
+   "speed_max": 10.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 168.75,
+   "sector_end": 191.25,
+   "speed_min": 10.0,
+   "speed_max": 20.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 168.75,
+   "sector_end": 191.25,
+   "speed_min": 20.0,
+   "speed_max": null,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 191.25,
+   "sector_end": 213.75,
+   "speed_min": 0.5,
+   "speed_max": 2.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 191.25,
+   "sector_end": 213.75,
+   "speed_min": 2.0,
+   "speed_max": 5.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 191.25,
+   "sector_end": 213.75,
+   "speed_min": 5.0,
+   "speed_max": 10.0,
+   "duration_seconds": 240000.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 191.25,
+   "sector_end": 213.75,
+   "speed_min": 10.0,
+   "speed_max": 20.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 191.25,
+   "sector_end": 213.75,
+   "speed_min": 20.0,
+   "speed_max": null,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 213.75,
+   "sector_end": 236.25,
+   "speed_min": 0.5,
+   "speed_max": 2.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 213.75,
+   "sector_end": 236.25,
+   "speed_min": 2.0,
+   "speed_max": 5.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 213.75,
+   "sector_end": 236.25,
+   "speed_min": 5.0,
+   "speed_max": 10.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 213.75,
+   "sector_end": 236.25,
+   "speed_min": 10.0,
+   "speed_max": 20.0,
+   "duration_seconds": 180000.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 213.75,
+   "sector_end": 236.25,
+   "speed_min": 20.0,
+   "speed_max": null,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 236.25,
+   "sector_end": 258.75,
+   "speed_min": 0.5,
+   "speed_max": 2.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 236.25,
+   "sector_end": 258.75,
+   "speed_min": 2.0,
+   "speed_max": 5.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 236.25,
+   "sector_end": 258.75,
+   "speed_min": 5.0,
+   "speed_max": 10.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 236.25,
+   "sector_end": 258.75,
+   "speed_min": 10.0,
+   "speed_max": 20.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 236.25,
+   "sector_end": 258.75,
+   "speed_min": 20.0,
+   "speed_max": null,
+   "duration_seconds": 30000.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 258.75,
+   "sector_end": 281.25,
+   "speed_min": 0.5,
+   "speed_max": 2.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 258.75,
+   "sector_end": 281.25,
+   "speed_min": 2.0,
+   "speed_max": 5.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 258.75,
+   "sector_end": 281.25,
+   "speed_min": 5.0,
+   "speed_max": 10.0,
+   "duration_seconds": 210000.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 258.75,
+   "sector_end": 281.25,
+   "speed_min": 10.0,
+   "speed_max": 20.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 258.75,
+   "sector_end": 281.25,
+   "speed_min": 20.0,
+   "speed_max": null,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 281.25,
+   "sector_end": 303.75,
+   "speed_min": 0.5,
+   "speed_max": 2.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 281.25,
+   "sector_end": 303.75,
+   "speed_min": 2.0,
+   "speed_max": 5.0,
+   "duration_seconds": 120000.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 281.25,
+   "sector_end": 303.75,
+   "speed_min": 5.0,
+   "speed_max": 10.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 281.25,
+   "sector_end": 303.75,
+   "speed_min": 10.0,
+   "speed_max": 20.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 281.25,
+   "sector_end": 303.75,
+   "speed_min": 20.0,
+   "speed_max": null,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 303.75,
+   "sector_end": 326.25,
+   "speed_min": 0.5,
+   "speed_max": 2.0,
+   "duration_seconds": 100000.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 303.75,
+   "sector_end": 326.25,
+   "speed_min": 2.0,
+   "speed_max": 5.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 303.75,
+   "sector_end": 326.25,
+   "speed_min": 5.0,
+   "speed_max": 10.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 303.75,
+   "sector_end": 326.25,
+   "speed_min": 10.0,
+   "speed_max": 20.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 303.75,
+   "sector_end": 326.25,
+   "speed_min": 20.0,
+   "speed_max": null,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 326.25,
+   "sector_end": 348.75,
+   "speed_min": 0.5,
+   "speed_max": 2.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 326.25,
+   "sector_end": 348.75,
+   "speed_min": 2.0,
+   "speed_max": 5.0,
+   "duration_seconds": 100000.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 326.25,
+   "sector_end": 348.75,
+   "speed_min": 5.0,
+   "speed_max": 10.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 326.25,
+   "sector_end": 348.75,
+   "speed_min": 10.0,
+   "speed_max": 20.0,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "directional",
+   "sector_start": 326.25,
+   "sector_end": 348.75,
+   "speed_min": 20.0,
+   "speed_max": null,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "calm",
+   "sector_start": null,
+   "sector_end": null,
+   "speed_min": null,
+   "speed_max": null,
+   "duration_seconds": 200000.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "variable",
+   "sector_start": null,
+   "sector_end": null,
+   "speed_min": null,
+   "speed_max": null,
+   "duration_seconds": 0.0,
+   "denominator_seconds": 2678400.0
+  },
+  {
+   "product": "wind_rose_bin",
+   "category": "missing",
+   "sector_start": null,
+   "sector_end": null,
+   "speed_min": null,
+   "speed_max": null,
+   "duration_seconds": 778400.0,
+   "denominator_seconds": 2678400.0
+  }
+ ],
+ "next_cursor": null
+}

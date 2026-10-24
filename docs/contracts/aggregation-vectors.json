@@ -84,6 +84,42 @@
       ]
     },
     {
+      "name": "wind rose edges: sector and speed boundaries, 359 vs 1, calm without direction, missing direction, a duplicate row adds no time",
+      "rows": [
+        {"family": "obs_st", "at": "2026-07-01T00:01:00Z", "values": {"wind_avg": 0.5, "wind_direction": 348.75}},
+        {"family": "obs_st", "at": "2026-07-01T00:02:00Z", "values": {"wind_avg": 2, "wind_direction": 11.25}},
+        {"family": "obs_st", "at": "2026-07-01T00:02:00Z", "row_idx": 1, "values": {"wind_avg": 2, "wind_direction": 11.25}},
+        {"family": "obs_st", "at": "2026-07-01T00:03:00Z", "values": {"wind_avg": 20, "wind_direction": 359}},
+        {"family": "obs_st", "at": "2026-07-01T00:04:00Z", "values": {"wind_avg": 19.99, "wind_direction": 1}},
+        {"family": "obs_st", "at": "2026-07-01T00:05:00Z", "values": {"wind_avg": 0.49}},
+        {"family": "obs_st", "at": "2026-07-01T00:06:00Z", "values": {"wind_avg": 5}}
+      ],
+      "query": {"start": "2026-07-01T00:00:00Z", "end": "2026-07-01T00:10:00Z", "resolution": "600", "metrics": ["wind_direction"], "statistics": ["rose"]},
+      "expected": [
+        {"start": "2026-07-01T00:00:00Z", "statistic": "rose", "support_seconds": 300, "rose": {"directional:348.75:0.5": 60, "directional:11.25:2.0": 60, "directional:348.75:20.0": 60, "directional:348.75:10.0": 60, "calm": 60, "variable": 0, "missing": 300}}
+      ]
+    },
+    {
+      "name": "wind rose on the 23-hour spring-forward day: missing time fills the real denominator",
+      "rows": [
+        {"family": "obs_st", "at": "2026-03-08T12:00:00Z", "values": {"wind_avg": 3, "wind_direction": 180}}
+      ],
+      "query": {"start": "2026-03-08T07:00:00Z", "end": "2026-03-09T06:00:00Z", "resolution": "day", "metrics": ["wind_direction"], "statistics": ["rose"]},
+      "expected": [
+        {"start": "2026-03-08T07:00:00Z", "end": "2026-03-09T06:00:00Z", "statistic": "rose", "rose": {"directional:168.75:2.0": 60, "calm": 0, "variable": 0, "missing": 82740}}
+      ]
+    },
+    {
+      "name": "wind rose on the 25-hour fall-back day",
+      "rows": [
+        {"family": "obs_st", "at": "2026-11-01T08:30:00Z", "values": {"wind_avg": 0.2, "wind_direction": 90}}
+      ],
+      "query": {"start": "2026-11-01T06:00:00Z", "end": "2026-11-02T07:00:00Z", "resolution": "day", "metrics": ["wind_direction"], "statistics": ["rose"]},
+      "expected": [
+        {"start": "2026-11-01T06:00:00Z", "end": "2026-11-02T07:00:00Z", "statistic": "rose", "rose": {"calm": 60, "variable": 0, "missing": 89940}}
+      ]
+    },
+    {
       "name": "opposed winds are variable, never an arbitrary angle",
       "rows": [
         {"family": "obs_st", "at": "2026-07-01T00:01:00Z", "values": {"wind_avg": 4, "wind_direction": 90}},

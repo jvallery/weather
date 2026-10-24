@@ -102,6 +102,11 @@ spec:
         - name: cursor
           mountPath: /var/run/weather-api-cursor
           readOnly: true
+        # Private site position for derived almanac astronomy (#42); optional, so the API
+        # starts and reports astronomy unavailable until agents KSOPS provides it.
+        - name: site
+          mountPath: /var/run/weather-site
+          readOnly: true
         command:
         - weather
         - api
@@ -132,6 +137,11 @@ spec:
           items:
           - key: CURSOR_HMAC_KEY
             path: CURSOR_HMAC_KEY
+      - name: site
+        secret:
+          secretName: weather-site
+          optional: true
+          defaultMode: 288
       terminationGracePeriodSeconds: 30
 ---
 apiVersion: v1

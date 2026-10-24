@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 async function syntheticMedia(page: Page) {
   await page.route(/^http:\/\/localhost:4173\/(?:media|downloads)\//, async (route) => route.fulfill({ response: await route.fetch({ url: `http://localhost:4174${new URL(route.request().url()).pathname}` }) }));
 }
-const paths = ["/", "/about/", "/archive/?month=2026-10", "/archive/2026/10/", "/day/2026-10-31/", "/timelapses/skycam_east/2026-10-31/daytime/", "/weather/history/", "/search/"];
+const paths = ["/", "/about/", "/archive/?month=2026-10", "/archive/2026/10/", "/day/2026-10-31/", "/timelapses/skycam_east/2026-10-31/daytime/", "/weather/history/", "/weather/almanac/", "/search/"];
 test.beforeEach(async ({ request, page }) => {
   await syntheticMedia(page);
   await page.addInitScript(() => { const violations: string[] = []; (window as Window & { cspViolations?: string[] }).cspViolations = violations; document.addEventListener("securitypolicyviolation", (event) => violations.push(event.effectiveDirective)); }); await request.post("http://localhost:4174/__control", { data: {} }); });
@@ -40,6 +40,20 @@ for (const width of [320, 768, 1440]) for (const path of paths) {
     if (["/", "/about/", "/weather/history/"].includes(path)) await page.screenshot({ path: `../artifacts/synthetic-${path === "/" ? "today" : path.includes("history") ? "history" : "about"}-${width}-${test.info().project.name}.png`, fullPage: true });
   });
 }
+test("almanac: empty history passes axe, and every product has a text alternative", async ({ page, request }) => {
+  await request.post("http://localhost:4174/__control", { data: { almanacEmpty: true } });
+  await page.goto("/weather/almanac/"); await page.waitForLoadState("networkidle");
+  await expect(page.getByText(/No station history yet/).first()).toBeVisible();
+  expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze()).violations).toEqual([]);
+  await request.post("http://localhost:4174/__control", { data: {} });
+  await page.goto("/weather/almanac/"); await expect(page.getByText(/Station history since 2026-10-03/)).toBeVisible();
+  for (const [product, table] of [["rain_day", "Rain by local day"], ["wind_rose_bin", "Wind rose table"], ["astronomy", "Sun and moon times"], ["comparison", "Period comparison"]]) {
+    await page.goto(`/weather/almanac/?product=${product}`);
+    await expect(page.getByRole("region", { name: table })).toBeVisible();
+  }
+  await expect(page.locator("svg.wind-rose")).toHaveCount(0);
+  await page.goto("/weather/almanac/?product=wind_rose_bin"); await expect(page.getByRole("img", { name: /Wind rose/ })).toBeVisible();
+});
 test("native select CSP control and real inline-style negative control", async ({ page, browserName }) => {
   const csp = "default-src 'self'; script-src 'self'; style-src 'self'";
   await page.route("**/__csp-control/*", async (route) => {

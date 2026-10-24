@@ -9,6 +9,7 @@ const registry = JSON.parse(readFileSync(new URL("../app/fixtures/metric-registr
 const aggregates = JSON.parse(readFileSync(new URL("../app/fixtures/aggregates.json", import.meta.url)));
 const observations = JSON.parse(readFileSync(new URL("../app/fixtures/observations.json", import.meta.url)));
 const catalog = JSON.parse(readFileSync(new URL("../app/fixtures/catalog.json", import.meta.url)));
+const almanac = Object.fromEntries(["record", "rain_day", "wind_rose_bin", "astronomy", "comparison", "empty"].map((name) => [name, JSON.parse(readFileSync(new URL(`../app/fixtures/almanac-${name}.json`, import.meta.url)))]));
 const media = new URL("../.test-media/clip.mp4", import.meta.url);
 const poster = new URL("../.test-media/poster.jpg", import.meta.url);
 let state = {};
@@ -77,6 +78,7 @@ createServer(async (req, res) => {
   if (url.pathname === "/api/v1/weather/metrics") return json(res, registry);
   if (url.pathname === "/api/v1/weather/aggregates") return json(res, aggregates);
   if (url.pathname === "/api/v1/weather/observations") return json(res, observations);
+  if (url.pathname === "/api/v1/weather/almanac") return json(res, almanac[state.almanacEmpty ? "empty" : url.searchParams.get("product")] || { code: "invalid_request" }, almanac[url.searchParams.get("product")] ? 200 : 400);
   if (url.pathname === "/api/v1/timelapses") {
     const value = snapshot();
     for (const key of ["camera", "cycle_date", "segment", "state"]) if (url.searchParams.has(key)) value.items = value.items.filter((video) => video[key] === url.searchParams.get(key));

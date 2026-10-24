@@ -1,0 +1,81 @@
+{
+ "generated_at": "2026-10-31T18:00:00Z",
+ "product": "astronomy",
+ "interval": {
+  "start": "2026-10-31T06:00:00Z",
+  "end": "2026-11-03T07:00:00Z"
+ },
+ "comparison_interval": null,
+ "history_interval": {
+  "start": "2026-10-03T15:12:00Z",
+  "end": "2026-10-31T18:00:00Z"
+ },
+ "timezone": "America/Denver",
+ "label": "Derived sun and moon times for the station site; not measurements",
+ "derived": true,
+ "metric": null,
+ "statistic": null,
+ "unit": null,
+ "formula_revision": "almanac-v1",
+ "library_revision": "astral 3.2; tzdata 2026.5 (IANA 2026e)",
+ "evidence_count": 0,
+ "evidence_hash": null,
+ "coverage": null,
+ "missing_reasons": [],
+ "items": [
+  {
+   "product": "astronomy",
+   "local_date": "2026-10-31",
+   "start": "2026-10-31T06:00:00Z",
+   "end": "2026-11-01T06:00:00Z",
+   "civil_dawn": "2026-10-31T12:11:52.386313Z",
+   "sunrise": "2026-10-31T12:34:05.622505Z",
+   "solar_noon": "2026-10-31T18:24:35Z",
+   "sunset": "2026-11-01T00:14:52.045351Z",
+   "civil_dusk": "2026-11-01T00:37:05.716794Z",
+   "day_length_seconds": 42046.422846,
+   "moon_phase": 19.556,
+   "moon_phase_name": "last_quarter",
+   "moonrise": "2026-11-01T05:54:00Z",
+   "moonset": "2026-10-31T18:08:00Z",
+   "missing_reasons": []
+  },
+  {
+   "product": "astronomy",
+   "local_date": "2026-11-01",
+   "start": "2026-11-01T06:00:00Z",
+   "end": "2026-11-02T07:00:00Z",
+   "civil_dawn": "2026-11-01T12:12:06.496837Z",
+   "sunrise": "2026-11-01T12:34:21.648374Z",
+   "solar_noon": "2026-11-01T18:24:32Z",
+   "sunset": "2026-11-02T00:14:32.702222Z",
+   "civil_dusk": "2026-11-02T00:36:48.306321Z",
+   "day_length_seconds": 42011.053848,
+   "moon_phase": 20.567,
+   "moon_phase_name": "last_quarter",
+   "moonrise": "2026-11-02T06:53:00Z",
+   "moonset": "2026-11-01T19:00:00Z",
+   "missing_reasons": []
+  },
+  {
+   "product": "astronomy",
+   "local_date": "2026-11-02",
+   "start": "2026-11-02T07:00:00Z",
+   "end": "2026-11-03T07:00:00Z",
+   "civil_dawn": "2026-11-02T12:12:21.224812Z",
+   "sunrise": "2026-11-02T12:34:38.317317Z",
+   "solar_noon": "2026-11-02T18:24:31Z",
+   "sunset": "2026-11-03T00:14:14.352488Z",
+   "civil_dusk": "2026-11-03T00:36:31.913949Z",
+   "day_length_seconds": 41976.035171,
+   "moon_phase": 21.578,
+   "moon_phase_name": "last_quarter",
+   "moonrise": null,
+   "moonset": "2026-11-02T19:46:00Z",
+   "missing_reasons": [
+    "no_moonrise"
+   ]
+  }
+ ],
+ "next_cursor": null
+}

@@ -4,7 +4,7 @@
 import asyncio
 import math
 import time
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from fractions import Fraction
 from typing import Any
@@ -14,7 +14,8 @@ from prometheus_client import CollectorRegistry, Counter, Histogram
 from prometheus_client.core import GaugeMetricFamily
 from prometheus_client.registry import Collector
 
-from weather.timemodel import day_for, weather_day
+from weather.products import almanac
+from weather.timemodel import SiteConfig, WeatherDay, day_for, weather_day
 
 from .cursors import CursorCodec, Position
 from .models import (
@@ -22,10 +23,15 @@ from .models import (
     Aggregate,
     AggregateQuery,
     Aggregates,
+    Almanac,
+    AlmanacItem,
+    AlmanacQuery,
+    AlmanacReason,
     Conversion,
     Coverage,
     Current,
     DirectionState,
+    Interval,
     Metric,
     MetricDefinition,
     MetricRegistry,
@@ -38,6 +44,7 @@ from .models import (
 from .registry import (
     DEFAULT_CADENCES,
     ENTRIES,
+    REGISTRY,
     Cadence,
     Entry,
     Family,
@@ -65,6 +72,10 @@ RAW_WINDOW = {"obs_st": timedelta(days=31), "rapid_wind": timedelta(days=1)}
 AGGREGATE_WINDOW = {"obs_st": timedelta(days=92), "rapid_wind": timedelta(days=7)}
 ROSE_MAX_BINS = 400
 VARIABLE_RESULTANT = 0.1
+# Almanac windows are whole local days; one window reads at most a year of one-minute reports.
+MAX_ALMANAC_DAYS = 366
+RECORD_STATISTICS = ("min", "max", "sum")
+COMPARISON_STATISTICS = ("mean", "min", "max", "sum")
 
 
 def _conversion(unit: str, scale: Fraction, offset: Fraction) -> Conversion:
@@ -226,7 +237,7 @@ class ApiMetrics:
         )
         for result in ("live", "cached", "unavailable"):
             self.cache.labels(result)
-        for operation in ("current", "observations", "aggregates"):
+        for operation in ("current", "observations", "aggregates", "almanac"):
             self.db_errors.labels(operation)
 
 
@@ -270,8 +281,11 @@ class WeatherService:
         registry: CollectorRegistry | None = None,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
         monotonic: Callable[[], float] = time.monotonic,
+        site: SiteConfig | None = None,
     ) -> None:
         self.reader, self.cursors, self.cadences = reader, cursors, dict(cadences)
+        # Private observer position for derived astronomy; never serialized.
+        self.site = site
         self.now, self._monotonic = clock, monotonic
         registry = registry if registry is not None else CollectorRegistry()
         self.metrics = ApiMetrics(registry)
@@ -443,20 +457,8 @@ class WeatherService:
                 "range_too_large", "Too many wind-rose intervals; choose a coarser resolution."
             )
         items: list[Aggregate] = []
-        for entry, source in selected:
-            wind = entry.metric == "wind_direction"
-            try:
-                rows, rose_rows = await self.reader.aggregates(
-                    source,
-                    bins,
-                    cap=timedelta(seconds=self.cadences[source.family].cap_seconds),
-                    wind=wind,
-                    rose="rose" in query.statistics,
-                )
-            except SourceUnavailable:
-                self.metrics.db_errors.labels("aggregates").inc()
-                raise unavailable() from None
-            items.extend(summarize(entry, query.statistics, bins, rows, rose_rows))
+        for entry, _ in selected:
+            items.extend(await self._summaries(entry, query.statistics, bins, "aggregates"))
         return Aggregates(
             generated_at=self.now(),
             start=query.start,
@@ -464,6 +466,171 @@ class WeatherService:
             resolution=query.resolution,
             items=items,
         )
+
+    async def _summaries(
+        self, entry: Entry, statistics: list[str], bins: BinSpec, operation: str
+    ) -> list[Aggregate]:
+        """The one on-read aggregate engine every product uses (no second recipe)."""
+        assert entry.source is not None
+        try:
+            rows, rose_rows = await self.reader.aggregates(
+                entry.source,
+                bins,
+                cap=timedelta(seconds=self.cadences[entry.source.family].cap_seconds),
+                wind=entry.metric == "wind_direction",
+                rose="rose" in statistics,
+            )
+        except SourceUnavailable:
+            self.metrics.db_errors.labels(operation).inc()
+            raise unavailable() from None
+        return summarize(entry, statistics, bins, rows, rose_rows)
+
+    # Almanac (#42) -----------------------------------------------------------------------
+
+    async def almanac(self, query: AlmanacQuery) -> Almanac:
+        """Local almanac products computed on read from the same aggregates (C5)."""
+        days = almanac_days(query.start, query.end)
+        comparison_days = almanac_days(*query.comparison) if query.comparison else []
+        entry: Entry | None = None
+        if query.metric is not None and query.statistic is not None:
+            entry, source = sourced(query.metric)
+            require_statistic(query.metric, query.statistic)
+            allowed = RECORD_STATISTICS if query.product == "record" else COMPARISON_STATISTICS
+            if query.statistic not in allowed:
+                raise PublicError(
+                    "unsupported_statistic", "Statistic is unsupported for this almanac product."
+                )
+            if source.family != "obs_st":
+                raise PublicError(
+                    "unsupported_statistic", "Almanac products use the one-minute station reports."
+                )
+        now = self.now()
+        position = self.cursors.decode(query.cursor, query, now=now) if query.cursor else None
+        try:
+            history_start = await self.reader.history_start(now)
+        except SourceUnavailable:
+            self.metrics.db_errors.labels("almanac").inc()
+            raise unavailable() from None
+        product = query.product
+        items: Sequence[AlmanacItem]
+        windows: list[Aggregate] = []
+        coverage: Coverage | None = None
+        reasons: list[AlmanacReason] = []
+        unit: str | None = None
+        metric, statistic = query.metric, query.statistic
+        if product == "record":
+            assert entry is not None and statistic is not None
+            windows = await self._summaries(entry, [statistic], day_bins(days), "almanac")
+            items = almanac.record_items(
+                windows, descending=statistic != "min", history_start=history_start
+            )
+            label, unit = almanac.records_label(history_start, query.start), entry.unit
+        elif product == "rain_day":
+            entry = REGISTRY["precipitation"]
+            metric, statistic, unit = entry.metric, "sum", entry.unit
+            windows = await self._summaries(entry, ["sum"], day_bins(days), "almanac")
+            items = almanac.rain_day_items(windows, history_start=history_start)
+            label = "Observed rain per local day; partial days are never scaled up"
+        elif product == "wind_rose_bin":
+            entry = REGISTRY["wind_direction"]
+            metric, statistic, unit = entry.metric, "rose", "m/s"
+            windows = await self._summaries(
+                entry, ["rose"], whole_bin(query.start, query.end), "almanac"
+            )
+            items = almanac.rose_items(windows[0])
+            label = (
+                "Duration-weighted wind rose; calm, variable and missing time share the"
+                " whole-interval denominator"
+            )
+        elif product == "astronomy":
+            items = await asyncio.to_thread(almanac.astronomy_items, days, self.site)
+            label = "Derived sun and moon times for the station site; not measurements"
+            if self.site is None:
+                reasons.append("site_not_configured")
+        else:
+            assert entry is not None and statistic is not None and query.comparison
+            sides = []
+            for side, side_days in (
+                ((query.start, query.end), days),
+                (query.comparison, comparison_days),
+            ):
+                (whole,) = await self._summaries(entry, [statistic], whole_bin(*side), "almanac")
+                daily = await self._summaries(entry, [statistic], day_bins(side_days), "almanac")
+                windows.append(whole)
+                sides.append(almanac.comparison_window(whole, daily))
+            items = [almanac.compare(*sides)]
+            label = "Observed values for each period; no rescaling for missing time"
+            unit = entry.unit
+        if product in ("record", "rain_day", "wind_rose_bin"):
+            coverage = almanac.combined_coverage(windows)
+        if windows:
+            if not any(item.evidence_count for item in windows):
+                reasons.append("no_observations")
+            elif coverage is not None and coverage.fraction < 1:
+                reasons.append("partial_coverage")
+        evidence_count, evidence_hash = almanac.combined_evidence(windows)
+        offset = position.after_id.int if position else 0
+        page = list(items[offset : offset + query.limit])
+        cursor = None
+        if offset + len(page) < len(items):
+            cursor = self.cursors.encode(
+                query,
+                snapshot=position.snapshot if position else now,
+                after_time=query.start,
+                after_id=UUID(int=offset + len(page)),
+                now=now,
+                previous=position,
+            )
+        return Almanac(
+            generated_at=now,
+            product=product,
+            interval=Interval(start=query.start, end=query.end),
+            comparison_interval=(
+                Interval(start=query.comparison[0], end=query.comparison[1])
+                if query.comparison
+                else None
+            ),
+            history_interval=(
+                Interval(start=history_start, end=now) if history_start is not None else None
+            ),
+            timezone="America/Denver",
+            label=label,
+            derived=product == "astronomy",
+            metric=metric,
+            statistic=statistic,
+            unit=unit,
+            formula_revision=almanac.FORMULA_REVISION,
+            library_revision=almanac.LIBRARY_REVISION,
+            evidence_count=evidence_count,
+            evidence_hash=evidence_hash,
+            coverage=coverage,
+            missing_reasons=reasons,
+            items=page,
+            next_cursor=cursor,
+        )
+
+
+def almanac_days(start: datetime, end: datetime) -> list[WeatherDay]:
+    """Whole America/Denver days (23, 24 or 25 h), checked before any bins are built."""
+    first, last = day_for(start), day_for(end)
+    if first.start != start or last.start != end:
+        raise PublicError(
+            "invalid_request", "Almanac intervals start and end at local midnight (America/Denver)."
+        )
+    count = (last.local_date - first.local_date).days
+    if count > MAX_ALMANAC_DAYS:
+        raise PublicError("range_too_large", "Almanac intervals cover at most 366 local days.")
+    return [weather_day(first.local_date + timedelta(days=n)) for n in range(count)]
+
+
+def day_bins(days: Sequence[WeatherDay]) -> BinSpec:
+    bounds = [day.start for day in days] + [days[-1].end]
+    return BinSpec(day=True, start=bounds[0], end=bounds[-1], bounds=bounds)
+
+
+def whole_bin(start: datetime, end: datetime) -> BinSpec:
+    """One bin over the whole interval: its denominator is the real elapsed duration."""
+    return BinSpec(day=True, start=start, end=end, bounds=[start, end])
 
 
 def bin_spec(query: AggregateQuery) -> BinSpec:

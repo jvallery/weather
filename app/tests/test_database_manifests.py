@@ -299,6 +299,8 @@ class ApiManifestTests(unittest.TestCase):
             ["weather-pg-api", "weather-pg-ca"],
         )
         self.assertEqual(volumes["cursor"]["secret"]["secretName"], "weather-api-cursor")
+        # The almanac site Secret is a later prerequisite; its absence must never block pods.
+        self.assertEqual(volumes["site"]["secret"], {**volumes["site"]["secret"], "optional": True})
         container = pod["spec"]["containers"][0]
         # A database outage must make pods unready, never restart them.
         self.assertEqual(container["startupProbe"]["httpGet"]["path"], "/healthz")

@@ -3,9 +3,9 @@ import { z } from "zod";
 import { data } from "react-router";
 import { Counter, Gauge, register } from "prom-client";
 import { catalogSchema } from "./contracts";
-import { parseAggregates, parseCurrent, parser, parseRegistry, type Current, type Parser } from "./weather-api";
+import { parseAggregates, parseAlmanac, parseCurrent, parser, parseRegistry, type Current, type Parser } from "./weather-api";
 
-const ALLOWED = /^\/api\/v1\/(?:weather\/(?:current|observations|aggregates|metrics)|timelapses(?:\/[A-Za-z0-9_-]{1,128})?)$/;
+const ALLOWED = /^\/api\/v1\/(?:weather\/(?:current|observations|aggregates|almanac|metrics)|timelapses(?:\/[A-Za-z0-9_-]{1,128})?)$/;
 const parseCatalog = parser(catalogSchema);
 const requests = (register.getSingleMetric("weather_web_api_requests_total") as Counter<"route" | "result"> | undefined) || new Counter({ name: "weather_web_api_requests_total", help: "Bounded SSR public API reads by result", labelNames: ["route", "result"] });
 const inFlight = (register.getSingleMetric("weather_web_api_inflight") as Gauge | undefined) || new Gauge({ name: "weather_web_api_inflight", help: "Active bounded SSR API reads" });
@@ -81,6 +81,9 @@ export async function aggregatesRead(request: Request, params: URLSearchParams) 
   return publicReadResult("/api/v1/weather/aggregates", parseAggregates, request.signal, params);
 }
 
+export async function almanacRead(request: Request, params: URLSearchParams) {
+  return publicReadResult("/api/v1/weather/almanac", parseAlmanac, request.signal, params);
+}
 export async function metricRegistryRead(request: Request) {
   return publicRead("/api/v1/weather/metrics", parseRegistry, request.signal);
 }

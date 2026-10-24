@@ -164,6 +164,585 @@
         "title": "Aggregates",
         "type": "object"
       },
+      "Almanac": {
+        "additionalProperties": false,
+        "properties": {
+          "comparison_interval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Interval"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Coverage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "derived": {
+            "title": "Derived",
+            "type": "boolean"
+          },
+          "evidence_count": {
+            "minimum": 0.0,
+            "title": "Evidence Count",
+            "type": "integer"
+          },
+          "evidence_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Hash"
+          },
+          "formula_revision": {
+            "title": "Formula Revision",
+            "type": "string"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "history_interval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Interval"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interval": {
+            "$ref": "#/components/schemas/Interval"
+          },
+          "items": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "astronomy": "#/components/schemas/AstronomyItem",
+                  "comparison": "#/components/schemas/ComparisonItem",
+                  "rain_day": "#/components/schemas/RainDayItem",
+                  "record": "#/components/schemas/RecordItem",
+                  "wind_rose_bin": "#/components/schemas/WindRoseBinItem"
+                },
+                "propertyName": "product"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/RecordItem"
+                },
+                {
+                  "$ref": "#/components/schemas/RainDayItem"
+                },
+                {
+                  "$ref": "#/components/schemas/WindRoseBinItem"
+                },
+                {
+                  "$ref": "#/components/schemas/AstronomyItem"
+                },
+                {
+                  "$ref": "#/components/schemas/ComparisonItem"
+                }
+              ]
+            },
+            "maxItems": 400,
+            "title": "Items",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "library_revision": {
+            "title": "Library Revision",
+            "type": "string"
+          },
+          "metric": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z][a-z0-9_]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metric"
+          },
+          "missing_reasons": {
+            "items": {
+              "enum": [
+                "no_observations",
+                "partial_coverage",
+                "below_record_coverage",
+                "before_history",
+                "inadequate_coverage",
+                "site_not_configured",
+                "solar_events_unavailable",
+                "no_moonrise",
+                "no_moonset"
+              ],
+              "type": "string"
+            },
+            "title": "Missing Reasons",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "product": {
+            "enum": [
+              "record",
+              "rain_day",
+              "wind_rose_bin",
+              "astronomy",
+              "comparison"
+            ],
+            "title": "Product",
+            "type": "string"
+          },
+          "statistic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Statistic"
+          },
+          "timezone": {
+            "const": "America/Denver",
+            "title": "Timezone",
+            "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": [
+          "generated_at",
+          "product",
+          "interval",
+          "comparison_interval",
+          "history_interval",
+          "timezone",
+          "label",
+          "derived",
+          "metric",
+          "statistic",
+          "unit",
+          "formula_revision",
+          "library_revision",
+          "evidence_count",
+          "evidence_hash",
+          "coverage",
+          "missing_reasons",
+          "items",
+          "next_cursor"
+        ],
+        "title": "Almanac",
+        "type": "object"
+      },
+      "AstronomyItem": {
+        "additionalProperties": false,
+        "description": "Derived sun and moon events for one local day from the private site; no coordinates.",
+        "properties": {
+          "civil_dawn": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Civil Dawn"
+          },
+          "civil_dusk": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Civil Dusk"
+          },
+          "day_length_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Day Length Seconds"
+          },
+          "end": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "End",
+            "type": "string"
+          },
+          "local_date": {
+            "format": "date",
+            "title": "Local Date",
+            "type": "string"
+          },
+          "missing_reasons": {
+            "items": {
+              "enum": [
+                "no_observations",
+                "partial_coverage",
+                "below_record_coverage",
+                "before_history",
+                "inadequate_coverage",
+                "site_not_configured",
+                "solar_events_unavailable",
+                "no_moonrise",
+                "no_moonset"
+              ],
+              "type": "string"
+            },
+            "title": "Missing Reasons",
+            "type": "array"
+          },
+          "moon_phase": {
+            "anyOf": [
+              {
+                "exclusiveMaximum": 28.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moon Phase"
+          },
+          "moon_phase_name": {
+            "anyOf": [
+              {
+                "enum": [
+                  "new",
+                  "waxing_crescent",
+                  "first_quarter",
+                  "waxing_gibbous",
+                  "full",
+                  "waning_gibbous",
+                  "last_quarter",
+                  "waning_crescent"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moon Phase Name"
+          },
+          "moonrise": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moonrise"
+          },
+          "moonset": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moonset"
+          },
+          "product": {
+            "const": "astronomy",
+            "default": "astronomy",
+            "title": "Product",
+            "type": "string"
+          },
+          "solar_noon": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Solar Noon"
+          },
+          "start": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "Start",
+            "type": "string"
+          },
+          "sunrise": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sunrise"
+          },
+          "sunset": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sunset"
+          }
+        },
+        "required": [
+          "product",
+          "local_date",
+          "start",
+          "end",
+          "civil_dawn",
+          "sunrise",
+          "solar_noon",
+          "sunset",
+          "civil_dusk",
+          "day_length_seconds",
+          "moon_phase",
+          "moon_phase_name",
+          "moonrise",
+          "moonset",
+          "missing_reasons"
+        ],
+        "title": "AstronomyItem",
+        "type": "object"
+      },
+      "ComparisonItem": {
+        "additionalProperties": false,
+        "properties": {
+          "difference": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference"
+          },
+          "first": {
+            "$ref": "#/components/schemas/ComparisonWindow"
+          },
+          "product": {
+            "const": "comparison",
+            "default": "comparison",
+            "title": "Product",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "no_observations",
+                  "partial_coverage",
+                  "below_record_coverage",
+                  "before_history",
+                  "inadequate_coverage",
+                  "site_not_configured",
+                  "solar_events_unavailable",
+                  "no_moonrise",
+                  "no_moonset"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "second": {
+            "$ref": "#/components/schemas/ComparisonWindow"
+          }
+        },
+        "required": [
+          "product",
+          "first",
+          "second",
+          "difference",
+          "reason"
+        ],
+        "title": "ComparisonItem",
+        "type": "object"
+      },
+      "ComparisonWindow": {
+        "additionalProperties": false,
+        "properties": {
+          "adequate": {
+            "title": "Adequate",
+            "type": "boolean"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          },
+          "duration_seconds": {
+            "exclusiveMinimum": 0.0,
+            "title": "Duration Seconds",
+            "type": "number"
+          },
+          "end": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "End",
+            "type": "string"
+          },
+          "evidence_count": {
+            "minimum": 0.0,
+            "title": "Evidence Count",
+            "type": "integer"
+          },
+          "evidence_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Hash"
+          },
+          "missing_days": {
+            "items": {
+              "format": "date",
+              "type": "string"
+            },
+            "title": "Missing Days",
+            "type": "array"
+          },
+          "missing_reasons": {
+            "items": {
+              "enum": [
+                "no_observations",
+                "partial_coverage",
+                "below_record_coverage",
+                "before_history",
+                "inadequate_coverage",
+                "site_not_configured",
+                "solar_events_unavailable",
+                "no_moonrise",
+                "no_moonset"
+              ],
+              "type": "string"
+            },
+            "title": "Missing Reasons",
+            "type": "array"
+          },
+          "partial_days": {
+            "items": {
+              "format": "date",
+              "type": "string"
+            },
+            "title": "Partial Days",
+            "type": "array"
+          },
+          "start": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "Start",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "duration_seconds",
+          "value",
+          "coverage",
+          "evidence_count",
+          "evidence_hash",
+          "adequate",
+          "missing_days",
+          "partial_days",
+          "missing_reasons"
+        ],
+        "title": "ComparisonWindow",
+        "type": "object"
+      },
       "Conversion": {
         "additionalProperties": false,
         "description": "display = canonical * scale_numerator / scale_denominator + offset (as a ratio).",
@@ -273,6 +852,30 @@
           "metrics"
         ],
         "title": "Current",
+        "type": "object"
+      },
+      "Interval": {
+        "additionalProperties": false,
+        "description": "Half-open UTC interval [start, end).",
+        "properties": {
+          "end": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "End",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "Interval",
         "type": "object"
       },
       "Metric": {
@@ -631,6 +1234,209 @@
         "title": "Problem",
         "type": "object"
       },
+      "RainDayItem": {
+        "additionalProperties": false,
+        "description": "Observed accumulation for one local day, never scaled up for missing time.",
+        "properties": {
+          "complete": {
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          },
+          "end": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "End",
+            "type": "string"
+          },
+          "evidence_count": {
+            "minimum": 0.0,
+            "title": "Evidence Count",
+            "type": "integer"
+          },
+          "evidence_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Hash"
+          },
+          "local_date": {
+            "format": "date",
+            "title": "Local Date",
+            "type": "string"
+          },
+          "missing_reasons": {
+            "items": {
+              "enum": [
+                "no_observations",
+                "partial_coverage",
+                "below_record_coverage",
+                "before_history",
+                "inadequate_coverage",
+                "site_not_configured",
+                "solar_events_unavailable",
+                "no_moonrise",
+                "no_moonset"
+              ],
+              "type": "string"
+            },
+            "title": "Missing Reasons",
+            "type": "array"
+          },
+          "product": {
+            "const": "rain_day",
+            "default": "rain_day",
+            "title": "Product",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "Start",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "product",
+          "local_date",
+          "start",
+          "end",
+          "value",
+          "coverage",
+          "evidence_count",
+          "evidence_hash",
+          "complete",
+          "missing_reasons"
+        ],
+        "title": "RainDayItem",
+        "type": "object"
+      },
+      "RecordItem": {
+        "additionalProperties": false,
+        "description": "One local day; ranked only with at least 95% metric-duration coverage.",
+        "properties": {
+          "coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          },
+          "end": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "End",
+            "type": "string"
+          },
+          "evidence_count": {
+            "minimum": 0.0,
+            "title": "Evidence Count",
+            "type": "integer"
+          },
+          "evidence_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Hash"
+          },
+          "local_date": {
+            "format": "date",
+            "title": "Local Date",
+            "type": "string"
+          },
+          "missing_reasons": {
+            "items": {
+              "enum": [
+                "no_observations",
+                "partial_coverage",
+                "below_record_coverage",
+                "before_history",
+                "inadequate_coverage",
+                "site_not_configured",
+                "solar_events_unavailable",
+                "no_moonrise",
+                "no_moonset"
+              ],
+              "type": "string"
+            },
+            "title": "Missing Reasons",
+            "type": "array"
+          },
+          "product": {
+            "const": "record",
+            "default": "record",
+            "title": "Product",
+            "type": "string"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
+          "ranking_eligible": {
+            "title": "Ranking Eligible",
+            "type": "boolean"
+          },
+          "start": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "Start",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "product",
+          "local_date",
+          "start",
+          "end",
+          "value",
+          "coverage",
+          "evidence_count",
+          "evidence_hash",
+          "ranking_eligible",
+          "rank",
+          "missing_reasons"
+        ],
+        "title": "RecordItem",
+        "type": "object"
+      },
       "RoseBin": {
         "additionalProperties": false,
         "description": "Duration in one category; directional sectors are half-open, from-direction degrees.",
@@ -704,6 +1510,94 @@
           "duration_seconds"
         ],
         "title": "RoseBin",
+        "type": "object"
+      },
+      "WindRoseBinItem": {
+        "additionalProperties": false,
+        "description": "Duration in one category over the whole interval; frequency is duration / denominator.",
+        "properties": {
+          "category": {
+            "enum": [
+              "directional",
+              "calm",
+              "variable",
+              "missing"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "denominator_seconds": {
+            "exclusiveMinimum": 0.0,
+            "title": "Denominator Seconds",
+            "type": "number"
+          },
+          "duration_seconds": {
+            "minimum": 0.0,
+            "title": "Duration Seconds",
+            "type": "number"
+          },
+          "product": {
+            "const": "wind_rose_bin",
+            "default": "wind_rose_bin",
+            "title": "Product",
+            "type": "string"
+          },
+          "sector_end": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sector End"
+          },
+          "sector_start": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sector Start"
+          },
+          "speed_max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speed Max"
+          },
+          "speed_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speed Min"
+          }
+        },
+        "required": [
+          "product",
+          "category",
+          "sector_start",
+          "sector_end",
+          "speed_min",
+          "speed_max",
+          "duration_seconds",
+          "denominator_seconds"
+        ],
+        "title": "WindRoseBinItem",
         "type": "object"
       }
     }
@@ -814,6 +1708,183 @@
           }
         },
         "summary": "Get Aggregates"
+      }
+    },
+    "/api/v1/weather/almanac": {
+      "get": {
+        "operationId": "getAlmanac",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "start",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+              "title": "Start",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "end",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+              "title": "End",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "product",
+            "required": true,
+            "schema": {
+              "enum": [
+                "record",
+                "rain_day",
+                "wind_rose_bin",
+                "astronomy",
+                "comparison"
+              ],
+              "title": "Product",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "metric",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[a-z][a-z0-9_]{0,63}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Metric"
+            }
+          },
+          {
+            "in": "query",
+            "name": "statistic",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[a-z][a-z0-9_]{0,63}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Statistic"
+            }
+          },
+          {
+            "in": "query",
+            "name": "comparison_start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Comparison Start"
+            }
+          },
+          {
+            "in": "query",
+            "name": "comparison_end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Comparison End"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 400,
+              "maximum": 400,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[A-Za-z0-9_.-]{1,2048}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Almanac"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Invalid request."
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Weather data is temporarily unavailable."
+          }
+        },
+        "summary": "Get Almanac"
       }
     },
     "/api/v1/weather/current": {
