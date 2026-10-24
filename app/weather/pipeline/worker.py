@@ -143,6 +143,7 @@ class Worker:
         live = {row.id for row in rows}
         for stale in set(self.renderers) - live:
             del self.renderers[stale]
+        self.durable &= live
         current = epoch_seconds(now)
         for row in rows:
             stage = "render"
@@ -196,6 +197,7 @@ class Worker:
                 metrics.COVERAGE.labels(camera).set(prepared.result.slots.fraction)
                 metrics.LATENCY.labels(camera).observe((now - row.job.ends_at).total_seconds())
                 del self.renderers[row.id]
+                self.durable.discard(row.id)
             except Exception as error:
                 metrics.FAILURES.labels(camera, stage).inc()
                 # Never log paths, payloads or driver errors; the type and stage suffice.
