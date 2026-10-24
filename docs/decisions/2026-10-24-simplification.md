@@ -1,6 +1,6 @@
 # Architecture simplification and re-plan — 2026-10-24
 
-**Status:** accepted. Jason chose O1–O4 below on 2026-10-24, after an adversarial audit traced the plan to live estate evidence. The planner simplifications P1–P20 follow from those choices or replace mechanisms that only the planner had introduced. Where this record conflicts with [requirements v4.0](../requirements.md) §§3–18, the ADRs D01–D16 or the contracts, **this record wins**. Product scope Q01–Q16 is unchanged, apart from the R09/R10/R17/R18/R23 amendments listed here.
+**Status:** accepted; amended by the [takeover re-plan](2026-10-24-takeover-replan.md) (C1–C16), which wins where they conflict. Jason chose O1–O4 below on 2026-10-24, after an adversarial audit traced the plan to live estate evidence. The planner simplifications P1–P20 follow from those choices or replace mechanisms that only the planner had introduced. Where this record conflicts with [requirements v4.0](../requirements.md) §§3–18, the ADRs D01–D16 or the contracts, **this record wins**. Product scope Q01–Q16 is unchanged, apart from the R09/R10/R17/R18/R23 amendments listed here.
 
 The authoritative design summary is [architecture.md](../architecture.md). The backlog and native dependency graph are on GitHub; [backlog.md](../implementation/backlog.md) is generated from them.
 
@@ -69,7 +69,7 @@ Each item names what it replaces. Mechanisms not listed here keep their current 
 
   Further choices:
   - **No partitioning in v1.** About 11M telemetry rows a year is comfortably unpartitioned; use BRIN on time. Revisit above about 200M rows.
-  - **Migrations.** Alembic, run by an Argo PreSync Job under a dedicated migrator role.
+  - **Migrations.** Alembic, run by an Argo Sync hook Job (wave 1) under a dedicated migrator role; DB clients run at wave ≥2 (amended by the [takeover re-plan](2026-10-24-takeover-replan.md)).
   - **Capture metadata.** CNPG stores per-chunk and per-slot rows; per-attempt detail stays in the chunk manifest.
   - **Durability.** `dataDurability: required` is not selected. Standard sync 1/1 with `synchronous_commit=on`. This replaces the D06 synchronous/failover-quorum/R1-admission work and storage-infra#1112's storage admission.
 - **P6 Objects.**

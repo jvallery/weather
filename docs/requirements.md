@@ -1,12 +1,12 @@
 # Weather — requirements and implementation research brief
 
-**Version:** 4.1 (amended by the [2026-10-24 simplification record](decisions/2026-10-24-simplification.md))  
+**Version:** 4.2 (amended by the [2026-10-24 simplification record](decisions/2026-10-24-simplification.md) and the [takeover re-plan](decisions/2026-10-24-takeover-replan.md#requirement-amendments-v42); where this text conflicts with them, they win)  
 **Updated:** 2026-10-24  
 **Owner:** jvallery  
 **Target repository:** `jvallery/weather` — new, public, open source  
 **Target namespace:** `weather`  
 **Public service:** <https://weather.vallery.net>  
-**Intended implementer:** Codex
+**Implementer:** Claude Code (from 2026-10-24; previously Codex)
 
 ## Contents
 

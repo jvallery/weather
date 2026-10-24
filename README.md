@@ -2,13 +2,13 @@
 
 Source for **[weather.vallery.net](https://weather.vallery.net)**: a public weather history and timelapse service built from three cameras, direct Tempest UDP telemetry, CNPG PostgreSQL, Garage object storage and local inference. It is MIT licensed, fleet-first and has documented customization points.
 
-**Status (2026-10-24):** implementation is starting. Nothing is deployed. The plan was re-cut after an adversarial audit against live estate evidence, and the [simplification record](docs/decisions/2026-10-24-simplification.md) holds Jason's decisions O1–O4. Work is tracked in GitHub issues with native dependencies; see the [generated backlog](docs/implementation/backlog.md).
+**Status (2026-10-24):** the walking skeleton is live; slice 1 is in progress. Claude took over from Codex after a full audit, and the [takeover re-plan](docs/decisions/2026-10-24-takeover-replan.md) records the findings, decisions C1–C16 and the critical path. Work is tracked in GitHub issues with native dependencies.
 
 ## Start here
 
 1. [AGENTS.md](AGENTS.md): how to pick ready work, the definition of done and the hazards.
 2. [docs/architecture.md](docs/architecture.md): components, storage and identities, time model, repository layout and delivery slices.
-3. [Simplification record](docs/decisions/2026-10-24-simplification.md): what changed on 2026-10-24 and why, plus the owner prerequisites.
+3. [Simplification record](docs/decisions/2026-10-24-simplification.md) and the [takeover re-plan](docs/decisions/2026-10-24-takeover-replan.md), which amends it: what changed on 2026-10-24 and why.
 4. [Requirements v4.1](docs/requirements.md) (R01–R38) and the [accepted product decisions](docs/decisions/2026-10-23-product-scope.md) (Q01–Q16).
 
 The authoritative set is the files above, plus:
