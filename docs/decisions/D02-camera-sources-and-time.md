@@ -1,6 +1,6 @@
 # D02 — native camera snapshots and qualified source time
 
-Status: **three snapshot endpoints verified; sustained cadence, source-time calibration and image-region/privacy qualification pending**. Requirements R03–R06/R08/R30–R32; WX-09/10/36/37/38/39. Camera ownership and commissioning are tracked by [OWN-CAM](https://github.com/jvallery/sentinel/issues/550); no camera settings or NVR deployment changed.
+Status: **three snapshot endpoints verified; full-view/no-mask public policy approved; sustained cadence, source-time calibration and keogram-region qualification pending**. Requirements R03–R06/R08/R30–R32; WX-09/10/36/37/38/39. Camera ownership and commissioning are tracked by [OWN-CAM](https://github.com/jvallery/sentinel/issues/550); no camera settings or NVR deployment changed.
 
 ## Selected adapter and E06
 
@@ -30,7 +30,7 @@ Use the [capture contract](../contracts/capture-contract.md) for slot, wall-cloc
 
 Freeze local timezone/site and civil-twilight model revisions for each cycle. Assign observations to one half-open segment by qualified source time, independently of request slot. Calendar-day/hour identities use actual elapsed local hours, with repeated offsets preserved; hourly selection can cross twilight while retaining its own source pins. No temporal render context crosses a segment merely because adjacent captures share a TAR. Keep exact 7,200-frame/60-fps cycle allocation and the accepted UTC/local-label distinction.
 
-Keogram regions, horizon exclusions and public privacy masks must be versioned per camera after scene review and day/twilight/night qualification. Do not reuse Frigate motion/detection masks as privacy policy or assume one sky strip suits the frontyard camera. Preserve genuine source lineage, missing bins and accessible source-time seeking. Public derivatives strip private metadata and enforce the latest plausible exposure bound plus 600 seconds; private originals remain inaccessible from public media routes.
+Keogram regions and horizon exclusions must be versioned per camera after day/twilight/night qualification. The owner-approved public visual-mask policy is explicitly none for all three full views, as recorded below. Do not reuse Frigate motion/detection masks as privacy policy or assume one sky strip suits the frontyard camera. Preserve genuine source lineage, missing bins and accessible source-time seeking. Public derivatives strip private metadata and enforce the latest plausible exposure bound plus 600 seconds; private originals remain inaccessible from public media routes.
 
 ## Acceptance and rollback
 
@@ -39,3 +39,15 @@ OWN-CAM/WX-10 require admitted day/twilight/night samples of latency, byte/geome
 WX-09/36/37/38/39 validate boundary/DST/hour identity, per-camera regions, retained original bytes, eligibility and linked navigation with those qualified inputs. Missing/failed cameras remain explicit; no fictional frame or silent alternate source substitutes. Stop a trial by stopping its exact collector, preserve receipts and verify unchanged camera/NVR behavior. No camera rollback should be necessary because collection makes no management writes.
 
 Source exposure bounds do not qualify the authorizing host clock. The [conservative clock contract](../contracts/preview-policy-contract.md#conservative-authorization-clock-bounds) requires exposure upper +600 seconds <= authorizer now lower, and now upper strictly before logical expiry. Keep source calibration and host-clock validity independently bound; unknown or stale clock evidence denies public eligibility. Numeric clock admission and actual adapter behavior remain unqualified.
+
+## Owner-approved public image policy
+
+After review of the retained E06 daylight samples, Jason explicitly selected **“Use all three full views without visual masks.”** Apply this to `skycam_east`, `skycam_west` and `frontyard_1` public timelapses, sanitized comparison stills, delayed previews, video posters and analysis inputs. Preserve the full selected camera field of view and native aspect ratio; do not add privacy crops, opaque regions or blur by inference. This resolves the camera-mask owner question for the reviewed views. No image was uploaded to the public repository or deployed by this planning decision.
+
+Record an explicit versioned `none` visual-mask policy per camera, bound to the selected source geometry/orientation and derivative recipe. An empty mask is an intentional owner selection, not missing configuration. Keogram extraction still selects a weather-relevant sampling region and records that region separately; it is a derived visualization rather than an implicit privacy crop. Existing video rendition/geometry contracts remain unchanged.
+
+Full-view approval does not make native originals public. Keep archived original JPEG bytes private and publish through the derivative validation path, stripping private metadata and excluding exact coordinates, addresses, station identities and credentials from serializers and sidecars. Preserve the minimum 600-second eligibility delay from the latest plausible exposure and current expiry/withdrawal rules. Approved full views may contain household activity; do not add people/object redaction that Jason did not request. Camera-rendered timestamps are image pixels, not proof of trustworthy exposure time; existing source-time calibration still applies.
+
+The policy is bound to the reviewed camera setup. Detect an unexpected source/geometry/orientation change as a configuration mismatch rather than silently treating it as the same approved recipe; follow normal source-change qualification. If Jason later selects masks, bind the new policy revision through every derived output and model input and withdraw incompatible public derivatives using D14. No such mask change is selected now.
+
+Acceptance: verify all three cameras use the explicit no-mask policy, full-view/aspect-ratio preservation, private-original access denial, derivative metadata stripping and unchanged delay/expiry/withdrawal checks. The retained single daylight samples establish the reviewed scene only; they do not prove sustained cadence, night behavior, exposure-time calibration or renderer implementation. Those remain the existing commissioning obligations.
