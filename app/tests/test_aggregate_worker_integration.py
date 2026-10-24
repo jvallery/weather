@@ -263,15 +263,16 @@ def test_full_25_hour_day_with_minute_observations_and_three_second_rapid_wind()
             clock=lambda: target.end + timedelta(minutes=5),
         )
         try:
-            async with asyncio.timeout(120), admin.begin() as connection:
-                await guard(connection)
-                await connection.execute(text("SET LOCAL statement_timeout='120s'"))
-                d, alias = await station(connection)
-                await connection.execute(
-                    text("UPDATE weather.device SET valid_from=:start WHERE id=:id"),
-                    {"id": d, "start": target.start - timedelta(days=1)},
-                )
-                raw = await receipt(connection, received=target.end)
+            async with asyncio.timeout(120):
+                async with admin.begin() as connection:
+                    await guard(connection)
+                    await connection.execute(text("SET LOCAL statement_timeout='120s'"))
+                    d, alias = await station(connection)
+                    await connection.execute(
+                        text("UPDATE weather.device SET valid_from=:start WHERE id=:id"),
+                        {"id": d, "start": target.start - timedelta(days=1)},
+                    )
+                    raw = await receipt(connection, received=target.end)
                 for family, first, last, step, values in (
                     (
                         "obs_st",
@@ -291,32 +292,38 @@ def test_full_25_hour_day_with_minute_observations_and_three_second_rapid_wind()
                                 "reported_seconds": 60,
                                 "policy": "v171-wind-report-interval-1",
                             }
-                    # family is a fixed fixture constant, never request input.
-                    await connection.execute(
-                        text(f"""INSERT INTO weather.{family}
-                        (id,device_id,receipt_id,message_type,source_ts,row_idx,"values",quality)
-                        SELECT gen_random_uuid(),:device,:receipt,:family,
-                          CAST(:start AS timestamptz)+(:step*g.i)*interval '1 second',g.i,
-                          CAST(:values AS jsonb),CAST(:quality AS jsonb)
-                        FROM generate_series(CAST(:first AS integer),
-                                             CAST(:last AS integer)) AS g(i)"""),
-                        {
-                            "device": d,
-                            "receipt": raw,
-                            "family": family,
-                            "start": target.start,
-                            "step": step,
-                            "first": first,
-                            "last": last,
-                            "values": json.dumps(values),
-                            "quality": json.dumps(qualified),
-                        },
-                    )
-                assert (
-                    await connection.execute(
-                        text("SELECT public_api.telemetry_snapshot_watermark()")
-                    )
-                ).scalar_one() == 31500
+                    # Match the spool drain's bounded 128-receipt transactions;
+                    # retain all 31,500 rows, publication triggers and 120s total bound.
+                    for batch_first in range(first, last + 1, 128):
+                        async with admin.begin() as connection:
+                            await connection.execute(text("SET LOCAL statement_timeout='120s'"))
+                            await connection.execute(
+                                text(f"""INSERT INTO weather.{family}
+                                (id,device_id,receipt_id,message_type,source_ts,row_idx,
+                                 "values",quality)
+                                SELECT gen_random_uuid(),:device,:receipt,:family,
+                                  CAST(:start AS timestamptz)+(:step*g.i)*interval '1 second',g.i,
+                                  CAST(:values AS jsonb),CAST(:quality AS jsonb)
+                                FROM generate_series(CAST(:first AS integer),
+                                                     CAST(:last AS integer)) AS g(i)"""),
+                                {
+                                    "device": d,
+                                    "receipt": raw,
+                                    "family": family,
+                                    "start": target.start,
+                                    "step": step,
+                                    "first": batch_first,
+                                    "last": min(batch_first + 127, last),
+                                    "values": json.dumps(values),
+                                    "quality": json.dumps(qualified),
+                                },
+                            )
+                async with admin.connect() as connection:
+                    assert (
+                        await connection.execute(
+                            text("SELECT public_api.telemetry_snapshot_watermark()")
+                        )
+                    ).scalar_one() == 31500
             context = await enqueue_context(db, value, target, alias, "synthetic-full-25h")
             async with asyncio.timeout(120):
                 result = await value.recompute(context)
