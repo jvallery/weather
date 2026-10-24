@@ -4,6 +4,7 @@ import { createReadStream, readFileSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
 if (process.platform !== "linux" || process.env.WEATHER_CI_IN_CLUSTER !== "1") throw new Error("Fixture API requires approved in-cluster CI");
 const current = JSON.parse(readFileSync(new URL("../app/fixtures/current.json", import.meta.url)));
+const registry = JSON.parse(readFileSync(new URL("../app/fixtures/metric-registry.json", import.meta.url)));
 const history = JSON.parse(readFileSync(new URL("../app/fixtures/history.json", import.meta.url)));
 const catalog = JSON.parse(readFileSync(new URL("../app/fixtures/catalog.json", import.meta.url)));
 const media = new URL("../.test-media/clip.mp4", import.meta.url);
@@ -68,7 +69,7 @@ createServer(async (req, res) => {
     if (state.unique) { value.station_alias = `synthetic-request-${++serial}`; value.metrics[0].value = serial; }
     return json(res, value);
   }
-  if (url.pathname === "/api/v1/weather/metrics") return json(res, { revision: "synthetic-metrics-v1", metrics: [{ metric: "temperature", label: "Temperature", canonical_unit: "degC", display_units: ["degC", "degF"], statistics: ["observed"], expected_interval_seconds: 60, public: true, revision: "synthetic-temperature-v1" }] });
+  if (url.pathname === "/api/v1/weather/metrics") return json(res, registry);
   if (url.pathname === "/api/v1/weather/observations") return json(res, history);
   if (url.pathname === "/api/v1/timelapses") {
     const value = snapshot();

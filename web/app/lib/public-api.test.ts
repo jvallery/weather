@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { afterEach, expect, test, vi } from "vitest";
-import { publicRead } from "./public-api.server";
+import { currentRead, historyRead, publicRead } from "./public-api.server";
 import { currentSchema } from "./contracts";
 import fixture from "../fixtures/current.json";
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
@@ -35,4 +35,20 @@ test("SSR API admission is bounded and releases capacity after completion", asyn
   expect((await Promise.all(work)).filter(Boolean)).toHaveLength(4);
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(fixture))));
   expect(await publicRead("/api/v1/weather/current", currentSchema, new AbortController().signal)).not.toBeNull();
+});
+
+test("bounded history input errors keep only safe codes and resolution suggestions", async () => {
+  vi.stubEnv("API_ORIGIN", "http://api");
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ code: "range_too_large", message: "synthetic private diagnostic", request_id: "synthetic-private-id", suggested_resolution_seconds: 3600 }), { status: 400 })));
+  const result = await historyRead(new Request("https://weather.example/history"), new URLSearchParams());
+  expect(result).toEqual({ kind: "invalid", issue: { code: "range_too_large", suggestedResolutionSeconds: 3600 } });
+  expect(JSON.stringify(result)).not.toContain("private");
+});
+test("a successful unavailable response is distinct from an upstream transport failure", async () => {
+  vi.stubEnv("API_ORIGIN", "http://api");
+  const unavailable = { ...fixture, data_state: "unavailable", metrics: [] };
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(unavailable))));
+  expect((await currentRead(new Request("https://weather.example"))).apiUnavailable).toBe(false);
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 503 })));
+  expect((await currentRead(new Request("https://weather.example"))).apiUnavailable).toBe(true);
 });

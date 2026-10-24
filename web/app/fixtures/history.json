@@ -4,7 +4,7 @@
     "start": "2026-11-01T06:00:00Z",
     "end": "2026-11-01T10:00:00Z"
   },
-  "resolution_seconds": 60,
+  "resolution_seconds": 0,
   "aggregation": "observed",
   "points": [
     {

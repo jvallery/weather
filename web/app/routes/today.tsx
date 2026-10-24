@@ -3,11 +3,15 @@ import { useLoaderData, type LoaderFunctionArgs } from "react-router";
 import { CameraPlaceholders } from "../components/camera-placeholders";
 import { CurrentConditions } from "../components/current-conditions";
 import { UnitForm } from "../components/common";
-import { currentRead } from "../lib/public-api.server";
+import { currentRead, metricRegistryRead } from "../lib/public-api.server";
 import { unitsFrom } from "../lib/route-params";
 export const meta = () => [{ title: "Today · Weather" }];
-export async function loader({ request }: LoaderFunctionArgs) { return { ...await currentRead(request), units: unitsFrom(new URL(request.url)) }; }
+export async function loader({ request }: LoaderFunctionArgs) {
+  // Sequential reads keep four simultaneous SSR documents inside API admission.
+  const registry = await metricRegistryRead(request);
+  return { ...await currentRead(request), registry, units: unitsFrom(new URL(request.url)) };
+}
 export default function Today() {
-  const { current, now, units } = useLoaderData<typeof loader>();
-  return <><h1>Today</h1><p>Local observations · America/Denver · source age remains visible.</p><UnitForm units={units} /><CurrentConditions initial={current} renderedAt={now} units={units} /><CameraPlaceholders /></>;
+  const { current, now, units, registry, apiUnavailable } = useLoaderData<typeof loader>();
+  return <><h1>Today</h1><p>Local observations · America/Denver · source age remains visible.</p><UnitForm units={units} /><CurrentConditions initial={current} renderedAt={now} units={units} registry={registry} apiUnavailable={apiUnavailable} /><CameraPlaceholders /></>;
 }

@@ -21,10 +21,25 @@ to the allowlisted public host. Logs contain only fixed route templates, status 
 
 Current data is seeded by the loader into a request-local QueryClient. Polls use one shared identity,
 15-second spacing, a 120-second backoff ceiling, no focus/reconnect retry, and cancel when hidden.
-The API-unavailable label retains old observation times and continues aging values. Display units are
-URL state; source values stay canonical. Missing is a reasoned null, never a fabricated zero.
+The API-unavailable label retains old observation times and continues aging values. A successful
+response containing unavailable/null measurements instead invalidates the earlier cached numbers;
+it does not claim a transport failure. An API `cached` state describes API fallback, without guessing
+whether the physical station feed failed. The shared `useCurrent(initial, apiUnavailable, options)`
+hook additionally supports `refreshOnResume: true` and `jitterFraction` (clamped to 0–0.2) for the
+separate embed surface; Today keeps its existing next-tick resume and exact 15-second base interval.
+Repeated visibility events do not create overlapping refreshes.
 
-History shows actual resolution, the source interval, reported gaps and support metadata. uPlot receives
+Display units are URL state; source values stay canonical. Registry discovery supplies required
+rational affine conversion recipes and labels. If discovery is unavailable or mismatched, the UI
+shows canonical source units with an explicit conversion-unavailable notice. It never substitutes
+an independently guessed conversion. Missing is a reasoned null, never a fabricated zero. Windowed
+rain is labelled derived and is excluded from the direct-observation selector.
+
+History identifies raw `resolution_seconds: 0` as unbinned source observations, not a physical
+sampling cadence of zero seconds. Positive-resolution aggregate payloads cannot enter that view.
+Bounded API input errors retain only a whitelisted code and numeric resolution suggestion; messages
+and request identifiers never enter hydration. A rejected raw query never silently selects an
+aggregate or another statistic. History shows the source interval, reported gaps and support metadata. uPlot receives
 nulls at missing intervals and has a complete SSR table alternative. Exports are bounded JSON pages;
 following a cursor or choosing another interval exposes older retained data. The archive calendar
 selects solar-cycle dates; its separate bounded catalog clearly labels its filter/pagination scope.
@@ -56,7 +71,7 @@ This is a separate ROOT-submitted `repo-validate` qualification after image buil
 PR/event check that would wait for its own promotion. It uses the existing immutable repo-validate
 template and pinned Weather CI image, no additional identity/RBAC/image, and a stable operation ID.
 The source revision and both web image digests are fixed before the run. Browser execution is Linux
-in-cluster only. `scripts/web-rollout.sh` installs the pinned browser closure and invokes
+in-cluster only. `scripts/web-rollout.sh` verifies the pinned baked browser closure and invokes
 `web/e2e/rollout.mjs`; it does not submit or promote anything.
 
 Command interface (run through `scripts/bootstrap-ci.sh` in the supported qualification):
@@ -116,3 +131,21 @@ The rolling qualification checks immutable public cache headers as well as bytes
 skips or retries and records checksums for 27 synthetic Today/history/About screenshots. ROOT collects
 the listed files from the exact run Pod before PodGC and verifies their hashes for visual review.
 The report is capped at 60 KiB; original test output and traces remain in `artifacts/` for that run.
+
+The runtime schemas remain independent of generated OpenAPI. The synthetic registry fixture is
+serialized from the actual code-first discovery model, including all 16 canonical metric identities,
+required conversion recipes and explicit null cadence. The source-hashed pure ASGI-to-Node receipt
+in `evidence/public-web-alignment-20261024.json` proves current serialization defaults, cached source
+times, raw history and discovery pass the actual web parser. It records no database, server socket,
+browser, build or deployment qualification.
+
+Reproduce that bounded optional receipt after API adoption with:
+
+```sh
+uv run --frozen python scripts/check_web_contract_alignment.py
+```
+
+For pre-merge source coordination, `--api-source <isolated-api-checkout>` binds that exact Git
+revision and its model/router/service hashes. Node must be the pinned 24.22.1 from the CI bootstrap.
+The receipt also binds the web parser, input fixtures and helper hashes; the independent web unit
+checks remain runnable before the API modules exist and never consume generated OpenAPI.

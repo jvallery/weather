@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import type { z } from "zod";
+import { z } from "zod";
 import { Counter, Gauge, register } from "prom-client";
 import { catalogSchema, currentSchema, historySchema, metricRegistrySchema, type Current } from "./contracts";
 
@@ -14,16 +14,19 @@ function origin(): string {
   if ((!production && !fixture) || value.username || value.password || value.search || value.hash || value.pathname !== "/") throw new Error("Invalid API upstream configuration");
   return value.origin;
 }
-export async function publicRead<T>(path: string, schema: z.ZodType<T>, requestSignal: AbortSignal, params = new URLSearchParams()): Promise<T | null> {
+const problemSchema = z.strictObject({ code: z.string().max(64), message: z.string().max(512), request_id: z.string().max(128).nullable(), suggested_resolution_seconds: z.number().int().positive().nullable() });
+export type InputIssue = { code: "invalid_request" | "unknown_metric" | "unsupported_statistic" | "unsupported_unit" | "invalid_cursor" | "range_too_large"; suggestedResolutionSeconds: number | null };
+export type PublicResult<T> = { kind: "ok"; data: T } | { kind: "invalid"; issue: InputIssue } | { kind: "unavailable" };
+export async function publicReadResult<T>(path: string, schema: z.ZodType<T>, requestSignal: AbortSignal, params = new URLSearchParams()): Promise<PublicResult<T>> {
   const route = path.startsWith("/api/v1/timelapses/") ? "/api/v1/timelapses/:id" : path;
-  if (!ALLOWED.test(path)) { requests.labels("other", "invalid_response").inc(); return null; }
-  if (active >= 4) { requests.labels(route, "overloaded").inc(); return null; }
+  if (!ALLOWED.test(path)) { requests.labels("other", "invalid_response").inc(); return { kind: "unavailable" }; }
+  if (active >= 4) { requests.labels(route, "overloaded").inc(); return { kind: "unavailable" }; }
   active += 1; inFlight.inc();
   try {
     const target = new URL(path, origin());
     target.search = params.toString();
     const response = await fetch(target, { signal: AbortSignal.any([requestSignal, AbortSignal.timeout(6000)]), redirect: "error", headers: { Accept: "application/json" } });
-    if (!response.ok || !response.body) { requests.labels(route, "http_error").inc(); return null; }
+    if ((!response.ok && response.status !== 400) || !response.body) { requests.labels(route, "http_error").inc(); return { kind: "unavailable" }; }
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let bytes = 0;
@@ -33,16 +36,27 @@ export async function publicRead<T>(path: string, schema: z.ZodType<T>, requestS
         const result = await reader.read();
         if (result.done) break;
         bytes += result.value.byteLength;
-        if (bytes > 4 * 1024 * 1024) { requests.labels(route, "too_large").inc(); await reader.cancel(); return null; }
+        if (bytes > 4 * 1024 * 1024) { requests.labels(route, "too_large").inc(); await reader.cancel(); return { kind: "unavailable" }; }
         body += decoder.decode(result.value, { stream: true });
       }
       body += decoder.decode();
     } finally { reader.releaseLock(); }
-    const parsed = schema.safeParse(JSON.parse(body));
+    const json: unknown = JSON.parse(body);
+    if (response.status === 400) {
+      const problem = problemSchema.safeParse(json);
+      const accepted = ["invalid_request", "unknown_metric", "unsupported_statistic", "unsupported_unit", "invalid_cursor", "range_too_large"];
+      requests.labels(route, "input_error").inc();
+      return { kind: "invalid", issue: { code: problem.success && accepted.includes(problem.data.code) ? problem.data.code as InputIssue["code"] : "invalid_request", suggestedResolutionSeconds: problem.success ? problem.data.suggested_resolution_seconds : null } };
+    }
+    const parsed = schema.safeParse(json);
     requests.labels(route, parsed.success ? "ok" : "invalid_response").inc();
-    return parsed.success ? parsed.data : null;
-  } catch (error) { requests.labels(route, error instanceof SyntaxError ? "invalid_response" : "network_error").inc(); return null; }
+    return parsed.success ? { kind: "ok", data: parsed.data } : { kind: "unavailable" };
+  } catch (error) { requests.labels(route, error instanceof SyntaxError ? "invalid_response" : "network_error").inc(); return { kind: "unavailable" }; }
   finally { active -= 1; inFlight.dec(); }
+}
+export async function publicRead<T>(path: string, schema: z.ZodType<T>, requestSignal: AbortSignal, params = new URLSearchParams()): Promise<T | null> {
+  const result = await publicReadResult(path, schema, requestSignal, params);
+  return result.kind === "ok" ? result.data : null;
 }
 export function unavailableCurrent(now: number): Current {
   return { schema_version: 1, generated_at: new Date(now).toISOString(), station_alias: "Local station", data_state: "unavailable", metrics: [] };
@@ -50,14 +64,14 @@ export function unavailableCurrent(now: number): Current {
 export async function currentRead(request: Request) {
   const current = await publicRead("/api/v1/weather/current", currentSchema, request.signal);
   const now = Date.now();
-  return { current: current || unavailableCurrent(now), now };
+  return { current: current || unavailableCurrent(now), now, apiUnavailable: current === null };
 }
 export async function catalogRead(request: Request, extra = new URLSearchParams()) {
   extra.set("limit", "100");
   return publicRead("/api/v1/timelapses", catalogSchema, request.signal, extra);
 }
 export async function historyRead(request: Request, params: URLSearchParams) {
-  return publicRead("/api/v1/weather/observations", historySchema, request.signal, params);
+  return publicReadResult("/api/v1/weather/observations", historySchema, request.signal, params);
 }
 
 export async function metricRegistryRead(request: Request) {
