@@ -21,6 +21,7 @@ spec:
         weather.vallery.net/database-role: api
     spec:
       automountServiceAccountToken: false
+      enableServiceLinks: false
       restartPolicy: Never
       securityContext:
         runAsNonRoot: true
