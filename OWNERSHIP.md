@@ -47,3 +47,17 @@ B2-reader proof. It selects only labelled disposable operation pods, permits
 kube-dns and TCP 443 for dynamic B2, and adds no ServiceAccount token, TCP
 6443 exception, proxy, credentials or workload activation. Source: `deploy/k8s/commissioning/custody-probe-egress.yaml`;
 bounded lifecycle: `docs/operations/garage-commissioning.md`.
+
+## Schema and durable work (WX-08)
+
+| Item | Location | State / activation |
+|---|---|---|
+| Retained telemetry, calendar/capture/catalog/editorial/search/job/outbox relations | `app/weather/db/schema_v1.py`, current `models.metadata` | Schema v1; cluster qualification required before #9 closes; production application belongs to #6 |
+| Public read projections, scoped grants and CAS/append-only guards | `app/weather/db/ddl_v1.py` | No raw receipts, private IDs, originals or private editorial tables granted to API |
+| `weather-migrate` Sync Job and database-only NetworkPolicy | `deploy/k8s/migrate` | Excluded from root kustomization until #6 commissions the database |
+| `scheduler` Deployment and database/metrics NetworkPolicy | `deploy/k8s/scheduler` | Zero replicas and excluded; #14 registers handlers and enables it |
+| `weather-ci` tooling image | `Dockerfile.ci`, registry-owned repo-build profile | PG16.15/vector0.8.6 disposable in-container integration; never an application database |
+
+These namespace-rendered application objects inherit the central `namespace:weather`
+ownership declaration. Fleet validation/profile declarations and the CI image digest
+pin are agents-owned; source/tests, schema and runtime image contents remain here.
