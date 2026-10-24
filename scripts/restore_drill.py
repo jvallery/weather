@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """Operator orchestration only; restoration and SQL run in the vallery cluster.
 
 Default is a manifest plan. --run commissions a bounded, isolated reader-only
