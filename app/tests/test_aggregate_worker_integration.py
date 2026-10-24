@@ -6,12 +6,21 @@ server marker, PostgreSQL16.15 and vector0.8.6 before any test writes occur.
 """
 
 import asyncio
+import json
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pytest
 from sqlalchemy import text
-from test_current_publication_integration import device, engine, guard, incident, observation
+from test_current_publication_integration import (
+    device,
+    engine,
+    guard,
+    incident,
+    observation,
+    quality,
+    receipt,
+)
 from test_current_publication_integration import disposable_database as disposable_database
 from weather.api.aggregate_config import support_binding
 from weather.api.support_assembly import SupportPolicy
@@ -224,6 +233,111 @@ def test_changed_dispatch_retains_corrections_and_stale_jobs_preserve_head() -> 
                 ).scalar_one()
         finally:
             await ingest.dispose()
+            await db.dispose()
+            await admin.dispose()
+
+    asyncio.run(check())
+
+
+def test_full_25_hour_day_with_minute_observations_and_three_second_rapid_wind() -> None:
+    """One bounded fleet-only cadence pilot, including irrelevant rapid direction rows."""
+
+    async def check() -> None:
+        admin, db = engine(), engine("weather_worker")
+        target = Target.at("weather_day", datetime(2025, 11, 2, 12, tzinfo=UTC))
+        assert target.end - target.start == timedelta(hours=25)
+        policies = {
+            metric: SupportPolicy(
+                "reported_interval",
+                "synthetic_reported_wind_v1",
+                reported_policies=("v171-wind-report-interval-1",),
+                maximum_reported_seconds=60,
+                authority="obs_st",
+            )
+            for metric in ("wind_avg", "wind_gust", "wind_direction")
+        }
+        value = AggregateRevisionWorker(
+            db,
+            policies,
+            support_binding(policies),
+            clock=lambda: target.end + timedelta(minutes=5),
+        )
+        try:
+            async with asyncio.timeout(120), admin.begin() as connection:
+                await guard(connection)
+                await connection.execute(text("SET LOCAL statement_timeout='120s'"))
+                d, alias = await station(connection)
+                await connection.execute(
+                    text("UPDATE weather.device SET valid_from=:start WHERE id=:id"),
+                    {"id": d, "start": target.start - timedelta(days=1)},
+                )
+                raw = await receipt(connection, received=target.end)
+                for family, first, last, step, values in (
+                    (
+                        "obs_st",
+                        1,
+                        1500,
+                        60,
+                        {"wind_avg": 4, "wind_gust": 6, "wind_direction": 359},
+                    ),
+                    ("rapid_wind", 0, 29999, 3, {"wind_direction": 1}),
+                ):
+                    qualified = quality(values)
+                    if family == "obs_st":
+                        for field in qualified["fields"].values():
+                            field["support"] = {
+                                "kind": "reported_interval",
+                                "qualified": True,
+                                "reported_seconds": 60,
+                                "policy": "v171-wind-report-interval-1",
+                            }
+                    # family is a fixed fixture constant, never request input.
+                    await connection.execute(
+                        text(f"""INSERT INTO weather.{family}
+                        (id,device_id,receipt_id,message_type,source_ts,row_idx,"values",quality)
+                        SELECT gen_random_uuid(),:device,:receipt,:family,
+                          CAST(:start AS timestamptz)+(:step*g.i)*interval '1 second',g.i,
+                          CAST(:values AS jsonb),CAST(:quality AS jsonb)
+                        FROM generate_series(CAST(:first AS integer),
+                                             CAST(:last AS integer)) AS g(i)"""),
+                        {
+                            "device": d,
+                            "receipt": raw,
+                            "family": family,
+                            "start": target.start,
+                            "step": step,
+                            "first": first,
+                            "last": last,
+                            "values": json.dumps(values),
+                            "quality": json.dumps(qualified),
+                        },
+                    )
+                assert (
+                    await connection.execute(
+                        text("SELECT public_api.telemetry_snapshot_watermark()")
+                    )
+                ).scalar_one() == 31500
+            context = await enqueue_context(db, value, target, alias, "synthetic-full-25h")
+            async with asyncio.timeout(120):
+                result = await value.recompute(context)
+            assert result["results"] == result["created"] == 5
+            assert result["unchanged"] == result["superseded"] == 0
+            async with admin.connect() as connection:
+                rows = (
+                    await connection.execute(
+                        text("SELECT metric,statistic,document FROM weather.aggregate_revision")
+                    )
+                ).mappings().all()
+            assert len(rows) == 5
+            for row in rows:
+                document = row["document"]
+                assert document["coverage"]["support_seconds"] == 90000
+                assert document["coverage"]["expected_seconds"] == 90000
+                assert document["coverage"]["fraction"] == 1
+                assert document["coverage"]["gaps"] == []
+                expected = {"wind_avg": 4, "wind_gust": 6, "wind_direction": 359}[row["metric"]]
+                assert document["value"] == pytest.approx(expected)
+        finally:
             await db.dispose()
             await admin.dispose()
 
