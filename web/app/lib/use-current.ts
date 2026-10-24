@@ -12,6 +12,12 @@ export function useCurrent(initial: Current, apiUnavailable = false, options: Cu
   const [resumes, setResumes] = useState(0);
   const [visible, setVisible] = useState(true);
   const failures = useRef(0);
+  const pollDelay = useRef<number | null>(null);
+  // Source-age ticks render every second. Keep this sample stable until a
+  // request completes so QueryObserver does not continually restart its timer.
+  if (pollDelay.current === null) {
+    pollDelay.current = Math.min(120_000, Math.round(nextPollDelay(0) * (1 + jitter * (2 * Math.random() - 1))));
+  }
   const [successfulPoll, setSuccessfulPoll] = useState(false);
   const client = useQueryClient();
   useEffect(() => {
@@ -39,7 +45,7 @@ export function useCurrent(initial: Current, apiUnavailable = false, options: Cu
     queryKey: CURRENT_QUERY_KEY, initialData: initial, staleTime: Infinity,
     enabled: visible, retry: false, refetchOnMount: false, refetchOnWindowFocus: false,
     refetchOnReconnect: false, refetchIntervalInBackground: false,
-    refetchInterval: () => Math.min(120_000, Math.round(nextPollDelay(failures.current) * (1 + jitter * (2 * Math.random() - 1)))),
+    refetchInterval: () => pollDelay.current!,
     queryFn: async ({ signal }) => {
       try {
         const response = await fetch("/api/v1/weather/current", { signal: AbortSignal.any([signal, AbortSignal.timeout(6000)]), cache: "no-store", headers: { Accept: "application/json" } });
@@ -51,6 +57,8 @@ export function useCurrent(initial: Current, apiUnavailable = false, options: Cu
       } catch (error) {
         if (!signal.aborted) failures.current += 1;
         throw error;
+      } finally {
+        pollDelay.current = Math.min(120_000, Math.round(nextPollDelay(failures.current) * (1 + jitter * (2 * Math.random() - 1))));
       }
     },
   });

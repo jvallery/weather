@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // SPDX-License-Identifier: MIT
-import { StrictMode } from "react";
+import { StrictMode, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider, focusManager } from "@tanstack/react-query";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
@@ -121,4 +121,24 @@ test("a canceled old poll cannot resurrect numbers after authoritative source in
   await act(async () => { finish?.(new Response(JSON.stringify(current))); });
   expect(client.getQueryData(CURRENT_QUERY_KEY)).toEqual(unavailable);
   expect(screen.getByText(/No current measurements were returned/)).toBeTruthy();
+});
+
+
+test("jitter stays stable while one-second source-age renders continue", async () => {
+  let samples = 0;
+  const random = vi.spyOn(Math, "random").mockImplementation(() => (++samples % 2 ? 0.2 : 0.8));
+  const fetch = vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify(current))));
+  vi.stubGlobal("fetch", fetch);
+  function AgingProbe() {
+    const result = useCurrent(current, false, { refreshOnResume: true, jitterFraction: 0.1 });
+    const [tick, setTick] = useState(0);
+    useEffect(() => { const timer = setInterval(() => setTick((value) => value + 1), 1000); return () => clearInterval(timer); }, []);
+    return <p>{result.data.metrics[0].observed_at} · {tick}</p>;
+  }
+  try {
+    render(<QueryClientProvider client={client}><AgingProbe /></QueryClientProvider>);
+    // Separate acts model actual clock renders rather than batching the whole interval.
+    for (let tick = 0; tick < 17; tick += 1) await advance(1000);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  } finally { random.mockRestore(); }
 });
