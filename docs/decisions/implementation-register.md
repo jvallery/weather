@@ -41,4 +41,4 @@ Database/API replica availability is separate from NAS-backed capture and uncach
 
 ## Research versus implementation gates
 
-A selected design may carry mandatory isolated implementation tests without claiming they already passed. An unresolved material approach (currently including secondary-interface isolation admission and full offsite custody disposition) is still a research blocker. Do not close WX-00 or start application implementation until the full planning pass is complete. Continue independent evidence collection, contract writing and issue refinement while blocked decisions are resolved.
+Jason's revised review boundary: verify architecture, fleet standards/ownership and issue/dependency consistency now; detailed mechanism discovery, compatibility, sizing and qualification belong to execution waves. The unresolved items in this register remain assigned execution obligations, not automatic WX-00 planning blockers. Release and mutation acceptance gates remain intact.

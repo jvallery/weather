@@ -8,9 +8,9 @@ The owner chose an **independent, fleet-first application**, with specific upstr
 
 ## Assignment
 
-**Finish the remaining architecture/evidence decisions, reconcile operative issue bodies, and publish the final requirements-to-execution handoff.** The repository, issue identities, milestones and native graph are already established. Application implementation follows honest closure of WX-00; do not restart completed planning work or treat this handoff as permission to build/deploy the application.
+**Finish the architecture consistency review and publish the execution-wave handoff.** Jason directed us to stop deep investigation: design and architecture must align with current fleet standards, while mechanism discovery and implementation details belong to the execution sprint. Do not perform more provider, fencing, CPU/model, recovery or compatibility investigation as a planning prerequisite.
 
-Proceed with read-only inventory and approved bounded capability experiments using established owner workflows. Do not change production network paths, GPU allocation, shared storage/provider configuration, backup retention or unrelated workloads as an incidental research step. Resolve routine design choices from evidence. If a material requirement conflicts with available capability or required access is missing, complete the unblocked work and document the precise blocker, responsible owner, evidence needed and dependent issues.
+Check accepted scope, component/data boundaries, owner lanes, standards, requirement coverage and dependency order. Carry unresolved technical details into the existing execution issues with an owner, discovery outcome and dependent acceptance gate. Do not start application implementation in this review or interpret historical planning-blocker language as overriding this direction.
 
 ## Current authoritative state and next work
 
@@ -28,13 +28,13 @@ Established choices and collateral:
 
 Before asking product questions, read the [owner-input reconciliation](decisions/2026-10-23-product-scope.md#remaining-owner-input-and-decisions-not-to-reopen). Exact location disclosure, initial AI/interpolation scope and provisional recovery targets are already constrained; all three full camera views without visual masks are approved in D02. Homepage placement is approved in D13; do not reopen either decision.
 
-Remaining work is the existing P1–P7 scope, not another coverage inventory: supported candidate/integration admission; camera timing/privacy/cadence and storage/fencing/UDP grants; concrete immutable-write and local-loss policy; admitted CPU/model feasibility and budgets; selected Tunnel route configuration/cache withdrawal and parent placement; independent recovery keys, ledgers/copy/capacity policy; and final issue consolidation/handoff. Backend direct pins, static wireframes, graph filing and E01 custody are completed inputs to that work.
+Remaining planning work is a final consistency check and concise execution-wave handoff. P1–P6 describe sprint discovery/owner integration, not additional planning gates. WX-00 closure does not claim those tasks are implemented or qualified. Execution begins with ready owner discovery and Weather foundations under the filed graph; mutation/build still requires the relevant implemented owner interface and normal estate resource rules.
 
-**First ready implementation set: empty while WX-00 remains unresolved.** The first unblocked activity is planning/source investigation and consolidation under the active scope. After WX-00 closes, WX-01 and WX-02 are the initial Weather implementation roots, but only when OWN-CI's implemented/admitted interfaces are actually ready. Other owner issues may progress independently within their scoped authority; an open issue is not a running agent or pending job. Check current scheduler/grants before any approved intensive pilot. Do not wait for an unstarted owner task or claim a planned experiment is running.
+No new product questionnaire is pending. Do not repeat research or broaden the plan to resolve every unknown. Distinguish planning completion from execution readiness of each individual task and from release acceptance.
 
-Keep intensive qualification on the supported admitted cluster path. If unavailable, record the exact missing interface/grant and continue independent design work; never substitute a Mac build, unapproved namespace or borrowed credential. Final completion still requires resolving material architecture, not merely recording blockers or passing structural checks.
+## Execution discovery and acceptance checklist
 
-## Domain review checklist
+The following detailed checks belong to their execution issues. During this review verify assignment and consistency, not that these checks have already passed.
 
 1. **Repository and delivery:** namespace/ownership, the selected MIT/permissive reuse policy and upstream obligations, public/private configuration split, repository settings and independent local CI/CD/registry/promotion design. Document fleet customization without building a general multi-tenant platform.
 2. **Cameras and time:** actual native snapshot API behavior, sustainable cadence, timestamps/uncertainty, private site configuration, civil-twilight boundaries and exact 120-second combined frame allocation. Qualify regions/bins for all-three-camera day/night keograms, completed-hour still selection, separate calendar-day/hour FKs and solar cycles, and 23/24/25-hour DST behavior.
