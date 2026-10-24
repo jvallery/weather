@@ -39,6 +39,9 @@ test("one request stays in flight and hidden pages cancel it and stop polling", 
   await advance(20_000); expect(fetch).toHaveBeenCalledTimes(1);
   await act(async () => { Object.defineProperty(document, "visibilityState", { configurable: true, value: "hidden" }); document.dispatchEvent(new Event("visibilitychange")); });
   expect(signal?.aborted).toBe(true); await advance(120_000); expect(fetch).toHaveBeenCalledTimes(1);
+  await act(async () => { Object.defineProperty(document, "visibilityState", { configurable: true, value: "visible" }); document.dispatchEvent(new Event("visibilitychange")); });
+  expect(fetch).toHaveBeenCalledTimes(1);
+  await advance(15_000); expect(fetch).toHaveBeenCalledTimes(2);
 });
 test("failure keeps observed_at and backs off to a bounded cadence", async () => {
   const fetch = vi.fn().mockRejectedValue(new Error("Synthetic network outage")); vi.stubGlobal("fetch", fetch);

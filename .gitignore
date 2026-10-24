@@ -8,3 +8,6 @@ node_modules/
 web/build/
 web/.react-router/
 artifacts/
+
+web/.test-media/
+web/test-results/

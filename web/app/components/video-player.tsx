@@ -13,7 +13,8 @@ export function VideoPlayer({ video }: { video: Video }) {
   const native = video.renditions.find((item) => item.role === "native");
   if (!rendition || !native || !video.poster || !video.native_download_url) return <p className="fault">Media metadata is unavailable.</p>;
   return <section aria-labelledby="playback-title"><h2 id="playback-title">Recording</h2>
-    <video ref={player} controls playsInline preload="metadata" poster={video.poster.asset.url} src={rendition.asset.url}
+    <p id="playback-note">Silent, accelerated weather recording. Source dates and description follow.</p>
+    <video ref={player} aria-describedby="playback-note" controls muted playsInline preload="metadata" poster={video.poster.asset.url} src={rendition.asset.url}
       onPlay={(event) => { document.querySelectorAll("video").forEach((other) => { if (other !== event.currentTarget) other.pause(); }); }}
       onLoadedMetadata={() => {
         const element = player.current;

@@ -64,8 +64,8 @@ const asset = z.strictObject({
   asset_id: id, class: z.enum(["video", "poster", "public_still", "keogram", "camera_preview", "metadata"]),
   url: z.string().regex(/^\/media\/[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/),
   mime: z.enum(["video/mp4", "image/jpeg", "image/png", "image/webp", "application/json"]),
-  bytes: integer, sha256: z.string().regex(/^[0-9a-f]{64}$/), width: integer.min(1).nullable(), height: integer.min(1).nullable(),
-});
+  bytes: integer.min(1), sha256: z.string().regex(/^[0-9a-f]{64}$/), width: integer.min(1).nullable(), height: integer.min(1).nullable(),
+}).refine((item) => item.class === "metadata" || (item.width !== null && item.height !== null), "Public imagery requires dimensions");
 const rendition = z.strictObject({
   role: z.enum(["native", "web", "mobile"]), asset, codec: text, profile: text, level: text,
   fps: rational, frame_count: integer, duration: rational, track_timescale: z.literal(60000), movie_timescale: z.literal(60000),
@@ -107,6 +107,7 @@ export const videoSchema = z.strictObject({
   input_manifest_hash: z.string().regex(/^[0-9a-f]{64}$/), recipe_revision: id, build_identity: id, publication_generation: integer.min(1),
 }).superRefine((video, context) => {
   const roles = new Set(video.renditions.map((item) => item.role));
+  if (video.state === "published" && (roles.size !== 3 || !video.poster || !video.native_download_url)) context.addIssue({ code: "custom", message: "Published products require three renditions, poster and native download" });
   if (roles.size !== video.renditions.length) context.addIssue({ code: "custom", message: "Duplicate rendition roles" });
   if (!["published", "partial"].includes(video.state) && (video.renditions.length || video.poster || video.native_download_url)) {
     context.addIssue({ code: "custom", message: "Unavailable media cannot expose assets" });

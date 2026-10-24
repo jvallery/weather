@@ -30,7 +30,7 @@ export function HistoryPlot({ history, metric, units }: { history: History; metr
       const unit = history.points.find((point) => point.metric === metric)?.unit || "";
       plot = new UPlot({ width: element.clientWidth, height: 240, title: `${metricLabel(metric)} · explicit gaps`,
         series: [{}, { label: metricLabel(metric), stroke: "#0e5a43", width: 2, spanGaps: false }],
-        axes: [{ values: (_plot, values) => values.map((value) => localTime(new Date(value * 1000).toISOString())) }, { values: (_plot, values) => values.map((value) => metricValue(value, unit, units)) }],
+        axes: [{ stroke: "#626b76", values: (_plot, values) => values.map((value) => localTime(new Date(value * 1000).toISOString())) }, { stroke: "#626b76", values: (_plot, values) => values.map((value) => metricValue(value, unit, units)) }],
         cursor: { drag: { x: true, y: false } }, legend: { show: false },
       }, data, element);
     });

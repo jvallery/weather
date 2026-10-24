@@ -14,30 +14,53 @@
       "reason": null,
       "updated_at": "2026-11-01T08:15:00Z",
       "source_interval": {
-        "start": "2026-10-31T12:50:00Z",
-        "end": "2026-11-01T00:30:00Z"
+        "start": "2026-10-31T12:30:00Z",
+        "end": "2026-11-01T01:00:00Z"
       },
-      "local_start_label": "2026-10-31 06:50 UTC-06:00",
-      "local_end_label": "2026-10-31 18:30 UTC-06:00",
+      "local_start_label": "2026-10-31 06:30 UTC-06:00",
+      "local_end_label": "2026-10-31 19:00 UTC-06:00",
       "timezone": "America/Denver",
       "twilight_model": "civil-six-degrees",
-      "allocated_frames": 3500,
+      "allocated_frames": 3600,
       "fps": {
         "numerator": 60,
         "denominator": 1
       },
       "duration": {
-        "numerator": 3500,
-        "denominator": 60
+        "numerator": 60,
+        "denominator": 1
       },
-      "time_map": [],
-      "expected_slots": 43200,
-      "accepted_slots": 41040,
+      "time_map": [
+        {
+          "frame_start": 0,
+          "frame_end": 3600,
+          "source_interval": {
+            "start": "2026-10-31T12:30:00Z",
+            "end": "2026-11-01T01:00:00Z"
+          },
+          "uncertainty_seconds": 0,
+          "coverage": {
+            "fraction": 0.95,
+            "support_seconds": 42750,
+            "expected_seconds": 45000,
+            "algorithm_revision": "synthetic-coverage-v1",
+            "gaps": [
+              {
+                "start": "2026-10-31T12:46:40Z",
+                "end": "2026-10-31T13:24:10Z"
+              }
+            ]
+          },
+          "mode": "observed_exposure"
+        }
+      ],
+      "expected_slots": 45000,
+      "accepted_slots": 42750,
       "cadence_epochs": [
         {
           "interval": {
-            "start": "2026-10-31T12:50:00Z",
-            "end": "2026-11-01T00:30:00Z"
+            "start": "2026-10-31T12:30:00Z",
+            "end": "2026-11-01T01:00:00Z"
           },
           "interval_seconds": 1
         }
@@ -45,10 +68,15 @@
       "source_time_basis": "synthetic-fixture",
       "coverage": {
         "fraction": 0.95,
-        "support_seconds": 41040,
-        "expected_seconds": 43200,
+        "support_seconds": 42750,
+        "expected_seconds": 45000,
         "algorithm_revision": "synthetic-coverage-v1",
-        "gaps": []
+        "gaps": [
+          {
+            "start": "2026-10-31T12:46:40Z",
+            "end": "2026-10-31T13:24:10Z"
+          }
+        ]
       },
       "caveats": [
         "Synthetic fixture; no household imagery"
@@ -63,8 +91,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 4096,
-            "height": 1856
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -73,10 +101,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3500,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3500,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -90,8 +118,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 1920,
-            "height": 870
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -100,10 +128,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3500,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3500,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -117,8 +145,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 1280,
-            "height": 580
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -127,10 +155,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3500,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3500,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -144,12 +172,12 @@
           "mime": "image/jpeg",
           "bytes": 100000,
           "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-          "width": 1280,
-          "height": 580
+          "width": 320,
+          "height": 180
         },
         "source_interval": {
-          "start": "2026-10-31T12:50:00Z",
-          "end": "2026-11-01T00:30:00Z"
+          "start": "2026-10-31T12:30:00Z",
+          "end": "2026-11-01T01:00:00Z"
         },
         "output_pts": {
           "numerator": 0,
@@ -181,12 +209,12 @@
         "coverage": {
           "fraction": 0,
           "support_seconds": 0,
-          "expected_seconds": 43200,
+          "expected_seconds": 45000,
           "algorithm_revision": "synthetic-analysis-coverage-v1",
           "gaps": [
             {
-              "start": "2026-10-31T12:50:00Z",
-              "end": "2026-11-01T00:30:00Z"
+              "start": "2026-10-31T12:30:00Z",
+              "end": "2026-11-01T01:00:00Z"
             }
           ]
         },
@@ -223,29 +251,52 @@
       "reason": null,
       "updated_at": "2026-11-01T08:15:00Z",
       "source_interval": {
-        "start": "2026-11-01T00:30:00Z",
+        "start": "2026-11-01T01:00:00Z",
         "end": "2026-11-01T13:30:00Z"
       },
-      "local_start_label": "2026-10-31 18:30 UTC-06:00",
+      "local_start_label": "2026-10-31 19:00 UTC-06:00",
       "local_end_label": "2026-11-01 06:30 UTC-07:00",
       "timezone": "America/Denver",
       "twilight_model": "civil-six-degrees",
-      "allocated_frames": 3700,
+      "allocated_frames": 3600,
       "fps": {
         "numerator": 60,
         "denominator": 1
       },
       "duration": {
-        "numerator": 3700,
-        "denominator": 60
+        "numerator": 60,
+        "denominator": 1
       },
-      "time_map": [],
-      "expected_slots": 43200,
-      "accepted_slots": 41040,
+      "time_map": [
+        {
+          "frame_start": 0,
+          "frame_end": 3600,
+          "source_interval": {
+            "start": "2026-11-01T01:00:00Z",
+            "end": "2026-11-01T13:30:00Z"
+          },
+          "uncertainty_seconds": 0,
+          "coverage": {
+            "fraction": 0.95,
+            "support_seconds": 42750,
+            "expected_seconds": 45000,
+            "algorithm_revision": "synthetic-coverage-v1",
+            "gaps": [
+              {
+                "start": "2026-11-01T01:16:40Z",
+                "end": "2026-11-01T01:54:10Z"
+              }
+            ]
+          },
+          "mode": "observed_exposure"
+        }
+      ],
+      "expected_slots": 45000,
+      "accepted_slots": 42750,
       "cadence_epochs": [
         {
           "interval": {
-            "start": "2026-11-01T00:30:00Z",
+            "start": "2026-11-01T01:00:00Z",
             "end": "2026-11-01T13:30:00Z"
           },
           "interval_seconds": 1
@@ -254,10 +305,15 @@
       "source_time_basis": "synthetic-fixture",
       "coverage": {
         "fraction": 0.95,
-        "support_seconds": 41040,
-        "expected_seconds": 43200,
+        "support_seconds": 42750,
+        "expected_seconds": 45000,
         "algorithm_revision": "synthetic-coverage-v1",
-        "gaps": []
+        "gaps": [
+          {
+            "start": "2026-11-01T01:16:40Z",
+            "end": "2026-11-01T01:54:10Z"
+          }
+        ]
       },
       "caveats": [
         "Synthetic fixture; no household imagery"
@@ -272,8 +328,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 4096,
-            "height": 1856
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -282,10 +338,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3700,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3700,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -299,8 +355,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 1920,
-            "height": 870
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -309,10 +365,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3700,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3700,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -326,8 +382,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 1280,
-            "height": 580
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -336,10 +392,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3700,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3700,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -353,11 +409,11 @@
           "mime": "image/jpeg",
           "bytes": 100000,
           "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-          "width": 1280,
-          "height": 580
+          "width": 320,
+          "height": 180
         },
         "source_interval": {
-          "start": "2026-11-01T00:30:00Z",
+          "start": "2026-11-01T01:00:00Z",
           "end": "2026-11-01T13:30:00Z"
         },
         "output_pts": {
@@ -390,11 +446,11 @@
         "coverage": {
           "fraction": 0,
           "support_seconds": 0,
-          "expected_seconds": 43200,
+          "expected_seconds": 45000,
           "algorithm_revision": "synthetic-analysis-coverage-v1",
           "gaps": [
             {
-              "start": "2026-11-01T00:30:00Z",
+              "start": "2026-11-01T01:00:00Z",
               "end": "2026-11-01T13:30:00Z"
             }
           ]
@@ -432,30 +488,53 @@
       "reason": null,
       "updated_at": "2026-11-01T08:15:00Z",
       "source_interval": {
-        "start": "2026-10-31T12:50:00Z",
-        "end": "2026-11-01T00:30:00Z"
+        "start": "2026-10-31T12:30:00Z",
+        "end": "2026-11-01T01:00:00Z"
       },
-      "local_start_label": "2026-10-31 06:50 UTC-06:00",
-      "local_end_label": "2026-10-31 18:30 UTC-06:00",
+      "local_start_label": "2026-10-31 06:30 UTC-06:00",
+      "local_end_label": "2026-10-31 19:00 UTC-06:00",
       "timezone": "America/Denver",
       "twilight_model": "civil-six-degrees",
-      "allocated_frames": 3500,
+      "allocated_frames": 3600,
       "fps": {
         "numerator": 60,
         "denominator": 1
       },
       "duration": {
-        "numerator": 3500,
-        "denominator": 60
+        "numerator": 60,
+        "denominator": 1
       },
-      "time_map": [],
-      "expected_slots": 43200,
-      "accepted_slots": 41040,
+      "time_map": [
+        {
+          "frame_start": 0,
+          "frame_end": 3600,
+          "source_interval": {
+            "start": "2026-10-31T12:30:00Z",
+            "end": "2026-11-01T01:00:00Z"
+          },
+          "uncertainty_seconds": 0,
+          "coverage": {
+            "fraction": 0.95,
+            "support_seconds": 42750,
+            "expected_seconds": 45000,
+            "algorithm_revision": "synthetic-coverage-v1",
+            "gaps": [
+              {
+                "start": "2026-10-31T12:46:40Z",
+                "end": "2026-10-31T13:24:10Z"
+              }
+            ]
+          },
+          "mode": "observed_exposure"
+        }
+      ],
+      "expected_slots": 45000,
+      "accepted_slots": 42750,
       "cadence_epochs": [
         {
           "interval": {
-            "start": "2026-10-31T12:50:00Z",
-            "end": "2026-11-01T00:30:00Z"
+            "start": "2026-10-31T12:30:00Z",
+            "end": "2026-11-01T01:00:00Z"
           },
           "interval_seconds": 1
         }
@@ -463,10 +542,15 @@
       "source_time_basis": "synthetic-fixture",
       "coverage": {
         "fraction": 0.95,
-        "support_seconds": 41040,
-        "expected_seconds": 43200,
+        "support_seconds": 42750,
+        "expected_seconds": 45000,
         "algorithm_revision": "synthetic-coverage-v1",
-        "gaps": []
+        "gaps": [
+          {
+            "start": "2026-10-31T12:46:40Z",
+            "end": "2026-10-31T13:24:10Z"
+          }
+        ]
       },
       "caveats": [
         "Synthetic fixture; no household imagery"
@@ -481,8 +565,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 4096,
-            "height": 1856
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -491,10 +575,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3500,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3500,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -508,8 +592,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 1920,
-            "height": 870
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -518,10 +602,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3500,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3500,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -535,8 +619,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 1280,
-            "height": 580
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -545,10 +629,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3500,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3500,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -562,12 +646,12 @@
           "mime": "image/jpeg",
           "bytes": 100000,
           "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-          "width": 1280,
-          "height": 580
+          "width": 320,
+          "height": 180
         },
         "source_interval": {
-          "start": "2026-10-31T12:50:00Z",
-          "end": "2026-11-01T00:30:00Z"
+          "start": "2026-10-31T12:30:00Z",
+          "end": "2026-11-01T01:00:00Z"
         },
         "output_pts": {
           "numerator": 0,
@@ -599,12 +683,12 @@
         "coverage": {
           "fraction": 0,
           "support_seconds": 0,
-          "expected_seconds": 43200,
+          "expected_seconds": 45000,
           "algorithm_revision": "synthetic-analysis-coverage-v1",
           "gaps": [
             {
-              "start": "2026-10-31T12:50:00Z",
-              "end": "2026-11-01T00:30:00Z"
+              "start": "2026-10-31T12:30:00Z",
+              "end": "2026-11-01T01:00:00Z"
             }
           ]
         },
@@ -641,29 +725,52 @@
       "reason": null,
       "updated_at": "2026-11-01T08:15:00Z",
       "source_interval": {
-        "start": "2026-11-01T00:30:00Z",
+        "start": "2026-11-01T01:00:00Z",
         "end": "2026-11-01T13:30:00Z"
       },
-      "local_start_label": "2026-10-31 18:30 UTC-06:00",
+      "local_start_label": "2026-10-31 19:00 UTC-06:00",
       "local_end_label": "2026-11-01 06:30 UTC-07:00",
       "timezone": "America/Denver",
       "twilight_model": "civil-six-degrees",
-      "allocated_frames": 3700,
+      "allocated_frames": 3600,
       "fps": {
         "numerator": 60,
         "denominator": 1
       },
       "duration": {
-        "numerator": 3700,
-        "denominator": 60
+        "numerator": 60,
+        "denominator": 1
       },
-      "time_map": [],
-      "expected_slots": 43200,
-      "accepted_slots": 41040,
+      "time_map": [
+        {
+          "frame_start": 0,
+          "frame_end": 3600,
+          "source_interval": {
+            "start": "2026-11-01T01:00:00Z",
+            "end": "2026-11-01T13:30:00Z"
+          },
+          "uncertainty_seconds": 0,
+          "coverage": {
+            "fraction": 0.95,
+            "support_seconds": 42750,
+            "expected_seconds": 45000,
+            "algorithm_revision": "synthetic-coverage-v1",
+            "gaps": [
+              {
+                "start": "2026-11-01T01:16:40Z",
+                "end": "2026-11-01T01:54:10Z"
+              }
+            ]
+          },
+          "mode": "observed_exposure"
+        }
+      ],
+      "expected_slots": 45000,
+      "accepted_slots": 42750,
       "cadence_epochs": [
         {
           "interval": {
-            "start": "2026-11-01T00:30:00Z",
+            "start": "2026-11-01T01:00:00Z",
             "end": "2026-11-01T13:30:00Z"
           },
           "interval_seconds": 1
@@ -672,10 +779,15 @@
       "source_time_basis": "synthetic-fixture",
       "coverage": {
         "fraction": 0.95,
-        "support_seconds": 41040,
-        "expected_seconds": 43200,
+        "support_seconds": 42750,
+        "expected_seconds": 45000,
         "algorithm_revision": "synthetic-coverage-v1",
-        "gaps": []
+        "gaps": [
+          {
+            "start": "2026-11-01T01:16:40Z",
+            "end": "2026-11-01T01:54:10Z"
+          }
+        ]
       },
       "caveats": [
         "Synthetic fixture; no household imagery"
@@ -690,8 +802,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 4096,
-            "height": 1856
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -700,10 +812,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3700,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3700,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -717,8 +829,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 1920,
-            "height": 870
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -727,10 +839,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3700,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3700,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -744,8 +856,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 1280,
-            "height": 580
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -754,10 +866,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3700,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3700,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -771,11 +883,11 @@
           "mime": "image/jpeg",
           "bytes": 100000,
           "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-          "width": 1280,
-          "height": 580
+          "width": 320,
+          "height": 180
         },
         "source_interval": {
-          "start": "2026-11-01T00:30:00Z",
+          "start": "2026-11-01T01:00:00Z",
           "end": "2026-11-01T13:30:00Z"
         },
         "output_pts": {
@@ -808,11 +920,11 @@
         "coverage": {
           "fraction": 0,
           "support_seconds": 0,
-          "expected_seconds": 43200,
+          "expected_seconds": 45000,
           "algorithm_revision": "synthetic-analysis-coverage-v1",
           "gaps": [
             {
-              "start": "2026-11-01T00:30:00Z",
+              "start": "2026-11-01T01:00:00Z",
               "end": "2026-11-01T13:30:00Z"
             }
           ]
@@ -850,30 +962,53 @@
       "reason": null,
       "updated_at": "2026-11-01T08:15:00Z",
       "source_interval": {
-        "start": "2026-10-31T12:50:00Z",
-        "end": "2026-11-01T00:30:00Z"
+        "start": "2026-10-31T12:30:00Z",
+        "end": "2026-11-01T01:00:00Z"
       },
-      "local_start_label": "2026-10-31 06:50 UTC-06:00",
-      "local_end_label": "2026-10-31 18:30 UTC-06:00",
+      "local_start_label": "2026-10-31 06:30 UTC-06:00",
+      "local_end_label": "2026-10-31 19:00 UTC-06:00",
       "timezone": "America/Denver",
       "twilight_model": "civil-six-degrees",
-      "allocated_frames": 3500,
+      "allocated_frames": 3600,
       "fps": {
         "numerator": 60,
         "denominator": 1
       },
       "duration": {
-        "numerator": 3500,
-        "denominator": 60
+        "numerator": 60,
+        "denominator": 1
       },
-      "time_map": [],
-      "expected_slots": 43200,
-      "accepted_slots": 41040,
+      "time_map": [
+        {
+          "frame_start": 0,
+          "frame_end": 3600,
+          "source_interval": {
+            "start": "2026-10-31T12:30:00Z",
+            "end": "2026-11-01T01:00:00Z"
+          },
+          "uncertainty_seconds": 0,
+          "coverage": {
+            "fraction": 0.95,
+            "support_seconds": 42750,
+            "expected_seconds": 45000,
+            "algorithm_revision": "synthetic-coverage-v1",
+            "gaps": [
+              {
+                "start": "2026-10-31T12:46:40Z",
+                "end": "2026-10-31T13:24:10Z"
+              }
+            ]
+          },
+          "mode": "observed_exposure"
+        }
+      ],
+      "expected_slots": 45000,
+      "accepted_slots": 42750,
       "cadence_epochs": [
         {
           "interval": {
-            "start": "2026-10-31T12:50:00Z",
-            "end": "2026-11-01T00:30:00Z"
+            "start": "2026-10-31T12:30:00Z",
+            "end": "2026-11-01T01:00:00Z"
           },
           "interval_seconds": 1
         }
@@ -881,10 +1016,15 @@
       "source_time_basis": "synthetic-fixture",
       "coverage": {
         "fraction": 0.95,
-        "support_seconds": 41040,
-        "expected_seconds": 43200,
+        "support_seconds": 42750,
+        "expected_seconds": 45000,
         "algorithm_revision": "synthetic-coverage-v1",
-        "gaps": []
+        "gaps": [
+          {
+            "start": "2026-10-31T12:46:40Z",
+            "end": "2026-10-31T13:24:10Z"
+          }
+        ]
       },
       "caveats": [
         "Synthetic fixture; no household imagery"
@@ -899,8 +1039,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 4096,
-            "height": 1856
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -909,10 +1049,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3500,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3500,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -926,8 +1066,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 1920,
-            "height": 870
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -936,10 +1076,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3500,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3500,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -953,8 +1093,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 1280,
-            "height": 580
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -963,10 +1103,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3500,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3500,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -980,12 +1120,12 @@
           "mime": "image/jpeg",
           "bytes": 100000,
           "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-          "width": 1280,
-          "height": 580
+          "width": 320,
+          "height": 180
         },
         "source_interval": {
-          "start": "2026-10-31T12:50:00Z",
-          "end": "2026-11-01T00:30:00Z"
+          "start": "2026-10-31T12:30:00Z",
+          "end": "2026-11-01T01:00:00Z"
         },
         "output_pts": {
           "numerator": 0,
@@ -1017,12 +1157,12 @@
         "coverage": {
           "fraction": 0,
           "support_seconds": 0,
-          "expected_seconds": 43200,
+          "expected_seconds": 45000,
           "algorithm_revision": "synthetic-analysis-coverage-v1",
           "gaps": [
             {
-              "start": "2026-10-31T12:50:00Z",
-              "end": "2026-11-01T00:30:00Z"
+              "start": "2026-10-31T12:30:00Z",
+              "end": "2026-11-01T01:00:00Z"
             }
           ]
         },
@@ -1059,29 +1199,52 @@
       "reason": null,
       "updated_at": "2026-11-01T08:15:00Z",
       "source_interval": {
-        "start": "2026-11-01T00:30:00Z",
+        "start": "2026-11-01T01:00:00Z",
         "end": "2026-11-01T13:30:00Z"
       },
-      "local_start_label": "2026-10-31 18:30 UTC-06:00",
+      "local_start_label": "2026-10-31 19:00 UTC-06:00",
       "local_end_label": "2026-11-01 06:30 UTC-07:00",
       "timezone": "America/Denver",
       "twilight_model": "civil-six-degrees",
-      "allocated_frames": 3700,
+      "allocated_frames": 3600,
       "fps": {
         "numerator": 60,
         "denominator": 1
       },
       "duration": {
-        "numerator": 3700,
-        "denominator": 60
+        "numerator": 60,
+        "denominator": 1
       },
-      "time_map": [],
-      "expected_slots": 43200,
-      "accepted_slots": 41040,
+      "time_map": [
+        {
+          "frame_start": 0,
+          "frame_end": 3600,
+          "source_interval": {
+            "start": "2026-11-01T01:00:00Z",
+            "end": "2026-11-01T13:30:00Z"
+          },
+          "uncertainty_seconds": 0,
+          "coverage": {
+            "fraction": 0.95,
+            "support_seconds": 42750,
+            "expected_seconds": 45000,
+            "algorithm_revision": "synthetic-coverage-v1",
+            "gaps": [
+              {
+                "start": "2026-11-01T01:16:40Z",
+                "end": "2026-11-01T01:54:10Z"
+              }
+            ]
+          },
+          "mode": "observed_exposure"
+        }
+      ],
+      "expected_slots": 45000,
+      "accepted_slots": 42750,
       "cadence_epochs": [
         {
           "interval": {
-            "start": "2026-11-01T00:30:00Z",
+            "start": "2026-11-01T01:00:00Z",
             "end": "2026-11-01T13:30:00Z"
           },
           "interval_seconds": 1
@@ -1090,10 +1253,15 @@
       "source_time_basis": "synthetic-fixture",
       "coverage": {
         "fraction": 0.95,
-        "support_seconds": 41040,
-        "expected_seconds": 43200,
+        "support_seconds": 42750,
+        "expected_seconds": 45000,
         "algorithm_revision": "synthetic-coverage-v1",
-        "gaps": []
+        "gaps": [
+          {
+            "start": "2026-11-01T01:16:40Z",
+            "end": "2026-11-01T01:54:10Z"
+          }
+        ]
       },
       "caveats": [
         "Synthetic fixture; no household imagery"
@@ -1108,8 +1276,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 4096,
-            "height": 1856
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -1118,10 +1286,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3700,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3700,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -1135,8 +1303,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 1920,
-            "height": 870
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -1145,10 +1313,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3700,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3700,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -1162,8 +1330,8 @@
             "mime": "video/mp4",
             "bytes": 100000,
             "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-            "width": 1280,
-            "height": 580
+            "width": 320,
+            "height": 180
           },
           "codec": "h264",
           "profile": "High",
@@ -1172,10 +1340,10 @@
             "numerator": 60,
             "denominator": 1
           },
-          "frame_count": 3700,
+          "frame_count": 3600,
           "duration": {
-            "numerator": 3700,
-            "denominator": 60
+            "numerator": 60,
+            "denominator": 1
           },
           "track_timescale": 60000,
           "movie_timescale": 60000
@@ -1189,11 +1357,11 @@
           "mime": "image/jpeg",
           "bytes": 100000,
           "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-          "width": 1280,
-          "height": 580
+          "width": 320,
+          "height": 180
         },
         "source_interval": {
-          "start": "2026-11-01T00:30:00Z",
+          "start": "2026-11-01T01:00:00Z",
           "end": "2026-11-01T13:30:00Z"
         },
         "output_pts": {
@@ -1226,11 +1394,11 @@
         "coverage": {
           "fraction": 0,
           "support_seconds": 0,
-          "expected_seconds": 43200,
+          "expected_seconds": 45000,
           "algorithm_revision": "synthetic-analysis-coverage-v1",
           "gaps": [
             {
-              "start": "2026-11-01T00:30:00Z",
+              "start": "2026-11-01T01:00:00Z",
               "end": "2026-11-01T13:30:00Z"
             }
           ]
