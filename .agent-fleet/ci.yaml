@@ -23,7 +23,10 @@ checks:
   - name: application
     command: WEATHER_CI_IN_CLUSTER=1 bash scripts/bootstrap-ci.sh bash scripts/ci.sh
       all
+    image: registry.vallery.net/jvallery/weather-ci@sha256:f4fceab3222d3817baf8def870970981eb88a853cf42f2dc36efcec779f46673
+  - name: browser
+    command: WEATHER_CI_IN_CLUSTER=1 bash scripts/bootstrap-ci.sh bash scripts/ci.sh
+      browser
+    image: registry.vallery.net/jvallery/weather-ci@sha256:f4fceab3222d3817baf8def870970981eb88a853cf42f2dc36efcec779f46673
   - name: manifests
     command: kubectl kustomize deploy/k8s >/dev/null
-  - name: supply-chain-evidence
-    command: WEATHER_CI_IN_CLUSTER=1 bash scripts/bootstrap-ci.sh bash scripts/ci-evidence.sh
