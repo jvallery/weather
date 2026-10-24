@@ -1090,7 +1090,7 @@ def test_telemetry_exact_receipts_dedupe_privacy_and_no_retention() -> None:
                                 text("""
                         INSERT INTO weather.telemetry_receipt(received_at,raw_bytes,sha256,
                           parse_state,parser_revision,receiver_incarnation)
-                        VALUES(:now,:raw,:sha,'malformed','test','test') RETURNING id
+                        VALUES(:now,:raw,:sha,'quarantined','test','test') RETURNING id
                     """),
                                 {
                                     "now": datetime.now(UTC),
@@ -1128,6 +1128,7 @@ def test_telemetry_exact_receipts_dedupe_privacy_and_no_retention() -> None:
                                         {
                                             "valid": True,
                                             "reason": "valid",
+                                            "invalid": ["private_id"],
                                             "serial": "private-test-id",
                                         }
                                     ),
@@ -1173,7 +1174,11 @@ def test_telemetry_exact_receipts_dedupe_privacy_and_no_retention() -> None:
                 )
                 assert len(rows) == 1
                 assert rows[0]["values"] == {"air_temperature": 0}
-                assert rows[0]["quality"] == {"valid": True, "reason": "valid"}
+                assert rows[0]["quality"] == {
+                    "valid": True,
+                    "reason": "valid",
+                    "invalid": [],
+                }
                 assert "private-test-id" not in json.dumps(
                     [dict(r) for r in rows], default=str
                 )
@@ -1199,7 +1204,16 @@ def test_telemetry_exact_receipts_dedupe_privacy_and_no_retention() -> None:
                     WHERE n.nspname='weather' AND a.amname='brin'
                 """)
                     )
-                ).scalar_one() == 9
+                ).scalar_one() == 8
+                # Receipts use a (received_at, id) btree so reproject keyset pages stay bounded.
+                assert (
+                    await connection.execute(
+                        text("""
+                    SELECT indexdef FROM pg_indexes
+                    WHERE schemaname='weather' AND indexname='ix_telemetry_receipt_received_id'
+                """)
+                    )
+                ).scalar_one().endswith("USING btree (received_at, id)")
         finally:
             await api.dispose()
             await ingest.dispose()

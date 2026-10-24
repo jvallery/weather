@@ -163,9 +163,9 @@ def build_metadata() -> MetaData:
         identity(),
         instant("received_at"),
         Column("raw_bytes", LargeBinary, nullable=False),
-        Column("parsed_json", JSONB),
         digest(),
         Column("parse_state", String(32), nullable=False),
+        Column("parse_reason", String(64)),
         Column("parser_revision", String(64), nullable=False),
         Column("receiver_incarnation", String(128), nullable=False),
         CheckConstraint(
@@ -174,16 +174,12 @@ def build_metadata() -> MetaData:
             name="digest",
         ),
         CheckConstraint(
-            "parse_state IN ('received','parsed','malformed',"
-            "'unsupported','quarantined')",
+            "parse_state IN ('parsed','unsupported','quarantined')",
             name="parse_state",
         ),
     )
-    Index(
-        "ix_telemetry_receipt_received_brin",
-        receipt.c.received_at,
-        postgresql_using="brin",
-    )
+    # Btree, not BRIN: reproject pages by the (received_at, id) keyset.
+    Index("ix_telemetry_receipt_received_id", receipt.c.received_at, receipt.c.id)
     for family in (
         "obs_st",
         "rapid_wind",
