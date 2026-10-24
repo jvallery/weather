@@ -7,6 +7,8 @@ Install these through the existing operator/toolbox paths. Run `uv sync --frozen
 On the Mac, only `scripts/ci.sh lint typecheck unit` and the image-free supply-chain scan are allowed.
 `integration`, `all`, image builds, SBOM generation and browser suites run in fleet CI only;
 set `WEATHER_CI_IN_CLUSTER=1` in the approved submission profile. No integration cases exist yet.
+The approved runner entrypoint is `WEATHER_CI_IN_CLUSTER=1 bash scripts/bootstrap-ci.sh bash scripts/ci.sh all`;
+it installs checksum-verified tools and the uv-managed pinned interpreter into disposable `/tmp` storage.
 
 The Python production requirements are generated from the lock with
 `uv export --frozen --no-dev --no-emit-project --no-header --no-annotate --quiet > requirements.lock`.

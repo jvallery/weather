@@ -13,7 +13,8 @@ RUN curl --fail --location https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz -o ff
  && make -j2 && make install \
  && mkdir -p /opt/ffmpeg/lib /opt/ffmpeg/share/licenses \
  && cp /usr/lib/x86_64-linux-gnu/libx264.so.* /opt/ffmpeg/lib/ \
- && cp COPYING.GPLv2 COPYING.GPLv3 LICENSE.md /opt/ffmpeg/share/licenses/
+ && cp COPYING.GPLv2 COPYING.GPLv3 LICENSE.md /opt/ffmpeg/share/licenses/ \
+ && cp /usr/share/doc/libx264-164/copyright /opt/ffmpeg/share/licenses/libx264-copyright
 
 FROM registry.vallery.net/jvallery/weather-python-base:3.14.9-slim-bookworm@sha256:945c2676dc2b18e0c1f16879244122c57c0ffede60006bf3df159c507a31bcae AS dependencies
 WORKDIR /app

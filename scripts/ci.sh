@@ -29,14 +29,22 @@ while (( $# )); do
       ;;
     integration)
       [[ "${WEATHER_CI_IN_CLUSTER:-}" == "1" ]] || { echo 'Integration requires fleet CI in-cluster' >&2; exit 2; }
-      # No integration suite exists in WX-02. Later issues add service-backed tests here.
-      if find app/tests -name 'test_*integration*.py' -print -quit | read -r _; then
-        uv run --frozen pytest -m integration
+      if uv run --frozen pytest -m integration; then
+        :
+      else
+        result=$?
+        [[ "$result" == 5 ]] || exit "$result"
+        echo 'No integration tests collected; service suites arrive in later issues'
       fi
       ;;
     supply-chain)
       gitleaks dir --redact --no-banner --config .gitleaks.toml .
-      uv run --frozen python scripts/license_inventory.py
+      if [[ "${1:-}" == "--license-manifest" ]]; then
+        shift; fixture="$1"; shift
+        uv run --frozen python scripts/license_inventory.py --manifest "$fixture"
+      else
+        uv run --frozen python scripts/license_inventory.py
+      fi
       if [[ "${1:-}" == "--image" ]]; then
         [[ "${WEATHER_CI_IN_CLUSTER:-}" == "1" ]] || { echo 'Image SBOM requires fleet CI in-cluster' >&2; exit 2; }
         shift; image="$1"; shift
