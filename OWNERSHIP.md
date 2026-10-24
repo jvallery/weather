@@ -15,7 +15,7 @@ State as of 2026-10-24: namespace guardrails are deployed at `bed09184608c947dc0
 | `weather-python-base`, `weather-node-base` | Upstream runtime mirrors, imported in-cluster and digest-pinned | `registry.vallery.net/jvallery/` | WX-02, agents#5366 | Imported via fixed fleet profiles; both manifests/configs SHA-verified as Linux amd64 at the pinned runtime versions (see docs/operations/base-imports.json) |
 | `weather-pg` | CNPG Cluster, 3 instances, `longhorn-v1-rwo`, 20Gi each | `weather` | WX-05 | Source prepared under `deploy/k8s/database/`, excluded until prerequisites close; not deployed |
 | CNPG archive | `weather-pg-b2` ObjectStore + `weather-pg-daily` ScheduledBackup; direct B2 | `weather`, B2 bucket owned by storage-infra | storage-infra#1112, WX-05 | Provider/key capability custody verified; application backup/PITR not commissioned |
-| `weather-media`, `weather-originals` | Garage buckets on garage-hdd + custody mirror | storage-infra pipeline | storage-infra#1107 | Planned |
+| `weather-media`, `weather-originals` | Garage buckets on garage-hdd + custody mirror | storage-infra pipeline | storage-infra#1107 | Planned; Weather owns their objects and catalog (#18, `docs/operations/media.md`) |
 | `weather-staging` | Static NFS PV/PVC (Obsidian share, quota) | storage-infra grants / `weather` | storage-infra#1106, WX-03 | Planned |
 | Tempest receiver attachment | NetworkAttachmentDefinition (agents-owned contribution, VLAN 10 `vlan` plugin) + reserved IP | agents Multus / network-infra IPAM | agents#5368, network-infra#774, WX-04 | Planned |
 | api, web | Workloads (2 replicas each) | `weather` | WX-01 | Running; point-in-time public/metrics/isolation and tokenless checks passed; continuous edge reliability pending; no station data yet |
@@ -59,6 +59,8 @@ bounded lifecycle: `docs/operations/garage-commissioning.md`.
 | Almanac site mount: optional Secret `weather-site` (key `site.json`, private position for derived sun/moon times; never served) | `deploy/k8s/application.yaml` | #42; the Secret is agents KSOPS-owned and not yet created, so astronomy reports `site_not_configured`; runbook `docs/operations/api.md#almanac` |
 | `weather-migrate` Sync Job and database-only NetworkPolicy | `deploy/k8s/migrate` | Wave-1 Sync hook; excluded from root kustomization until the #74 deploy PR |
 | `scheduler` Deployment and database/metrics NetworkPolicy | `deploy/k8s/scheduler` | One replica at wave 2 with the periodic tick; excluded until the #74 deploy PR |
+| Publication catalog: `upload_intent`, `media_asset`, `publication`, `publication_asset`, `video`, `withdrawal`, `product_tombstone`, sequence `publication_fence`, views `public_api.assets` and `public_api.videos` | `app/migrations/versions/0003_publication.py`; `app/weather/publish/` | Source only (#18); applied by the deploy PR that pins its app digest. Runbook: `docs/operations/media.md` |
+| `weather/pipeline` NetworkPolicy (DNS, CNPG, Garage via traefik-apps, metrics ingress) | `deploy/k8s/pipeline` | Excluded from the root kustomization until the pipeline Deployments (#15) and bucket keys (storage-infra#1107) exist |
 | `weather-ci` tooling image | `Dockerfile.ci`, `ci/browser/`, registry-owned repo-build profile | PG16.15/vector0.8.6 disposable integration and pinned Playwright browser tooling; never an application database |
 
 These namespace-rendered application objects inherit the central `namespace:weather`

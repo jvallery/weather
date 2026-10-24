@@ -41,6 +41,27 @@ def _unb64(value: str) -> bytes:
     return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
 
 
+def seal(key: bytes, payload: dict[str, object]) -> str:
+    """Sign a small JSON position. Shared by every cursor in this API."""
+    data = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
+    return _b64(data) + "." + _b64(hmac.digest(key, data, "sha256"))
+
+
+def unseal(key: bytes, token: str) -> dict[str, object]:
+    """Verify and decode a sealed position, or raise invalid_cursor()."""
+    try:
+        encoded, mac = token.split(".")
+        data = _unb64(encoded)
+        if not hmac.compare_digest(_unb64(mac), hmac.digest(key, data, "sha256")):
+            raise ValueError("signature")
+        payload = json.loads(data)
+        if not isinstance(payload, dict):
+            raise ValueError("shape")
+        return payload
+    except ValueError, UnicodeError:
+        raise invalid_cursor() from None
+
+
 def invalid_cursor() -> PublicError:
     return PublicError("invalid_cursor", "Invalid, expired or mismatched export cursor.")
 

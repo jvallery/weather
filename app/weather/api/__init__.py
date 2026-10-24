@@ -18,6 +18,7 @@ from .registry import cadences
 from .routes import install
 from .service import WeatherService
 from .source import WeatherReader
+from .timelapses import Catalog, DatabaseSource, TimelapseCursor
 
 CURSOR_KEY = Path("/var/run/weather-api-cursor/CURSOR_HMAC_KEY")
 # Private site position for derived astronomy (#42), from the optional weather-site Secret.
@@ -84,8 +85,9 @@ def create_app(settings: Settings, registry: CollectorRegistry = REGISTRY) -> Fa
             "idle_in_transaction_session_timeout": "15000",
         },
     )
+    key = read_cursor_key()
     service = WeatherService(
-        WeatherReader(engine), CursorCodec(read_cursor_key()), cadences=cadences(settings),
+        WeatherReader(engine), CursorCodec(key), cadences=cadences(settings),
         registry=registry, site=read_site(),
     )
 
@@ -104,5 +106,6 @@ def create_app(settings: Settings, registry: CollectorRegistry = REGISTRY) -> Fa
             await engine.dispose()
 
     app = build_app(service)
+    app.state.timelapses = Catalog(DatabaseSource(engine), TimelapseCursor(key))
     app.router.lifespan_context = lifespan
     return app

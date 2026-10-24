@@ -2,7 +2,7 @@
 import { Form, Link, useLoaderData, type LoaderFunctionArgs } from "react-router";
 import { Status, VideoLink } from "../components/common";
 import { CAMERA_LABELS, localDate } from "../lib/format";
-import { catalogRead } from "../lib/public-api.server";
+import { archiveRead } from "../lib/public-api.server";
 import { catalogParams } from "../lib/route-params";
 export const meta = () => [{ title: "Archive · Weather" }];
 export async function loader({ request, params }: LoaderFunctionArgs) {
@@ -10,7 +10,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   const selectedMonth = url.searchParams.get("month") || (params.year && params.month ? `${params.year}-${params.month}` : localDate(new Date().toISOString()).slice(0, 7));
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(selectedMonth)) throw new Response("Invalid archive month", { status: 400 });
   const filters = catalogParams(url);
-  return { catalog: await catalogRead(request, filters), selectedMonth, filters: Object.fromEntries(filters) };
+  // The API filters by the selected month; the cursor is bound to the same filters.
+  const query = new URLSearchParams(filters);
+  query.set("month", selectedMonth);
+  return { catalog: await archiveRead(request, query), selectedMonth, filters: Object.fromEntries(filters) };
 }
 export default function Archive() {
   const { catalog, selectedMonth, filters } = useLoaderData<typeof loader>();

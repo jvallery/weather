@@ -12,6 +12,7 @@ from weather.timemodel import day_for, weather_day
 
 DAYS_KIND = "days"
 DAYS_AHEAD = 7
+MEDIA_KIND = "media.changed"
 
 
 async def days(context: JobContext) -> None:
@@ -23,6 +24,10 @@ async def days(context: JobContext) -> None:
         await ensure_days(connection, start, end)
 
     await context.commit(write)
+
+
+async def media_changed(context: JobContext) -> None:
+    """Routes publication events so they never quarantine. Consumers (search #25) extend it."""
 
 
 async def periodic(connection: AsyncConnection, now: datetime) -> None:
@@ -43,3 +48,4 @@ async def periodic(connection: AsyncConnection, now: datetime) -> None:
 
 def register(registry: Registry) -> None:
     registry.register(DAYS_KIND, days)
+    registry.register(MEDIA_KIND, media_changed, topics=("media.published", "media.withdrawn"))

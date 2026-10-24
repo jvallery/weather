@@ -9,7 +9,8 @@ The `api` Deployment (2 replicas, `weather` namespace) serves `/api/v1/weather/{
 - **Probes.** Startup and liveness use `/healthz`, which never touches the database, so a database outage never restarts pods. Readiness (`/readyz`) passes while the database answered within 30 s, or while a cached reading still has a fresh value.
 - **Current conditions.** Requests are served from the in-process reading; no request hits the database. The newest `obs_st` and `rapid_wind` rows come from the `source_ts` btrees (never a scan). Rain last hour and rain today (America/Denver day) are sums of `precip_accumulated` with 60 s support per report; a window with no reports is null, not 0.
 - **Freshness defaults.** `obs_st` 60 s cadence, fresh for 150 s; `rapid_wind` 3 s, fresh for 15 s. Override with `WEATHER_API_OBS_ST_INTERVAL_SECONDS`, `WEATHER_API_OBS_ST_HOLD_SECONDS`, `WEATHER_API_RAPID_WIND_INTERVAL_SECONDS` and `WEATHER_API_RAPID_WIND_HOLD_SECONDS`.
-- **Cursors.** Signed with `CURSOR_HMAC_KEY` from Secret `weather-api-cursor` (mounted only into `api`). Rotating the key invalidates outstanding export cursors (clients get 400 `invalid_cursor` and restart the export); nothing else depends on it.
+- **Timelapse catalog.** `/api/v1/timelapses` and `/api/v1/timelapses/{video_id}` (#18) read only `public_api.videos` and `public_api.assets` (migration `0003_publication`) on the same pool. Pages hold at most 100 entries, newest first, filtered by camera, segment, state and one of `cycle_date`, `month` or `from`/`to` (at most 366 days). Responses are `no-store` and carry `/media/{asset_id}` URLs only. Publication and withdrawal: [media operations](media.md).
+- **Cursors.** Signed with `CURSOR_HMAC_KEY` from Secret `weather-api-cursor` (mounted only into `api`). Rotating the key invalidates outstanding export and catalog cursors (clients get 400 `invalid_cursor` and restart the export); nothing else depends on it.
 - **Export snapshot.** The first page records the database clock minus 120 s; every page then reads only rows whose `inserted_at` (set by the database on insert, migration `0002_api`) is at or before it. A spool drain or `reproject` that lands old rows mid-export therefore never shifts the export. The newest two minutes of rows appear only in a new export. Rows that existed before `0002_api` read `inserted_at = -infinity`.
 
 ## Almanac
@@ -57,7 +58,7 @@ kubectl --context vallery -n weather exec deploy/api -- python -c \
 | Symptom | Likely cause | Action |
 |---|---|---|
 | `/current` 503, pods unready | Database unreachable for > 30 s and no fresh cache | `kubectl cnpg status weather-pg -n weather`; check the `weather-database-clients` NetworkPolicy and the `weather-pg-api` Secret. Pods recover on their own when the database answers. |
-| `/current` 503, pods ready | Database answers but the views are missing (migration not applied) or there is no reading yet | Check the `weather-migrate` hook Job and `SELECT version_num FROM alembic_version` (expect `0002_api`). |
+| `/current` 503, pods ready | Database answers but the views are missing (migration not applied) or there is no reading yet | Check the `weather-migrate` hook Job and `SELECT version_num FROM alembic_version` (expect `0003_publication`). |
 | `data_state: cached` | Database reads failing while the cache is fresh | As above; values keep their original times and turn stale on schedule. |
 | `data_state: unavailable` and all metrics null | No telemetry yet (receiver not live) | Expected before #5; not an API fault. |
 | Aggregates 503 | 10 s statement timeout or queueing | Narrow the window or coarsen the resolution; watch `weather_api_db_errors_total{operation="aggregates"}`. |

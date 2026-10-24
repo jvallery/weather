@@ -100,8 +100,9 @@ After a real production recovery, give the recovered cluster a new Barman
 
 Weather owns the `weather` schema and the `public_api` views inside its
 dedicated `weather` database. Revision `0001_baseline` (#74) holds the
-slice-1 schema and `0002_api` (#14) adds the API's views; both are inline DDL
-and import no application module. The restore-drill schema `weather_recovery_drill` is not Alembic's;
+slice-1 schema, `0002_api` (#14) adds the API's views and `0003_publication`
+(#18) the publication catalog; all are inline DDL and import no application
+module. The restore-drill schema `weather_recovery_drill` is not Alembic's;
 the baseline and `alembic check` leave it alone.
 
 | Relation | Purpose |
@@ -113,6 +114,8 @@ the baseline and `alembic check` leave it alone.
 | `job`, `outbox` | Durable work and causal events |
 | `public_api.observations` | Public union view of all families (security barrier) |
 | `public_api.obs_st`, `public_api.rapid_wind`, `public_api.station` | API views (0002): typed, gated double-precision columns plus `received_at`, `inserted_at`, `valid` and the allowlisted `invalid_fields`; the station alias. No row filter, so no security barrier; that keeps them flattenable onto the `source_ts` btrees |
+| `upload_intent`, `media_asset`, `publication`, `publication_asset`, `video`, `withdrawal`, `product_tombstone` | Publication catalog (0003, #18); see [media operations](media.md) |
+| `public_api.assets`, `public_api.videos` | Public media views (0003; security barrier, embargo and `ends_at + 630 s` guards) |
 
 `obs_st` and `rapid_wind` also carry `inserted_at` (0002; `clock_timestamp()` on insert, `-infinity` for older rows), which export cursors snapshot on. They carry a btree on `source_ts`, so current conditions
 (#14) read the newest row by index. The other families use BRIN.
@@ -127,7 +130,8 @@ content addressing, the 630-second preview margin, withdrawal reasons) and the
 `security_barrier` views over assets, segments, videos, keograms, stills,
 previews and events. Each owning issue (#18, #19, #37, #38, #39, #41, #44, #25,
 #23) re-creates its tables in its own expand-only migration, with those CHECKs
-and its public view behind a security barrier.
+and its public view behind a security barrier. #18 has done so for
+`media_asset`, `video` and the publication tables (`0003_publication`).
 
 ## Connection and role custody
 
@@ -148,7 +152,7 @@ every second while the spool holds receipts.
 |---|---|
 | `weather_migrator` | Database/schema owner, DDL and migrations |
 | `weather_ingest` | Insert on station and device, select on their non-private columns (not `private_configuration`); select/insert on receipts and family rows; no update/delete |
-| `weather_worker` | Read/write `job` and `outbox`; select/insert `weather_day`; no telemetry access |
+| `weather_worker` | Read/write `job` and `outbox`; select/insert `weather_day`; select/insert `media_asset`, `upload_intent`, `video` with UPDATE only on the columns the publisher writes; select/insert the append-only `publication`, `publication_asset`, `withdrawal`, `product_tombstone`; the fence sequence; no telemetry access |
 | `weather_api` | Select the `public_api` views and execute the two value-gating functions; no base-table access or `weather` schema usage |
 | `weather_editor` | Login only. No editorial functions exist yet; #44 adds them and grants EXECUTE to this role alone |
 
@@ -160,7 +164,7 @@ migrator creates, so a later function is private until granted.
 
 ## Expand/contract migrations
 
-The head is `0002_api`. `0001_baseline` has run on production, so every change is
+The head is `0003_publication`. `0001_baseline` has run on production, so every change is
 expand/contract. Add a new revision with inline DDL; never edit an applied
 revision or import current application modules into one. `models.metadata`
 describes the current schema for `alembic check` and must change in the same

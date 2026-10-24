@@ -8,11 +8,14 @@ metadata together with a new expand/contract revision.
 from typing import Any
 
 from sqlalchemy import (
+    BigInteger,
+    Boolean,
     CheckConstraint,
     Column,
     Date,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     LargeBinary,
@@ -237,4 +240,237 @@ Index(
     "ix_outbox_job_id",
     outbox.c.job_id,
     postgresql_where=outbox.c.job_id.is_not(None),
+)
+
+
+# Publication catalog (#18, revision 0003_publication). CHECKs mirror the revision's DDL.
+PRODUCT = "product IN ('video','keogram','still')"
+CAMERA = "camera_id ~ '^[a-z][a-z0-9_]{0,31}$'"
+PRODUCT_KEY = "product_key ~ '^[0-9A-Za-z][0-9A-Za-z:/_.-]{0,63}$'"
+WITHDRAWAL = "withdrawn = (withdrawn_at IS NOT NULL) AND withdrawn = (withdraw_reason IS NOT NULL)"
+
+
+def _withdrawn() -> list[Any]:
+    return [
+        Column("withdrawn", Boolean, nullable=False, server_default=text("false")),
+        _instant("withdrawn_at", True),
+        Column("withdraw_reason", String(500)),
+    ]
+
+
+Table(
+    "media_asset",
+    metadata,
+    _identity(),
+    Column("class", String(16), nullable=False),
+    Column("bucket", String(32), nullable=False),
+    Column("visibility", String(8), nullable=False),
+    Column("sha256", String(64), nullable=False),
+    Column("extension", String(8), nullable=False),
+    Column("object_key", String(96), nullable=False, unique=True),
+    Column("bytes", BigInteger, nullable=False),
+    Column("content_type", String(64), nullable=False),
+    Column("width", Integer),
+    Column("height", Integer),
+    _instant("public_not_before", True),
+    _instant("published_at", True),
+    Column("sidecar", LargeBinary),
+    Column("state", String(16), nullable=False, server_default=text("'available'")),
+    *_withdrawn(),
+    _created(),
+    UniqueConstraint("id", "class"),
+    CheckConstraint(
+        "class IN ('video','poster','keogram','still','sidecar','original')", name="class"
+    ),
+    CheckConstraint(
+        "bucket IN ('weather-media','weather-originals') AND visibility IN ('public','private') "
+        "AND (class = 'original') = (bucket = 'weather-originals') "
+        "AND (class = 'original') = (visibility = 'private')",
+        name="original_private",
+    ),
+    CheckConstraint(
+        "(class = 'original') = (public_not_before IS NULL) "
+        "AND (class = 'original') = (published_at IS NULL)",
+        name="embargo",
+    ),
+    CheckConstraint(
+        "sha256 ~ '^[0-9a-f]{64}$' AND extension ~ '^[a-z0-9]{1,8}$' AND bytes > 0 "
+        "AND object_key = class || '/' || sha256 || '.' || extension",
+        name="content_address",
+    ),
+    CheckConstraint(
+        "(width IS NULL) = (height IS NULL) AND (width IS NULL OR (width > 0 AND height > 0))",
+        name="geometry",
+    ),
+    CheckConstraint(
+        "(class = 'sidecar') = (sidecar IS NOT NULL) AND (sidecar IS NULL OR "
+        "(octet_length(sidecar) = bytes AND bytes <= 1048576 "
+        "AND encode(pg_catalog.sha256(sidecar),'hex') = sha256))",
+        name="sidecar",
+    ),
+    CheckConstraint("state IN ('available','unavailable')", name="state"),
+    CheckConstraint(WITHDRAWAL, name="withdrawal"),
+)
+intent = Table(
+    "upload_intent",
+    metadata,
+    _identity(),
+    Column("fence", BigInteger, nullable=False, unique=True),
+    Column("product", String(16), nullable=False),
+    Column("camera_id", String(32), nullable=False),
+    Column("product_key", String(64), nullable=False),
+    Column("expected_revision", Integer, nullable=False),
+    Column("manifest", JSONB, nullable=False),
+    Column("state", String(16), nullable=False, server_default=text("'pending'")),
+    Column("reason", String(32)),
+    _instant("deadline"),
+    _created(),
+    _instant("resolved_at", True),
+    CheckConstraint(
+        f"{PRODUCT} AND {CAMERA} AND {PRODUCT_KEY} AND fence > 0 AND expected_revision >= 0",
+        name="identity",
+    ),
+    CheckConstraint(
+        "state IN ('pending','committed','orphan') AND (state = 'pending') = "
+        "(resolved_at IS NULL) AND (state = 'orphan') = (reason IS NOT NULL)",
+        name="state",
+    ),
+    CheckConstraint(
+        "jsonb_typeof(manifest) = 'object' AND octet_length(manifest::text) <= 1048576",
+        name="manifest",
+    ),
+    CheckConstraint("deadline <= created_at + interval '2 days'", name="deadline"),
+)
+Index(
+    "ix_upload_intent_product",
+    intent.c.product,
+    intent.c.camera_id,
+    intent.c.product_key,
+    intent.c.fence,
+)
+Index(
+    "ix_upload_intent_created_at",
+    intent.c.created_at,
+    postgresql_where=intent.c.state == "pending",
+)
+publication = Table(
+    "publication",
+    metadata,
+    _identity(),
+    Column("product", String(16), nullable=False),
+    Column("camera_id", String(32), nullable=False),
+    Column("product_key", String(64), nullable=False),
+    Column("revision", Integer, nullable=False),
+    Column("fence", BigInteger, nullable=False),
+    _ref("intent_id", "upload_intent"),
+    Column("state", String(16), nullable=False),
+    Column("reason", String(64)),
+    _instant("source_start"),
+    _instant("source_end"),
+    _instant("public_not_before"),
+    Column(
+        "committed_at",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP"),
+    ),
+    UniqueConstraint("product", "camera_id", "product_key", "revision"),
+    UniqueConstraint("id", "product"),
+    CheckConstraint(
+        f"{PRODUCT} AND {CAMERA} AND {PRODUCT_KEY} AND revision > 0 AND fence > 0",
+        name="identity",
+    ),
+    CheckConstraint(
+        "state IN ('published','partial','unavailable') "
+        "AND (state = 'published' OR reason IS NOT NULL)",
+        name="state",
+    ),
+    CheckConstraint(
+        "source_start < source_end AND public_not_before >= source_end + interval '630 seconds'",
+        name="embargo",
+    ),
+)
+Index("ix_publication_intent_id", publication.c.intent_id)
+publication_asset = Table(
+    "publication_asset",
+    metadata,
+    Column("publication_id", PGUUID(as_uuid=True), primary_key=True),
+    Column("product", String(16), nullable=False),
+    Column("role", String(16), primary_key=True),
+    Column("asset_id", PGUUID(as_uuid=True), nullable=False),
+    Column("asset_class", String(16), nullable=False),
+    ForeignKeyConstraint(
+        ["publication_id", "product"],
+        ["weather.publication.id", "weather.publication.product"],
+        ondelete="RESTRICT",
+    ),
+    ForeignKeyConstraint(
+        ["asset_id", "asset_class"],
+        ["weather.media_asset.id", "weather.media_asset.class"],
+        ondelete="RESTRICT",
+    ),
+    CheckConstraint("role ~ '^[a-z]+(_[a-z0-9]+)?$'", name="role"),
+    CheckConstraint(
+        "(asset_class = 'original') = (role = 'original') "
+        "AND (asset_class <> 'original' OR product = 'still')",
+        name="original_private",
+    ),
+)
+Index("ix_publication_asset_asset_id", publication_asset.c.asset_id)
+Table(
+    "video",
+    metadata,
+    _identity(),
+    Column("camera_id", String(32), nullable=False),
+    Column("cycle_date", Date, nullable=False),
+    Column("segment", String(16), nullable=False),
+    _ref("publication_id", "publication"),
+    Column("revision", Integer, nullable=False),
+    Column("fence", BigInteger, nullable=False),
+    Column("state", String(16), nullable=False),
+    Column("reason", String(64)),
+    _instant("starts_at"),
+    _instant("ends_at"),
+    Column("frames", Integer, nullable=False),
+    _instant("public_not_before"),
+    _instant("committed_at"),
+    *_withdrawn(),
+    _created(),
+    UniqueConstraint("camera_id", "cycle_date", "segment"),
+    CheckConstraint(
+        f"{CAMERA} AND segment IN ('daytime','overnight') AND revision > 0 AND fence > 0 "
+        "AND frames BETWEEN 0 AND 7200 AND starts_at < ends_at",
+        name="identity",
+    ),
+    CheckConstraint(
+        "state IN ('published','partial','unavailable') "
+        "AND (state = 'published' OR reason IS NOT NULL)",
+        name="state",
+    ),
+    CheckConstraint("public_not_before >= ends_at + interval '630 seconds'", name="embargo"),
+    CheckConstraint(WITHDRAWAL, name="withdrawal"),
+)
+Table(
+    "withdrawal",
+    metadata,
+    _identity(),
+    _ref("video_id", "video", True),
+    _ref("asset_id", "media_asset", True),
+    Column("reason", String(500), nullable=False),
+    Column("actor", String(64), nullable=False),
+    _created(),
+    CheckConstraint(
+        "(video_id IS NULL) <> (asset_id IS NULL) AND length(reason) > 0 AND length(actor) > 0",
+        name="target",
+    ),
+)
+Table(
+    "product_tombstone",
+    metadata,
+    Column("product", String(16), primary_key=True),
+    Column("camera_id", String(32), primary_key=True),
+    Column("product_key", String(64), primary_key=True),
+    _ref("withdrawal_id", "withdrawal"),
+    _created(),
+    CheckConstraint(f"{PRODUCT} AND {CAMERA} AND {PRODUCT_KEY}", name="identity"),
 )

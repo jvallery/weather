@@ -118,8 +118,9 @@ def test_baseline_head_roles_and_least_privilege() -> None:
             async with admin.begin() as connection:
                 assert await scalar(
                     connection, "SELECT version_num FROM public.alembic_version"
-                ) == ("0002_api")
-                # Slice-1 relations, the observations view and the API's views (0002).
+                ) == ("0003_publication")
+                # Slice-1 relations, the observations view, the API's views (0002) and the
+                # publication catalog (0003).
                 relations = (
                     await connection.execute(
                         text("""
@@ -136,6 +137,20 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     "weather.outbox",
                     "public_api.observations",
                     *API_VIEWS,
+                    *(
+                        f"weather.{name}"
+                        for name in (
+                            "media_asset",
+                            "upload_intent",
+                            "publication",
+                            "publication_asset",
+                            "video",
+                            "withdrawal",
+                            "product_tombstone",
+                        )
+                    ),
+                    "public_api.assets",
+                    "public_api.videos",
                 }
                 options = await scalar(
                     connection,

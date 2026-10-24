@@ -1,0 +1,62 @@
+# Disabled: not referenced by the root kustomization. The pipeline Deployments (#15) and their
+# per-bucket Garage keys (storage-infra#1107) enable it together; see docs/operations/media.md.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pipeline
+  namespace: weather
+  labels:
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+    app.kubernetes.io/part-of: weather
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: weather
+      app.kubernetes.io/component: pipeline
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: observability
+    ports:
+    - protocol: TCP
+      port: 9000
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          cnpg.io/cluster: weather-pg
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # Garage S3 at https://s3-hdd.vallery.net resolves to the traefik-apps Service (443) and its
+  # websecure target (8443); no other HTTPS destination and no camera or NAS address.
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik-apps
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: traefik
+          app.kubernetes.io/instance: traefik-apps-traefik-apps
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 8443

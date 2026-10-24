@@ -3,7 +3,7 @@ import { z } from "zod";
 import { data } from "react-router";
 import { Counter, Gauge, register } from "prom-client";
 import { catalogSchema } from "./contracts";
-import { parseAggregates, parseAlmanac, parseCurrent, parser, parseRegistry, type Current, type Parser } from "./weather-api";
+import { parseAggregates, parseAlmanac, parseArchive, parseCurrent, parser, parseRegistry, type Current, type Parser } from "./weather-api";
 
 const ALLOWED = /^\/api\/v1\/(?:weather\/(?:current|observations|aggregates|almanac|metrics)|timelapses(?:\/[A-Za-z0-9_-]{1,128})?)$/;
 const parseCatalog = parser(catalogSchema);
@@ -79,6 +79,12 @@ export async function catalogRead(request: Request, extra = new URLSearchParams(
 }
 export async function aggregatesRead(request: Request, params: URLSearchParams) {
   return publicReadResult("/api/v1/weather/aggregates", parseAggregates, request.signal, params);
+}
+/** The archive month page: its month (or other filters) and at most 100 entries per page. */
+export async function archiveRead(request: Request, params: URLSearchParams) {
+  const query = new URLSearchParams(params);
+  query.set("limit", "100");
+  return publicRead("/api/v1/timelapses", parseArchive, request.signal, query);
 }
 
 export async function almanacRead(request: Request, params: URLSearchParams) {
