@@ -11,8 +11,8 @@ Consumers: WX-08/13/17/19/20/24/25/26/36/37/38/39/40/41/42/43/44. The private [c
 WX-13 weather Current, metric discovery, raw-history exports and aggregate shapes are prepared in
 `app/weather/api/public_models.py` and `metric_registry.py`. The generated
 [weather OpenAPI](weather.openapi.json) and frontend types are checked by `scripts/ci.sh contracts`.
-These four data paths have source-only metadata/test handlers; runtime database integration and
-commissioning remain separate. The archived sixteen-path schema remains reference input for other
+These four data paths use a shared real route/service implementation with source/key injection;
+runtime database integration and commissioning remain separate. The archived sixteen-path schema remains reference input for other
 products. See [contract operations](../operations/api-contracts.md) for generation and limitations.
 
 ## Effective editorial content and analysis coverage

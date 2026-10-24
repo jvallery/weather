@@ -27,6 +27,6 @@ def main() -> None:
         from prometheus_client import start_http_server
 
         start_http_server(settings.metrics_port)
-        uvicorn.run("weather.api:app", host="0.0.0.0", port=settings.port)
+        uvicorn.run("weather.api:app", host="0.0.0.0", port=settings.port, access_log=False)
     else:
         parser.print_help()
