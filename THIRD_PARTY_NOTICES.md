@@ -8,6 +8,13 @@ package/version/license inventory, including build/check and optional platform d
 The Python and Node runtime images include their upstream language and Debian notices.
 The image SBOM is generated in fleet CI at build qualification (WX-01).
 
+Capture uses simplejpeg 1.9.0 and NumPy 2.5.4. This software is based in part on
+the work of the Independent JPEG Group. Their full wheel notices, including
+libjpeg-turbo, OpenBLAS/LAPACK, GCC runtime exception and libquadmath terms, are
+retained in `supply-chain/capture-decoder` and the installed package license
+directories. See `docs/decisions/capture-decoder-reuse.md` for the exact artifacts
+and binary distribution obligations.
+
 FFmpeg 9.0.2 with libx264 is GPL, not MIT. Its licenses are included under
 `/opt/ffmpeg/share/licenses` in weather-app; see `docs/operations/ffmpeg.md` for the exact source
 archive, checksum, configuration and corresponding-source distribution obligations.
