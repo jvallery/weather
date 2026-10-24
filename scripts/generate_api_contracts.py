@@ -16,7 +16,7 @@ TYPESCRIPT = Path("web/app/generated/weather-api.ts")
 def rendered() -> dict[Path, str]:
     schema = json.dumps(public_openapi(), sort_keys=True, indent=2) + "\n"
     result = subprocess.run(
-        ["pnpm", "--dir", "web/contract-tools", "exec", "node", "generate.mjs"],
+        ["node", str(ROOT / "web/contract-tools/generate.mjs")],
         cwd=ROOT,
         input=schema,
         capture_output=True,
