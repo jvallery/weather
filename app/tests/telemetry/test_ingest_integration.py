@@ -66,7 +66,8 @@ def isolated_telemetry() -> None:
                 from weather.db.models import metadata
 
                 tables = ",".join(
-                    "weather." + t.name for t in metadata.sorted_tables if t.name != "camera"
+                    "weather." + t.name for t in metadata.sorted_tables
+                    if t.name not in {"camera", "metric_binding", "telemetry_publication_clock"}
                 )
                 await c.execute(text("TRUNCATE TABLE " + tables + " CASCADE"))
                 station = (
