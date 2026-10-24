@@ -20,6 +20,7 @@ spec:
       labels: *id001
     spec:
       serviceAccountName: api
+      enableServiceLinks: false
       automountServiceAccountToken: false
       imagePullSecrets:
       - name: zot-origin-cluster-pull
@@ -155,6 +156,7 @@ spec:
       labels: *id001
     spec:
       serviceAccountName: web
+      enableServiceLinks: false
       automountServiceAccountToken: false
       imagePullSecrets:
       - name: zot-origin-cluster-pull
