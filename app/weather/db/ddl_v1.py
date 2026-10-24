@@ -205,7 +205,7 @@ def statements(table_names: list[str]) -> list[str]:
                   public_not_before,expires_at,first_published_at
            FROM weather.camera_preview WHERE timing_trusted
              AND public_not_before<=clock_timestamp() AND expires_at>clock_timestamp()
-             AND first_published_at IS NOT NULL""",
+             AND first_published_at IS NOT NULL AND first_published_at<=clock_timestamp()""",
         """CREATE VIEW public_api.events WITH (security_barrier=true) AS
            SELECT id,weather_day_id,starts_at,ends_at,origin,basis,revision
            FROM weather.weather_event WHERE published AND NOT withdrawn""",
