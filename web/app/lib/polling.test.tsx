@@ -8,6 +8,7 @@ import { currentSchema } from "./contracts";
 import currentFixture from "../fixtures/current.json";
 import { useCurrent } from "./use-current";
 import { nextPollDelay } from "./polling";
+import { CurrentConditions } from "../components/current-conditions";
 
 const current = currentSchema.parse(currentFixture);
 function Probe() {
@@ -52,4 +53,23 @@ test("failure keeps observed_at and backs off to a bounded cadence", async () =>
   await advance(1); expect(fetch).toHaveBeenCalledTimes(2);
   expect(client.getQueryData(["weather", "current"])).toEqual(current);
   expect(nextPollDelay(99)).toBe(120_000);
+});
+
+test("outage values keep aging without repeating the live-region announcement", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Synthetic outage")));
+  render(<QueryClientProvider client={client}><CurrentConditions initial={current} renderedAt={Date.now()} units="us" /></QueryClientProvider>);
+  const announcement = screen.getByRole("status");
+  const announced = announcement.textContent;
+  const mutations = vi.fn(); const observer = new MutationObserver(mutations);
+  observer.observe(announcement, { childList: true, characterData: true, subtree: true });
+  expect(screen.getByText("5 s old")).toBeTruthy();
+  await advance(15_001);
+  expect(screen.getByText("20 s old")).toBeTruthy();
+  expect(screen.getByText(/API unavailable/)).toBeTruthy();
+  expect(screen.getByText(/Unavailable · Synthetic fixture: missing support/)).toBeTruthy();
+  expect(screen.getByText(/1 h old · stale/)).toBeTruthy();
+  expect(screen.getByText("Synthetic fixture: no recent wind report")).toBeTruthy();
+  expect(announcement.textContent).toBe(announced); expect(mutations).not.toHaveBeenCalled();
+  expect(client.getQueryData(["weather", "current"])).toEqual(current);
+  observer.disconnect();
 });

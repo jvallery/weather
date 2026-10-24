@@ -17,7 +17,7 @@ export function CurrentConditions({ initial, renderedAt, units }: { initial: Cur
       <h3>{metricLabel(metric.metric)}</h3><strong>{metricValue(metric.value, metric.unit, units)}</strong>
       <p>{metric.value === null ? `Unavailable · ${metric.reason}` : ageLabel(metric, now)}</p>
       {metric.observed_at && <p className="small">Observed <time dateTime={metric.observed_at}>{localTime(metric.observed_at)}</time></p>}
-      {metric.quality !== "valid" && metric.value !== null && <p className="fault">{metric.quality} · {metric.reason || "Source quality is uncertain"}</p>}
+      {metric.value !== null && (metric.quality !== "valid" || metric.reason) && <p className="fault">{metric.quality !== "valid" ? `${metric.quality} · ` : ""}{metric.reason || "Source quality is uncertain"}</p>}
       <span className="provenance">Measured · expected interval {metric.expected_interval_seconds} s</span>
     </article>)}</div>}
   </section>;
