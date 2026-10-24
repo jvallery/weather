@@ -129,7 +129,7 @@ The rolling qualification checks immutable public cache headers as well as bytes
 `ci.sh browser` runs the single-worker fixture matrix in all three engines, then writes the existing
 `/workspace/ci-test-report.json` output parameter. It requires every configured case to pass without
 skips or retries and records checksums for 27 synthetic Today/history/About screenshots. ROOT collects
-the listed files from the exact run Pod before PodGC and verifies their hashes for visual review.
+the listed files while the exact run Pod main container is Running and verifies their hashes for visual review. A terminated main container cannot reliably be read even during PodGC grace.
 The report is capped at 60 KiB; original test output and traces remain in `artifacts/` for that run.
 
 The runtime schemas remain independent of generated OpenAPI. The synthetic registry fixture is
@@ -149,3 +149,31 @@ For pre-merge source coordination, `--api-source <isolated-api-checkout>` binds 
 revision and its model/router/service hashes. Node must be the pinned 24.22.1 from the CI bootstrap.
 The receipt also binds the web parser, input fixtures and helper hashes; the independent web unit
 checks remain runnable before the API modules exist and never consume generated OpenAPI.
+
+For the standalone browser qualification only, set these environment variables on the fixed committed
+command before `scripts/bootstrap-ci.sh`:
+
+```sh
+WEATHER_CI_IN_CLUSTER=1 WEATHER_BROWSER_CAPTURE_OPERATION=<stable-operation-id> \
+WEATHER_BROWSER_CAPTURE_SOURCE=<exact-40-character-source-sha> \
+WEATHER_BROWSER_CAPTURE_SECONDS=180 \
+bash scripts/bootstrap-ci.sh bash scripts/ci.sh browser
+```
+
+After the test report is written, `scripts/web-browser-capture.mjs` keeps main Running for at most
+30–300 seconds (default 180). It atomically writes
+`/workspace/weather-browser-capture/ready.json`, binding the actual checkout SHA, Pod name, report
+and synthetic screenshot SHA-256/byte counts. ROOT resolves and verifies the Workflow/Pod UIDs,
+reads that exact manifest and copies every listed file using the existing operator identity while
+main remains Running. Verify byte counts/hashes in retained custody, then atomically write
+`/workspace/weather-browser-capture/captured.json` in the same exact Pod with:
+
+```json
+{"operation_id":"<same-stable-id>","source_revision":"<same-source-sha>","manifest_sha256":"<SHA-256 of exact ready.json bytes>"}
+```
+
+The capture helper checks the binding, writes its acknowledgement to the final bounded Workflow
+report, and exits. Missing or mismatched acknowledgement fails qualification. The acknowledgement
+records ROOT's custody claim; the retained independent file hashes are the custody proof. Collect
+final report from the Workflow output parameter. No capture wait occurs when the optional operation
+variable is absent. Do not use the hold in event/required CI, and do not recreate a timed-out operation.

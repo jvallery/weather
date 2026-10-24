@@ -9,5 +9,10 @@ bash scripts/bootstrap-browser.sh
 node scripts/check-web-build.mjs
 result=0
 (cd web && pnpm test:browser) || result=$?
-node scripts/web-browser-report.mjs "$result"
+report_result=0
+node scripts/web-browser-report.mjs "$result" || report_result=$?
+if [[ -f /workspace/ci-test-report.json ]]; then
+  node scripts/web-browser-capture.mjs || report_result=1
+fi
+if (( report_result != 0 )); then result=1; fi
 exit "$result"
