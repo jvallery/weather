@@ -112,9 +112,9 @@ the baseline and `alembic check` leave it alone.
 | `weather_day` | One row per America/Denver day, keyed by `local_date` (23, 24 or 25 hours) |
 | `job`, `outbox` | Durable work and causal events |
 | `public_api.observations` | Public union view of all families (security barrier) |
-| `public_api.obs_st`, `public_api.rapid_wind`, `public_api.station` | API views (0002): typed, gated double-precision columns plus `received_at` and `valid`; the station alias. No row filter, so no security barrier; that keeps them flattenable onto the `source_ts` btrees |
+| `public_api.obs_st`, `public_api.rapid_wind`, `public_api.station` | API views (0002): typed, gated double-precision columns plus `received_at`, `inserted_at`, `valid` and the allowlisted `invalid_fields`; the station alias. No row filter, so no security barrier; that keeps them flattenable onto the `source_ts` btrees |
 
-`obs_st` and `rapid_wind` carry a btree on `source_ts`, so current conditions
+`obs_st` and `rapid_wind` also carry `inserted_at` (0002; `clock_timestamp()` on insert, `-infinity` for older rows), which export cursors snapshot on. They carry a btree on `source_ts`, so current conditions
 (#14) read the newest row by index. The other families use BRIN.
 
 ### Slice-2/3 DDL removed from the baseline

@@ -18,6 +18,7 @@ from weather.timemodel import day_for, weather_day
 
 from .cursors import CursorCodec, Position
 from .models import (
+    MAX_POINTS,
     Aggregate,
     AggregateQuery,
     Aggregates,
@@ -45,19 +46,25 @@ from .registry import (
     sourced,
     unavailable,
 )
-from .source import SPEED_EDGES, BinSpec, Reading, Row, SourceUnavailable, WeatherReader
+from .source import (
+    EPOCH_ORIGIN,
+    SPEED_EDGES,
+    BinSpec,
+    Reading,
+    Row,
+    SourceUnavailable,
+    WeatherReader,
+)
 
 REFRESH_SECONDS = 5
 # Readiness tolerates a short DB blip; the cache keeps serving meanwhile.
 READY_SECONDS = 30
-MAX_POINTS = 5000
 MIN_RESOLUTION_SECONDS = 60
 # Raw history and aggregate windows per source family (rows scanned stay bounded).
 RAW_WINDOW = {"obs_st": timedelta(days=31), "rapid_wind": timedelta(days=1)}
 AGGREGATE_WINDOW = {"obs_st": timedelta(days=92), "rapid_wind": timedelta(days=7)}
 ROSE_MAX_BINS = 400
 VARIABLE_RESULTANT = 0.1
-UTC_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 
 
 def _conversion(unit: str, scale: Fraction, offset: Fraction) -> Conversion:
@@ -128,14 +135,20 @@ def build_current(
             "reason": "No observation has been received.",
         }
         value: float | None
+        source_row: Row | None = None
         if entry.source is None:
             row = reading.rain.get("hour" if entry.metric == "rain_last_hour" else "day")
+            # Windows and coverage come from the instant the totals were read, never from now.
+            window_start = _rain_window(entry.metric, reading.at)
+            if entry.metric == "rain_today" and day_for(now).start != window_start:
+                base["reason"] = "A new weather day has started; no total has been read yet."
+                metrics.append(Metric.model_validate(base))
+                continue
             if row is None or row.get("observed_at") is None:
                 base["reason"] = "No rain report in this window."
                 metrics.append(Metric.model_validate(base))
                 continue
-            window_start = _rain_window(entry.metric, now)
-            elapsed = max((now - window_start).total_seconds(), 1e-6)
+            elapsed = max((reading.at - window_start).total_seconds(), 1e-6)
             value = rounded(_number(row["total"]), 4)
             base.update(
                 observed_at=row["observed_at"],
@@ -158,7 +171,11 @@ def build_current(
                 metrics.append(Metric.model_validate(base))
                 continue
         if value is None:
-            base["reason"] = "The newest observation has no valid value."
+            column = entry.source.column if entry.source else ""
+            if source_row is not None and _flagged(source_row, column):
+                base.update(quality="invalid", reason="The newest value failed validation.")
+            else:
+                base["reason"] = "The newest observation has no valid value."
             metrics.append(Metric.model_validate(base))
             continue
         valid_until = base["observed_at"] + timedelta(seconds=cadence.hold_seconds)
@@ -178,6 +195,10 @@ def build_current(
         data_state="cached" if cached and has_value else ("live" if has_value else "unavailable"),
         metrics=metrics,
     )
+
+
+def _flagged(row: Row, column: str) -> bool:
+    return row.get("valid") is False or column in (row.get("invalid_fields") or ())
 
 
 def _rain_window(metric: str, now: datetime) -> datetime:
@@ -340,13 +361,12 @@ class WeatherService:
         position: Position | None = (
             self.cursors.decode(query.cursor, query, now=now) if query.cursor else None
         )
-        snapshot = position.snapshot if position else now
         rows_per_page = max(1, query.limit // len(query.metrics))
         try:
-            rows = await self.reader.observations(
+            rows, snapshot = await self.reader.observations(
                 family,
                 end=query.end,
-                snapshot=snapshot,
+                snapshot=position.snapshot if position else None,
                 after_time=position.after_time if position else query.start,
                 after_id=position.after_id if position else UUID(int=0),
                 rows=rows_per_page + 1,
@@ -369,7 +389,7 @@ class WeatherService:
                         unit=entry.unit,
                         quality="valid"
                         if value is not None
-                        else ("missing" if row["valid"] else "invalid"),
+                        else ("invalid" if _flagged(row, source.column) else "missing"),
                     )
                 )
         cursor = None
@@ -401,6 +421,12 @@ class WeatherService:
                 require_statistic(entry.metric, statistic)
             if "observed" in query.statistics:
                 raise PublicError("unsupported_statistic", "Use observations for raw values.")
+        # Bound the window before building any bins (day bins cost one time-model day each).
+        for _, source in selected:
+            if query.end - query.start > AGGREGATE_WINDOW[source.family]:
+                raise PublicError(
+                    "range_too_large", "The aggregate window is too long for this metric."
+                )
         bins = bin_spec(query)
         count = len(bin_list(bins))
         if count * len(query.metrics) * len(query.statistics) > MAX_POINTS:
@@ -416,11 +442,6 @@ class WeatherService:
             raise PublicError(
                 "range_too_large", "Too many wind-rose intervals; choose a coarser resolution."
             )
-        for _, source in selected:
-            if query.end - query.start > AGGREGATE_WINDOW[source.family]:
-                raise PublicError(
-                    "range_too_large", "The aggregate window is too long for this metric."
-                )
         items: list[Aggregate] = []
         for entry, source in selected:
             wind = entry.metric == "wind_direction"
@@ -468,7 +489,7 @@ def bin_list(bins: BinSpec) -> list[tuple[datetime, datetime]]:
         edges = list(bins.bounds)
     else:
         assert bins.stride is not None
-        first = bins.start - (bins.start - UTC_EPOCH) % bins.stride
+        first = bins.start - (bins.start - EPOCH_ORIGIN) % bins.stride
         edges = [first]
         while edges[-1] < bins.end:
             if len(edges) > MAX_POINTS + 1:

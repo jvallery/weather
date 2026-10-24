@@ -18,6 +18,10 @@ from pydantic import (
     model_validator,
 )
 
+MAX_POINTS = 5000
+# Accepted instants; keeps time-model and bin arithmetic far from datetime's limits.
+EARLIEST = datetime(2000, 1, 1, tzinfo=UTC)
+LATEST = datetime(2100, 1, 1, tzinfo=UTC)
 UTC_PATTERN = r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,6})?Z$"
 
 
@@ -131,7 +135,7 @@ class Observations(PublicModel):
     start: UTCInstant
     end: UTCInstant
     metrics: list[MetricID]
-    points: Annotated[list[ObservationPoint], Field(max_length=5000)]
+    points: Annotated[list[ObservationPoint], Field(max_length=MAX_POINTS)]
     next_cursor: str | None
 
 
@@ -191,6 +195,8 @@ class Window(BaseModel):
     def ordered(self) -> Window:
         if self.start >= self.end:
             raise ValueError("start must precede end")
+        if self.start < EARLIEST or self.end > LATEST:
+            raise ValueError("instants must fall between 2000 and 2100")
         return self
 
     @property
@@ -200,7 +206,7 @@ class Window(BaseModel):
 
 class ObservationQuery(Window):
     metrics: Annotated[list[MetricID], Field(min_length=1, max_length=16)]
-    limit: Annotated[int, Field(ge=1, le=5000)] = 1000
+    limit: Annotated[int, Field(ge=1, le=MAX_POINTS)] = 1000
     cursor: Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9_.-]{1,2048}$")] | None = None
 
     @field_validator("metrics")

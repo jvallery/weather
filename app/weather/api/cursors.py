@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MIT
 """HMAC-signed export cursors bound to their filters. They provide integrity, not secrecy.
 
-A cursor carries the keyset position (observed_at, id) and the received-at snapshot taken on
-the first page, so rows that land later never shift an export. Its expiry slides with each page
+A cursor carries the keyset position (observed_at, id) and the database insert-time snapshot taken
+on the first page, so rows that land later never shift an export. Its expiry slides with each page
 but never passes an absolute cap from the first page.
 """
 

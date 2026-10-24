@@ -2,6 +2,7 @@
 """Public API behaviour without a database: cache, freshness, cursors, routes and summaries."""
 
 import importlib.util
+import json
 import math
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -30,7 +31,9 @@ def st_row(at: datetime, **values: float | None) -> dict[str, Any]:
         id=uuid4(),
         observed_at=at,
         received_at=at + timedelta(seconds=1),
+        inserted_at=at + timedelta(seconds=2),
         valid=True,
+        invalid_fields=[],
         air_temperature=0.0,
         lightning_strike_count=0.0,
         lightning_strike_avg_distance=0.0,
@@ -49,7 +52,7 @@ def reading(at: datetime = T0, **values: float | None) -> Reading:
         },
         "day": {"total": None, "support_seconds": 0, "observed_at": None, "received_at": None},
     }
-    return Reading("home", st_row(at, **values), None, rain)
+    return Reading("home", st_row(at, **values), None, rain, at)
 
 
 class Clock:
@@ -73,6 +76,7 @@ class FakeReader:
         self.down = False
         self.rows: list[dict[str, Any]] = []
         self.calls: list[dict[str, Any]] = []
+        self.snapshot = T0
 
     async def current(self, now: datetime, hour: datetime, day: datetime) -> Reading:
         if self.down or self.reading is None:
@@ -82,16 +86,19 @@ class FakeReader:
     async def ping(self) -> bool:
         return not self.down
 
-    async def observations(self, family: str, **kwargs: Any) -> list[dict[str, Any]]:
+    async def observations(
+        self, family: str, **kwargs: Any
+    ) -> tuple[list[dict[str, Any]], datetime]:
         self.calls.append(kwargs)
+        snapshot = kwargs["snapshot"] or self.snapshot
         rows = [
             r
             for r in self.rows
             if (r["observed_at"], r["id"]) > (kwargs["after_time"], kwargs["after_id"])
             and r["observed_at"] < kwargs["end"]
-            and r["received_at"] <= kwargs["snapshot"]
+            and r["inserted_at"] <= snapshot
         ]
-        return sorted(rows, key=lambda r: (r["observed_at"], r["id"]))[: kwargs["rows"]]
+        return sorted(rows, key=lambda r: (r["observed_at"], r["id"]))[: kwargs["rows"]], snapshot
 
     async def aggregates(self, *args: Any, **kwargs: Any) -> tuple[list[Any], list[Any]]:
         return [], []
@@ -148,7 +155,7 @@ def test_current_keeps_zero_and_ages_from_source_time() -> None:
 
 
 def test_empty_station_is_unavailable_not_zero() -> None:
-    current = build_current(Reading(None, None, None, {}), T0, DEFAULT_CADENCES)
+    current = build_current(Reading(None, None, None, {}, T0), T0, DEFAULT_CADENCES)
     assert current.data_state == "unavailable"
     assert all(m.value is None and m.reason for m in current.metrics)
 
@@ -286,16 +293,19 @@ def test_cursor_paging_is_stable_while_rows_land() -> None:
     page = client.get(url).json()
     while True:
         seen.extend(point["id"] for point in page["points"])
-        # A late row lands inside the window after the export started.
+        # A late row lands inside the window after the export started; like a spool drain or
+        # reproject, its received_at predates the snapshot but its insert time does not.
         late = st_row(base + timedelta(seconds=30))
-        late["received_at"] = clock.now() + timedelta(seconds=1)
+        late["received_at"] = base
+        late["inserted_at"] = reader.snapshot + timedelta(seconds=1)
         reader.rows.append(late)
         clock.advance(600)
         if not page["next_cursor"]:
             break
         page = client.get(url + "&cursor=" + page["next_cursor"]).json()
     assert len(seen) == len(set(seen)) == 10
-    assert all(call["snapshot"] == T0 for call in reader.calls)
+    assert reader.calls[0]["snapshot"] is None
+    assert all(call["snapshot"] == T0 for call in reader.calls[1:])
     first = client.get(url).json()
     tampered = first["next_cursor"][:-2] + ("A" if first["next_cursor"][-2] != "A" else "B") + "x"
     assert client.get(url + "&cursor=" + tampered).json()["code"] == "invalid_cursor"
@@ -460,7 +470,9 @@ def test_lightning_sums_stay_integers_and_empty_bins_have_reasons() -> None:
 
 def test_source_failures_are_sanitized_503s() -> None:
     class Broken(FakeReader):
-        async def observations(self, family: str, **kwargs: Any) -> list[dict[str, Any]]:
+        async def observations(
+            self, family: str, **kwargs: Any
+        ) -> tuple[list[dict[str, Any]], datetime]:
             raise SourceUnavailable()
 
     client = TestClient(build_app(service(Clock(T0), Broken())))
@@ -475,3 +487,80 @@ def test_source_failures_are_sanitized_503s() -> None:
         "message": "Weather data is temporarily unavailable.",
         "suggested_resolution_seconds": None,
     }
+
+
+def test_rain_windows_come_from_the_reading_not_the_response_time() -> None:
+    # 23:59:58 MDT: a full day total, then a request just after the weather day rolls over.
+    at = datetime(2026, 7, 2, 5, 59, 58, tzinfo=UTC)
+    held = reading(at)
+    day = {"total": 4.0, "support_seconds": 600.0, "observed_at": at, "received_at": at}
+    held = Reading("home", held.obs_st, None, {**held.rain, "day": day}, at)
+    before = {m.metric: m for m in build_current(held, at, DEFAULT_CADENCES).metrics}
+    assert before["rain_today"].value == 4
+    assert before["rain_today"].coverage == pytest.approx(600 / (86400 - 2))
+    after = {
+        m.metric: m
+        for m in build_current(held, at + timedelta(seconds=3), DEFAULT_CADENCES).metrics
+    }
+    assert after["rain_today"].value is None and after["rain_today"].reason
+    assert after["rain_last_hour"].coverage == 1
+
+
+def test_fields_flagged_invalid_are_invalid_not_missing() -> None:
+    flagged = reading(relative_humidity=None)
+    assert flagged.obs_st is not None
+    flagged = Reading(
+        "home", {**flagged.obs_st, "invalid_fields": ["relative_humidity"]}, None, {}, T0
+    )
+    humidity = next(
+        m for m in build_current(flagged, T0, DEFAULT_CADENCES).metrics if m.metric == "humidity"
+    )
+    assert humidity.value is None and humidity.quality == "invalid" and humidity.reason
+    reader = FakeReader()
+    reader.rows = [
+        {**st_row(T0 - timedelta(minutes=2)), "invalid_fields": ["relative_humidity"]},
+        st_row(T0 - timedelta(minutes=1)),
+        {**st_row(T0 - timedelta(seconds=30)), "valid": False},
+    ]
+    query = ObservationQuery.model_validate(
+        {"start": "2026-07-01T17:00:00Z", "end": "2026-07-01T18:00:00Z", "metrics": ["humidity"]}
+    )
+    page = run(service(Clock(T0), reader).observations(query))
+    assert [p.quality for p in page.points] == ["invalid", "missing", "invalid"]
+
+
+def test_wide_or_edge_windows_are_400s_before_any_bins_are_built(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import weather.api.service as module
+
+    def no_days(*args: Any) -> Any:
+        raise AssertionError("bins were built")
+
+    monkeypatch.setattr(module, "weather_day", no_days)
+    client = TestClient(build_app(service(Clock(T0), FakeReader())))
+    base = "/api/v1/weather/aggregates?metrics=temperature&statistics=mean&resolution=day"
+    for window, code in (
+        ("start=2000-01-01T00:00:00Z&end=2099-12-31T00:00:00Z", "range_too_large"),
+        ("start=0001-01-01T00:00:00Z&end=0001-01-02T00:00:00Z", "invalid_request"),
+        ("start=9999-12-30T00:00:00Z&end=9999-12-31T23:59:59Z", "invalid_request"),
+    ):
+        response = client.get(base + "&" + window)
+        assert response.status_code == 400, window
+        assert response.headers["content-type"] == "application/problem+json"
+        assert response.json()["code"] == code
+
+
+def test_web_fixtures_match_the_server_models() -> None:
+    from weather.api.models import Aggregates, Current, Observations
+    from weather.api.service import metric_registry
+
+    fixtures = ROOT / "web/app/fixtures"
+    for name, model in (
+        ("current", Current),
+        ("aggregates", Aggregates),
+        ("observations", Observations),
+    ):
+        model.model_validate_json((fixtures / f"{name}.json").read_text())
+    registry = (fixtures / "metric-registry.json").read_text()
+    assert metric_registry(DEFAULT_CADENCES).model_dump(mode="json") == json.loads(registry)

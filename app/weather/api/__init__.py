@@ -33,7 +33,7 @@ def read_cursor_key(path: Path = CURSOR_KEY) -> bytes:
 
 
 def build_app(service: WeatherService | None = None) -> FastAPI:
-    """Without a service (contract generation, tests) data routes answer 503."""
+    """Without a service (no database configured) data routes answer 503."""
     app = FastAPI(title="Weather", version="1", docs_url=None, redoc_url=None)
     app.state.weather = service
 

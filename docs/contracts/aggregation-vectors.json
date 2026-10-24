@@ -55,6 +55,21 @@
       ]
     },
     {
+      "name": "off-minute reports: the report ending after the window still covers the last bin",
+      "rows": [
+        {"family": "obs_st", "at": "2026-07-01T00:00:17Z", "values": {"wind_avg": 1}},
+        {"family": "obs_st", "at": "2026-07-01T00:01:17Z", "values": {"wind_avg": 2}},
+        {"family": "obs_st", "at": "2026-07-01T00:02:17Z", "values": {"wind_avg": 3}},
+        {"family": "obs_st", "at": "2026-07-01T00:03:17Z", "values": {"wind_avg": 4}}
+      ],
+      "query": {"start": "2026-07-01T00:00:00Z", "end": "2026-07-01T00:03:00Z", "resolution": "60", "metrics": ["wind_avg"], "statistics": ["mean"]},
+      "expected": [
+        {"start": "2026-07-01T00:00:00Z", "statistic": "mean", "value": 1.716667, "support_seconds": 60, "evidence_count": 2},
+        {"start": "2026-07-01T00:01:00Z", "statistic": "mean", "value": 2.716667, "support_seconds": 60, "evidence_count": 2},
+        {"start": "2026-07-01T00:02:00Z", "end": "2026-07-01T00:03:00Z", "statistic": "mean", "value": 3.716667, "support_seconds": 60, "evidence_count": 2}
+      ]
+    },
+    {
       "name": "wind: 359/1 wrap, calm and missing direction; rose conserves the interval",
       "rows": [
         {"family": "obs_st", "at": "2026-07-01T00:01:00Z", "values": {"wind_avg": 5, "wind_direction": 359}},

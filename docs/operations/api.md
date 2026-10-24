@@ -10,6 +10,7 @@ The `api` Deployment (2 replicas, `weather` namespace) serves `/api/v1/weather/{
 - **Current conditions.** Requests are served from the in-process reading; no request hits the database. The newest `obs_st` and `rapid_wind` rows come from the `source_ts` btrees (never a scan). Rain last hour and rain today (America/Denver day) are sums of `precip_accumulated` with 60 s support per report; a window with no reports is null, not 0.
 - **Freshness defaults.** `obs_st` 60 s cadence, fresh for 150 s; `rapid_wind` 3 s, fresh for 15 s. Override with `WEATHER_API_OBS_ST_INTERVAL_SECONDS`, `WEATHER_API_OBS_ST_HOLD_SECONDS`, `WEATHER_API_RAPID_WIND_INTERVAL_SECONDS` and `WEATHER_API_RAPID_WIND_HOLD_SECONDS`.
 - **Cursors.** Signed with `CURSOR_HMAC_KEY` from Secret `weather-api-cursor` (mounted only into `api`). Rotating the key invalidates outstanding export cursors (clients get 400 `invalid_cursor` and restart the export); nothing else depends on it.
+- **Export snapshot.** The first page records the database clock minus 120 s; every page then reads only rows whose `inserted_at` (set by the database on insert, migration `0002_api`) is at or before it. A spool drain or `reproject` that lands old rows mid-export therefore never shifts the export. The newest two minutes of rows appear only in a new export. Rows that existed before `0002_api` read `inserted_at = -infinity`.
 
 ## Signals
 

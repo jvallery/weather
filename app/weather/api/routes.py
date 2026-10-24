@@ -20,8 +20,8 @@ from .models import (
     Observations,
     Problem,
 )
-from .registry import DEFAULT_CADENCES, PublicError, unavailable
-from .service import WeatherService, metric_registry
+from .registry import PublicError, unavailable
+from .service import WeatherService
 
 ERRORS: dict[int | str, dict[str, Any]] = {
     400: {"model": Problem, "description": "Invalid request."},
@@ -58,10 +58,7 @@ def _service(request: Request) -> WeatherService:
 
 @router.get("/api/v1/weather/metrics", response_model=MetricRegistry, operation_id="getMetrics")
 def get_metrics(request: Request) -> MetricRegistry:
-    service = getattr(request.app.state, "weather", None)
-    if isinstance(service, WeatherService):
-        return service.registry_document
-    return metric_registry(DEFAULT_CADENCES)
+    return _service(request).registry_document
 
 
 @router.get(

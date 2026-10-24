@@ -3,7 +3,7 @@ import { z } from "zod";
 import { data } from "react-router";
 import { Counter, Gauge, register } from "prom-client";
 import { catalogSchema } from "./contracts";
-import { parseAggregates, parseCurrent, parseObservations, parser, parseRegistry, type Current, type Parser } from "./weather-api";
+import { parseAggregates, parseCurrent, parser, parseRegistry, type Current, type Parser } from "./weather-api";
 
 const ALLOWED = /^\/api\/v1\/(?:weather\/(?:current|observations|aggregates|metrics)|timelapses(?:\/[A-Za-z0-9_-]{1,128})?)$/;
 const parseCatalog = parser(catalogSchema);
@@ -76,9 +76,6 @@ export async function currentRead(request: Request) {
 export async function catalogRead(request: Request, extra = new URLSearchParams()) {
   extra.set("limit", "100");
   return publicRead("/api/v1/timelapses", parseCatalog, request.signal, extra);
-}
-export async function observationsRead(request: Request, params: URLSearchParams) {
-  return publicReadResult("/api/v1/weather/observations", parseObservations, request.signal, params);
 }
 export async function aggregatesRead(request: Request, params: URLSearchParams) {
   return publicReadResult("/api/v1/weather/aggregates", parseAggregates, request.signal, params);

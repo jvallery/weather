@@ -89,8 +89,10 @@ async def insert(
     rows: list[tuple[datetime, dict[str, Any]]],
     *,
     received: datetime | None = None,
+    inserted: datetime | None = None,
     quality: str = VALID,
 ) -> None:
+    """Family rows; inserted_at defaults to the database clock, like real ingest."""
     ids = [uuid4() for _ in rows]
     await c.execute(
         text("""INSERT INTO weather.telemetry_receipt(id,received_at,raw_bytes,sha256,
@@ -103,8 +105,9 @@ async def insert(
     )
     await c.execute(
         text(f"""INSERT INTO weather.{family}(device_id,receipt_id,source_ts,row_idx,
-                  "values",quality)
-                SELECT :device,rid,ts,0,CAST(v AS jsonb),CAST(:quality AS jsonb)
+                  "values",quality,inserted_at)
+                SELECT :device,rid,ts,0,CAST(v AS jsonb),CAST(:quality AS jsonb),
+                  coalesce(CAST(:inserted AS timestamptz),clock_timestamp())
                 FROM unnest(CAST(:ids AS uuid[]),CAST(:ts AS timestamptz[]),
                   CAST(:vals AS text[])) AS t(rid,ts,v)"""),
         {
@@ -113,6 +116,7 @@ async def insert(
             "ts": [at for at, _ in rows],
             "vals": [json.dumps(values) for _, values in rows],
             "quality": quality,
+            "inserted": inserted,
         },
     )
 
@@ -137,26 +141,53 @@ def test_current_reads_newest_valid_rows_rain_and_station() -> None:
                 "obs_st",
                 [
                     (now - timedelta(seconds=s), {"air_temperature": t, "precip_accumulated": 0.1})
-                    for s, t in ((180, 20), (120, 21), (60, 22))
+                    for s, t in ((180, 20), (120, 21))
                 ],
+            )
+            # The newest valid row has one field the parser flagged invalid.
+            await insert(
+                c,
+                device,
+                "obs_st",
+                [
+                    (
+                        now - timedelta(seconds=60),
+                        {"air_temperature": 22, "precip_accumulated": 0.1, "uv": 99},
+                    )
+                ],
+                quality='{"valid":true,"reason":"valid","invalid":["uv"]}',
             )
             await insert(c, device, "obs_st", [(now - timedelta(seconds=30), {})], quality=INVALID)
             await insert(c, device, "obs_st", [(now + timedelta(minutes=5), {"uv": 9})])
             await insert(
                 c, device, "rapid_wind", [(now - timedelta(seconds=2), {"wind_speed": 0})]
             )
-        weather = service(api)
+        weather = service(api, clock=lambda: now)
         await weather.refresh()
         current = weather.current()
         values = {m.metric: m for m in current.metrics}
+        assert values["uv"].value is None and values["uv"].quality == "invalid"
         assert current.station_alias == "home" and current.data_state == "live"
         assert values["temperature"].value == 22
         assert values["temperature"].observed_at == now - timedelta(seconds=60)
-        assert values["uv"].value is None  # the future row is not current
         assert values["wind_speed"].value == 0 and values["wind_speed"].freshness == "fresh"
         assert values["rain_last_hour"].value == pytest.approx(0.3)
         assert values["rain_last_hour"].coverage == pytest.approx(180 / 3600, abs=1e-3)
         assert weather.ready()
+        # Current rain and the history sum apply the same support rule to the same window.
+        hour = await weather.aggregates(
+            AggregateQuery.model_validate(
+                {
+                    "start": now - timedelta(hours=1),
+                    "end": now,
+                    "metrics": ["precipitation"],
+                    "statistics": ["sum"],
+                    "resolution": "600",
+                }
+            )
+        )
+        assert sum(item.value or 0 for item in hour.items) == pytest.approx(0.3)
+        assert sum(item.coverage.support_seconds for item in hour.items) == pytest.approx(180)
 
     database(check)
 
@@ -215,6 +246,7 @@ def test_thirty_day_export_is_stable_while_late_rows_land() -> None:
                 "obs_st",
                 [(start + timedelta(minutes=10 * n), {"uv": n}) for n in range(4320)],
                 received=datetime.now(UTC) - timedelta(hours=1),
+                inserted=datetime.now(UTC) - timedelta(hours=1),
             )
         weather = service(api)
         query = ObservationQuery.model_validate(
@@ -226,24 +258,33 @@ def test_thirty_day_export_is_stable_while_late_rows_land() -> None:
             }
         )
         seen: list[str] = []
+        values: list[float | None] = []
         page = await weather.observations(query)
-        late = 0
+        pages = 0
         while True:
             seen.extend(point.id for point in page.points)
-            # Rows land mid-export, both before and after the current position.
+            values.extend(point.value for point in page.points)
+            # Rows land mid-export, one behind and one ahead of the current position. Like a
+            # spool drain or reproject, their received_at is old (before the snapshot).
             async with admin.begin() as c:
-                await insert(
-                    c,
-                    device,
-                    "obs_st",
-                    [(start + timedelta(minutes=10 * late + 5), {"uv": -1})],
-                    received=datetime.now(UTC) + timedelta(seconds=1),
-                )
-            late += 400
+                for index in (400 * pages, (1000 * pages + 1500) % 4320):
+                    at = start + timedelta(minutes=10 * index + 5)
+                    await insert(
+                        c, device, "obs_st", [(at, {"uv": -1})], received=at + timedelta(seconds=1)
+                    )
+            pages += 1
             if page.next_cursor is None:
                 break
             page = await weather.observations(query.model_copy(update={"cursor": page.next_cursor}))
         assert len(seen) == len(set(seen)) == 4320
+        assert -1 not in values
+        async with admin.connect() as c:
+            landed = (
+                await c.execute(
+                    text("""SELECT count(*) FROM weather.obs_st WHERE "values"->>'uv'='-1'""")
+                )
+            ).scalar_one()
+        assert landed == 2 * pages == 10
         with pytest.raises(PublicError) as error:
             await weather.observations(query.model_copy(update={"cursor": "AAAA.BBBB"}))
         assert error.value.code == "invalid_cursor"

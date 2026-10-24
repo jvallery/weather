@@ -17,6 +17,9 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from .registry import COLUMNS, REPORT_SECONDS, Family, Source
 
 EPOCH_ORIGIN = datetime.fromisoformat("1970-01-01T00:00:00+00:00")
+# Longer than any ingest transaction (drain 30 s, reproject pages 60 s): every row inserted at or
+# before the snapshot has committed by the time the first page reads, so the set never changes.
+SNAPSHOT_MARGIN_SECONDS = 120
 CALM_MPS = 0.5
 SPEED_EDGES = (0.5, 2.0, 5.0, 10.0, 20.0)
 Row = Mapping[str, Any]
@@ -33,7 +36,7 @@ def _columns(family: Family) -> str:
 
 def latest_sql(family: Family) -> str:
     # Newest valid row through the btree on source_ts (ix_<family>_source_ts), never a scan.
-    return f"""SELECT id,observed_at,received_at,{_columns(family)}
+    return f"""SELECT id,observed_at,received_at,invalid_fields,{_columns(family)}
 FROM public_api.{family} WHERE valid AND observed_at <= :now
 ORDER BY observed_at DESC LIMIT 1"""
 
@@ -61,13 +64,15 @@ LEFT JOIN s ON s.ts > w.ws
 GROUP BY w.name"""
 
 STATION_SQL = "SELECT alias FROM public_api.station ORDER BY alias LIMIT 1"
+SNAPSHOT_SQL = f"SELECT now() - interval '{SNAPSHOT_MARGIN_SECONDS} seconds' AS snapshot"
 
 
 def observations_sql(family: Family) -> str:
     # Keyset on (observed_at, id); the explicit lower bound lets the btree skip earlier pages.
-    return f"""SELECT id,observed_at,received_at,valid,{_columns(family)}
+    # The snapshot is database insert time: late drain/reproject rows keep an old received_at.
+    return f"""SELECT id,observed_at,received_at,valid,invalid_fields,{_columns(family)}
 FROM public_api.{family}
-WHERE observed_at >= :after_time AND observed_at < :end AND received_at <= :snapshot
+WHERE observed_at >= :after_time AND observed_at < :end AND inserted_at <= :snapshot
   AND (observed_at, id) > (CAST(:after_time AS timestamptz), CAST(:after_id AS uuid))
 ORDER BY observed_at, id LIMIT :rows"""
 
@@ -89,7 +94,8 @@ def _cells_sql(source: Source, *, day: bool, wind: bool) -> str:
         span = "ts - CAST(:span AS interval)"
         start = f"greatest({span}, coalesce(prev_ts, {span}))"
         end = "ts"
-        keep = "ts > CAST(:start AS timestamptz) AND ts <= CAST(:end AS timestamptz)"
+        # Every report whose support overlaps the query, including one ending after it.
+        keep = f"ts > CAST(:start AS timestamptz) AND {span} < CAST(:end AS timestamptz)"
         home = "ts > bin_start AND ts <= bin_end"
         observed = "home"
     last = "greatest(sup.e - interval '1 microsecond', sup.s)"
@@ -168,6 +174,8 @@ class Reading:
     obs_st: Row | None
     rapid_wind: Row | None
     rain: Mapping[str, Row]
+    # The instant the rain windows were computed for: [at - 1 h, at] and [day start, at].
+    at: datetime
 
 
 @dataclass(frozen=True)
@@ -246,6 +254,7 @@ class WeatherReader:
             obs_st=st[0] if st else None,
             rapid_wind=rw[0] if rw else None,
             rain={row["name"]: row for row in rain},
+            at=now,
         )
 
     async def observations(
@@ -253,11 +262,15 @@ class WeatherReader:
         family: Family,
         *,
         end: datetime,
-        snapshot: datetime,
+        snapshot: datetime | None,
         after_time: datetime,
         after_id: UUID,
         rows: int,
-    ) -> list[Row]:
+    ) -> tuple[list[Row], datetime]:
+        """One page and the insert-time snapshot it used (taken from the DB on the first page)."""
+        if snapshot is None:
+            ((row,),) = await self._run([(SNAPSHOT_SQL, {})], self._statement_ms)
+            snapshot = row["snapshot"]
         (result,) = await self._run(
             [
                 (
@@ -273,7 +286,7 @@ class WeatherReader:
             ],
             self._statement_ms,
         )
-        return result
+        return result, snapshot
 
     async def aggregates(
         self, source: Source, bins: BinSpec, *, cap: timedelta, wind: bool, rose: bool

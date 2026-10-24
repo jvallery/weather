@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 import { expect, test } from "vitest";
 import { catalogSchema, intervalSchema } from "./contracts";
-import { parseAggregates, parseCurrent, parseObservations, parseRegistry } from "./weather-api";
+import { parseAggregates, parseCurrent, parseRegistry } from "./weather-api";
 import current from "../fixtures/current.json";
 import aggregatesFixture from "../fixtures/aggregates.json";
-import observationsFixture from "../fixtures/observations.json";
 import registryFixture from "../fixtures/metric-registry.json";
 import catalog from "../fixtures/catalog.json";
 import { ageLabel, conversionAvailable, localTime, metricValue, plotTime } from "./format";
@@ -15,7 +14,6 @@ const definition = (metric: string) => registry.metrics.find((row) => row.metric
 
 test("generated-type fixtures parse, keeping zero distinct from missing", () => {
   expect(parseCurrent(current)?.metrics[0].value).toBe(0);
-  expect(parseObservations(observationsFixture)?.points[1].value).toBeNull();
   expect(parseAggregates(aggregatesFixture)?.items).toHaveLength(12);
   expect(registry.metrics).toHaveLength(16);
   expect(catalogSchema.parse(catalog).items).toHaveLength(6);
@@ -27,6 +25,14 @@ test("parsing is lenient about additive fields and drops what the UI does not kn
   expect(JSON.stringify(parsed)).not.toContain("future");
   const older = { ...current, metrics: current.metrics.map((metric) => { const copy: Record<string, unknown> = { ...metric }; delete copy.coverage; return copy; }) };
   expect(parseCurrent(older)?.metrics[0].coverage).toBeNull();
+  const widened = { ...current, data_state: "degraded", metrics: current.metrics.map((metric) => ({ ...metric, quality: "estimated", freshness: "aging" })) };
+  const lenient = parseCurrent(widened);
+  expect(lenient?.data_state).toBe("cached");
+  expect(lenient?.metrics.map((metric) => [metric.quality, metric.freshness])[0]).toEqual(["missing", "stale"]);
+  const item = { ...aggregatesFixture.items[0], direction_state: "gusty", rose: [{ category: "squall", sector_start: null, sector_end: null, speed_min: null, speed_max: null, duration_seconds: 1 }] };
+  const parsed2 = parseAggregates({ ...aggregatesFixture, items: [item] });
+  expect(parsed2?.items[0].direction_state).toBeNull();
+  expect(parsed2?.items[0].rose?.[0].category).toBe("missing");
 });
 test("responses missing what the UI reads are rejected", () => {
   expect(parseCurrent({ ...current, metrics: undefined })).toBeNull();

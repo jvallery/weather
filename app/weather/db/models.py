@@ -143,6 +143,15 @@ for _family in TELEMETRY_FAMILIES:
         CheckConstraint("jsonb_typeof(\"values\") = 'object'", name="values_object"),
     )
     if _family in CURRENT_FAMILIES:
+        # 0002_api: database-assigned insert time; export cursors snapshot on it.
+        _observation.append_column(
+            Column(
+                "inserted_at",
+                DateTime(timezone=True),
+                nullable=False,
+                server_default=text("clock_timestamp()"),
+            )
+        )
         Index(f"ix_{_family}_source_ts", _observation.c.source_ts)
     else:
         Index(f"ix_{_family}_source_brin", _observation.c.source_ts, postgresql_using="brin")
