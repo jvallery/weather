@@ -84,7 +84,7 @@ def preflight():
         raise RuntimeError("production archive binding changed")
     if store["s3Credentials"]["accessKeyId"]["name"] != "weather-pg-backup-b2-writer":
         raise RuntimeError("production writer binding changed")
-    backups = json.loads(kubectl("get", "backups", "-o", "json"))["items"]
+    backups = json.loads(kubectl("get", "backups.postgresql.cnpg.io", "-o", "json"))["items"]
     completed = [
         b
         for b in backups
