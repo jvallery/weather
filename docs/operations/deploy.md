@@ -66,7 +66,7 @@ exclude the Frigate-dedicated worker. Do not alter node labels or tolerations
 to force placement.
 
 The namespace budget is 12 requested CPU / 20 GiB requested memory, 40 CPU /
-64 GiB limits, 200 GiB PVC requests, 16 PVCs and 40 pods. Planned profiles:
+64 GiB limits, 500 GiB PVC requests, 16 PVCs and 40 pods. Planned profiles:
 
 | Workload group | CPU request / limit | Memory request / limit |
 |---|---|---|
@@ -87,8 +87,10 @@ issues must qualify their profiles before enabling them. The envelope leaves
 5.2 requested CPU, 7.25 GiB requested memory, 5.5 CPU limits and 13 GiB memory
 limits inside quota. Reserve 60 GiB for the three production DB volumes,
 1 GiB for the receiver spool, 20 GiB for the drill database and up to 50 GiB
-for drill Garage: 131 GiB total, leaving 69 GiB. NFS staging is a static
-volume with its separate storage-owner quota. Run one restore drill at a time;
+for drill Garage, plus the static NFS staging PVC's 300 GiB request: 431 GiB
+total, leaving 69 GiB. Static NFS claims still count against the namespace
+PVC-request quota; physical NFS usage has its separate storage-owner quota.
+Run one restore drill at a time;
 retain production and shared volumes throughout cleanup.
 
 ## Rollback and recovery
