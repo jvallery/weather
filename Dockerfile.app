@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: MIT
 FROM registry.vallery.net/jvallery/weather-python-base@sha256:099ee58eb685a16faff6f87a2541d20a56142de087ab317906a5affe9c5f0acd AS ffmpeg
 # The fixed Debian snapshot pins the entire compiler/libx264 dependency closure.
-RUN printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20261023T000000Z bookworm main\n' > /etc/apt/sources.list \
+# Include the matching security/updates suites: the pinned base already contains security fixes.
+RUN printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20261023T000000Z bookworm main\ndeb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20261023T000000Z bookworm-updates main\ndeb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/20261023T000000Z bookworm-security main\n' > /etc/apt/sources.list \
  && rm -f /etc/apt/sources.list.d/debian.sources \
  && apt-get update && apt-get install -y --no-install-recommends build-essential nasm pkg-config libx264-dev curl xz-utils ca-certificates
 WORKDIR /src
