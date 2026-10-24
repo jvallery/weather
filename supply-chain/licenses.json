@@ -2619,6 +2619,13 @@
   },
   {
     "ecosystem": "pypi",
+    "name": "numpy",
+    "version": "2.5.4",
+    "license": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+    "source": "https://pypi.org/pypi/numpy/2.5.4/json"
+  },
+  {
+    "ecosystem": "pypi",
     "name": "opentelemetry-api",
     "version": "1.45.1",
     "license": "Apache-2.0",
@@ -2700,6 +2707,13 @@
     "version": "0.15.7",
     "license": "MIT",
     "source": "https://pypi.org/pypi/ruff/0.15.7/json"
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "simplejpeg",
+    "version": "1.9.0",
+    "license": "MIT",
+    "source": "https://pypi.org/pypi/simplejpeg/1.9.0/json"
   },
   {
     "ecosystem": "pypi",

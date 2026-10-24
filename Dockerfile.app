@@ -24,7 +24,8 @@ RUN pip install --no-cache-dir --require-hashes --only-binary=:all: --target=/op
 
 FROM registry.vallery.net/jvallery/weather-python-base@sha256:099ee58eb685a16faff6f87a2541d20a56142de087ab317906a5affe9c5f0acd
 ENV PYTHONPATH=/opt/python:/app/app PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
-    PATH=/opt/ffmpeg/bin:$PATH LD_LIBRARY_PATH=/opt/ffmpeg/lib PORT=8000 METRICS_PORT=9000
+    PATH=/opt/ffmpeg/bin:$PATH LD_LIBRARY_PATH=/opt/ffmpeg/lib PORT=8000 METRICS_PORT=9000 \
+    OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1
 COPY --from=dependencies /opt/python /opt/python
 COPY --from=ffmpeg /opt/ffmpeg /opt/ffmpeg
 WORKDIR /app
@@ -33,6 +34,8 @@ COPY scripts/weather /usr/local/bin/weather
 RUN chmod 0755 /usr/local/bin/weather
 COPY LICENSE THIRD_PARTY_NOTICES.md ./
 COPY docs/operations/ffmpeg.md ./FFMPEG.md
+COPY supply-chain/capture-decoder ./supply-chain/capture-decoder
+COPY docs/decisions/capture-decoder-reuse.md ./CAPTURE-DECODER.md
 USER 10001:10001
 EXPOSE 8000 9000
 CMD ["python", "-m", "weather.cli", "api"]

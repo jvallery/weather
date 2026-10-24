@@ -4,6 +4,7 @@
 import hashlib
 import ipaddress
 import json
+import math
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -35,6 +36,25 @@ class CaptureConfig:
     metrics_port: int = 9000
 
     def __post_init__(self) -> None:
+        integer_fields = (
+            self.port,
+            self.metrics_port,
+            self.cadence_ms,
+            self.phase_ms,
+            self.chunk_seconds,
+            self.max_bytes,
+            *self.geometry,
+        )
+        durations = (self.connect_seconds, self.read_seconds, self.total_seconds)
+        if (
+            any(type(value) is not int for value in integer_fields)
+            or any(
+                type(value) not in (int, float) or not math.isfinite(value) for value in durations
+            )
+            or type(self.https) is not bool
+            or (self.cache_allowance_ms is not None and type(self.cache_allowance_ms) is not int)
+        ):
+            raise ValueError("Invalid capture configuration types")
         if self.camera not in CAMERAS or not SAFE_ID.fullmatch(self.pod_uid):
             raise ValueError("Invalid camera or pod identity")
         try:

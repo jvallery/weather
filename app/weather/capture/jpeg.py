@@ -46,7 +46,7 @@ def validate_jpeg(body: bytes, allowed: tuple[int, int], max_bytes: int) -> tupl
     if geometry != allowed:
         raise CaptureFailure("geometry", 200)
     # Imported only in the cluster decoder path; pure units do no media work.
-    from simplejpeg import decode_jpeg
+    from simplejpeg import decode_jpeg  # type: ignore[import-untyped]
 
     try:
         pixels = decode_jpeg(

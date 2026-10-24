@@ -6,6 +6,9 @@ import errno
 import hashlib
 import ipaddress
 import json
+import os
+import subprocess
+import sys
 import tarfile
 from pathlib import Path
 
@@ -68,6 +71,50 @@ def test_config_private_values_do_not_serialize(tmp_path: Path) -> None:
     for field, value in [("cadence_ms", 999), ("total_seconds", 6), ("chunk_seconds", 301)]:
         with pytest.raises(ValueError):
             config(tmp_path, **{field: value})
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("chunk_seconds", True),
+        ("cadence_ms", 1000.5),
+        ("phase_ms", 0.5),
+        ("read_seconds", True),
+        ("https", "false"),
+        ("geometry", (True, 16)),
+        ("cache_allowance_ms", 0.5),
+    ],
+)
+def test_capture_configuration_does_not_coerce_operational_types(
+    tmp_path: Path, field: str, value: object
+) -> None:
+    with pytest.raises(ValueError, match="types"):
+        config(tmp_path, **{field: value})
+
+
+def test_root_capture_cli_redacts_bad_arguments_without_api_configuration() -> None:
+    value = "synthetic-private-argument"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "weather.cli",
+            "capture",
+            "collect",
+            "--camera",
+            "skycam_east",
+            "--host",
+            value,
+        ],
+        env={key: val for key, val in os.environ.items() if key != "WEATHER_PUBLIC_ORIGIN"},
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=5,
+    )
+    assert result.returncode == 2
+    assert result.stderr == "Invalid capture arguments; connection secrets must be mounted\n"
+    assert value not in result.stdout + result.stderr
 
 
 def test_schedule_skips_slow_responses_and_clock_steps_never_reuse_ids() -> None:
