@@ -766,8 +766,16 @@ def test_vector_dimension_and_sqlalchemy_roundtrip() -> None:
                 graph = await product_graph(connection)
                 await connection.execute(
                     text("""
-                    INSERT INTO weather.embedding_profile(id,model) VALUES('test','test-embedding')
+                    INSERT INTO weather.embedding_profile(id,model,active)
+                    VALUES('test','test-embedding',true)
                 """)
+                )
+                await rejects(
+                    connection,
+                    "INSERT INTO weather.embedding_profile(id,model,active) "
+                    "VALUES('conflict','test',true)",
+                    {},
+                    "23505",
                 )
                 document = metadata.tables["weather.search_document"]
                 await connection.execute(
