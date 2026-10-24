@@ -1,0 +1,68 @@
+{
+  "checkedAt": "2026-10-24T15:41:52.159708+00:00",
+  "combinedHead": "949da543149a68d9e830aa3eee3e33207176a45b",
+  "originalCredentialCommit": "cea9d3ee1b188baf66efe16072964fddc5b66ac4",
+  "cipherFiles": [
+    {
+      "path": "platform/gitops/secrets-ksops/weather/networkpolicy-weather-collector-frontyard_1.enc.yaml",
+      "sha256": "884b909c552db8aa93a13ee6571cbea10bda0f2f5f8be847cf45a98072aac53f",
+      "unchanged": true
+    },
+    {
+      "path": "platform/gitops/secrets-ksops/weather/secret-weather-api-cursor.enc.yaml",
+      "sha256": "237401f1a84ce899adfdeb4692054fc3535f43eb15d244eccde4855ac4f3ef57",
+      "unchanged": true
+    },
+    {
+      "path": "platform/gitops/secrets-ksops/weather/secret-weather-camera-frontyard_1.enc.yaml",
+      "sha256": "777f1f79df75db9040994be91d431c30f7392a0b5a843abd2305245be5d091a6",
+      "unchanged": true
+    },
+    {
+      "path": "platform/gitops/secrets-ksops/weather/secret-weather-cortex.enc.yaml",
+      "sha256": "009eee1eca767c0a4d828e04b26ef39be200ea8c99682e5223c111e331197c9e",
+      "unchanged": true
+    },
+    {
+      "path": "platform/gitops/secrets-ksops/weather/secret-weather-pg-api.enc.yaml",
+      "sha256": "1777bf0f6ccd6460026fe7d062debd890ffd31f881785234951dcd71041fd8ba",
+      "unchanged": true
+    },
+    {
+      "path": "platform/gitops/secrets-ksops/weather/secret-weather-pg-backup-b2-reader.enc.yaml",
+      "sha256": "5410a8e45b37f99f71fc3a2b517fe893a3bf898604302b8455d2b213c6a4b8c4",
+      "unchanged": true
+    },
+    {
+      "path": "platform/gitops/secrets-ksops/weather/secret-weather-pg-backup-b2-writer.enc.yaml",
+      "sha256": "be22dabd09ca592302749714b6363e7d5a2ce98b316f5cbd293f11bcde206a93",
+      "unchanged": true
+    },
+    {
+      "path": "platform/gitops/secrets-ksops/weather/secret-weather-pg-editor.enc.yaml",
+      "sha256": "c716d133137c7c3bad7c5029e061ee88c41c9a05206ccfd1e80a9b0ec9523f72",
+      "unchanged": true
+    },
+    {
+      "path": "platform/gitops/secrets-ksops/weather/secret-weather-pg-ingest.enc.yaml",
+      "sha256": "b4ebcd132faaa95ef71c1bc6c2e984146d9f16a49a7c888f266e2cb8f29219f0",
+      "unchanged": true
+    },
+    {
+      "path": "platform/gitops/secrets-ksops/weather/secret-weather-pg-migrator.enc.yaml",
+      "sha256": "ed2ddac181ec7196df61971cd65a287784c28a2bda9686c0ee31ca1abb78a1c3",
+      "unchanged": true
+    },
+    {
+      "path": "platform/gitops/secrets-ksops/weather/secret-weather-pg-worker.enc.yaml",
+      "sha256": "c95b440eed636d317878e3d66bd3bb511cb54047daaa801b299bd2b5ad0b3cb2",
+      "unchanged": true
+    }
+  ],
+  "generatorBytesUnchanged": true,
+  "fiveRawCredentialRecordsIdentical": true,
+  "weatherSecretContributionIdentical": true,
+  "acceptedExternalCredentialRecordsPreserved": true,
+  "dbOwnershipParagraphPreserved": true,
+  "databaseActivatedByThisCheck": false
+}

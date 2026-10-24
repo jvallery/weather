@@ -1,0 +1,188 @@
+{
+  "verdict": {
+    "accepted": [
+      "check-80f90660ecc0dc084e6ca8ee",
+      "check-da51065c2e47ad081836ba55",
+      "check-7e632488ee7267763b93e5de",
+      "check-da57e7799cb99db02fb546e3",
+      "check-c701d84af8135116b8e49ed5",
+      "check-85f608e55ee6f4ec570a4095",
+      "check-bea2afae8e08df537b9ac23d",
+      "check-0a8a9c680352b3871ecf75dc",
+      "check-98deac7481420febdf727b59",
+      "check-1e795b0465ebfd608d4c7353",
+      "check-692d9eb8856dd414b891ac88",
+      "check-876b763936c567504ccd1e82",
+      "check-9d4bb1ad6777c7a94264e5de",
+      "check-73f85b5ccfcfffc1e6909636"
+    ],
+    "accepted_count": 14,
+    "context": {
+      "attempt": 13,
+      "base_sha": "2c4686c8bf9d3ef4d2ea4b62b7b73a3248ddcdfc",
+      "head_sha": "8d9bedc45ff0046b34ff959b7b828fedc0837b5b",
+      "operation_id": "496093bf-cc25-5b3a-b8ef-6dc3ace0a70a",
+      "repository_id": "1151956309",
+      "run_id": "05b88f7b-1f96-5f6b-952a-6674800b2b46",
+      "source_sha": "11d124143e49992b866740c81a6f28473a454844"
+    },
+    "failures": [],
+    "pending": [],
+    "plan_sha256": "bb2a90cc984065207b1a101bc4d72ee508b0ba9e4097bbdc2c123e020ca439c9",
+    "publish_success": true,
+    "required_count": 14,
+    "schema": "fleet-native-ci-verdict/v1",
+    "state": "success"
+  },
+  "publication": {
+    "key": "692790fd569f9e258a9437740848a09205dcb63b4b3242f3245d722bbc63bd69",
+    "receipt": {
+      "actor_id": 310756381,
+      "context": "fleet-ci/native",
+      "head_sha": "8d9bedc45ff0046b34ff959b7b828fedc0837b5b",
+      "key": "692790fd569f9e258a9437740848a09205dcb63b4b3242f3245d722bbc63bd69",
+      "state": "success",
+      "status_id": 57164157957
+    },
+    "state": "published"
+  },
+  "cleanupTargetStates": [
+    [
+      "released",
+      44
+    ]
+  ],
+  "sources": {
+    "native_ci_reconcile.py": {
+      "sha256": "dd153c2d95f68c1818f1a3289c05377310eda33a4139e15b89060feb4bae6938",
+      "start": 285,
+      "end": 325,
+      "lines": [
+        "    # sufficient to publish success for a moving PR.",
+        "    head, base = current_refs(plan)",
+        "    verdict = journal.verdict(operation_id, current_head=head, current_base=base)",
+        "    if verdict[\"state\"] == \"success\" and pending_cleanup:",
+        "        verdict = {**verdict, \"state\": \"pending\", \"publish_success\": False,",
+        "                   \"pending_cleanup\": pending_cleanup}",
+        "    if verdict[\"state\"] == \"success\" and archive_errors:",
+        "        # Unreachable while evaluate() requires every archive; kept as an",
+        "        # explicit guard so success never publishes over an archive error.",
+        "        verdict = {**verdict, \"state\": \"pending\", \"publish_success\": False,",
+        "                   \"archive_errors\": sorted(check_id for check_id, _ in archive_errors)}",
+        "    verdict = _publish(journal, operation_id, plan, verdict, publish)",
+        "    if archive_errors:",
+        "        raise archive_errors[0][1]",
+        "    return verdict",
+        "",
+        "",
+        "def _publish(journal, operation_id, plan, verdict, publish):",
+        "    key = digest({\"plan\": plan[\"plan_sha256\"], \"verdict\": verdict})",
+        "    previous = journal.publication(operation_id)",
+        "    if previous is None or previous.get(\"key\") != key or previous.get(\"state\") != \"published\":",
+        "        prior_receipt = previous.get(\"receipt\") if isinstance(previous, dict) else None",
+        "        if (verdict[\"state\"] == \"superseded\" and isinstance(previous, dict)",
+        "                and previous.get(\"state\") == \"published\"",
+        "                and isinstance(prior_receipt, dict)",
+        "                and prior_receipt.get(\"key\") == previous.get(\"key\")",
+        "                and prior_receipt.get(\"state\") in (\"success\", \"failure\")",
+        "                and prior_receipt.get(\"head_sha\") == plan[\"context\"][\"head_sha\"]",
+        "                and prior_receipt.get(\"context\") == \"fleet-ci/native\"):",
+        "            # A commit that completed native CI keeps its recorded result after",
+        "            # its PR moves or merges. A newer attempt owns the new status.",
+        "            journal.record_publication(operation_id, {",
+        "                \"key\": key, \"state\": \"published\", \"receipt\": {",
+        "                    \"schema\": \"fleet-native-ci-preserved-terminal-status/v1\",",
+        "                    \"key\": key, \"state\": \"suppressed\", \"prior\": prior_receipt}})",
+        "            return verdict",
+        "        journal.record_publication(operation_id, {\"key\": key, \"state\": \"publishing\"})",
+        "        receipt = publish(plan, verdict, key)",
+        "        if not isinstance(receipt, dict) or receipt.get(\"key\") != key:",
+        "            raise NativeCIError(\"publication acknowledgement differs from retained result\")",
+        "        journal.record_publication(operation_id, {\"key\": key, \"state\": \"published\", \"receipt\": receipt})"
+      ]
+    },
+    "native_ci_controller.py": {
+      "sha256": "7438c9247a5d65bcab5e7051c397538dc7b1d7d5b41ae00031f8379a5a2e530e",
+      "start": 650,
+      "end": 689,
+      "lines": [
+        "    # GitHub can receive success. An entirely archived pending run also needs",
+        "    # a reconcile visit to compute that verdict. Keep those runs out of the large historical",
+        "    # rotation without prioritizing already published completed attempts.",
+        "    def awaiting_finalization(operation):",
+        "        verdict = journal.db.execute(",
+        "            \"SELECT verdict FROM runs WHERE operation_id=?\", (operation,)",
+        "        ).fetchone()[0]",
+        "        state = json.loads(verdict).get(\"state\") if verdict is not None else None",
+        "        if state in (None, \"pending\"):",
+        "            # The last archive can settle after this run's reconcile visit.",
+        "            # Compute its verdict next cycle instead of demoting an entirely",
+        "            # archived current candidate into the historical rotation.",
+        "            return (journal.db.execute(",
+        "                \"SELECT 1 FROM checks WHERE operation_id=? AND state='archived' LIMIT 1\",",
+        "                (operation,),",
+        "            ).fetchone() is not None and not journal.db.execute(",
+        "                \"SELECT 1 FROM checks WHERE operation_id=? AND state!='archived' LIMIT 1\",",
+        "                (operation,),",
+        "            ).fetchone())",
+        "        if state in (\"success\", \"failure\") and not journal.db.execute(",
+        "                \"SELECT 1 FROM checks WHERE operation_id=? AND state NOT IN ('archived','retired') LIMIT 1\",",
+        "                (operation,)).fetchone():",
+        "            # A status write that failed (left 'publishing') or was keyed to",
+        "            # another verdict is retried next cycle, not after a full turn of",
+        "            # the historical rotation. Scheduling only: reconcile re-reads refs",
+        "            # and recomputes the verdict before any publication.",
+        "            publication = journal.publication(operation)",
+        "            key = digest({\"plan\": journal.plan(operation)[\"plan_sha256\"], \"verdict\": json.loads(verdict)})",
+        "            if (publication is None or publication.get(\"state\") == \"publishing\"",
+        "                    or publication.get(\"key\") != key):",
+        "                return True",
+        "        if state != \"success\":",
+        "            return False",
+        "        publication = journal.publication(operation)",
+        "        return (publication is not None",
+        "                and publication.get(\"state\") == \"published\"",
+        "                and isinstance(publication.get(\"receipt\"), dict)",
+        "                and publication[\"receipt\"].get(\"state\") == \"pending\"",
+        "                and not journal.db.execute(",
+        "                    \"SELECT 1 FROM checks WHERE operation_id=? AND state!='archived' LIMIT 1\","
+      ]
+    }
+  },
+  "controller": {
+    "generation": 167,
+    "replicas": 1,
+    "readyReplicas": 1,
+    "strategy": "Recreate",
+    "pods": [
+      {
+        "uid": "ebaa7b3d-b7f7-4824-9292-953680fa75f5",
+        "phase": "Running",
+        "containerRestartCounts": [
+          0
+        ]
+      }
+    ]
+  },
+  "githubLatest": {
+    "id": 57164157957,
+    "state": "success",
+    "context": "fleet-ci/native",
+    "description": "Native CI success 692790fd569f9e258a9437740848a09205dcb63b4b3242f3245d722bbc63bd69",
+    "created_at": "2026-10-24T13:09:16Z",
+    "target_url": null,
+    "creator": {
+      "id": 310756381,
+      "login": "vallery-agents-bot[bot]"
+    }
+  },
+  "checkedAt": "2026-10-24T13:16:50.406289+00:00",
+  "previousPendingPublication": {
+    "key": "27d844d793971d8417244049ed48fda303eb474fc9b85fbdb20ad6595b7dcc53",
+    "statusID": 57164048641,
+    "createdAt": "2026-10-24T13:05:22Z",
+    "state": "published/pending"
+  },
+  "finding": "Archive eligibility and final GitHub publication are distinct. Canonical reconciliation may publish pending during independent cleanup. It now retains a genuine success publication matching the App-bot GitHub status. No recovery mutation was needed.",
+  "mutationsPerformed": false
+}

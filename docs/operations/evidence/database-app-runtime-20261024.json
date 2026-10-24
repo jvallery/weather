@@ -1,0 +1,70 @@
+{
+  "verifiedAt": "2026-10-24T15:33:06.777569+00:00",
+  "promotionMerge": "da8b451a388c5271a79e5a320c2c1678be35f800",
+  "artifactSource": "dd99be06a936b6adda37a355a15e52b0da62c803",
+  "image": "registry.vallery.net/jvallery/weather-app@sha256:b31d9d54d737d6cc1607618f4aa0ba99f8c6a4c8e256a5b931d825f8984342a1",
+  "argo": {
+    "revision": "da8b451a388c5271a79e5a320c2c1678be35f800",
+    "sync": "Synced",
+    "health": "Healthy"
+  },
+  "apiPods": [
+    {
+      "pod": "api-654949ff9b-8jd9f",
+      "uid": "75bc2145-488d-4924-9636-241f625d60c5",
+      "imageID": "registry.vallery.net/jvallery/weather-app@sha256:b31d9d54d737d6cc1607618f4aa0ba99f8c6a4c8e256a5b931d825f8984342a1",
+      "runtime": {
+        "uid": 10001,
+        "gid": 10001,
+        "files": {
+          "app/weather/db/schema_v1.py": "2d74afbfe91f9ab9d56b6d449574807e714494b4eb098812a8845c997a31e2af",
+          "app/weather/db/ddl_v1.py": "f079bbc3d011fdd25321dbec56f225601c84508944ef5c88ea2578941298f75b",
+          "app/migrations/versions/0000_namespace.py": "d592b19cb13d4e83c9dc79d84c4398896e6c783f2c34eee70459aa069889a0ca",
+          "app/migrations/versions/0001_schema.py": "a97a788cb0a4c199c77a0ca9f9b5465623ec9ea3e514d197ae51d311a94609dc",
+          "app/migrations/versions/0002_telemetry.py": "ab491d62778dd2fb0914c04237457c1e35c9cffc7f2a1ab92ed255d6738b4a67"
+        },
+        "migrationHeads": [
+          "0002_telemetry"
+        ],
+        "ffmpeg": "ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers",
+        "ffprobe": "ffprobe version 9.0.2 Copyright (c) 2007-2026 the FFmpeg developers",
+        "libx264": true,
+        "localHealth": 200
+      }
+    },
+    {
+      "pod": "api-654949ff9b-fwlgp",
+      "uid": "e71c2981-381a-40f2-acc3-f20095c23c34",
+      "imageID": "registry.vallery.net/jvallery/weather-app@sha256:b31d9d54d737d6cc1607618f4aa0ba99f8c6a4c8e256a5b931d825f8984342a1",
+      "runtime": {
+        "uid": 10001,
+        "gid": 10001,
+        "files": {
+          "app/weather/db/schema_v1.py": "2d74afbfe91f9ab9d56b6d449574807e714494b4eb098812a8845c997a31e2af",
+          "app/weather/db/ddl_v1.py": "f079bbc3d011fdd25321dbec56f225601c84508944ef5c88ea2578941298f75b",
+          "app/migrations/versions/0000_namespace.py": "d592b19cb13d4e83c9dc79d84c4398896e6c783f2c34eee70459aa069889a0ca",
+          "app/migrations/versions/0001_schema.py": "a97a788cb0a4c199c77a0ca9f9b5465623ec9ea3e514d197ae51d311a94609dc",
+          "app/migrations/versions/0002_telemetry.py": "ab491d62778dd2fb0914c04237457c1e35c9cffc7f2a1ab92ed255d6738b4a67"
+        },
+        "migrationHeads": [
+          "0002_telemetry"
+        ],
+        "ffmpeg": "ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers",
+        "ffprobe": "ffprobe version 9.0.2 Copyright (c) 2007-2026 the FFmpeg developers",
+        "libx264": true,
+        "localHealth": 200
+      }
+    }
+  ],
+  "webImagePreserved": "registry.vallery.net/jvallery/weather-web@sha256:0761f4ebf5f5cf73a4d261446b296fa77c1a3fb7e755585306c218a6e70764bd",
+  "publicHealth": 200,
+  "publicProbe": {
+    "path": "/api/healthz",
+    "operatorUserAgent": "weather-operator-verification/1",
+    "operatorStatus": 200,
+    "defaultPythonStatus": 403,
+    "defaultCloudflareMitigated": null
+  },
+  "databaseExists": false,
+  "databaseConnectionsOpenedByThisCheck": false
+}

@@ -1,0 +1,208 @@
+{
+  "at": "2026-10-24T15:54:37.547242+00:00",
+  "context": "vallery",
+  "namespace": "weather",
+  "submissionPath": "existing Argo weather GitOps",
+  "cnpgCandidateNodes": [
+    {
+      "node": "vm-k3s-node4",
+      "host": "oro",
+      "ready": true,
+      "pressure": false,
+      "cordoned": false,
+      "taints": [],
+      "allocCPU": 43.0,
+      "reqCPU": 29.735,
+      "usageCPU": 21.881382039000002,
+      "allocGi": 80.88,
+      "reqGi": 38.65,
+      "workingGi": 31.97
+    },
+    {
+      "node": "vm-k3s-node5",
+      "host": "opal",
+      "ready": true,
+      "pressure": false,
+      "cordoned": false,
+      "taints": [],
+      "allocCPU": 43.0,
+      "reqCPU": 39.625,
+      "usageCPU": 23.059079623000002,
+      "allocGi": 80.88,
+      "reqGi": 74.46,
+      "workingGi": 42.58
+    },
+    {
+      "node": "vm-k3s-node6",
+      "host": "ore",
+      "ready": true,
+      "pressure": false,
+      "cordoned": false,
+      "taints": [],
+      "allocCPU": 43.0,
+      "reqCPU": 33.735,
+      "usageCPU": 26.885429084000002,
+      "allocGi": 80.88,
+      "reqGi": 72.12,
+      "workingGi": 44.64
+    },
+    {
+      "node": "vm-k3s-node7",
+      "host": "onyx",
+      "ready": true,
+      "pressure": false,
+      "cordoned": false,
+      "taints": [],
+      "allocCPU": 43.0,
+      "reqCPU": 31.19,
+      "usageCPU": 21.615314117,
+      "allocGi": 78.85,
+      "reqGi": 68.93,
+      "workingGi": 42.58
+    },
+    {
+      "node": "vm-k3s-node8",
+      "host": "olivine",
+      "ready": true,
+      "pressure": false,
+      "cordoned": false,
+      "taints": [
+        {
+          "key": "dedicated",
+          "effect": "NoSchedule"
+        }
+      ],
+      "allocCPU": 43.0,
+      "reqCPU": 37.28,
+      "usageCPU": 26.316680646000002,
+      "allocGi": 80.88,
+      "reqGi": 77.23,
+      "workingGi": 49.51
+    }
+  ],
+  "quota": [
+    {
+      "name": "weather-budget",
+      "hard": {
+        "limits.cpu": "40",
+        "limits.memory": "64Gi",
+        "persistentvolumeclaims": "16",
+        "pods": "40",
+        "requests.cpu": "12",
+        "requests.memory": "20Gi",
+        "requests.storage": "500Gi",
+        "services.loadbalancers": "0",
+        "services.nodeports": "0"
+      },
+      "used": {
+        "limits.cpu": "4",
+        "limits.memory": "2Gi",
+        "persistentvolumeclaims": "0",
+        "pods": "4",
+        "requests.cpu": "400m",
+        "requests.memory": "512Mi",
+        "requests.storage": "0",
+        "services.loadbalancers": "0",
+        "services.nodeports": "0"
+      }
+    }
+  ],
+  "storageClass": {
+    "name": "longhorn-v1-rwo",
+    "provisioner": "driver.longhorn.io",
+    "parameters": {
+      "dataEngine": "v1",
+      "dataLocality": "best-effort",
+      "diskSelector": "plane-longhorn",
+      "fsType": "ext4",
+      "nodeSelector": "plane-longhorn",
+      "numberOfReplicas": "2",
+      "recurringJobSelector": "[{\"name\":\"standard\",\"isGroup\":true}]",
+      "replicaSoftAntiAffinity": "disabled",
+      "staleReplicaTimeout": "30"
+    },
+    "volumeBindingMode": "WaitForFirstConsumer"
+  },
+  "cnpgNamespaceDeployments": [
+    {
+      "name": "barman-cloud",
+      "desired": 2,
+      "ready": 2
+    },
+    {
+      "name": "cnpg-controller-manager",
+      "desired": 2,
+      "ready": 2
+    }
+  ],
+  "appProjectNamespacedAllowlist": [
+    {
+      "group": "",
+      "kind": "ConfigMap"
+    },
+    {
+      "group": "",
+      "kind": "Service"
+    },
+    {
+      "group": "",
+      "kind": "ServiceAccount"
+    },
+    {
+      "group": "",
+      "kind": "PersistentVolumeClaim"
+    },
+    {
+      "group": "",
+      "kind": "ResourceQuota"
+    },
+    {
+      "group": "",
+      "kind": "LimitRange"
+    },
+    {
+      "group": "apps",
+      "kind": "Deployment"
+    },
+    {
+      "group": "apps",
+      "kind": "StatefulSet"
+    },
+    {
+      "group": "batch",
+      "kind": "Job"
+    },
+    {
+      "group": "batch",
+      "kind": "CronJob"
+    },
+    {
+      "group": "networking.k8s.io",
+      "kind": "NetworkPolicy"
+    },
+    {
+      "group": "policy",
+      "kind": "PodDisruptionBudget"
+    },
+    {
+      "group": "postgresql.cnpg.io",
+      "kind": "Cluster"
+    },
+    {
+      "group": "postgresql.cnpg.io",
+      "kind": "ScheduledBackup"
+    },
+    {
+      "group": "barmancloud.cnpg.io",
+      "kind": "ObjectStore"
+    },
+    {
+      "group": "traefik.io",
+      "kind": "IngressRoute"
+    },
+    {
+      "group": "traefik.io",
+      "kind": "Middleware"
+    }
+  ]
+}

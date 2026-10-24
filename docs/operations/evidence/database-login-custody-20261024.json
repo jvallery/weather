@@ -1,0 +1,69 @@
+{
+  "verifiedAt": "2026-10-24T15:45:48.026723+00:00",
+  "acceptedMerge": "949da543149a68d9e830aa3eee3e33207176a45b",
+  "argo": {
+    "application": "weather-secrets",
+    "sync": "Synced",
+    "health": "Healthy",
+    "revision": "949da543149a68d9e830aa3eee3e33207176a45b"
+  },
+  "secrets": [
+    {
+      "name": "weather-pg-ingest",
+      "uid": "336da09a-aa78-4718-a0ef-ee1d87e38338",
+      "type": "kubernetes.io/basic-auth",
+      "keys": [
+        "password",
+        "username"
+      ],
+      "ciphertextSha256": "b4ebcd132faaa95ef71c1bc6c2e984146d9f16a49a7c888f266e2cb8f29219f0",
+      "independentRecoveryEqualsLive": true
+    },
+    {
+      "name": "weather-pg-worker",
+      "uid": "8728a9d2-510d-4b52-9156-530df69dd4b1",
+      "type": "kubernetes.io/basic-auth",
+      "keys": [
+        "password",
+        "username"
+      ],
+      "ciphertextSha256": "c95b440eed636d317878e3d66bd3bb511cb54047daaa801b299bd2b5ad0b3cb2",
+      "independentRecoveryEqualsLive": true
+    },
+    {
+      "name": "weather-pg-api",
+      "uid": "bdbb5482-b9ae-4490-9d0c-586dee9231d0",
+      "type": "kubernetes.io/basic-auth",
+      "keys": [
+        "password",
+        "username"
+      ],
+      "ciphertextSha256": "1777bf0f6ccd6460026fe7d062debd890ffd31f881785234951dcd71041fd8ba",
+      "independentRecoveryEqualsLive": true
+    },
+    {
+      "name": "weather-pg-editor",
+      "uid": "4d2b8f26-d5d8-4fb0-8ed4-251c73e228d9",
+      "type": "kubernetes.io/basic-auth",
+      "keys": [
+        "password",
+        "username"
+      ],
+      "ciphertextSha256": "c716d133137c7c3bad7c5029e061ee88c41c9a05206ccfd1e80a9b0ec9523f72",
+      "independentRecoveryEqualsLive": true
+    },
+    {
+      "name": "weather-pg-migrator",
+      "uid": "9c482ccb-d205-46a0-a023-4e2da2bbd7f9",
+      "type": "kubernetes.io/basic-auth",
+      "keys": [
+        "password",
+        "username"
+      ],
+      "ciphertextSha256": "ed2ddac181ec7196df61971cd65a287784c28a2bda9686c0ee31ca1abb78a1c3",
+      "independentRecoveryEqualsLive": true
+    }
+  ],
+  "databaseRoleLoginsProven": false,
+  "databaseCommissionedByThisCheck": false
+}

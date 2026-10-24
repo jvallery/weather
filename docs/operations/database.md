@@ -21,7 +21,13 @@ against current allocatable resources, reservations, pressure and namespace
 quota again before commissioning or a drill.
 
 The Zot image is pinned by digest and was verified against the running Research
-Vault primary: PostgreSQL 16.15 and pgvector 0.8.6. Initdb creates database
+Vault primary: PostgreSQL 16.15 and pgvector 0.8.6. Keep the `:16.15` version
+tag alongside the immutable digest: CNPG admission needs the semantic version
+for upgrade detection, while the digest fixes the exact bytes. The same
+tagged digest is used by the live Research Vault clusters. The Cluster,
+reader-only drill and role probe reference the existing namespace-scoped
+`zot-origin-cluster-pull` credential for private image pulls; no registry
+credential is copied into a container or given B2 write authority. Initdb creates database
 `weather`, owner `weather_migrator`, and the `vector` extension. Managed roles
 `weather_ingest`, `weather_worker`, `weather_api`, `weather_editor` have login but
 no superuser, createdb or createrole; the API role has a 40-connection limit.

@@ -1,0 +1,64 @@
+{
+  "checkedAt": "2026-10-24T14:23:38.797570+00:00",
+  "head": "f22e553f4fc67af4c52b3ec71aa5298f45d29d4f",
+  "schemaAcceptedMerge": "170aecfc2866ab4b60ab028e3e7eff67df24a861",
+  "workflow": {
+    "name": "repo-validate-jvallery-weather-f22e553f4fc6-pr",
+    "uid": "08f04054-28bd-48d2-9dac-cf041c99470a",
+    "phase": "Succeeded",
+    "startedAt": "2026-10-24T14:18:04Z",
+    "finishedAt": "2026-10-24T14:21:36Z"
+  },
+  "databaseActivated": false,
+  "checks": [
+    {
+      "name": "manifests",
+      "phase": "Succeeded",
+      "startedAt": "2026-10-24T14:18:34Z",
+      "finishedAt": "2026-10-24T14:18:54Z"
+    },
+    {
+      "name": "supply-chain-evidence",
+      "phase": "Succeeded",
+      "startedAt": "2026-10-24T14:18:34Z",
+      "finishedAt": "2026-10-24T14:19:34Z"
+    },
+    {
+      "name": "application",
+      "phase": "Succeeded",
+      "startedAt": "2026-10-24T14:18:34Z",
+      "finishedAt": "2026-10-24T14:20:56Z"
+    }
+  ],
+  "ciApplicationImage": "registry.vallery.net/jvallery/weather-ci@sha256:f4fceab3222d3817baf8def870970981eb88a853cf42f2dc36efcec779f46673",
+  "localChecks": {
+    "manifestGuards": {
+      "passed": 9,
+      "seconds": 0.04
+    },
+    "ruff": "passed",
+    "diff": "passed",
+    "rootRenderedObjects": 28,
+    "excludedDatabaseObjects": 6
+  },
+  "immutableAcceptedFiles": [
+    {
+      "path": "app/weather/db/schema_v1.py",
+      "sha256": "2d74afbfe91f9ab9d56b6d449574807e714494b4eb098812a8845c997a31e2af"
+    },
+    {
+      "path": "app/weather/db/ddl_v1.py",
+      "sha256": "f079bbc3d011fdd25321dbec56f225601c84508944ef5c88ea2578941298f75b"
+    },
+    {
+      "path": "app/migrations/versions/0000_namespace.py",
+      "sha256": "d592b19cb13d4e83c9dc79d84c4398896e6c783f2c34eee70459aa069889a0ca"
+    },
+    {
+      "path": "app/migrations/versions/0001_schema.py",
+      "sha256": "a97a788cb0a4c199c77a0ca9f9b5465623ec9ea3e514d197ae51d311a94609dc"
+    }
+  ],
+  "githubRequiredStatus": "SUCCESS",
+  "schemaRunbookBodyPreserved": true
+}

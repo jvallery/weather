@@ -1,0 +1,28 @@
+{
+  "workflow_uid": "f639ebeb-a685-49ff-a877-b63da4d0f34d",
+  "pod_uid": "ed275615-de45-4754-a13a-65c476118742",
+  "revision": "33501b424c63d38b01504e6d653c430952c00b50",
+  "workflow_name": "repo-validate-jvallery-weather-33501b424c63-pr",
+  "pod_name": "repo-validate-jvallery-weather-33501b424c63-pr-run-check-weather-evidence-546777816",
+  "captured_at": "2026-10-24T15:10:07.200758+00:00",
+  "node_id": "repo-validate-jvallery-weather-33501b424c63-pr-546777816",
+  "manifest_sha256": "52a7d1ce109b74a955a918d76c6c89bf69401879b937db2c681e1e1ff70b4990",
+  "artifact_pointers": [
+    {
+      "name": "sbom-app",
+      "key": "native-ci/v1/weather/supply-chain/f639ebeb-a685-49ff-a877-b63da4d0f34d/repo-validate-jvallery-weather-33501b424c63-pr-run-check-weather-evidence-546777816/sbom-app.json"
+    },
+    {
+      "name": "sbom-web",
+      "key": "native-ci/v1/weather/supply-chain/f639ebeb-a685-49ff-a877-b63da4d0f34d/repo-validate-jvallery-weather-33501b424c63-pr-run-check-weather-evidence-546777816/sbom-web.json"
+    },
+    {
+      "name": "licenses",
+      "key": "native-ci/v1/weather/supply-chain/f639ebeb-a685-49ff-a877-b63da4d0f34d/repo-validate-jvallery-weather-33501b424c63-pr-run-check-weather-evidence-546777816/licenses.json"
+    },
+    {
+      "name": "manifest",
+      "key": "native-ci/v1/weather/supply-chain/f639ebeb-a685-49ff-a877-b63da4d0f34d/repo-validate-jvallery-weather-33501b424c63-pr-run-check-weather-evidence-546777816/manifest.json"
+    }
+  ]
+}

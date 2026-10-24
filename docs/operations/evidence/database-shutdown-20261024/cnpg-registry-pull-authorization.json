@@ -1,0 +1,31 @@
+{
+  "verifiedAt": "2026-10-24T16:29:09.901455+00:00",
+  "credential": {
+    "namespace": "weather",
+    "name": "zot-origin-cluster-pull",
+    "uid": "3d755e05-75e9-44af-99d0-ea016227c767",
+    "type": "kubernetes.io/dockerconfigjson"
+  },
+  "cnpgMirror": {
+    "image": "registry.vallery.net/jvallery/mirror-ghcr-io-cloudnative-pg-postgresql-777ad6774e00fff6:16.15@sha256:d66df406385b9f3c43c47e94fe3a0002278ef56d21b82a8c9d3a22f91aa9c3f0",
+    "method": "HEAD",
+    "status": 200,
+    "returnedDigest": "sha256:d66df406385b9f3c43c47e94fe3a0002278ef56d21b82a8c9d3a22f91aa9c3f0",
+    "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+    "blobBytesDownloaded": 0
+  },
+  "injectedSidecar": {
+    "matchesLivePluginConfigurationAndAcceptedSource": true,
+    "isPrivateZotImage": false,
+    "weatherCredentialSentToPublicRegistry": false,
+    "image": "ghcr.io/cloudnative-pg/plugin-barman-cloud-sidecar:v0.14.0@sha256:9880817c285c7afa4d195da2145064d21907405489ed6ec39abe59b1feb558a4",
+    "method": "HEAD",
+    "status": 200,
+    "returnedDigest": "sha256:9880817c285c7afa4d195da2145064d21907405489ed6ec39abe59b1feb558a4",
+    "mediaType": "application/vnd.oci.image.index.v1+json",
+    "blobBytesDownloaded": 0
+  },
+  "newIdentityCreated": false,
+  "newJobCreated": false,
+  "credentialValuesEmitted": false
+}

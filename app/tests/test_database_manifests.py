@@ -19,6 +19,7 @@ class DatabaseManifestTests(unittest.TestCase):
     def test_role_probe_has_only_the_five_logins_and_ca_without_api_access(self):
         probe = yaml.safe_load((ROOT / "deploy/acceptance/restore/role-logins.yaml").read_text())
         pod = probe["spec"]["template"]["spec"]
+        self.assertEqual(pod["imagePullSecrets"], [{"name": "zot-origin-cluster-pull"}])
         self.assertFalse(pod["automountServiceAccountToken"])
         self.assertFalse(pod["enableServiceLinks"])
         self.assertTrue(pod["securityContext"]["runAsNonRoot"])
@@ -51,6 +52,8 @@ class DatabaseManifestTests(unittest.TestCase):
             "Prune=false,Delete=false",
         )
         self.assertEqual(cluster["spec"]["instances"], 3)
+        self.assertIn(":16.15@sha256:", cluster["spec"]["imageName"])
+        self.assertEqual(cluster["spec"]["imagePullSecrets"], [{"name": "zot-origin-cluster-pull"}])
         self.assertFalse(cluster["spec"]["enableSuperuserAccess"])
         self.assertEqual(cluster["spec"]["affinity"]["podAntiAffinityType"], "required")
         self.assertEqual(
@@ -96,6 +99,8 @@ class DatabaseManifestTests(unittest.TestCase):
         cluster = next(x for x in objects if x["kind"] == "Cluster")
         store = next(x for x in objects if x["kind"] == "ObjectStore")
         self.assertNotIn("plugins", cluster["spec"])
+        self.assertIn(":16.15@sha256:", cluster["spec"]["imageName"])
+        self.assertEqual(cluster["spec"]["imagePullSecrets"], [{"name": "zot-origin-cluster-pull"}])
         self.assertNotIn("managed", cluster["spec"])
         self.assertEqual(
             cluster["spec"]["postgresql"]["parameters"]["log_error_verbosity"], "terse"

@@ -1,0 +1,44 @@
+{
+  "at": "2026-10-24T15:15:30.798384+00:00",
+  "reader_secret_name": "agent-fleet-ci-artifact-archive-k3s-reader-s3",
+  "bucket": "agent-fleet-ci-evidence",
+  "prefix": "native-ci/v1/weather/supply-chain/f639ebeb-a685-49ff-a877-b63da4d0f34d/repo-validate-jvallery-weather-33501b424c63-pr-run-check-weather-evidence-546777816/",
+  "manifest_sha256": "52a7d1ce109b74a955a918d76c6c89bf69401879b937db2c681e1e1ff70b4990",
+  "manifest_bytes": 1329,
+  "source_and_identity": {
+    "revision": "33501b424c63d38b01504e6d653c430952c00b50",
+    "workflow_uid": "f639ebeb-a685-49ff-a877-b63da4d0f34d",
+    "workflow_name": "repo-validate-jvallery-weather-33501b424c63-pr",
+    "pod_uid": "ed275615-de45-4754-a13a-65c476118742",
+    "pod_name": "repo-validate-jvallery-weather-33501b424c63-pr-run-check-weather-evidence-546777816"
+  },
+  "files": [
+    {
+      "key": "native-ci/v1/weather/supply-chain/f639ebeb-a685-49ff-a877-b63da4d0f34d/repo-validate-jvallery-weather-33501b424c63-pr-run-check-weather-evidence-546777816/sbom-app.json",
+      "name": "sbom-app.json",
+      "sha256": "a6d948b9e17c53adcd6fbd3b473df5a43b15e1017337e5ec4582dab16796f93b",
+      "size": 1234305,
+      "bom_format": "CycloneDX",
+      "component_count": 3413
+    },
+    {
+      "key": "native-ci/v1/weather/supply-chain/f639ebeb-a685-49ff-a877-b63da4d0f34d/repo-validate-jvallery-weather-33501b424c63-pr-run-check-weather-evidence-546777816/sbom-web.json",
+      "name": "sbom-web.json",
+      "sha256": "3395df4a0d081a6ca8042a1a027c8eb58871631e709261fde9c99f6f738d6b97",
+      "size": 1403639,
+      "bom_format": "CycloneDX",
+      "component_count": 3541
+    },
+    {
+      "key": "native-ci/v1/weather/supply-chain/f639ebeb-a685-49ff-a877-b63da4d0f34d/repo-validate-jvallery-weather-33501b424c63-pr-run-check-weather-evidence-546777816/licenses.json",
+      "name": "licenses.json",
+      "sha256": "126aeb31a9b078bf6ae83723dc141d56fa42f500e36ebe4f992b7d544daa49ad",
+      "size": 70943,
+      "json_type": "list",
+      "top_level_entry_count": 396
+    }
+  ],
+  "total_payload_bytes": 2708887,
+  "independent_readback_verified": true,
+  "hot_retention": "existing native-ci/v1/ seven-day lifecycle; no indefinite hot retention claimed"
+}

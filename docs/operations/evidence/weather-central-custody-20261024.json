@@ -1,0 +1,169 @@
+{
+  "verifiedAt": "2026-10-24T15:45:48.993713+00:00",
+  "acceptedMerge": "949da543149a68d9e830aa3eee3e33207176a45b",
+  "argo": {
+    "application": "weather-secrets",
+    "revision": "949da543149a68d9e830aa3eee3e33207176a45b",
+    "sync": "Synced",
+    "health": "Healthy"
+  },
+  "objects": [
+    {
+      "kind": "NetworkPolicy",
+      "name": "collector-frontyard-1-egress",
+      "uid": "3cb40ae7-1c21-4d31-abe6-5eda82438fe7",
+      "namespace": "weather",
+      "sourceCiphertextSHA256": "884b909c552db8aa93a13ee6571cbea10bda0f2f5f8be847cf45a98072aac53f",
+      "sourceBytesUnchanged": true,
+      "exactIndependentDecryptionSpecEqualsLive": true
+    },
+    {
+      "kind": "Secret",
+      "name": "weather-api-cursor",
+      "uid": "927868cd-5644-4d4e-9d52-e8b8584f2790",
+      "namespace": "weather",
+      "sourceCiphertextSHA256": "237401f1a84ce899adfdeb4692054fc3535f43eb15d244eccde4855ac4f3ef57",
+      "sourceBytesUnchanged": true,
+      "type": "Opaque",
+      "keys": [
+        "CURSOR_HMAC_KEY"
+      ],
+      "exactIndependentDecryptionEqualsLive": true
+    },
+    {
+      "kind": "Secret",
+      "name": "weather-camera-frontyard-1",
+      "uid": "03fb074b-214f-4d3e-a011-af796dc940ae",
+      "namespace": "weather",
+      "sourceCiphertextSHA256": "777f1f79df75db9040994be91d431c30f7392a0b5a843abd2305245be5d091a6",
+      "sourceBytesUnchanged": true,
+      "type": "Opaque",
+      "keys": [
+        "CAMERA_HOST",
+        "CAMERA_PASSWORD",
+        "CAMERA_PORT",
+        "CAMERA_USER"
+      ],
+      "exactIndependentDecryptionEqualsLive": true
+    },
+    {
+      "kind": "Secret",
+      "name": "weather-cortex",
+      "uid": "d0f4c099-1d7d-4612-823f-b072748bc21d",
+      "namespace": "weather",
+      "sourceCiphertextSHA256": "009eee1eca767c0a4d828e04b26ef39be200ea8c99682e5223c111e331197c9e",
+      "sourceBytesUnchanged": true,
+      "type": "Opaque",
+      "keys": [
+        "api_key.txt"
+      ],
+      "exactIndependentDecryptionEqualsLive": true
+    },
+    {
+      "kind": "Secret",
+      "name": "weather-pg-api",
+      "uid": "bdbb5482-b9ae-4490-9d0c-586dee9231d0",
+      "namespace": "weather",
+      "sourceCiphertextSHA256": "1777bf0f6ccd6460026fe7d062debd890ffd31f881785234951dcd71041fd8ba",
+      "sourceBytesUnchanged": true,
+      "type": "kubernetes.io/basic-auth",
+      "keys": [
+        "password",
+        "username"
+      ],
+      "exactIndependentDecryptionEqualsLive": true
+    },
+    {
+      "kind": "Secret",
+      "name": "weather-pg-backup-b2-reader",
+      "uid": "1d81d15b-214f-4505-a5f3-89c9616d52ac",
+      "namespace": "weather",
+      "sourceCiphertextSHA256": "5410a8e45b37f99f71fc3a2b517fe893a3bf898604302b8455d2b213c6a4b8c4",
+      "sourceBytesUnchanged": true,
+      "type": "Opaque",
+      "keys": [
+        "AWS_ACCESS_KEY_ID",
+        "AWS_REGION",
+        "AWS_SECRET_ACCESS_KEY"
+      ],
+      "exactIndependentDecryptionEqualsLive": true
+    },
+    {
+      "kind": "Secret",
+      "name": "weather-pg-backup-b2-writer",
+      "uid": "fa5f087e-8b00-4ee0-a99d-799584722fb7",
+      "namespace": "weather",
+      "sourceCiphertextSHA256": "be22dabd09ca592302749714b6363e7d5a2ce98b316f5cbd293f11bcde206a93",
+      "sourceBytesUnchanged": true,
+      "type": "Opaque",
+      "keys": [
+        "AWS_ACCESS_KEY_ID",
+        "AWS_REGION",
+        "AWS_SECRET_ACCESS_KEY"
+      ],
+      "exactIndependentDecryptionEqualsLive": true
+    },
+    {
+      "kind": "Secret",
+      "name": "weather-pg-editor",
+      "uid": "4d2b8f26-d5d8-4fb0-8ed4-251c73e228d9",
+      "namespace": "weather",
+      "sourceCiphertextSHA256": "c716d133137c7c3bad7c5029e061ee88c41c9a05206ccfd1e80a9b0ec9523f72",
+      "sourceBytesUnchanged": true,
+      "type": "kubernetes.io/basic-auth",
+      "keys": [
+        "password",
+        "username"
+      ],
+      "exactIndependentDecryptionEqualsLive": true
+    },
+    {
+      "kind": "Secret",
+      "name": "weather-pg-ingest",
+      "uid": "336da09a-aa78-4718-a0ef-ee1d87e38338",
+      "namespace": "weather",
+      "sourceCiphertextSHA256": "b4ebcd132faaa95ef71c1bc6c2e984146d9f16a49a7c888f266e2cb8f29219f0",
+      "sourceBytesUnchanged": true,
+      "type": "kubernetes.io/basic-auth",
+      "keys": [
+        "password",
+        "username"
+      ],
+      "exactIndependentDecryptionEqualsLive": true
+    },
+    {
+      "kind": "Secret",
+      "name": "weather-pg-migrator",
+      "uid": "9c482ccb-d205-46a0-a023-4e2da2bbd7f9",
+      "namespace": "weather",
+      "sourceCiphertextSHA256": "ed2ddac181ec7196df61971cd65a287784c28a2bda9686c0ee31ca1abb78a1c3",
+      "sourceBytesUnchanged": true,
+      "type": "kubernetes.io/basic-auth",
+      "keys": [
+        "password",
+        "username"
+      ],
+      "exactIndependentDecryptionEqualsLive": true
+    },
+    {
+      "kind": "Secret",
+      "name": "weather-pg-worker",
+      "uid": "8728a9d2-510d-4b52-9156-530df69dd4b1",
+      "namespace": "weather",
+      "sourceCiphertextSHA256": "c95b440eed636d317878e3d66bd3bb511cb54047daaa801b299bd2b5ad0b3cb2",
+      "sourceBytesUnchanged": true,
+      "type": "kubernetes.io/basic-auth",
+      "keys": [
+        "password",
+        "username"
+      ],
+      "exactIndependentDecryptionEqualsLive": true
+    }
+  ],
+  "verifiedObjects": 11,
+  "verifiedSecrets": 10,
+  "verifiedPolicies": 1,
+  "databaseRoleLoginsProven": false,
+  "databaseCreatedByThisCheck": false,
+  "nadCreatedByThisCheck": false
+}
