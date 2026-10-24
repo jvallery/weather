@@ -57,5 +57,15 @@
     }
   ],
   "temporary_probe_pods_verified_absent": true,
-  "public_probe_user_agent": "weather-foundation-probe/1.0"
+  "public_probe_user_agent": "weather-foundation-probe/1.0",
+  "verification_scope": "Point-in-time commissioning; continuous public-edge acceptance remains incomplete",
+  "edge_window": {
+    "state": "interrupted",
+    "http_404_observed_utc": [
+      "2026-10-24T05:41:28.206Z",
+      "2026-10-24T05:44:58.206Z"
+    ],
+    "owner_issue": "jvallery/network-infra#775",
+    "twenty_four_hour_green_claim": false
+  }
 }

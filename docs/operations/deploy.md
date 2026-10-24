@@ -63,6 +63,9 @@ returns ECONNREFUSED, which must not be described as a timeout.
 Dated acceptance receipts are under `docs/operations/evidence/`. WX-01 still
 requires durable SBOM upload/readback and final onboarding source closure; the
 walking skeleton does not establish live Tempest conditions or database recovery.
+Continuous monitoring subsequently observed intermittent public-edge HTTP404s;
+that interrupts the launch probe window despite successful point-in-time checks.
+The dated receipt records those failures until the network owner resolves them.
 
 API and web disable Kubernetes Service environment injection with
 `enableServiceLinks: false`. This keeps later `WEATHER_PG_*` service variables
