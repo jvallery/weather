@@ -144,6 +144,33 @@ class DatabaseManifestTests(unittest.TestCase):
         self.assertEqual(ports["weather-pg"], {53, 443, 5432, 6443, 8000})
         self.assertEqual(ports["weather-database-clients"], {53, 5432})
 
+    def test_migrate_is_a_wave_1_sync_hook_and_db_clients_follow_it(self):
+        objects = [
+            obj
+            for path in sorted((ROOT / "deploy/k8s").rglob("*.yaml"))
+            for obj in yaml.safe_load_all(path.read_text())
+            if obj and obj.get("kind") in {"Deployment", "StatefulSet", "Job", "CronJob"}
+        ]
+        migrate = next(o for o in objects if o["metadata"]["name"] == "weather-migrate")
+        annotations = migrate["metadata"]["annotations"]
+        self.assertEqual(annotations["argocd.argoproj.io/hook"], "Sync")
+        self.assertEqual(annotations["argocd.argoproj.io/sync-wave"], "1")
+        # First connect (60 s) + role wait (120 s) + bounded statements fit the deadline.
+        self.assertEqual(migrate["spec"]["activeDeadlineSeconds"], 300)
+        self.assertEqual(migrate["spec"]["backoffLimit"], 0)
+        clients = [
+            o
+            for o in objects
+            if "weather.vallery.net/database-role" in o["metadata"].get("labels", {})
+            and o is not migrate
+        ]
+        self.assertIn("scheduler", {o["metadata"]["name"] for o in clients})
+        for client in clients:
+            wave = client["metadata"].get("annotations", {}).get("argocd.argoproj.io/sync-wave")
+            self.assertGreaterEqual(int(wave or 0), 2, client["metadata"]["name"])
+        scheduler = next(o for o in clients if o["metadata"]["name"] == "scheduler")
+        self.assertEqual(scheduler["spec"]["replicas"], 1)
+
     def test_operation_cannot_inject_sql_names_or_labels(self):
         for operation in ("bad'name", "../weather-pg", "UPPER", "", "bad-", "-bad", "a" * 32):
             with self.assertRaises(ValueError):

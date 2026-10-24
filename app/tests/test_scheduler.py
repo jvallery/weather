@@ -49,16 +49,7 @@ def test_heartbeat_loss_cancels_handler_without_completing_and_counts_once(
 
         registry = Registry()
         registry.register("stalled", stalled)
-        job = jobs.Job(
-            uuid4(),
-            "stalled",
-            {},
-            None,
-            datetime.now(UTC) + timedelta(minutes=10),
-            1,
-            "test",
-            1,
-        )
+        job = jobs.Job(uuid4(), "stalled", {}, datetime.now(UTC) + timedelta(minutes=10), 1)
         before = loss_count()
         with pytest.raises(asyncio.CancelledError):
             await runner._run_job(Engine(), registry, job)  # type: ignore[arg-type]

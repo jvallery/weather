@@ -98,9 +98,35 @@ After a real production recovery, give the recovered cluster a new Barman
 
 ## Schema, migrations and durable work
 
-Weather owns the `weather` schema and `public_api` views inside its dedicated
-`weather` database. CNPG topology, archive operations and PITR commissioning
-are delivered by WX-05 (#6). The schema and scheduler are WX-08 (#9).
+Weather owns the `weather` schema and the `public_api` views inside its
+dedicated `weather` database. The one Alembic revision is `0001_baseline`
+(#74). It holds the slice-1 schema as inline DDL and imports no application
+module. The restore-drill schema `weather_recovery_drill` is not Alembic's;
+the baseline and `alembic check` leave it alone.
+
+| Relation | Purpose |
+|---|---|
+| `station`, `device` | Retained identities; serials stay in `device.private_id` |
+| `telemetry_receipt` | Raw bytes plus SHA-256 for every admitted packet; `(received_at, id)` btree for reproject |
+| `obs_st`, `rapid_wind`, `evt_precip`, `evt_strike`, `device_status`, `hub_status`, `obs_air`, `obs_sky` | Typed family rows; unique `(device_id, message_type, source_ts, row_idx)` |
+| `weather_day` | One row per America/Denver day, keyed by `local_date` (23, 24 or 25 hours) |
+| `job`, `outbox` | Durable work and causal events |
+| `public_api.observations` | The one public view (security barrier) |
+
+`obs_st` and `rapid_wind` carry a btree on `source_ts`, so current conditions
+(#14) read the newest row by index. The other families use BRIN.
+
+### Slice-2/3 DDL removed from the baseline
+
+The baseline does not create the catalog, media, publication, keogram, still,
+preview, event, editorial, search or hour-slot tables. Their earlier DDL is at
+commit `fc34b83` in `app/weather/db/schema_v1.py` and `app/weather/db/ddl_v1.py`.
+That includes the privacy CHECKs (original/bucket/visibility equivalence,
+content addressing, the 630-second preview margin, withdrawal reasons) and the
+`security_barrier` views over assets, segments, videos, keograms, stills,
+previews and events. Each owning issue (#18, #19, #37, #38, #39, #41, #44, #25,
+#23) re-creates its tables in its own expand-only migration, with those CHECKs
+and its public view behind a security barrier.
 
 ## Connection and role custody
 
@@ -111,53 +137,59 @@ the CA comes from CNPG's `weather-pg-ca`. The engine verifies both the CA and
 hostname for `weather-pg-rw:5432`, database `weather`. Never log an engine URL,
 Secret, environment dump or raw database exception.
 
+`weather.db.connection.wait_for_database` retries the first connection for up
+to 60 seconds with backoff, because kube-router programs a new pod's
+NetworkPolicy a few seconds after start. The migrator, the scheduler and the
+reproject command call it. The receiver's drain doesn't need it: it retries
+every second while the spool holds receipts.
+
 | Role | Capability |
 |---|---|
 | `weather_migrator` | Database/schema owner, DDL and migrations |
-| `weather_ingest` | Insert/select retained station/device, receipts and family rows; no update/delete |
-| `weather_worker` | Catalog/jobs/outbox writes and retained telemetry reads; no telemetry deletes or allowlist writes |
-| `weather_api` | Select `public_api` views and execute bounded operator functions; no base-table access |
-| `weather_editor` | Login created by #6; editorial grants arrive with #44 |
+| `weather_ingest` | Select/insert on station, device, receipts and family rows; no update/delete |
+| `weather_worker` | Read/write `job` and `outbox`; select/insert `weather_day`; no telemetry access |
+| `weather_api` | Select `public_api.observations` and execute its two value-gating functions; no base-table access |
+| `weather_editor` | Login only. No editorial functions exist yet; #44 adds them and grants EXECUTE to this role alone |
 
 Neither ingest nor API can delete telemetry. No telemetry retention trigger,
 TTL or cleanup job exists. Station replacement adds a new device validity
 epoch at the same site; it does not erase prior receipts or observations.
-
-`public_api.append_editorial_revision` is a security-definer CAS operation.
-Its fixed search path and qualified names prevent search-path substitution.
-It checks a database-private operator allowlist, initially empty; #44 seeds
-the authorized subject and implements the authenticated operator API. The
-function appends the revision and its outbox event in the same transaction.
-The revision table rejects update and delete even by the migration owner.
+Default privileges revoke `EXECUTE` from `PUBLIC` on every function the
+migrator creates, so a later function is private until granted.
 
 ## Expand/contract migrations
 
-The Alembic head is `0001_schema`, after `0000_namespace`. The predecessor
-creates the retained station/device identities; v1 adds the remaining
-relations, constraints, views, functions and grants. Migration snapshots
-`schema_v1.py` and `ddl_v1.py` are immutable after release. Extend current
-`models.metadata` and add a new version for later changes. Never import mutable
-current metadata into an old migration.
+The head is `0001_baseline`. Once it has run on production, every change is
+expand/contract. Add a new revision with inline DDL; never edit an applied
+revision or import current application modules into one. `models.metadata`
+describes the current schema for `alembic check` and must change in the same
+commit as the revision.
 
 The app image contains `alembic.ini`, `app/migrations` and the schema package.
-`python -m weather.db.migrate` first waits at most 180 seconds for all five
-CNPG-managed roles, then execs `python -m alembic upgrade head`. Its startup
-failure is generic and does not disclose credentials. `weather-migrate` is a
-tokenless Argo **Sync** hook, wave 1 after database wave -5, with a 300-second
-deadline, no automatic retries, and a one-day completed-job TTL. It is excluded
-from the root kustomization until #6 has verified database health and Secrets.
-Do not use PreSync for a database the same Application creates.
+`python -m weather.db.migrate` waits up to 60 seconds for the first connection
+and up to 120 seconds for all five CNPG-managed roles, then execs
+`python -m alembic upgrade head`. `env.py` runs every revision in one
+transaction with `lock_timeout` 10 s and `statement_timeout` 60 s, so a
+migration fails rather than queueing behind live traffic. A long backfill
+belongs in its own job, not a revision. Startup failure is generic and does
+not disclose credentials.
+
+`weather-migrate` is a tokenless Argo **Sync** hook at wave 1, after the
+Cluster at wave -5, with a 300-second deadline, no automatic retries and a
+one-day completed-job TTL. Every DB-client workload runs at wave ≥2. Don't use
+PreSync for a database the same Application creates.
 
 For each schema change:
 
-1. Add compatible columns/tables/views, update the metadata and add a migration.
-2. Run the approved cluster integration check from an empty database and the
-   previous head, preserving seeded rows; require `alembic check` to be clean.
-3. Build/promote the app digest through fleet CI before adding its migration
-   hook to the desired state.
-4. Observe migration Job completion and the expected Alembic head, then Argo
-   Synced/Healthy and the promoted running digest.
-5. Remove obsolete columns/views only in a later compatible migration after
+1. Add compatible columns/tables/views with a new revision and update
+   `models.metadata`.
+2. Fleet CI upgrades an empty database to head, re-runs the upgrade and
+   requires `alembic check` to be clean.
+3. Build and promote the app digest through fleet CI; the migrate hook runs
+   that digest.
+4. Observe the migration Job complete and `alembic current` at the expected
+   head, then Argo Synced/Healthy at the promoted digest.
+5. Remove obsolete columns/views only in a later compatible revision, after
    every running image has stopped depending on them.
 
 Production downgrade is explicitly disabled. Restore a compatible image with
@@ -165,38 +197,13 @@ an expanded schema, or use #6's PITR procedure when a data recovery is required.
 Never drop the namespace, database, Cluster, PVCs, buckets or retained tables
 to redeploy. Keep source revisions, image digests and recovery coordinates.
 
-## Calendar, retained originals and public views
+## Calendar and the public view
 
-`weather.ensure_days(from_date,to_date,site)` and Python `db.days.ensure_days`
-take an inclusive range of local dates. They derive America/Denver midnight
-UTC bounds, then enumerate exact UTC hours. Slot identity is `(site,starts_at)`;
-the repeated fall-back hour has distinct IDs, offsets and fold values. Local
-labels alone are never a key. Re-running a range does not replace IDs.
-PostgreSQL timezone rules come from the pinned production image; integration
-compares the documented DST vectors and pinned Python time-model rules.
-
-Each still has enforceable camera, day/hour, capture, segment and private
-original relationships. A composite `(weather_day_id,hour_slot_id)` foreign
-key prevents assigning another day's identically named hour. A partial unique
-index permits one active still per camera/hour; a correction retires the prior
-selection and inserts a new revision in one transaction. All product foreign
-keys restrict deletion. Expire/tombstone videos instead of deleting a segment
-or video stills reference.
-
-An original must simultaneously have class `original`, bucket
-`weather-originals` and private visibility; equivalence checks reject every
-partial combination. Public media use immutable `<class>/<sha256>.<extension>`
-keys, available state, withdrawal checks and request-time embargo eligibility.
-Their `published_at` marker stays null while uploading/preparing, and is set
-only in the catalog publication transaction. Available-but-unpublished objects
-remain invisible to the API; private originals cannot receive that marker.
-Preview rows require trustworthy bounds and at least 630 seconds between the
-capture upper bound and eligibility (600-second embargo plus 30-second margin).
-No public view returns an original, receipt, private device identity, staging
-path, operator allowlist, private note or favorite.
-All public views use PostgreSQL security barriers so an API-role predicate
-function cannot run on filtered private rows before the view's eligibility
-checks. Direct API-role access to base tables remains denied.
+`weather.db.days.ensure_days(connection, start, end)` inserts the missing days
+of an inclusive range (at most 366). Bounds come from the pinned Python time
+model (`weather.timemodel.weather_day`), so PostgreSQL's timezone data never
+decides a day. Existing rows never change, and the worker cannot update or
+delete them. The scheduler keeps today and the next seven days present.
 
 `public_api.observations` has this stable contract for ingest/API work:
 
@@ -207,30 +214,31 @@ checks. Direct API-role access to base tables remains denied.
 | `message_type` | `obs_st`, `rapid_wind`, `evt_precip`, `evt_strike`, `obs_air`, `obs_sky` |
 | `observed_at`, `received_at` | Original source instant and retained receipt arrival |
 | `row_idx` | Zero-based row in the source packet |
-| `values` | Only allowlisted numeric/null normalized metric keys |
-| `quality` | `valid` flag plus a fixed public reason vocabulary |
+| `values` | Only allowlisted metric keys; a value is numeric only when its row and field are valid, otherwise null |
+| `quality` | `valid` flag, a fixed public reason vocabulary and the allowlisted invalid fields |
 
-The eight private family tables retain normalized `values` JSONB and `quality`
-with a receipt FK and uniqueness on `(device_id,message_type,source_ts,row_idx)`.
-`device_status` and `hub_status` are deliberately absent from the public union.
-The public numeric key allowlist is `ddl_v1.PUBLIC_METRIC_KEYS`, including the
-Tempest temperature/humidity/wind/pressure/solar/UV/precipitation/lightning
-fields. Extend the view through a migration when a new public metric is
-qualified; unknown keys and arbitrary quality text never pass through.
+`device_status` and `hub_status` are deliberately absent from the public
+union. The numeric key allowlist is `PUBLIC_METRIC_KEYS` in the baseline
+revision. Extend the view through a new revision when a new public metric is
+qualified; unknown keys and arbitrary quality text never pass through. The
+view is a security barrier, so an API-role predicate function can't see the
+private columns it hides. Direct API-role access to base tables stays denied.
 
 ## Job ownership and atomic completion
 
 Enqueue work and an outbox cause using a caller-owned transaction. Idempotency
-keys bind the kind/topic, payload, expected revision and original deadline.
-Reusing a key for different work raises a conflict. Retrying can move
-`not_before`, but never changes `deadline`; database triggers reject deadline
-changes. New work after an expired deadline needs a new, explicit identity.
+keys bind the kind/topic, payload and original deadline. Reusing a key for
+different work raises a conflict. Retrying can move `not_before`, but never
+changes `deadline`; database triggers reject deadline changes, and a lease can
+never outlive the deadline. New work after an expired deadline needs a new,
+explicit identity.
 
-Claims use `FOR UPDATE SKIP LOCKED` and atomically increment attempt and fencing
-token. Heartbeat and completion require the same owner/token, unexpired lease
-and original deadline. The scheduler runs one handler at a time, renews its
-60-second lease every 15 seconds and stops stale attempts. A lost heartbeat
-cancels the attempt; an unknown kind is failed explicitly.
+`claim(kinds=…)` takes only the scheduler's registered kinds, using
+`FOR UPDATE SKIP LOCKED`. A job of an unregistered kind stays queued until a
+release registers it, or until its deadline expires it. Each claim increments
+`attempt`, which is the fencing token. Heartbeat and completion require the
+same attempt and an unexpired lease. The scheduler runs one handler at a time,
+renews its 60-second lease every 15 seconds and stops stale attempts.
 
 Register source-owned handlers in `weather.scheduler.handlers.register`:
 
@@ -241,44 +249,54 @@ async def aggregate(context):
         # Use this connection for catalog changes and causal outbox inserts.
         ...
     await context.commit(write, result={"updated": True})
-    return None
 
 def register(registry):
     registry.register("aggregate", aggregate, topics=("metric.changed",))
 ```
 
-`JobContext.commit` locks/rechecks the owner, runs catalog writes, completes the
-job and rechecks fencing in one transaction. If completion is stale, expired or
-fails, the catalog writes roll back too. Do not open an independent transaction
-inside a handler for publication writes. External uploads must be immutable;
+`JobContext.commit` locks the owned row, runs catalog writes and completes the
+job in one transaction. If completion finds the lease stale or expired, the
+catalog writes roll back too. Do not open an independent transaction inside a
+handler for publication writes. External uploads must be immutable;
 uncommitted orphan objects are reconciled by their owning pipeline issue.
 If a network failure makes the final commit acknowledgment uncertain, read the
 original job/catalog identities after reconnecting; both changes share one
-transaction. Do not create another identity or assume an unknown outcome lost
-its data.
+transaction.
 
-Outbox dispatch locks rows with SKIP LOCKED and creates idempotent jobs before
-marking those rows dispatched in the same transaction. Unknown topics remain
-durable and fail loudly, with a 30-second dispatch backoff; already queued jobs
-continue to run. Add the missing source-owned handler/routing, test and promote
-it, then the retained event can dispatch. Never delete an outbox row merely to
-make a queue or alert green.
+Outbox dispatch locks pending rows with SKIP LOCKED and creates idempotent jobs
+before marking those rows dispatched in the same transaction. A row whose
+topic has no route is **quarantined**: `dispatched_at` is set, `job_id` stays
+null and `error='unregistered_topic'`. Later rows still dispatch. After the
+route ships, re-queue the retained rows as `weather_worker`:
 
-The scheduler Deployment ships at zero replicas and is excluded from the root
-kustomization. #14 registers aggregate work and commissions one worker only
-after its role Secret and DB are ready. Its only egress is CNPG plus DNS; its
-metrics listener accepts `observability` on port 9000. It has no Kubernetes
-token or RBAC.
+```sql
+UPDATE weather.outbox SET dispatched_at=NULL, error=NULL WHERE error='unregistered_topic';
+```
+
+Never delete an outbox row merely to make a queue or alert green.
+
+The scheduler's periodic tick runs every 60 seconds in one transaction. It
+enqueues `days:<local date>`, which fills `weather_day` for today and the next
+seven days, and its idempotency key and deadline are fixed per day, so repeated
+ticks are no-ops. The tick then prunes up to 1,000 rows each of routed outbox
+rows dispatched more than 30 days ago and finished jobs whose deadline passed
+more than 30 days ago. Quarantined outbox rows are kept.
+
+The scheduler Deployment (one replica, wave 2) is excluded from the root
+kustomization until the deploy PR that pins the app digest carrying this code.
+Its only egress is CNPG plus DNS; its metrics listener accepts `observability`
+on port 9000. It has no Kubernetes token or RBAC.
 
 ## Failure signals
 
 | Metric | Interpretation/action |
 |---|---|
 | `weather_scheduler_database_ready` | Zero: inspect database health/role/CA prerequisites; do not print credentials |
-| `weather_jobs_failed_total{reason="unregistered"}` | Deploy the missing handler or correct the producer; keep failed work for audit |
+| `weather_scheduler_tick_failures_total` | Periodic work or retention failed; check DB health and the sanitized log class |
 | `weather_jobs_failed_total{reason="handler"}` | Inspect the sanitized exception class and retained job; retry keeps the original deadline |
 | `weather_job_leases_lost_total` | Check node/DB latency and handler transaction duration; never force a stale completion |
-| `weather_outbox_dispatch_failures_total` | Check source routing and DB availability; events remain durable |
+| `weather_outbox_dispatch_failures_total` | Dispatch transaction failed; check DB availability. Events remain durable |
+| `weather_outbox_quarantined_total` | A producer emitted a topic with no route; ship the route, then re-queue the rows |
 
 ## Disposable integration path
 
@@ -306,10 +324,10 @@ normal bootstrap plus `scripts/ci.sh all` in that image.
 
 `ci.sh integration` delegates `scripts/ci_integration.sh`. The script refuses
 non-Linux, root or non-fleet execution; it creates an isolated temporary
-socket-only PostgreSQL, creates test roles/extension, upgrades one empty
-database directly to head and another through the predecessor with a retained
-seed, checks both Alembic diffs, and runs real
-constraints/privacy/concurrency tests. It checks exact PG/extension versions
+socket-only PostgreSQL, creates test roles/extension, upgrades an empty
+database (holding only a stand-in drill sentinel schema, which must survive)
+and the test database to head, re-runs the upgrade, checks both Alembic diffs,
+and runs real constraints/privacy/concurrency tests. It checks exact PG/extension versions
 and the integration marker before destructive **test-only** truncation. A trap
 stops the disposable server and removes only its unique temporary directory.
 Never run PostgreSQL, these integration tests or image builds on the Mac.

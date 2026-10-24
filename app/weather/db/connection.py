@@ -1,15 +1,25 @@
 # SPDX-License-Identifier: MIT
 """Create TLS database connections without logging a credential-bearing URL."""
 
+import asyncio
 import os
 import ssl
+import time
 from pathlib import Path
 
-from sqlalchemy import URL
+from sqlalchemy import URL, text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+
+# kube-router programs a new pod's NetworkPolicy a few seconds after start, so the first
+# connection is refused briefly; every DB client waits this long before failing.
+FIRST_CONNECT_SECONDS = 60
 
 
 class DatabaseConfigurationError(ValueError):
+    pass
+
+
+class DatabaseUnavailable(RuntimeError):
     pass
 
 
@@ -62,3 +72,20 @@ def create_database_engine() -> AsyncEngine:
         pool_pre_ping=True,
         connect_args={"ssl": tls, "server_settings": {"timezone": "UTC"}},
     )
+
+
+async def wait_for_database(engine: AsyncEngine, timeout: float = FIRST_CONNECT_SECONDS) -> None:
+    """Retry the first connection with bounded backoff; never log the underlying error."""
+    deadline = time.monotonic() + timeout
+    delay = 0.5
+    while True:
+        try:
+            async with engine.connect() as connection:
+                await connection.execute(text("SELECT 1"))
+            return
+        except Exception:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise DatabaseUnavailable("Database unreachable at startup") from None
+            await asyncio.sleep(min(delay, remaining))
+            delay = min(delay * 2, 5)

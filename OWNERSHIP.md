@@ -53,10 +53,9 @@ bounded lifecycle: `docs/operations/garage-commissioning.md`.
 
 | Item | Location | State / activation |
 |---|---|---|
-| Retained telemetry, calendar/capture/catalog/editorial/search/job/outbox relations | `app/weather/db/schema_v1.py`, current `models.metadata` | Schema v1; cluster qualification required before #9 closes; production application belongs to #6 |
-| Public read projections, scoped grants and CAS/append-only guards | `app/weather/db/ddl_v1.py` | No raw receipts, private IDs, originals or private editorial tables granted to API |
-| `weather-migrate` Sync Job and database-only NetworkPolicy | `deploy/k8s/migrate` | Excluded from root kustomization until #6 commissions the database |
-| `scheduler` Deployment and database/metrics NetworkPolicy | `deploy/k8s/scheduler` | Zero replicas and excluded; #14 registers handlers and enables it |
+| Slice-1 schema: station/device, receipts and telemetry families, `weather_day`, job/outbox, `public_api.observations`, role grants | `app/migrations/versions/0001_baseline.py`; current `app/weather/db/models.py` | Baseline (#74); applied to `weather-pg` by the deploy PR that pins its app digest. Later slices add their own revisions |
+| `weather-migrate` Sync Job and database-only NetworkPolicy | `deploy/k8s/migrate` | Wave-1 Sync hook; excluded from root kustomization until the #74 deploy PR |
+| `scheduler` Deployment and database/metrics NetworkPolicy | `deploy/k8s/scheduler` | One replica at wave 2 with the periodic tick; excluded until the #74 deploy PR |
 | `weather-ci` tooling image | `Dockerfile.ci`, `ci/browser/`, registry-owned repo-build profile | PG16.15/vector0.8.6 disposable integration and pinned Playwright browser tooling; never an application database |
 
 These namespace-rendered application objects inherit the central `namespace:weather`

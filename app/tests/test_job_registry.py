@@ -21,6 +21,7 @@ def test_duplicate_route_rejection_preserves_the_original_registry() -> None:
     with pytest.raises(ValueError):
         registry.register("other", noop, topics=("metric.changed",))
     assert registry.topic_kind("metric.changed") == "aggregate"
+    assert registry.kinds() == {"aggregate"}
     assert registry.handler("aggregate") is noop
     with pytest.raises(UnregisteredJob):
         registry.handler("other")

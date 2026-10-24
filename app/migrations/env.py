@@ -7,14 +7,22 @@ from typing import Any
 
 from alembic import context
 from sqlalchemy import Connection
-from weather.db.connection import create_database_engine
+from weather.db.connection import create_database_engine, wait_for_database
 from weather.db.models import metadata
 
+# A migration waits briefly for locks and fails rather than queueing behind live traffic.
+TIMEOUTS = ("SET LOCAL lock_timeout = '10s'", "SET LOCAL statement_timeout = '60s'")
 
-def include_name(
-    name: str | None, type_: str, parent_names: Mapping[str, str | None]
-) -> bool:
+
+def include_name(name: str | None, type_: str, parent_names: Mapping[str, str | None]) -> bool:
     return type_ != "schema" or name == "weather"
+
+
+def run() -> None:
+    with context.begin_transaction():
+        for statement in TIMEOUTS:
+            context.execute(statement)
+        context.run_migrations()
 
 
 def migrate(connection: Connection) -> None:
@@ -26,13 +34,13 @@ def migrate(connection: Connection) -> None:
         compare_type=True,
         compare_server_default=True,
     )
-    with context.begin_transaction():
-        context.run_migrations()
+    run()
 
 
 async def online() -> None:
     engine = create_database_engine()
     try:
+        await wait_for_database(engine)
         async with engine.connect() as connection:
             await connection.run_sync(migrate)
     finally:
@@ -47,8 +55,7 @@ def offline() -> None:
         "include_schemas": True,
     }
     context.configure(**config)
-    with context.begin_transaction():
-        context.run_migrations()
+    run()
 
 
 if context.is_offline_mode():

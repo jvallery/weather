@@ -3,21 +3,20 @@
 
 import asyncio
 import contextlib
-import importlib
 import logging
 import os
 import signal
 import time
 from datetime import UTC, datetime
-from uuid import uuid4
 
 from prometheus_client import Counter, Gauge, start_http_server
-from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from weather.db import jobs
-from weather.db.connection import create_database_engine
+from weather.db.connection import create_database_engine, wait_for_database
+from weather.scheduler import handlers
 from weather.scheduler.outbox import dispatch
-from weather.scheduler.registry import JobContext, Registry, UnregisteredJob
+from weather.scheduler.registry import JobContext, Registry
 
 LOG = logging.getLogger("weather.scheduler")
 CLAIMED = Counter("weather_jobs_claimed_total", "Claimed durable jobs")
@@ -26,6 +25,8 @@ LOST = Counter("weather_job_leases_lost_total", "Lost or expired job leases")
 OUTBOX_FAILED = Counter(
     "weather_outbox_dispatch_failures_total", "Outbox dispatch failures"
 )
+TICK_FAILED = Counter("weather_scheduler_tick_failures_total", "Periodic tick failures")
+TICK_SECONDS = 60
 ALIVE = Gauge(
     "weather_scheduler_database_ready",
     "Scheduler's most recent database operation worked",
@@ -58,11 +59,6 @@ async def _run_job(engine: AsyncEngine, registry: Registry, job: jobs.Job) -> No
             result = await handler(context)
             if not context.committed:
                 await context.commit(result=result)
-    except UnregisteredJob:
-        FAILED.labels("unregistered").inc()
-        LOG.error("Unregistered job type; failing durable job")
-        async with engine.begin() as connection:
-            await jobs.fail(connection, job, reason="unregistered", retry=False)
     except jobs.LeaseLost:
         LOST.inc()
         LOG.warning("Job lease lost; catalog transaction rolled back")
@@ -88,11 +84,26 @@ async def _run_job(engine: AsyncEngine, registry: Registry, job: jobs.Job) -> No
             await beat
 
 
+async def tick(connection: AsyncConnection, now: datetime) -> None:
+    """Idempotent periodic work: deterministic job keys, then bounded retention."""
+    await handlers.periodic(connection, now)
+    await jobs.prune(connection)
+
+
 async def serve(engine: AsyncEngine, registry: Registry, stop: asyncio.Event) -> None:
-    owner = str(uuid4())
-    next_outbox = 0.0
+    kinds = registry.kinds()
+    next_tick = next_outbox = 0.0
     while not stop.is_set():
         try:
+            if time.monotonic() >= next_tick:
+                try:
+                    async with engine.begin() as connection:
+                        await tick(connection, datetime.now(UTC))
+                    next_tick = time.monotonic() + TICK_SECONDS
+                except Exception as error:
+                    TICK_FAILED.inc()
+                    LOG.error("Scheduler tick failed (%s)", type(error).__name__)
+                    next_tick = time.monotonic() + 30
             if time.monotonic() >= next_outbox:
                 try:
                     async with engine.begin() as connection:
@@ -104,7 +115,7 @@ async def serve(engine: AsyncEngine, registry: Registry, stop: asyncio.Event) ->
                     next_outbox = time.monotonic() + 30
             async with engine.begin() as connection:
                 await jobs.expire(connection)
-                job = await jobs.claim(connection, owner=owner)
+                job = await jobs.claim(connection, kinds=kinds)
             ALIVE.set(1)
             if job is not None:
                 CLAIMED.inc()
@@ -126,14 +137,7 @@ async def serve(engine: AsyncEngine, registry: Registry, stop: asyncio.Event) ->
 
 def installed_registry() -> Registry:
     registry = Registry()
-    # This is a fixed source-owned module, never a path/module from request data.
-    try:
-        handlers = importlib.import_module("weather.scheduler.handlers")
-    except ModuleNotFoundError as error:
-        if error.name != "weather.scheduler.handlers":
-            raise
-    else:
-        handlers.register(registry)
+    handlers.register(registry)
     return registry
 
 
@@ -144,6 +148,7 @@ async def run() -> None:
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stop.set)
     try:
+        await wait_for_database(engine)
         await serve(engine, installed_registry(), stop)
     finally:
         await engine.dispose()

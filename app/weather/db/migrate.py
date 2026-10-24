@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Wait boundedly for CNPG role reconciliation, then exec Alembic as migrator."""
+"""Wait boundedly for the database and CNPG roles, then exec Alembic as migrator."""
 
 import asyncio
 import os
@@ -8,27 +8,28 @@ import time
 
 from sqlalchemy import text
 
-from weather.db.connection import create_database_engine
+from weather.db.connection import create_database_engine, wait_for_database
+
+ROLES = ("weather_migrator", "weather_ingest", "weather_worker", "weather_api", "weather_editor")
+ROLE_SECONDS = 120
 
 
 async def wait_for_roles() -> None:
     engine = create_database_engine()
-    deadline = time.monotonic() + 180
     try:
+        await wait_for_database(engine)
+        deadline = time.monotonic() + ROLE_SECONDS
         while time.monotonic() < deadline:
             try:
                 async with engine.connect() as connection:
                     count = (
                         await connection.execute(
-                            text("""
-                        SELECT count(*) FROM pg_roles WHERE rolname IN
-                        ('weather_migrator','weather_ingest','weather_worker',
-                         'weather_api','weather_editor')
-                    """)
+                            text("SELECT count(*) FROM pg_roles WHERE rolname = ANY(:roles)"),
+                            {"roles": list(ROLES)},
                         )
                     ).scalar_one()
-                    if count == 5:
-                        return
+                if count == len(ROLES):
+                    return
             except Exception:
                 pass
             await asyncio.sleep(2)
