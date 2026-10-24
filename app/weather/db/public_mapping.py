@@ -72,13 +72,23 @@ def public_number(value: Any, kind: Any, metric: str) -> int | float | None:
         if number == number.to_integral_value():
             return int(number)
         result = float(number)
-        return result if math.isfinite(result) else None
+        return result if math.isfinite(result) and (result != 0 or number == 0) else None
     except InvalidOperation, ValueError, OverflowError:
         return None
 
 
 def _object(value: Any) -> Mapping[str, Any]:
     return value if isinstance(value, dict) else {}
+
+
+def qualified_reported_support(support: Mapping[str, Any]) -> bool:
+    # v2 has one explicitly qualified reported-support policy. Rain policies
+    # are deliberately unqualified; unknown/new tags require explicit adoption.
+    return (
+        support.get("qualified") is True
+        and support.get("kind") == "reported_interval"
+        and support.get("policy") == "v171-wind-report-interval-1"
+    )
 
 
 def _qualified(
@@ -186,7 +196,7 @@ def history_point(row: Mapping[str, Any], now: datetime) -> HistoryPoint:
     seconds = support.get("reported_seconds")
     if (
         value is not None
-        and support.get("qualified") is True
+        and qualified_reported_support(support)
         and support.get("kind") in {"preceding_minute", "reported_interval"}
         and isinstance(seconds, (int, float))
         and not isinstance(seconds, bool)
