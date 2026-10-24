@@ -35,6 +35,8 @@ spec:
         superuser: false
         createdb: false
         createrole: false
+        inherit: true
+        connectionLimit: -1
         passwordSecret:
           name: weather-pg-ingest
       - name: weather_worker
@@ -43,6 +45,8 @@ spec:
         superuser: false
         createdb: false
         createrole: false
+        inherit: true
+        connectionLimit: -1
         passwordSecret:
           name: weather-pg-worker
       - name: weather_api
@@ -51,6 +55,7 @@ spec:
         superuser: false
         createdb: false
         createrole: false
+        inherit: true
         connectionLimit: 40
         passwordSecret:
           name: weather-pg-api
@@ -60,6 +65,8 @@ spec:
         superuser: false
         createdb: false
         createrole: false
+        inherit: true
+        connectionLimit: -1
         passwordSecret:
           name: weather-pg-editor
   storage:
