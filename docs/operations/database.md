@@ -73,6 +73,40 @@ permanently delete versions. Storage-infra owns provider retention and the
 independent restore reader; custody/capability evidence is
 `jvallery/storage-infra:inventory/weather-b2-custody.json`.
 
+### Plugin retention compatibility
+
+Do not add `retentionPolicy: 30d`. Issue #6 and simplification O1/P7 require
+the provider lifecycle to enforce expiry. The installed plugin is the estate
+HA wrapper of upstream v0.14.0, revision
+`1e13020fe5f09fd8fc29ea03828f7b61375b3721`; its extension changes RPC availability,
+not retention or the sidecar. Its
+[maintenance implementation](https://github.com/cloudnative-pg/plugin-barman-cloud/blob/1e13020fe5f09fd8fc29ea03828f7b61375b3721/internal/cnpgi/instance/retention.go#L156-L177)
+skips cloud pruning when the policy is empty. A configured policy invokes
+`DeleteBackupsByPolicy`; an error emits `RetentionPolicyFailed` and stops that
+maintenance cycle. This is separate from the
+[base-backup RPC](https://github.com/cloudnative-pg/plugin-barman-cloud/blob/1e13020fe5f09fd8fc29ea03828f7b61375b3721/internal/cnpgi/instance/backup.go),
+so a retention warning alone does not prove that a completed backup failed.
+The [v0.14.0 retention documentation](https://cloudnative-pg.io/plugin-barman-cloud/docs/0.14.0/retention/)
+confirms that configured retention runs `barman-cloud-backup-delete`.
+
+The non-delete capability proof specifically covers **permanent version
+erasure**. [B2's permissions](https://www.backblaze.com/docs/cloud-storage-s3-compatible-app-keys)
+allow delete-by-name with `writeFiles`; only deleting a specific version requires
+`deleteFiles`. [Without a version ID](https://www.backblaze.com/apidocs/s3-delete-object),
+B2 creates a hide marker. The v0.14.0
+[sidecar requirements](https://github.com/cloudnative-pg/plugin-barman-cloud/blob/1e13020fe5f09fd8fc29ea03828f7b61375b3721/containers/sidecar-requirements.in)
+pin Barman 3.19.1; that release's
+[S3 delete implementation](https://github.com/EnterpriseDB/barman/blob/9444450d405d34b07740505d85dd4f31b9c48639/barman/cloud_providers/aws_s3.py#L569-L576)
+sends keys without version IDs. Therefore configuring pruning cannot be assumed
+to fail safely: it could hide archive objects and start their hidden-version
+expiry early. Keep the field absent; never broaden the writer permissions to
+silence retention errors. Empty-policy maintenance still reads the catalog,
+removes stale Kubernetes `Backup` metadata and updates the recovery window;
+those operations are distinct from deleting provider objects. The source guard
+asserts that neither the plugin ObjectStore nor legacy Cluster backup settings
+configure retention. This compatibility check is source evidence, not a live
+Weather backup/PITR result.
+
 Monitoring-stack#1072 scrapes `estate-cnpg` with `namespace=weather` and
 `cnpg_cluster=weather-pg`. It alerts when
 `barman_cloud_cloudnative_pg_io_last_available_backup_timestamp` is missing or
