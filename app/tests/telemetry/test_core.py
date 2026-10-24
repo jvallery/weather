@@ -18,7 +18,9 @@ ST_ROW = [1700000000, 0.1, 0.2, 0.3, 90, 3, 1000, 20, 50, 100, 1, 50, 0, 0, 10, 
 
 
 def packet(family: str, **data: object) -> bytes:
-    return json.dumps({"serial_number": "SYNTHETIC-ST", "type": family, **data}).encode()
+    return json.dumps(
+        {"serial_number": "SYNTHETIC-ST", "hub_sn": "SYNTHETIC-HUB", "type": family, **data}
+    ).encode()
 
 
 def receipt(spool: Spool, raw: bytes = b"synthetic") -> Receipt:
@@ -55,7 +57,10 @@ def test_all_families_official_positions_units_and_unknown_fields() -> None:
     assert parsed["obs_air"].values["relative_humidity"] == 51
     assert parsed["obs_air"].fields["battery"].reported_unit is None
     assert parsed["obs_sky"].values["local_day_rain_accumulation"] == 4
-    assert parsed["obs_sky"].quality["fields"]["precip_accumulated"]["support"]["kind"] == "unknown"
+    assert (
+        parsed["obs_sky"].quality["fields"]["precip_accumulated"]["support"]["kind"]
+        == "preceding_minute"
+    )
     assert parsed["evt_strike"].fields["energy"].reported_unit is None
     assert not parsed["evt_strike"].quality["measured_lightning_authority_candidate"]
     assert parsed["evt_precip"].values == {}
@@ -287,3 +292,78 @@ def test_unbounded_numeric_expansion_does_not_poison_valid_siblings_or_zero() ->
     assert row.fields["wind_direction"].state == "valid"
     zero = parse_packet(raw.replace(b"1e-999999", b"0e-999999"), NOW).rows[0]
     assert zero.fields["wind_speed"].state == "valid" and zero.values["wind_speed"] == 0
+
+
+def test_missing_hub_is_raw_quarantine_and_present_wrong_hub_is_dropped(tmp_path: Path) -> None:
+    spool = Spool(tmp_path / "spool", 1 << 20)
+    try:
+        receiver = Receiver(
+            AdmissionConfig(7, "192.0.2.1", "SYNTHETIC-HUB", frozenset({"SYNTHETIC-ST"})), spool
+        )
+        raw = json.dumps(
+            {"type": "rapid_wind", "serial_number": "SYNTHETIC-ST", "ob": [1700000000, 1, 2]}
+        ).encode()
+        d = Datagram(raw, 7, "192.0.2.1", 50222, 1700000001000000000, 11)
+        stored = receiver.accept(d)
+        assert stored is not None and stored.quarantine_reason == "missing_hub_identity"
+        assert stored.raw == raw and receiver.counts["quarantined"] == 1
+        assert (
+            receiver.accept(replace(d, raw=packet("rapid_wind", hub_sn="SYNTHETIC-OTHER"))) is None
+        )
+        assert receiver.counts["rejected_wrong_identity"] == 1
+        assert spool.stats()["depth"] == 1
+    finally:
+        spool.close()
+
+
+def test_metrics_fixed_labels_and_config_errors_do_not_expose_private_values(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from typing import cast
+
+    from prometheus_client import generate_latest
+    from sqlalchemy.ext.asyncio import AsyncEngine
+    from weather.telemetry.config import load_config
+    from weather.telemetry.drain import Drain
+    from weather.telemetry.metrics import Metrics
+
+    private = {
+        "interface_name": "net1",
+        "hub_source_ip": "192.0.2.1",
+        "hub_identity": "SYNTHETIC-HUB",
+        "device_identities": ["SYNTHETIC-ST"],
+    }
+    (tmp_path / "receiver.json").write_text(json.dumps(private))
+    config = load_config(tmp_path)
+    assert "192.0.2.1" not in repr(config) and "SYNTHETIC" not in repr(config)
+    spool = Spool(tmp_path / "spool", 1 << 20)
+    try:
+        receiver = Receiver(
+            AdmissionConfig(7, config.hub_source_ip, config.hub_identity, config.device_identities),
+            spool,
+        )
+        receiver.accept(
+            Datagram(
+                packet("rapid_wind", ob=[1700000000, 1, 2]),
+                7,
+                "192.0.2.1",
+                50222,
+                1700000001000000000,
+                11,
+            )
+        )
+        metrics = Metrics(receiver, Drain(spool, cast(AsyncEngine, object())))
+        body = generate_latest(metrics.registry).decode()
+        assert "weather_telemetry_received_total 1.0" in body
+        assert 'family="rapid_wind"' in body and "weather_telemetry_drain_lag_seconds" in body
+        assert "192.0.2.1" not in body and "SYNTHETIC" not in body
+        (tmp_path / "receiver.json").write_text(
+            json.dumps({**private, "hub_source_ip": "PRIVATE-BAD"})
+        )
+        with pytest.raises(ValueError) as error:
+            load_config(tmp_path)
+        assert "PRIVATE-BAD" not in str(error.value)
+        captured = capsys.readouterr()
+        assert not captured.out and not captured.err and not caplog.text
+    finally:
+        spool.close()

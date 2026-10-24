@@ -278,7 +278,8 @@ class Spool:
         self._conn_required().execute(
             """
             INSERT INTO loss VALUES(?,?,?,?) ON CONFLICT(reason) DO UPDATE SET
-            last_ns=excluded.last_ns,lost_count=CASE WHEN loss.lost_count IS NULL
+            first_ns=min(loss.first_ns,excluded.first_ns),
+            last_ns=max(loss.last_ns,excluded.last_ns),lost_count=CASE WHEN loss.lost_count IS NULL
             OR excluded.lost_count IS NULL THEN NULL ELSE loss.lost_count+excluded.lost_count END
         """,
             (reason, when_ns, when_ns, count),

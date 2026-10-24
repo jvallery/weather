@@ -41,23 +41,25 @@ class Datagram:
     truncated: bool = False
 
 
-def identity_matches(packet: Packet, config: AdmissionConfig) -> bool:
+def identity_check(packet: Packet, config: AdmissionConfig) -> tuple[bool, str | None]:
+    """Custody permission plus any identity qualification gap; never infer malformed IDs."""
     if packet.envelope is None:
-        # Identity cannot be claimed from malformed bytes; these remain raw-only quarantine.
-        return packet.state == "quarantined"
+        return packet.state == "quarantined", packet.reason
     envelope = packet.envelope
-    serial = envelope.get("serial_number")
-    hub = envelope.get("hub_sn")
-    if hub is not None and hub != config.hub_identity:
-        return False
-    if packet.family == "unknown":
-        return serial == config.hub_identity or (
-            isinstance(serial, str) and serial in config.device_identities
-        )
+    serial, hub = envelope.get("serial_number"), envelope.get("hub_sn")
+    if "hub_sn" in envelope and hub != config.hub_identity:
+        return False, None
     if packet.family == "hub_status":
-        return serial == config.hub_identity
-    # v171's obs_st envelope has no hub_sn. Source + configured device still must match.
-    return isinstance(serial, str) and serial in config.device_identities
+        return serial == config.hub_identity, None
+    if packet.family == "unknown" and serial == config.hub_identity:
+        return True, None
+    if not isinstance(serial, str) or serial not in config.device_identities:
+        return False, None
+    if hub is None:
+        # v171 examples are not a normative required-field schema. Retain raw evidence,
+        # but do not normalize an identity gap absent a commissioned compatibility policy.
+        return True, "missing_hub_identity"
+    return True, None
 
 
 class Receiver:
@@ -83,7 +85,8 @@ class Receiver:
             self.counts["rejected_" + reason] += 1
             return None
         packet = decode_envelope(datagram.raw)
-        if not identity_matches(packet, self.config):
+        admitted, quarantine_reason = identity_check(packet, self.config)
+        if not admitted:
             self.counts["rejected_wrong_identity"] += 1
             return None
         receipt = Receipt.create(
@@ -94,7 +97,7 @@ class Receiver:
             datagram.interface_index,
             datagram.source_ip,
             datagram.source_port,
-            quarantine_reason=packet.reason if packet.state == "quarantined" else None,
+            quarantine_reason=quarantine_reason,
         )
         try:
             if not self.spool.append(receipt):
@@ -105,7 +108,7 @@ class Receiver:
             return None
         self.counts["spooled"] += 1
         self.last_received_ns[packet.family] = datagram.received_ns
-        if packet.state == "quarantined":
+        if quarantine_reason is not None:
             self.counts["quarantined"] += 1
         return receipt
 

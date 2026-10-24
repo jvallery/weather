@@ -105,7 +105,8 @@
           ],
           "future_field": {
             "retained": true
-          }
+          },
+          "hub_sn": "SYNTHETIC-HUB"
         }
       },
       "expect": {

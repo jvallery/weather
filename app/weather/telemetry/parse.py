@@ -295,18 +295,12 @@ class Row:
             )
             if self.future:
                 item["reason"] = "future_timestamp"
-            if name == "precip_accumulated" and self.family == "obs_st":
+            if name == "precip_accumulated":
                 item["support"] = {
                     "kind": "preceding_minute",
                     "reported_seconds": 60,
                     "qualified": False,
                     "policy": "v171-rain-firmware-unqualified-1",
-                }
-            elif name == "precip_accumulated":
-                item["support"] = {
-                    "kind": "unknown",
-                    "qualified": False,
-                    "policy": "v171-legacy-rain-support-unqualified-1",
                 }
             elif name == "wind_avg":
                 item["support"] = {

@@ -137,12 +137,18 @@ def statements() -> list[str]:
     metrics = ",".join("'" + name + "'" for name in metric_keys)
     result.extend(
         [
-            f"""CREATE FUNCTION public_api.telemetry_metric_values(p_values jsonb) RETURNS jsonb
+            f"""CREATE FUNCTION public_api.telemetry_metric_values(p_values jsonb,p_quality jsonb)
+        RETURNS jsonb
         LANGUAGE sql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
-        SELECT coalesce(jsonb_object_agg(key,value),'{{}}'::jsonb)
+        SELECT coalesce(jsonb_object_agg(key,CASE
+          WHEN coalesce(p_quality#>ARRAY['fields',key,'eligible']='true'::jsonb,false)
+           AND coalesce(p_quality#>ARRAY['fields',key,'valid']='true'::jsonb,false)
+           AND coalesce(p_quality->'source_time_eligible'='true'::jsonb,false)
+           AND jsonb_typeof(value) IN ('number','null') THEN value ELSE 'null'::jsonb END),
+          '{{}}'::jsonb)
         FROM jsonb_each(CASE WHEN jsonb_typeof(p_values)='object' THEN p_values
                             ELSE '{{}}'::jsonb END)
-        WHERE key IN ({metrics}) AND jsonb_typeof(value) IN ('number','null') $$""",
+        WHERE key IN ({metrics}) $$""",
             f"""CREATE FUNCTION public_api.telemetry_field_quality(p_quality jsonb) RETURNS jsonb
         LANGUAGE sql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
         SELECT coalesce(jsonb_object_agg(key,jsonb_build_object(
@@ -186,7 +192,7 @@ def statements() -> list[str]:
     selects = [
         f"""SELECT o.id,s.alias AS station_alias,d.alias AS device_alias,
       o.message_type,o.source_ts AS observed_at,r.received_at,o.row_idx,
-      public_api.telemetry_metric_values(o."values") AS "values",
+      public_api.telemetry_metric_values(o."values",o.quality) AS "values",
       public_api.telemetry_field_quality(o.quality) AS field_quality,
       public_api.public_metric_quality(o.quality) AS quality
       FROM weather.{family} o JOIN weather.device d ON d.id=o.device_id
@@ -200,9 +206,9 @@ def statements() -> list[str]:
     )
     result.extend(
         [
-            "REVOKE ALL ON FUNCTION public_api.telemetry_metric_values(jsonb) FROM PUBLIC",
+            "REVOKE ALL ON FUNCTION public_api.telemetry_metric_values(jsonb,jsonb) FROM PUBLIC",
             "REVOKE ALL ON FUNCTION public_api.telemetry_field_quality(jsonb) FROM PUBLIC",
-            "GRANT EXECUTE ON FUNCTION public_api.telemetry_metric_values(jsonb) "
+            "GRANT EXECUTE ON FUNCTION public_api.telemetry_metric_values(jsonb,jsonb) "
             "TO weather_api,weather_worker",
             "GRANT EXECUTE ON FUNCTION public_api.telemetry_field_quality(jsonb) "
             "TO weather_api,weather_worker",

@@ -23,7 +23,11 @@ class ReceiverConfig:
 
 def load_config(directory: Path) -> ReceiverConfig:
     try:
-        data: Any = json.loads((directory / "receiver.json").read_text())
+        with (directory / "receiver.json").open() as stream:
+            raw = stream.read(65537)
+        if len(raw) > 65536:
+            raise ValueError
+        data: Any = json.loads(raw)
         allowed = {
             "interface_name",
             "hub_source_ip",
@@ -56,7 +60,11 @@ def load_config(directory: Path) -> ReceiverConfig:
             ("metrics_port", 1024, 65535),
         ):
             value = data.get(key)
-            if value is not None and (type(value) is not int or not low <= value <= high):
+            if (
+                key in data
+                and not (key == "hub_source_port" and value is None)
+                and (type(value) is not int or not low <= value <= high)
+            ):
                 raise ValueError
         spool = Path(data.get("spool_directory", "/var/lib/weather/telemetry"))
         if not spool.is_absolute():

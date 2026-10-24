@@ -8,6 +8,7 @@ import re
 import time
 import uuid
 from collections import Counter
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any
@@ -115,6 +116,8 @@ class Drain:
         packet = parse_packet(
             receipt.raw, Decimal(receipt.received_ns) / 1_000_000_000, self.future_seconds
         )
+        if receipt.quarantine_reason is not None:
+            packet = replace(packet, state="quarantined", rows=(), reason=receipt.quarantine_reason)
         received_at = EPOCH + timedelta(microseconds=receipt.received_ns // 1000)
         inserted = (
             await db.execute(

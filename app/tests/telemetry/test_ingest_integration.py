@@ -93,7 +93,7 @@ def isolated_telemetry() -> None:
 
 
 def payload(family: str = "rapid_wind", **kwargs: Any) -> bytes:
-    body = {"serial_number": "SYNTHETIC-ST", "type": family, **kwargs}
+    body = {"serial_number": "SYNTHETIC-ST", "hub_sn": "SYNTHETIC-HUB", "type": family, **kwargs}
     if family == "rapid_wind" and "ob" not in body:
         body["ob"] = [1700000000, 2.3, 128]
     return json.dumps(body).encode()
@@ -437,3 +437,93 @@ os._exit(17)
         assert not (tmp_path / "spool" / "quarantine").exists()
     finally:
         spool.close()
+
+
+def test_public_field_quality_is_typed_allowlist_and_private_tables_denied(tmp_path: Path) -> None:
+    from sqlalchemy.exc import DBAPIError
+
+    async def check() -> None:
+        ingest = engine("weather_ingest")
+        api = engine("weather_api")
+        spool = Spool(tmp_path / "spool", 1 << 20)
+        try:
+            append(spool, payload("obs_st", obs=[ST_ROW]))
+            drain = Drain(spool, ingest)
+            assert await drain.once() == 1, drain.last_error_code
+            async with api.begin() as c:
+                row = (
+                    (await c.execute(text("SELECT * FROM public_api.telemetry_observations")))
+                    .mappings()
+                    .one()
+                )
+                public = json.dumps(dict(row), default=str)
+                assert "SYNTHETIC-ST" not in public and "192.0.2.1" not in public
+                assert 'reported"' not in public and "battery" not in row["values"]
+                assert row["field_quality"]["air_temperature"]["eligible"]
+                malformed = {
+                    "fields": {
+                        "air_temperature": {
+                            "valid": "true",
+                            "eligible": "true",
+                            "reported": "SYNTHETIC-PRIVATE-SECRET",
+                            "reason": "SYNTHETIC-PRIVATE-SECRET",
+                            "canonical_unit": "SYNTHETIC-PRIVATE-SECRET",
+                            "support": {"policy": "SYNTHETIC-PRIVATE-SECRET", "qualified": "true"},
+                        }
+                    }
+                }
+                safe = (
+                    await c.execute(
+                        text("SELECT public_api.telemetry_field_quality(CAST(:q AS jsonb))"),
+                        {"q": json.dumps(malformed)},
+                    )
+                ).scalar_one()
+                assert "SYNTHETIC-PRIVATE-SECRET" not in json.dumps(safe)
+                assert not safe["air_temperature"]["eligible"]
+                assert safe["air_temperature"]["reason"] == "unknown"
+                for table in (
+                    "receipt_transport",
+                    "receipt_integrity_incident",
+                    "observation_conflict",
+                ):
+                    with pytest.raises(DBAPIError) as error:
+                        async with c.begin_nested():
+                            await c.execute(text("SELECT * FROM weather." + table))
+                    assert getattr(error.value.orig, "sqlstate", None) == "42501"
+        finally:
+            spool.close()
+            await ingest.dispose()
+            await api.dispose()
+
+    asyncio.run(check())
+
+
+def test_t17_capacity_snapshots_replay_without_summing_cumulative_counts(tmp_path: Path) -> None:
+    async def check() -> None:
+        db = engine("weather_ingest")
+        spool = Spool(tmp_path / "spool", 1 << 20, data_capacity_bytes=1000)
+        try:
+            first = append(spool, payload())
+            for _ in range(5):
+                extra = Receipt.create(
+                    b"x" * 600, spool.incarnation, first.received_ns, 12, 7, "192.0.2.1", 50222
+                )
+                assert not spool.append(extra)
+            drain = Drain(spool, db)
+            assert await drain.once() == 1, drain.last_error_code
+            assert await drain.once() == 0
+            async with db.connect() as c:
+                row = (
+                    await c.execute(
+                        text("""
+                    SELECT count(*),max(lost_count) FROM weather.telemetry_loss_snapshot
+                    WHERE reason='capacity_loss'
+                """)
+                    )
+                ).one()
+                assert tuple(row) == (1, 5)
+        finally:
+            spool.close()
+            await db.dispose()
+
+    asyncio.run(check())
