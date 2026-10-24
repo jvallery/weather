@@ -162,7 +162,7 @@ bash scripts/bootstrap-ci.sh bash scripts/ci.sh browser
 
 After the test report is written, `scripts/web-browser-capture.mjs` keeps main Running for at most
 30–300 seconds (default 180). It atomically writes
-`/workspace/weather-browser-capture/ready.json`, binding the actual checkout SHA, Pod name, report
+`/workspace/weather-browser-capture/ready.json`, binding the trusted fetch-context detached checkout SHA (read from `.git/HEAD`, without a runtime Git dependency), Pod name, report
 and synthetic screenshot SHA-256/byte counts. ROOT resolves and verifies the Workflow/Pod UIDs,
 reads that exact manifest and copies every listed file using the existing operator identity while
 main remains Running. Verify byte counts/hashes in retained custody, then atomically write

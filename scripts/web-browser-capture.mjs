@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 /** Optional ROOT qualification custody window; never used by event/required CI. */
 import { createHash } from "node:crypto";
-import { execFileSync } from "node:child_process";
 import { lstatSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { setTimeout } from "node:timers/promises";
 const operation = process.env.WEATHER_BROWSER_CAPTURE_OPERATION;
@@ -10,7 +9,10 @@ if (process.platform !== "linux" || process.env.WEATHER_CI_IN_CLUSTER !== "1") t
 const source = process.env.WEATHER_BROWSER_CAPTURE_SOURCE;
 const seconds = Number(process.env.WEATHER_BROWSER_CAPTURE_SECONDS || "180");
 if (!/^[a-z0-9][a-z0-9-]{2,62}$/.test(operation) || !/^[a-f0-9]{40}$/.test(source || "") || !Number.isInteger(seconds) || seconds < 30 || seconds > 300) throw new Error("Invalid bounded capture identity/deadline");
-if (execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim() !== source) throw new Error("Capture source differs from actual checkout");
+// The trusted fetch-context template verifies and checks out this exact detached
+// SHA before handing the repo to UID1001. Do not require Git in the tooling image.
+const actualHead = readFileSync(".git/HEAD", "utf8").trim();
+if (!/^[a-f0-9]{40}$/.test(actualHead) || actualHead !== source) throw new Error("Capture source differs from actual detached checkout");
 const reportPath = "/workspace/ci-test-report.json";
 const directory = "/workspace/weather-browser-capture";
 function hashed(path, maximum) {
