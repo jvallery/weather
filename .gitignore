@@ -11,3 +11,5 @@ artifacts/
 
 web/.test-media/
 web/test-results/
+
+.coverage*
