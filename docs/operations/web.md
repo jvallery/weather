@@ -220,3 +220,10 @@ preserving the distinction between the two repeated 01:15 observations. The tabl
 source timestamps. uPlot sizes its canvas using CSP-permitted JavaScript style properties;
 qualification checks serialized HTML for inline style attributes, rather than forbidding those
 legitimate computed dimensions.
+
+The accepted fixture matrix is recorded in
+`evidence/web-browser06-20261024.json`: all 96 cases passed in Chromium, WebKit and Firefox,
+with all 27 screenshots verified in ROOT custody and reviewed. Chart padding reserves the full
+edge tick label at 768px. The normal main-push image build and independent registry manifest/config
+verification are in `evidence/web-build-e3d4151-20261024.json`. These are fixture/build evidence;
+record the separate held-tab rollout and public deployment readback before closing #21.

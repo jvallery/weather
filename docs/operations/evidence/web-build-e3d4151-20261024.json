@@ -1,0 +1,57 @@
+{
+  "schema": "weather-web-build/v1",
+  "image": "registry.vallery.net/jvallery/weather-web@sha256:7ff8819af3890a77e3ec9dbacbc111ca6a1dba21fe57097d364f5a545ada09d9",
+  "source_revision": "e3d4151aa0a507e1dd6e98d328ae962754efe6af",
+  "resolved_tree": "8d14ba60735e540dec3f1fc9cf363dc7a3329cf5",
+  "dockerfile_sha256": "sha256:6a466a10d1b8601b514ef9f50fac746d76c2ae91576521e5acbf261c4bf8f2aa",
+  "workflow": {
+    "name": "repo-build-weather-web-e3d4151aa0a5-push",
+    "uid": "a0f95a02-200d-445e-a0bb-1cffb0ff82f0",
+    "phase": "Succeeded",
+    "started_at": "2026-10-24T15:32:17Z",
+    "finished_at": "2026-10-24T15:34:00Z"
+  },
+  "normal_main_push_build": true,
+  "duplicate_workload_submitted": false,
+  "registry_admission_guard_exit_code": 0,
+  "registry_pre_publish_guard_exit_code": 0,
+  "capture_and_verify_build_inputs_exit_code": 0,
+  "kaniko_exit_code": 0,
+  "image_metadata": {
+    "image": "registry.vallery.net/jvallery/weather-web@sha256:7ff8819af3890a77e3ec9dbacbc111ca6a1dba21fe57097d364f5a545ada09d9",
+    "manifest_sha256_verified": true,
+    "config_sha256_verified": true,
+    "config_digest": "sha256:9005733fddf1fc6ec3835f79fe9088c6ae633383b7df85444881b85b0e1352c9",
+    "os": "linux",
+    "architecture": "amd64",
+    "user": "10001:10001",
+    "workdir": "/app",
+    "cmd": [
+      "node",
+      "server.mjs"
+    ],
+    "node_version": "24.22.1",
+    "labels": {
+      "org.opencontainers.image.revision": "e3d4151aa0a507e1dd6e98d328ae962754efe6af",
+      "org.opencontainers.image.source": "https://github.com/jvallery/weather"
+    }
+  },
+  "closure_bounds": {
+    "root_manifest_bytes": 1888,
+    "selected_manifest_bytes": 1888,
+    "selected_manifest_digest": "sha256:7ff8819af3890a77e3ec9dbacbc111ca6a1dba21fe57097d364f5a545ada09d9",
+    "config_bytes": 7931,
+    "compressed_layer_bytes": 89675564,
+    "largest_layer_bytes": 51077605,
+    "largest_blob_bytes": 51077605,
+    "metadata_bytes_unique": 9819,
+    "total_unique_payload_bytes": 89685383,
+    "layer_payload_downloaded": false
+  },
+  "build_logs": "Builder Pod was garbage-collected before the log copy; terminal Workflow outputs and container exit-status readback are retained.",
+  "previous_web_digest": "sha256:0761f4ebf5f5cf73a4d261446b296fa77c1a3fb7e755585306c218a6e70764bd",
+  "retention": "One checksum-verified predecessor; original scaffold inventory exception only.",
+  "app_digest_preserved": "sha256:b31d9d54d737d6cc1607618f4aa0ba99f8c6a4c8e256a5b931d825f8984342a1",
+  "browser_qualification": "web-browser06-20261024.json",
+  "rolling_live_verification": "Separate attended operator qualification is required before issue closure."
+}
