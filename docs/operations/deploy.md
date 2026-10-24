@@ -14,11 +14,11 @@ review and re-push a same-repository branch.
 
 Build both `weather-app` and `weather-web` at an immutable source revision.
 Retain the terminal workflow results and image-ref/digest outputs. Verify each
-output against registry manifest metadata. After both verified digest pins are committed, register the fixed
-`supply-chain-evidence` profile. It runs
-`scripts/ci-evidence.sh` against trusted read-only OCI inputs and archives
-`sbom-app.json`, `sbom-web.json` and `licenses.json`. Retain independent readback as part of WX-01 acceptance. Generic candidates
-have no registry credentials.
+output against registry manifest metadata. Fleet validation runs three steps
+from the registry record: `application` (`scripts/ci.sh all`, including
+gitleaks and the license allowlist), `browser` (the in-cluster Playwright
+suite, `scripts/ci.sh browser`) and `manifests`. Generic candidates have no
+registry credentials.
 
 A `deploy:` commit sets both entries in the root kustomization's `images`
 list to the verified `registry.vallery.net/jvallery/weather-*` digests.
@@ -80,29 +80,6 @@ and `METRICS_PORT` default to 8000 and 9000 and must differ. Unknown
 and invalid ports fail before either server binds. Startup errors name only
 the fields; do not print Pydantic's raw validation errors or environment.
 The `WEATHER_CI_` prefix is reserved for the check runner and its pinned tools.
-
-## Supply-chain evidence
-
-After both commissioned runtime digests exist, the registry-owned
-`supply-chain-evidence` check runs `scripts/ci-evidence.sh` through the same
-pinned fleet bootstrap. The fixed platform init authenticates with the existing read-only registry
-identity and stages two hash-verified OCI layouts on a separate read-only
-`/ci-input` volume. The candidate receives no registry credential. It checks the
-input checkout revision, exact image pins, OCI manifest/configuration digest
-chain, Linux amd64 selection and layer descriptors before serial Syft scans,
-then stages `artifacts/supply-chain/sbom-app.json`, `sbom-web.json` and
-`licenses.json`. Mutable tags, another repository's image, duplicate pins,
-symlink inputs, duplicate JSON keys and output JSON files larger than 16 MiB
-are rejected. OCI metadata files are bounded to 1 MiB. Fixed input paths come
-from the platform contract, never a caller-selected path. The script
-refuses to run image scans on the Mac, including when the CI flag is set.
-
-The platform's fixed Weather evidence check must archive those three files
-with a trusted manifest binding the Workflow/Pod UIDs and file SHA-256 values.
-Verify that upload and an independent readback before accepting the files as
-durable evidence. A local output directory, log line or completed scan alone
-does not prove custody. Add this registry step only after the two image pins
-exist; the scaffold's image-free supply-chain check runs before commissioning.
 
 ## Capacity envelope
 
