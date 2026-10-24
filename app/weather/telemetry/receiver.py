@@ -50,6 +50,10 @@ def identity_matches(packet: Packet, config: AdmissionConfig) -> bool:
     hub = envelope.get("hub_sn")
     if hub is not None and hub != config.hub_identity:
         return False
+    if packet.family == "unknown":
+        return serial == config.hub_identity or (
+            isinstance(serial, str) and serial in config.device_identities
+        )
     if packet.family == "hub_status":
         return serial == config.hub_identity
     # v171's obs_st envelope has no hub_sn. Source + configured device still must match.

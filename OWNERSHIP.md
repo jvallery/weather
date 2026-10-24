@@ -34,3 +34,7 @@ there is no coordinator, writer fencing or database dependency in this role.
 Source preparation and small pure checks do not commission cameras or storage.
 Real workloads, private egress rules and cadence remain WX-03; fake-camera
 latency/decode integration runs only in fleet CI. See [capture operations](docs/operations/capture.md).
+
+## Tempest ingestion source preparation
+
+Weather owns the `tempest-receiver` role source, its private SQLite WAL/FULL receipt spool, additive telemetry provenance/conflict/coverage schema and receiver metrics. Migration `0002_telemetry` extends schema v1 without changing its snapshot. This source preparation creates no active receiver, PVC, network attachment or credential; #5 commissions those objects after native prerequisites. See [Tempest operations](docs/operations/tempest-ingest.md).

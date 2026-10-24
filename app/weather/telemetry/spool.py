@@ -416,6 +416,7 @@ class Spool:
                 .fetchall()
             )
             return {
+                "generation": self.generation,
                 "depth": self._meta("pending_count"),
                 "pending_bytes": used,
                 "physical_bytes": self.physical_bytes(),

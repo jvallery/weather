@@ -309,7 +309,7 @@ class Row:
                 item["support"] = {
                     "kind": "reported_interval",
                     "reported_seconds": report_seconds,
-                    "qualified": report_seconds is not None,
+                    "qualified": report_seconds is not None and report_seconds <= 86400,
                     "policy": "v171-wind-report-interval-1",
                 }
             else:

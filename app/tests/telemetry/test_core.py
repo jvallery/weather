@@ -94,7 +94,7 @@ def test_t05_t06_t07_raw_errors(raw: bytes, state: str, reason: str | None) -> N
         assert result.envelope is not None and result.envelope["values"][1] is None
 
 
-def test_source_time_future_reset_and_t20_unchanged_values() -> None:
+def test_t18_source_time_future_reset_and_t20_unchanged_values() -> None:
     rows = [
         parse_packet(packet("rapid_wind", ob=[stamp, 2.3, 128]), NOW).rows[0]
         for stamp in [1700000000, 1699999900, 1700000000, 1700000003, 1700000300]
@@ -242,3 +242,30 @@ def test_coverage_ninety_second_gap_reduced_cadence_and_original_receive_time() 
     assert reduced is not None and reduced.reason == "reduced_cadence"
     assert arrival_interval(150 * NS, 60 * NS, normal, normal) is None
     assert arrival_interval(0, 150 * NS, None, Cadence(None, "unknown")) is None
+
+
+def test_t08_disputed_temperature_only_humidity_stays_usable() -> None:
+    from weather.telemetry.reconcile import disputed_fields, qualify_conflict
+
+    second = list(ST_ROW)
+    second[7] = 23
+    first_row = parse_packet(packet("obs_st", obs=[ST_ROW]), NOW).rows[0]
+    second_row = parse_packet(packet("obs_st", obs=[second]), NOW).rows[0]
+    fields = disputed_fields(first_row.quality, second_row.quality)
+    assert fields == ["air_temperature"]
+    qualified = qualify_conflict(first_row.quality, fields)
+    assert not qualified["fields"]["air_temperature"]["eligible"]
+    assert qualified["fields"]["relative_humidity"]["eligible"]
+    assert first_row.values["air_temperature"] == 20
+    assert first_row.quality["fields"]["air_temperature"]["eligible"]
+
+
+def test_jsonb_unrepresentable_private_evidence_is_explicit_not_silently_coerced() -> None:
+    from weather.telemetry.jsonb import compatible, private_storage
+
+    for value in [Decimal("1e999999"), Decimal("1e-999999"), "\x00", "\ud800"]:
+        assert not compatible(value)
+        wrapped = private_storage(value)
+        assert "_weather_exact_private_json_text" in wrapped
+        assert compatible(wrapped)
+    assert private_storage({"ordinary": Decimal(".1")}) == {"ordinary": Decimal(".1")}

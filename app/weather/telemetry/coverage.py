@@ -14,6 +14,7 @@ GapReason = Literal[
     "station_unavailable",
     "restart_volatile_unknown",
     "spool_unreadable",
+    "receiver_clock_discontinuity",
 ]
 DeviceState = Literal["normal", "reduced", "unavailable", "unknown"]
 NS = 1_000_000_000
