@@ -14,6 +14,8 @@ export function metricValue(value: number | null, unit: string, units: Units): s
   let label = unit;
   if (unit === "degC") { converted = units === "us" ? value * 9 / 5 + 32 : value; label = units === "us" ? "°F" : "°C"; }
   if (unit === "m/s") { converted = units === "us" ? value * 2.2369362921 : value; label = units === "us" ? "mph" : "m/s"; }
+  if (unit === "km") { converted = units === "us" ? value / 1.609344 : value; label = units === "us" ? "mi" : "km"; }
+  if (unit === "mm/h") { converted = units === "us" ? value / 25.4 : value; label = units === "us" ? "in/h" : "mm/h"; }
   if (unit === "mm") { converted = units === "us" ? value / 25.4 : value; label = units === "us" ? "in" : "mm"; }
   if (unit === "mb" || unit === "hPa") { converted = units === "us" ? value * 0.0295299831 : value; label = units === "us" ? "inHg" : "hPa"; }
   return `${new Intl.NumberFormat("en-US", { maximumFractionDigits: unit === "mm" || unit === "mb" || unit === "hPa" ? 2 : 1 }).format(converted)}${unit === "%" ? "" : " "}${label}`;

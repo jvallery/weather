@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 import { randomBytes } from "node:crypto";
 import { performance } from "node:perf_hooks";
-import { setTimeout } from "node:timers";
+import { clearTimeout, setTimeout } from "node:timers";
 import express from "express";
 import { createRequestHandler } from "@react-router/express";
-import { collectDefaultMetrics, register, Histogram } from "prom-client";
+import { collectDefaultMetrics, register, Histogram, Gauge } from "prom-client";
 
 const app = express();
 app.disable("x-powered-by");
@@ -43,6 +43,17 @@ app.use((req, res, next) => {
   next();
 });
 app.use(express.static("build/client", { immutable: true, maxAge: "1y", setHeaders(res) { res.setHeader("Cache-Control", "public, max-age=31536000, immutable"); } }));
+let rendering = 0;
+const activeRenders = new Gauge({ name: "weather_web_ssr_inflight", help: "Active bounded document/data responses" });
+app.use((_req, res, next) => {
+  if (rendering >= 4) { res.setHeader("Retry-After", "5"); return res.status(503).type("text").send("Weather is busy. Please retry shortly."); }
+  rendering += 1; activeRenders.inc();
+  let released = false;
+  const timer = setTimeout(() => res.destroy(), 15_000); timer.unref();
+  const release = () => { if (!released) { released = true; rendering -= 1; activeRenders.dec(); clearTimeout(timer); } };
+  res.once("finish", release); res.once("close", release);
+  next();
+});
 app.use(createRequestHandler({ build: () => import("./build/server/index.js") }));
 app.use((_error, _req, res, _next) => { if (res.headersSent) { res.destroy(); return; } res.status(503).type("text").send("Weather is temporarily unavailable."); });
 const server = app.listen(Number(process.env.PORT || 3000), "0.0.0.0");

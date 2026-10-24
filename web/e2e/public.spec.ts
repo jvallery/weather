@@ -65,8 +65,8 @@ test("safe interpretation text, lifecycle states and quality preservation", asyn
 });
 test("concurrent SSR requests have isolated query state and expose no private upstream", async ({ request }) => {
   await request.post("http://localhost:4174/__control", { data: { unique: true } });
-  const bodies = await Promise.all(Array.from({ length: 10 }, async () => (await request.get("http://localhost:4173/")).text()));
+  const bodies = await Promise.all(Array.from({ length: 4 }, async () => (await request.get("http://localhost:4173/")).text()));
   const rendered = bodies.map((body) => /<h3>Temperature<\/h3><strong>([^<]+)<\/strong>/.exec(body)?.[1]);
-  expect(rendered.every(Boolean)).toBe(true); expect(new Set(rendered).size).toBe(10);
+  expect(rendered.every(Boolean)).toBe(true); expect(new Set(rendered).size).toBe(4);
   expect(bodies.every((body) => !body.includes("http://api") && !body.includes("localhost:4174"))).toBe(true);
 });

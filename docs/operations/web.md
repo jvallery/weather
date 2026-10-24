@@ -7,7 +7,9 @@ persistent browser cache for weather data.
 
 The read-only server consumes only the fixed `API_ORIGIN=http://api` Service on port 80. It forwards no
 cookies or authorization headers, follows no redirects, allows only the listed public API paths, and
-bounds each request to 6 seconds and 8 MiB. At most 16 upstream requests run at once. Failures render
+bounds each request to 6 seconds and 4 MiB. At most four upstream requests run at once. Dynamic document/data responses also have four slots and a 15-second absolute deadline,
+matching the initial 512 MiB web memory limit. Static files and process health do not consume those
+slots. Failures render
 sanitized unavailable states. The process has no database, camera, object-store or model credential.
 
 HTTP is on `PORT` (3000); metrics use a separate `METRICS_PORT` (9000). `/healthz` and `/readyz` identify
@@ -88,3 +90,9 @@ and collect before the existing 60-second PodGC. The report distinguishes ROOT's
 from browser observations. A timeout, changed intended revision, missing origin asset, mismatched
 running digest, browser error or failed late import fails the run; observation timeout never justifies
 recreating a still-live qualification handle.
+
+Metrics `weather_web_api_requests_total{route,result}`, `weather_web_api_inflight` and
+`weather_web_ssr_inflight` distinguish API transport/shape/body-budget/admission failures from an HTTP
+200 degraded page. Labels are fixed route templates and a bounded result vocabulary; no query,
+station identity or upstream address is logged. `weather_web_request_duration_seconds` covers HTTP
+status and asset 404s. Monitoring-stack owns scraping and alert/probe policy.

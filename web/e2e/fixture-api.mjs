@@ -68,6 +68,7 @@ createServer(async (req, res) => {
     if (state.unique) { value.station_alias = `synthetic-request-${++serial}`; value.metrics[0].value = serial; }
     return json(res, value);
   }
+  if (url.pathname === "/api/v1/weather/metrics") return json(res, { revision: "synthetic-metrics-v1", metrics: [{ metric: "temperature", label: "Temperature", canonical_unit: "degC", display_units: ["degC", "degF"], statistics: ["observed"], expected_interval_seconds: 60, public: true, revision: "synthetic-temperature-v1" }] });
   if (url.pathname === "/api/v1/weather/observations") return json(res, history);
   if (url.pathname === "/api/v1/timelapses") {
     const value = snapshot();

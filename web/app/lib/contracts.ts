@@ -117,6 +117,11 @@ export const videoSchema = z.strictObject({
   }
 });
 export const catalogSchema = z.strictObject({ generated_at: utc, revision: id, items: z.array(videoSchema).max(100), next_cursor: z.string().max(4096).nullable() });
+export const metricRegistrySchema = z.strictObject({ revision: id, metrics: z.array(z.strictObject({
+  metric: z.string().min(1).max(64), label: z.string().min(1).max(128), canonical_unit: z.string().min(1).max(32),
+  display_units: z.array(z.string().min(1).max(32)).max(16), statistics: z.array(z.string().min(1).max(64)).max(16),
+  expected_interval_seconds: number.positive(), public: z.literal(true), revision: id,
+})).max(256) });
 export type Current = z.infer<typeof currentSchema>;
 export type Metric = z.infer<typeof metricSchema>;
 export type History = z.infer<typeof historySchema>;

@@ -1,14 +1,26 @@
 // SPDX-License-Identifier: MIT
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Video } from "../lib/contracts";
 
 export function VideoPlayer({ video }: { video: Video }) {
   const player = useRef<HTMLVideoElement>(null);
   const resume = useRef<{ time: number; playing: boolean } | null>(null);
   const [quality, setQuality] = useState("auto");
+  const [autoRole, setAutoRole] = useState("web");
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const media = window.matchMedia("(max-width: 767px)");
+    const changed = () => {
+      const element = player.current;
+      if (quality === "auto" && element && element.readyState >= 1) resume.current = { time: element.currentTime, playing: !element.paused };
+      setAutoRole(media.matches ? "mobile" : "web");
+    };
+    changed(); media.addEventListener("change", changed);
+    return () => media.removeEventListener("change", changed);
+  }, [quality]);
   const [resumeMessage, setResumeMessage] = useState("");
   if (video.state !== "published") return <p>No playable media · {video.reason || video.state}. Coverage and metadata remain available.</p>;
-  const role = quality === "auto" ? "web" : quality;
+  const role = quality === "auto" ? autoRole : quality;
   const rendition = video.renditions.find((item) => item.role === role);
   const native = video.renditions.find((item) => item.role === "native");
   if (!rendition || !native || !video.poster || !video.native_download_url) return <p className="fault">Media metadata is unavailable.</p>;
@@ -30,7 +42,7 @@ export function VideoPlayer({ video }: { video: Video }) {
       const element = player.current;
       resume.current = { time: element?.currentTime || 0, playing: !!element && !element.paused };
       setQuality(event.target.value);
-    }}><option value="auto">Auto (Web)</option><option value="web">Web</option><option value="mobile">Mobile</option><option value="native">Native</option></select></label></div>
+    }}><option value="auto">Auto ({autoRole === "mobile" ? "Mobile" : "Web"})</option><option value="web">Web</option><option value="mobile">Mobile</option><option value="native">Native</option></select></label></div>
     {resumeMessage && <p>{resumeMessage}</p>}
     <p>{rendition.asset.width} × {rendition.asset.height} pixels · {rendition.codec} · {(rendition.fps.numerator / rendition.fps.denominator).toFixed(0)} fps</p>
     <div className="player-links"><a className="button-link" href={video.native_download_url} download>Download native · {native.asset.bytes.toLocaleString("en-US")} bytes · {native.asset.width} × {native.asset.height}</a><a className="button-link" href={`/api/v1/timelapses/${video.video_id}`}>Metadata JSON / sidecar</a></div>
