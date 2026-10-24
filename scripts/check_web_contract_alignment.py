@@ -111,7 +111,7 @@ return{case:item.case,schema:item.schema,expected:item.expected,accepted:parsed.
     outcomes = json.loads(result.stdout)
     report = {
         "kind": "pure_serialization_boundary_audit", "serialized_via": "real_shared_router_asgi",
-        "api_source": revision(api), "web_source": revision(web),
+        "contract_source_revision": revision(api), "web_source": revision(web),
         "api_files_sha256": {name: sha(api / "app/weather/api" / name) for name in (
             "public_routes.py", "public_models.py", "public_service.py", "cursors.py",
             "metric_registry.py",

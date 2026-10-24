@@ -1,8 +1,8 @@
 {
   "kind": "pure_serialization_boundary_audit",
   "serialized_via": "real_shared_router_asgi",
-  "api_source": "fcd8388289fd9b77c3a5ae50db8bdc8e06fe58c0",
-  "web_source": "48063755e550bcd6dcdb979001d031901268c85a",
+  "contract_source_revision": "fcd8388289fd9b77c3a5ae50db8bdc8e06fe58c0",
+  "web_source": "b2259e4e31d9b9859d0df3e868645e0a0e3b91b8",
   "api_files_sha256": {
     "public_routes.py": "90e671af744ab87581a90b96a82590b4ccac9655accafca5dacc81a44ed1f80d",
     "public_models.py": "a033333f816e230a007ed19731fdb6093a19f5750a810768c0f2d4ae5d674717",
@@ -11,7 +11,7 @@
     "metric_registry.py": "28d52e3d35398fb2c764b27a0a249c2f712cea40262b9e4bfe29b603993535b1"
   },
   "web_parser_sha256": "1603f5f80c11d406ad7ed6d6b3b3b7a90d0bc05400e47888753e41fe8f3fc493",
-  "script_sha256": "c0c01d8b8b1648c29a99a2ae61efcf1c3fc6408368fae82c4b3a375b88869d21",
+  "script_sha256": "0f97376ed83afaf0359cb6aeec7a005936b3c6e57712d52eb74464bb3a4be4d6",
   "fixture_sha256": {
     "current.json": "71a969d78ac7181cde128a982ad60897e8f4b01806baf26771998e9f27b1d38f",
     "history.json": "760a965806dab135bdac3206a4242054fda96e18ace8efe21ebb4978d0d38ae7"

@@ -11,7 +11,6 @@
   },
   "jitter_fix_original": "4b252dd483f60b4de629299c39584fc5f86f0ef0",
   "jitter_fix_adopted": "48063755e550bcd6dcdb979001d031901268c85a",
-  "api_contract_source": "fcd8388289fd9b77c3a5ae50db8bdc8e06fe58c0",
   "api_stack_in_branch": false,
   "checks": {
     "command": "scripts/ci.sh lint typecheck unit",
@@ -37,5 +36,6 @@
     "Re-run required native checks at the eventual exact pushed head",
     "Run supported in-cluster three-engine browser/axe matrix and retain/review 27 checksummed screenshots",
     "Build and promote pinned web image with previous assets; prove actual rolling tabs and public SSR/header/privacy behavior"
-  ]
+  ],
+  "contract_source_revision": "fcd8388289fd9b77c3a5ae50db8bdc8e06fe58c0"
 }
