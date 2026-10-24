@@ -128,6 +128,9 @@ def main() -> None:
     digests = {}
     for name, deployment in deployments.items():
         assert deployment["spec"]["replicas"] == 2
+        assert deployment["status"]["observedGeneration"] == deployment["metadata"]["generation"]
+        assert deployment["status"].get("updatedReplicas", 0) == 2
+        assert deployment["status"].get("readyReplicas", 0) == 2
         assert deployment["status"].get("availableReplicas", 0) == 2
         image = deployment["spec"]["template"]["spec"]["containers"][0]["image"]
         assert image == desired[name], "Running template differs from source pin"
