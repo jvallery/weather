@@ -296,3 +296,109 @@ def test_worker_uses_shared_overlap_cost_preflight_before_synchronous_engine(
         assert entered
 
     asyncio.run(check())
+
+
+def grouped_reader(monkeypatch: pytest.MonkeyPatch) -> tuple[list[Any], list[Any]]:
+    import weakref
+
+    reads, windows = [], []
+
+    async def rows(*args: Any, **kwargs: Any) -> Any:
+        reads.append("watermark")
+        return [{"watermark": 1}]
+
+    async def evidence(reader: Any, interval: Any, roles: Any, **kwargs: Any) -> EvidenceWindow:
+        assert len(roles) == 1 and kwargs["maximum_points"] == 2
+        assert kwargs["snapshot_watermark"] == "1" and kwargs["evaluated_at"] == NOW
+        assert not kwargs["enforce_raw_range"]
+        # An earlier group's coroutine must not retain its evidence/index while
+        # a subsequent complete-window group is being read.
+        assert all(window() is None for window in windows)
+        metric = roles[0]
+        reads.append(metric)
+        value = EvidenceWindow(
+            "1", tuple(sample(10, i * 30, f"{metric}_{i}", metric=metric) for i in range(2))
+        )
+        windows.append(weakref.ref(value))
+        return value
+
+    monkeypatch.setattr(module.PublicSqlSource, "_rows", rows)
+    monkeypatch.setattr(module, "read_evidence_window", evidence)
+    return reads, windows
+
+
+def test_grouped_reads_exceed_union_cap_but_individual_groups_and_recipe_budgets_fit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def check() -> None:
+        policies = {
+            **POLICIES,
+            "humidity": SupportPolicy("forward_hold", "humidity_v1", hold_seconds=60),
+        }
+        value = worker(policies=policies, maximum_inputs=2, maximum_work=25)
+        reads, windows = grouped_reader(monkeypatch)
+        persisted = []
+        clock_calls = []
+
+        def clock() -> datetime:
+            clock_calls.append(True)
+            return NOW
+
+        async def persist(connection: Any, item: Any) -> str:
+            persisted.append(item)
+            return "created"
+
+        value.clock = clock
+        monkeypatch.setattr(module.aggregate_store, "persist", persist)
+        context = Context(work_payload(value))
+        result = await value.recompute(context)
+        assert reads == ["watermark", "humidity", "temperature"]
+        assert len(clock_calls) == 1 and all(window() is None for window in windows)
+        assert 2 * len(windows) > value.maximum_inputs
+        assert len(persisted) == result["created"] == 6
+        assert context.committed
+
+    asyncio.run(check())
+
+
+def test_total_prepared_json_overflow_after_first_group_never_opens_catalog_commit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from types import MappingProxyType
+
+    from weather.db.aggregate_store import StoredComputation
+
+    async def check() -> None:
+        item = StoredComputation(
+            "synthetic", "synthetic", MappingProxyType({"document": "public" * 10})
+        )
+        policies = {
+            **POLICIES,
+            "humidity": SupportPolicy("forward_hold", "humidity_v1", hold_seconds=60),
+        }
+        value = worker(
+            policies=policies,
+            maximum_inputs=2,
+            maximum_work=25,
+            maximum_prepared_bytes=2 + 3 * (module._prepared_size(item) + 1),
+        )
+        reads, windows = grouped_reader(monkeypatch)
+        prepared = []
+
+        def prepare(*args: Any, **kwargs: Any) -> StoredComputation:
+            prepared.append(True)
+            return item
+
+        async def never(*args: Any, **kwargs: Any) -> Any:
+            raise AssertionError("No partial aggregate writes may occur on prepared-byte overflow")
+
+        monkeypatch.setattr(module.aggregate_store, "prepare", prepare)
+        monkeypatch.setattr(module.aggregate_store, "persist", never)
+        context = Context(work_payload(value))
+        with pytest.raises(PublicInputError, match="byte budget"):
+            await value.recompute(context)
+        assert reads == ["watermark", "humidity", "temperature"]
+        assert len(prepared) == 4 and not context.committed
+        assert all(window() is None for window in windows)
+
+    asyncio.run(check())
