@@ -1,0 +1,66 @@
+{
+  "kind": "pure_serialization_boundary_audit",
+  "serialized_via": "real_shared_router_asgi",
+  "contract_source_revision": "fcd8388289fd9b77c3a5ae50db8bdc8e06fe58c0",
+  "web_source": "b2259e4e31d9b9859d0df3e868645e0a0e3b91b8",
+  "api_files_sha256": {
+    "public_routes.py": "90e671af744ab87581a90b96a82590b4ccac9655accafca5dacc81a44ed1f80d",
+    "public_models.py": "a033333f816e230a007ed19731fdb6093a19f5750a810768c0f2d4ae5d674717",
+    "public_service.py": "33b43f573a9a431e6b21c4d9ebdf157ab4ace1f2a33145084d19084a747cd2b5",
+    "cursors.py": "e95f7e954dc5bdefcb2a612f8350fae96fc75593061ac8ab093330fe18bba65d",
+    "metric_registry.py": "28d52e3d35398fb2c764b27a0a249c2f712cea40262b9e4bfe29b603993535b1"
+  },
+  "web_parser_sha256": "1603f5f80c11d406ad7ed6d6b3b3b7a90d0bc05400e47888753e41fe8f3fc493",
+  "script_sha256": "0f97376ed83afaf0359cb6aeec7a005936b3c6e57712d52eb74464bb3a4be4d6",
+  "fixture_sha256": {
+    "current.json": "71a969d78ac7181cde128a982ad60897e8f4b01806baf26771998e9f27b1d38f",
+    "history.json": "760a965806dab135bdac3206a4242054fda96e18ace8efe21ebb4978d0d38ae7"
+  },
+  "node_version": "v24.22.1",
+  "browser_or_build_executed": false,
+  "cases": [
+    {
+      "case": "current_defaults",
+      "schema": "currentSchema",
+      "expected": true,
+      "accepted": true,
+      "payload_sha256": "d0f2c2d3bed05536faf483635ef18d2fc2b1bd5d86fa3a4a87d71c9cb1d1a7c2"
+    },
+    {
+      "case": "cached_stale_source_times",
+      "schema": "currentSchema",
+      "expected": true,
+      "accepted": true,
+      "payload_sha256": "08d9376386af95cc16359d9f144c9870740be1d5bd96e196331a78e7163b051b"
+    },
+    {
+      "case": "raw_history_zero_resolution",
+      "schema": "historySchema",
+      "expected": true,
+      "accepted": true,
+      "payload_sha256": "436bed147882839cc76147770c547a1ed878aade1f36317ce5215b6fa493babb"
+    },
+    {
+      "case": "registry_with_conversions",
+      "schema": "metricRegistrySchema",
+      "expected": true,
+      "accepted": true,
+      "payload_sha256": "c8a374699e926eb38e06a634142e4495a9f8d0be64971e240c8062acd78c74eb"
+    },
+    {
+      "case": "reject_binned_raw_history",
+      "schema": "historySchema",
+      "expected": false,
+      "accepted": false,
+      "payload_sha256": "470e981f53061e23f0237f5c52f352a688e7cc0f7cedcd6d4af3553ffc2822e0"
+    },
+    {
+      "case": "reject_registry_without_recipes",
+      "schema": "metricRegistrySchema",
+      "expected": false,
+      "accepted": false,
+      "payload_sha256": "06e878f3b1964a8598f8f215a4263e651d3679674b43cb97d12e07db7d726dad"
+    }
+  ],
+  "controls_are_not_production_payloads": true
+}

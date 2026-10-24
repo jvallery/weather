@@ -1,0 +1,51 @@
+{
+  "generated_at": "2026-11-01T08:15:00Z",
+  "interval": {
+    "start": "2026-11-01T06:00:00Z",
+    "end": "2026-11-01T10:00:00Z"
+  },
+  "resolution_seconds": 0,
+  "aggregation": "observed",
+  "points": [
+    {
+      "observed_at": "2026-11-01T07:15:00Z",
+      "received_at": "2026-11-01T07:15:00Z",
+      "metric": "temperature",
+      "value": 0,
+      "unit": "degC",
+      "quality": "valid",
+      "evidence_id": "synthetic-point-0",
+      "reason": null,
+      "support_interval": null
+    },
+    {
+      "observed_at": "2026-11-01T07:50:00Z",
+      "received_at": "2026-11-01T07:50:00Z",
+      "metric": "temperature",
+      "value": null,
+      "unit": "degC",
+      "quality": "missing",
+      "evidence_id": "synthetic-point-1",
+      "reason": "Synthetic fixture: no support",
+      "support_interval": null
+    },
+    {
+      "observed_at": "2026-11-01T08:15:00Z",
+      "received_at": "2026-11-01T08:15:00Z",
+      "metric": "temperature",
+      "value": 2,
+      "unit": "degC",
+      "quality": "valid",
+      "evidence_id": "synthetic-point-2",
+      "reason": null,
+      "support_interval": null
+    }
+  ],
+  "gaps": [
+    {
+      "start": "2026-11-01T07:45:00Z",
+      "end": "2026-11-01T08:00:00Z"
+    }
+  ],
+  "next_cursor": null
+}

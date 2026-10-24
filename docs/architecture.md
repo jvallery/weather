@@ -1,6 +1,6 @@
 # Weather architecture
 
-**Status:** authoritative design summary as of 2026-10-24 ([simplification record](decisions/2026-10-24-simplification.md)). Required outcomes: [requirements](requirements.md) R01–R38, as amended by that record. Live state: nothing is deployed yet. GitHub issues and their native dependencies are the work plan.
+**Status:** authoritative design summary as of 2026-10-24 ([simplification record](decisions/2026-10-24-simplification.md)). Required outcomes: [requirements](requirements.md) R01–R38, as amended by that record. Current delivery and live acceptance evidence are tracked in [WX-47 (#48)](https://github.com/jvallery/weather/issues/48). GitHub issues and their native dependencies are the work plan.
 
 ## What it is
 

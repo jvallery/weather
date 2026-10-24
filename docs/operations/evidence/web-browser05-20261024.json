@@ -1,0 +1,189 @@
+{
+  "schema": "weather.web-fixture-qualification/v1",
+  "source_revision": "56a8dd41c03684462a8777a93f63b186f443fbb6",
+  "workflow_name": "weather-web-browser-20261024-05",
+  "workflow_uid": "385e6d4a-67fa-4c28-a76e-8f0ca292a755",
+  "pod_uid": "e2a0ed97-d67e-4325-af17-9e86390fa328",
+  "template": "repo-validate-568985cdbf6b4e3f",
+  "template_uid": "09f8d5e5-68bf-484e-b5a3-1181d1a1ee50",
+  "tooling_image": "registry.vallery.net/jvallery/weather-ci@sha256:f4fceab3222d3817baf8def870970981eb88a853cf42f2dc36efcec779f46673",
+  "workflow_phase": "Succeeded",
+  "check_exit_code": 0,
+  "stats": {
+    "startTime": "2026-10-24T15:17:15.191Z",
+    "duration": 236861.94999999998,
+    "expected": 96,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "operator_capture": {
+    "operation_id": "weather-web-browser-20261024-05",
+    "manifest_sha256": "aff7010cd7070d5a37364d9d442c3c46942c26cc508a75bb08495b0f360d9475",
+    "status": "acknowledged",
+    "custody": "ROOT copied and verified the ready manifest before acknowledging; external readback is operator evidence"
+  },
+  "custody_directory": "/Users/jason/maintenance/weather-slice1/browser05-attempt0-evidence",
+  "ready_sha256": "aff7010cd7070d5a37364d9d442c3c46942c26cc508a75bb08495b0f360d9475",
+  "final_report_sha256": "87192dc7f1bf5a3c4359becf50a3ab9d1ee11eedecc4c43810dd0653705a846a",
+  "playwright_results_sha256": "7414352b4628b17152227385e137cd9d8f3bc6a708ad4e3fc3ab590d06b7d896",
+  "screenshots": [
+    {
+      "path": "artifacts/synthetic-about-1440-chromium.png",
+      "bytes": 130315,
+      "sha256": "c7227962e85a2b736811172b088235957fe627f7ee3e5ee9bb99a52c11ece6f7"
+    },
+    {
+      "path": "artifacts/synthetic-about-1440-firefox.png",
+      "bytes": 249063,
+      "sha256": "9f49e40de227ec3b99bc4ce4fc0950ba15481cdf90c7ab9ecd5517c0cfc4e452"
+    },
+    {
+      "path": "artifacts/synthetic-about-1440-webkit.png",
+      "bytes": 579835,
+      "sha256": "6b4a82827ea0522e0459fe2a8dacba39eb34176e6cafde6cc4b6d1036f0b8831"
+    },
+    {
+      "path": "artifacts/synthetic-about-320-chromium.png",
+      "bytes": 122965,
+      "sha256": "bd6b5631617908725de65b19c927908d503c7b67f0716ee173cee41c01b53147"
+    },
+    {
+      "path": "artifacts/synthetic-about-320-firefox.png",
+      "bytes": 232934,
+      "sha256": "dc2897a3180d352b39eadbcf1262ba8a31ba7852e7b88d2d1cc6be5528e9e1ae"
+    },
+    {
+      "path": "artifacts/synthetic-about-320-webkit.png",
+      "bytes": 665951,
+      "sha256": "29e4152f7bba8ae5bd143def71a3f0b419185003ae7b519c6dcc0a02ab9867d3"
+    },
+    {
+      "path": "artifacts/synthetic-about-768-chromium.png",
+      "bytes": 124479,
+      "sha256": "4c6c18dc1fc154512a966ea2d485272e6bbcfe6655fd0a2b51e5c4212d7f5c7a"
+    },
+    {
+      "path": "artifacts/synthetic-about-768-firefox.png",
+      "bytes": 233957,
+      "sha256": "0d79f4eebe86ffa5c996c484b758a8e3f7c02db135c61b1060b26e04e79c236d"
+    },
+    {
+      "path": "artifacts/synthetic-about-768-webkit.png",
+      "bytes": 540491,
+      "sha256": "34988787fa3ed262bc6668d6e9c69f7b9eebc2130df3adfb756f7f1809e9ff96"
+    },
+    {
+      "path": "artifacts/synthetic-history-1440-chromium.png",
+      "bytes": 117845,
+      "sha256": "eda4bdcfef8ffa4eb3f9df59aa9c5cbc3f36bec12e4468dc91418c54f75e734d"
+    },
+    {
+      "path": "artifacts/synthetic-history-1440-firefox.png",
+      "bytes": 200752,
+      "sha256": "d072d7d4cfd5c41a57d391680f2dac473462e22128c1c5ae20f28ffeda7a9475"
+    },
+    {
+      "path": "artifacts/synthetic-history-1440-webkit.png",
+      "bytes": 460144,
+      "sha256": "80b28feaf356dcc9ff5c67f685eda25790c3af24861203ac39aacd3620fc071c"
+    },
+    {
+      "path": "artifacts/synthetic-history-320-chromium.png",
+      "bytes": 117566,
+      "sha256": "ea1d38390854505cc4439a9da15ab93d8758c427bb50059c194b359d7152f1d9"
+    },
+    {
+      "path": "artifacts/synthetic-history-320-firefox.png",
+      "bytes": 181850,
+      "sha256": "427e5ddb1f7ecdb131c83e152c9e1d29b84515f9f08b4b2215ef85870130814c"
+    },
+    {
+      "path": "artifacts/synthetic-history-320-webkit.png",
+      "bytes": 468720,
+      "sha256": "d5150324731e84b7ad6480755f150015b036bd2daa794abc801781d228b3942d"
+    },
+    {
+      "path": "artifacts/synthetic-history-768-chromium.png",
+      "bytes": 121087,
+      "sha256": "34093ab2eb0b8051a794c25f63d5e23122c9df8a837badbee846357faff8dc15"
+    },
+    {
+      "path": "artifacts/synthetic-history-768-firefox.png",
+      "bytes": 196874,
+      "sha256": "072e5a1e068ae5b2e1170eb20b950d7d37d48e69c3cdbf5cc97b8bb7937566eb"
+    },
+    {
+      "path": "artifacts/synthetic-history-768-webkit.png",
+      "bytes": 460446,
+      "sha256": "c02474a4f672e1df8f24a70fbfa8976a8ef3e42c4a283a2b36ac395a7244308c"
+    },
+    {
+      "path": "artifacts/synthetic-today-1440-chromium.png",
+      "bytes": 85645,
+      "sha256": "0b6bf7685078d18003a8eac73b3d9f5f52a1ab44a6be073ebf96fc030e76015b"
+    },
+    {
+      "path": "artifacts/synthetic-today-1440-firefox.png",
+      "bytes": 142979,
+      "sha256": "38c69beae927b6850f9e14de6477cde62477c25d665ea759b91b297f3880c87b"
+    },
+    {
+      "path": "artifacts/synthetic-today-1440-webkit.png",
+      "bytes": 318518,
+      "sha256": "9eae4a555f7683269baf19317afe97c40dd63490b59ea1993301ca15ac8f995d"
+    },
+    {
+      "path": "artifacts/synthetic-today-320-chromium.png",
+      "bytes": 118949,
+      "sha256": "25666139b6f86a29edd90b6cac2af82498e9b7e838ed5a73eff0b4ce1dcfc672"
+    },
+    {
+      "path": "artifacts/synthetic-today-320-firefox.png",
+      "bytes": 177337,
+      "sha256": "975577d939b399da57d94f6cbb4138abdf0516e4e8029323f32ad5dec5bbdb0a"
+    },
+    {
+      "path": "artifacts/synthetic-today-320-webkit.png",
+      "bytes": 436158,
+      "sha256": "d09832c5e982cb4e8cd30146242fbb73f0e7a1af2b834c661dadc7a5299644a6"
+    },
+    {
+      "path": "artifacts/synthetic-today-768-chromium.png",
+      "bytes": 100227,
+      "sha256": "d7a5d348503c7877ec2b350cd5505012d34d90ab41f0c5313a14d78e04a6f318"
+    },
+    {
+      "path": "artifacts/synthetic-today-768-firefox.png",
+      "bytes": 158499,
+      "sha256": "8d931567f4b84773847d7fa2ee00404eacae7b470a6a454bf57b560df0c362e6"
+    },
+    {
+      "path": "artifacts/synthetic-today-768-webkit.png",
+      "bytes": 365102,
+      "sha256": "f5e361b9ef8e4d649f2b8d8a82ffe047ca4ab9b71249ba66e80477b426af2e51"
+    }
+  ],
+  "visual_review": {
+    "reviewed": 27,
+    "views": [
+      "Today",
+      "About",
+      "history"
+    ],
+    "engines": [
+      "chromium",
+      "webkit",
+      "firefox"
+    ],
+    "widths": [
+      320,
+      768,
+      1440
+    ],
+    "result": "history_edge_padding_followup_required",
+    "finding": "Readable two-line timestamps resolve overlap; the final right-edge tick is clipped at 768px. Other reviewed layouts are readable and contain the expected honest states. Final acceptance requires follow-up screenshots."
+  },
+  "production_promoted": false,
+  "known_engine_control": "WebKit27.2 native select false style-src-attr events; exact count verified against empty/native/injected-style controls in all three engines."
+}
