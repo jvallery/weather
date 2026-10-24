@@ -1,0 +1,28 @@
+{
+  "schema": "weather-app-build/v1",
+  "image": "registry.vallery.net/jvallery/weather-app@sha256:e4454a5a74c405d923e0a8d8c3c1978cf594b70be46438fc06ee7883ac23c5ca",
+  "source_revision": "58fa99581cf212122f65349241f183e1cf5fec9b",
+  "resolved_tree": "4fd695d3779de6e6aed455449f27dc0f89ae2df4",
+  "dockerfile_sha256": "sha256:6e40939f22bb00508c99fb31d2ac12abea2e7b6f0dc2f439fe83e5217f52a8f6",
+  "workflow": {
+    "name": "repo-build-weather-app-58fa99581cf2-push",
+    "uid": "2c9144f3-e0b5-436a-bfbc-75afe8e6b31a",
+    "phase": "Succeeded",
+    "startedAt": "2026-10-24T14:28:05Z",
+    "finishedAt": "2026-10-24T14:39:12Z"
+  },
+  "normal_main_push_build": true,
+  "duplicate_workload_submitted": false,
+  "registry_admission_guard_exit_code": 0,
+  "registry_pre_publish_guard_exit_code": 0,
+  "captured_inputs_equal_after_test": true,
+  "captured_input_digest": "sha256:dd12e8dd7b8d450d0c951ec428228c3b26c498a1d8b5613a1779f703fc15db72",
+  "runtime_schema_and_migrations": {
+    "app/weather/db/schema_v1.py": "2d74afbfe91f9ab9d56b6d449574807e714494b4eb098812a8845c997a31e2af",
+    "app/weather/db/ddl_v1.py": "f079bbc3d011fdd25321dbec56f225601c84508944ef5c88ea2578941298f75b",
+    "app/migrations/versions/0000_namespace.py": "d592b19cb13d4e83c9dc79d84c4398896e6c783f2c34eee70459aa069889a0ca",
+    "app/migrations/versions/0001_schema.py": "a97a788cb0a4c199c77a0ca9f9b5465623ec9ea3e514d197ae51d311a94609dc"
+  },
+  "web_digest_unchanged": "sha256:0761f4ebf5f5cf73a4d261446b296fa77c1a3fb7e755585306c218a6e70764bd",
+  "database_resources_excluded": true
+}
