@@ -1,0 +1,98 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: weather-pg
+  namespace: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '-6'
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: weather-pg
+  policyTypes: [Ingress, Egress]
+  ingress:
+    # CNPG instance replication and plugin communication.
+    - from:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: weather-pg
+      ports:
+        - {port: 5432, protocol: TCP}
+        - {port: 8000, protocol: TCP}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cnpg-system
+      ports:
+        - {port: 5432, protocol: TCP}
+        - {port: 8000, protocol: TCP}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+      ports:
+        - {port: 9187, protocol: TCP}
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: weather.vallery.net/database-role
+                operator: In
+                values: [migrator, ingest, worker, api, editor]
+      ports:
+        - {port: 5432, protocol: TCP}
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: weather-pg
+      ports:
+        - {port: 5432, protocol: TCP}
+        - {port: 8000, protocol: TCP}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - {port: 53, protocol: UDP}
+        - {port: 53, protocol: TCP}
+    # B2 has dynamic addresses; the instance manager also requires the
+    # Kubernetes API. Native NetworkPolicy has no FQDN selector. Admit HTTPS
+    # without publishing private API addresses; provider and Kubernetes RBAC
+    # restrict each identity's authority.
+    - ports:
+        - {port: 443, protocol: TCP}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: weather-database-clients
+  namespace: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '-6'
+spec:
+  podSelector:
+    matchExpressions:
+      - key: weather.vallery.net/database-role
+        operator: In
+        values: [migrator, ingest, worker, api, editor]
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: weather-pg
+      ports:
+        - {port: 5432, protocol: TCP}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - {port: 53, protocol: UDP}
+        - {port: 53, protocol: TCP}

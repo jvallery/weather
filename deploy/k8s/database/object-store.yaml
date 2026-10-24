@@ -1,0 +1,39 @@
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: weather-pg-b2
+  namespace: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '-6'
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  configuration:
+    destinationPath: s3://weather-db-vallery/cnpg
+    endpointURL: https://s3.us-west-000.backblazeb2.com
+    s3Credentials:
+      accessKeyId:
+        name: weather-pg-backup-b2-writer
+        key: AWS_ACCESS_KEY_ID
+      secretAccessKey:
+        name: weather-pg-backup-b2-writer
+        key: AWS_SECRET_ACCESS_KEY
+      region:
+        name: weather-pg-backup-b2-writer
+        key: AWS_REGION
+    data:
+      compression: gzip
+      jobs: 1
+    wal:
+      compression: gzip
+      maxParallel: 2
+  # No retentionPolicy: the application identity cannot permanently delete.
+  # B2 cnpg/ lifecycle owns the 30-day PITR retention window.
+  instanceSidecarConfiguration:
+    logLevel: info
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: '1'
+        memory: 512Mi
