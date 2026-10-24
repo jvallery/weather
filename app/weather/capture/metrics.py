@@ -23,7 +23,6 @@ RESULTS = (
     "truncated",
     "jpeg_markers",
     "geometry",
-    "decode_error",
     "overdue",
     "backoff",
     "staging_full",
@@ -37,15 +36,14 @@ class CaptureMetrics:
         self.health, self.camera = health, camera
         self.registry = CollectorRegistry()
         self.last_good_ns: int | None = None
-        self.attempts = {
-            result: Counter(
-                f"weather_capture_attempts_{result}_total",
-                "Scheduled capture outcomes",
-                ["camera"],
-                registry=self.registry,
-            ).labels(camera)
-            for result in RESULTS
-        }
+        attempts = Counter(
+            "weather_capture_attempts_total",
+            "Scheduled capture outcomes",
+            ["camera", "result"],
+            registry=self.registry,
+        )
+        # Every bounded result is exported from start-up, so rate() sees the first increment.
+        self.attempts = {result: attempts.labels(camera, result) for result in RESULTS}
         self.age = Gauge(
             "weather_capture_last_good_frame_age_seconds",
             "Age; -1 means no successful capture",
