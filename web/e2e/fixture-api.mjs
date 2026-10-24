@@ -58,8 +58,8 @@ createServer(async (req, res) => {
     state = JSON.parse(body || "{}"); serial = 0; return json(res, { ok: true });
   }
   if (url.pathname === "/healthz") return json(res, { ok: true });
+  if (state.apiUnavailable && url.pathname.startsWith("/api/v1/weather/")) return json(res, { code: "synthetic-unavailable" }, 503);
   if (url.pathname === "/api/v1/weather/current") {
-    if (state.apiUnavailable) return json(res, { code: "synthetic-unavailable" }, 503);
     const value = structuredClone(current); const now = Date.now();
     value.generated_at = new Date(now).toISOString();
     for (const metric of value.metrics) if (metric.value !== null) {

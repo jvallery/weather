@@ -100,6 +100,9 @@ test("public client assets contain no private upstream or source maps", async ({
 test("degraded SSR is observable and public errors stay sanitized", async ({ page, request }) => {
   await request.post("http://localhost:4174/__control", { data: { apiUnavailable: true } });
   await page.goto("/"); await expect(page.getByText(/API unavailable/)).toBeVisible();
+  await page.goto("/weather/history/"); await expect(page.getByText(/History API unavailable/)).toBeVisible();
+  await expect(page.getByText("Export is unavailable until observations can be read.")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Export this bounded observation page/ })).toHaveCount(0);
   const metrics = await request.get("http://localhost:9175/metrics"); expect(metrics.ok()).toBe(true);
   expect(await metrics.text()).toMatch(/weather_web_api_requests_total\{route="\/api\/v1\/weather\/current",result="http_error"\} [1-9]/);
   expect((await request.get("/metrics")).status()).toBe(404);
