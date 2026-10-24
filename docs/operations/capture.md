@@ -62,10 +62,12 @@ Validation: `scripts/ci.sh lint typecheck unit` covers small pure checks. The
 Digest, five-second trickle, nonoverlap, malformed/native JPEG and body-cap cases.
 Never run those HTTP/latency/decode tests or image builds on the Mac.
 
-The selected full decoder is Pillow 13.0.0; its application lock integration follows
-the prerequisite scaffold merge and must pass before decoder execution.
-The [upstream release](https://pypi.org/project/pillow/13.0.0/) supports the pinned
-Python runtime; [its license](https://github.com/python-pillow/Pillow/blob/13.0.0/LICENSE)
-is MIT-CMU and its copyright/permission notice must remain in the distributed
-wheel. Header checks are followed by `Image.load()`; truncated-image tolerance is
-never enabled. No image resizing, re-encoding or EXIF mutation occurs at capture.
+The selected full decoder is `simplejpeg` 1.9.0 (MIT), using its bundled
+libjpeg-turbo with `strict=True`; dependency-lock integration follows the prerequisite
+scaffold merge and must pass before execution. The [upstream contract](https://github.com/jfolz/simplejpeg#decode_jpeg)
+explicitly rejects recoverable codec errors in strict mode. Set the commissioned
+container's `OPENBLAS_NUM_THREADS=1` and `OMP_NUM_THREADS=1` to bound the NumPy
+runtime; no matrix/BLAS workload is part of capture. Original bytes are never
+resized, re-encoded or metadata-mutated. Full decoded dimensions must still match
+the mounted native geometry. The corruption fixture preserves SOI/EOI/SOF/SOS
+headers while damaging the entropy stream; marker checks alone cannot pass it.

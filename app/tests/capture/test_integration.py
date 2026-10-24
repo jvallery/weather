@@ -3,7 +3,6 @@
 
 import asyncio
 import hashlib
-import io
 import ipaddress
 import os
 import time
@@ -30,11 +29,12 @@ LOOPBACK = str(ipaddress.IPv4Address(0x7F000001))
 
 
 def jpeg() -> bytes:
-    from PIL import Image
+    import numpy as np
+    from simplejpeg import encode_jpeg
 
-    output = io.BytesIO()
-    Image.new("RGB", (32, 16), color=(25, 80, 180)).save(output, "JPEG")
-    return output.getvalue()
+    pixels = np.empty((16, 32, 3), dtype=np.uint8)
+    pixels[:] = (25, 80, 180)
+    return bytes(encode_jpeg(pixels, colorspace="RGB", colorsubsampling="420", fastdct=False))
 
 
 class FakeCamera:
@@ -224,7 +224,9 @@ def test_bad_responses_rejected_and_recorded(tmp_path: Path, kind: str, expected
             camera.body = body[: offset + 5] + b"\x00\x20" + body[offset + 7 :]
         elif kind == "corrupt_scan":
             offset = body.index(b"\xff\xda")
-            camera.body = body[:offset] + b"\xff\xda\x00\x02" + b"\x00" * 32 + b"\xff\xd9"
+            scan_start = offset + 2 + int.from_bytes(body[offset + 2 : offset + 4])
+            # All marker/header bytes remain intact; the entropy stream is truncated.
+            camera.body = body[:scan_start] + body[scan_start : scan_start + 1] + b"\xff\xd9"
         else:
             camera.unknown_oversized = True
         async with camera.running():
