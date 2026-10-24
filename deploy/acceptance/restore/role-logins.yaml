@@ -24,9 +24,10 @@ spec:
       restartPolicy: Never
       securityContext:
         runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
+        # Use the pinned PostgreSQL image's existing non-root account.
+        runAsUser: 26
+        runAsGroup: 26
+        fsGroup: 26
         seccompProfile:
           type: RuntimeDefault
       containers:
