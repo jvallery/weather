@@ -66,10 +66,16 @@ The `WEATHER_CI_` prefix is reserved for the check runner and its pinned tools.
 
 After both commissioned runtime digests exist, the registry-owned
 `supply-chain-evidence` check runs `scripts/ci-evidence.sh` through the same
-pinned fleet bootstrap. It serially scans only the two exact Weather runtime
-pins and stages `artifacts/supply-chain/sbom-app.json`, `sbom-web.json` and
+pinned fleet bootstrap. The fixed platform init authenticates with the existing read-only registry
+identity and stages two hash-verified OCI layouts on a separate read-only
+`/ci-input` volume. The candidate receives no registry credential. It checks the
+input checkout revision, exact image pins, OCI manifest/configuration digest
+chain, Linux amd64 selection and layer descriptors before serial Syft scans,
+then stages `artifacts/supply-chain/sbom-app.json`, `sbom-web.json` and
 `licenses.json`. Mutable tags, another repository's image, duplicate pins,
-symlink inputs and JSON files larger than 16 MiB are rejected. The script
+symlink inputs, duplicate JSON keys and output JSON files larger than 16 MiB
+are rejected. OCI metadata files are bounded to 1 MiB. Fixed input paths come
+from the platform contract, never a caller-selected path. The script
 refuses to run image scans on the Mac, including when the CI flag is set.
 
 The platform's fixed Weather evidence check must archive those three files
