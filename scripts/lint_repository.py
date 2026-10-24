@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def has_spdx(file: Path) -> bool:
-    pattern = r"^\s*(?:#|//|/\*|<!--)\s*SPDX-License-Identifier: MIT(?:\s*\*/|\s*-->)?\s*$"
+    pattern = r"^\s*(?:#|//|/\*|<!--|--)\s*SPDX-License-Identifier: MIT(?:\s*\*/|\s*-->)?\s*$"
     return any(re.fullmatch(pattern, line) for line in file.read_text().splitlines()[:5])
 
 
