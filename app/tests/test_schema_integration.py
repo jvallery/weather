@@ -6,6 +6,8 @@ Run only through scripts/ci_integration.sh in the approved fleet validation imag
 
 import asyncio
 import hashlib
+import importlib
+import importlib.util
 import json
 import os
 from datetime import UTC, date, datetime, timedelta
@@ -264,8 +266,16 @@ def test_day_helper_dst_and_idempotence() -> None:
 
 
 def test_sql_hours_match_the_pinned_python_time_model_when_installed() -> None:
-    calendar = pytest.importorskip("weather.timemodel.calendar")
-    site = pytest.importorskip("weather.timemodel.site")
+    try:
+        available = importlib.util.find_spec("weather.timemodel.calendar")
+    except ModuleNotFoundError as error:
+        if error.name != "weather.timemodel":
+            raise
+        available = None
+    if available is None:
+        pytest.skip("Python time-model implementation has not merged")
+    calendar = importlib.import_module("weather.timemodel.calendar")
+    site = importlib.import_module("weather.timemodel.site")
 
     async def check() -> None:
         db = engine("weather_worker")
