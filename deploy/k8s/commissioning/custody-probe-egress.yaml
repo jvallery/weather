@@ -1,0 +1,33 @@
+# Excluded from the foundation. Create only for the bounded #1107 restore probe.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: weather-custody-probe-egress
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/managed-by: weather-custody-probe
+      estate.vallery.net/disposable: 'true'
+    matchExpressions:
+      - key: weather.vallery.net/operation
+        operator: Exists
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}
+    # B2 addresses change. Reuse the isolated restore pattern: TLS only,
+    # provider URL allowlist + certificate verification + scoped reader key.
+    # Tokenless object probes require no TCP 6443 API endpoint exception.
+    - ports:
+        - {protocol: TCP, port: 443}
