@@ -97,34 +97,39 @@ Search uses [D12's selected lexical and request policy](../decisions/D12-search-
 
 ## HTTP transport and caches
 
-GET/HEAD authorize before ETag evaluation. HEAD has the corresponding authorized representation headers but no body; ignore Range on HEAD. GET supports one closed, open-ended or suffix byte range and correct 206/Content-Range/length. Unsatisfiable ranges return 416 with total representation length. Deliberately reject multiple ranges with bounded 400 handling. If-Range mismatch yields the full authorized representation. Strong ETags bind exact immutable bytes.
+### Media origin (implemented, #20)
 
-### Selected precondition and range policy
+The `api` serves `/media/{asset_id}` and `/downloads/{video_id}/native`; #39's `weather-preview` reuses the same origin code for previews. Each path admits exactly one canonical lowercase UUID; any other spelling under those prefixes (escapes, dot segments, extra segments, object keys) is a denial. No caller-supplied key, path or URL is ever used, and there are no redirects, presigned URLs or listings.
 
-Apply [RFC 9110 §13.2.2](https://www.rfc-editor.org/rfc/rfc9110.html#section-13.2.2) after eligibility. Evaluate If-Match first (failure 412); otherwise If-Unmodified-Since (failure 412). Then evaluate If-None-Match (match 304 for GET/HEAD); otherwise If-Modified-Since (not modified 304). Strong comparison applies to If-Match; weak comparison to If-None-Match. Invalid dates are ignored. Publish a stable Last-Modified timestamp for the representation, never request time.
+Authorization runs at request time for every GET, HEAD and range against the committed catalog on the primary, with the database clock (P8). A media ID serves only a row of `public_api.assets`: a public class (video rendition, poster, keogram, still, sidecar) that is available, not withdrawn and has `published_at` and `public_not_before` at or before now. A download serves only the native rendition of a video `public_api.videos` lists with media. Nothing about the decision is cached, so a withdrawal takes effect on the next request. There are no mid-stream authorization leases: a response that started may finish.
 
-Only a remaining GET 200 candidate evaluates Range/If-Range. A weak, invalid or nonmatching If-Range falls back to full 200; a date is usable only as a strong validator. Unknown range units are ignored. Weather selects 400 for malformed byte syntax, reversed endpoints or multiple byte ranges, and 416 for a valid unsatisfiable single range (including zero-length suffix). Clamp an oversized end to the final byte; an oversized positive suffix returns the whole representation as 206. HEAD ignores Range/If-Range entirely, including malformed values.
+Every denial (unknown, embargoed, unpublished, withdrawn, original, wrong class, malformed path) is the same 404 problem document, with the same headers and no ETag, over GET, HEAD and Range. A catalog or store failure before the headers is 503 with `Retry-After`, no media headers and no body. After the headers, a failure aborts the connection; nothing is appended to media bytes.
 
-Weather-specific acceptance examples (synthetic 100-byte asset, eligible unless stated):
+An eligible response carries a strong ETag (the quoted catalog SHA-256), `Accept-Ranges: bytes`, the exact Content-Length, the catalog MIME type, `Cache-Control: no-store, no-transform` and `X-Content-Type-Options: nosniff`. Downloads add `Content-Disposition: attachment; filename="weather-<camera>-<cycle-date>-<segment>-native.mp4"` for full and partial responses. There is no Last-Modified.
+
+### Range policy
+
+GET supports one closed, open-ended or suffix byte range with 206 and Content-Range. A weak, dated or nonmatching If-Range serves the full 200; only the exact strong ETag honours Range. Unknown range units are ignored. Malformed byte syntax, reversed endpoints or multiple ranges are 400. A valid range that starts at or past the end, or `bytes=-0`, is 416 with `Content-Range: bytes */length`. An oversized end is clamped to the last byte; an oversized suffix returns the whole representation as 206. HEAD ignores Range and If-Range entirely, including malformed values, and has no body. If-Match, If-None-Match, If-Modified-Since and If-Unmodified-Since are ignored: responses are `no-store`, so 304 and 412 would serve no purpose.
+
+Examples (100-byte eligible asset):
 
 | Input | Expected |
 |---|---|
-| HEAD with `bytes=100-` or multiple ranges | 200, full length 100, no body/Content-Range |
-| GET `bytes=0-0` | 206, bytes 0–0/100, length 1 |
-| GET `bytes=90-999` | 206, bytes 90–99/100, length 10 |
-| GET `bytes=-200` | 206, bytes 0–99/100, length 100 |
+| HEAD with `bytes=100-` or multiple ranges | 200, length 100, no body or Content-Range |
+| GET `bytes=0-0` | 206, `bytes 0-0/100`, length 1 |
+| GET `bytes=90-999` | 206, `bytes 90-99/100`, length 10 |
+| GET `bytes=-200` | 206, `bytes 0-99/100`, length 100 |
 | GET `bytes=100-` or `bytes=-0` | 416, `Content-Range: bytes */100` |
 | GET reversed endpoints or two byte ranges | 400, no media body |
-| Matching If-None-Match plus unsatisfiable Range | 304, no body/Content-Range |
-| Failed If-Match plus matching If-None-Match | 412, no media body |
+| GET with matching If-None-Match | 200, full body |
 | Nonmatching If-Range plus unsatisfiable Range | 200, full length 100 |
-| Withdrawn/embargoed asset plus matching validators | Existing eligibility denial; never 304/206 or object metadata |
+| Withdrawn or embargoed asset, any validators or range | The 404 denial |
 
-These are planned behavioral cases, not executed application tests. Bound aggregate header size and integer parsing before evaluating user input; never allocate from a supplied offset. Generic header-size rejection precedes semantic handling. 304 omits Content-Length and carries the applicable ETag/cache policy. Errors use no-store; HEAD suppresses error bodies too. A 412 is not an authorization denial and must not expose a private representation. Pin catalog visibility and byte revision consistently through response start; D14 still owns post-start withdrawal and cache bounds.
+Integer parsing is bounded and nothing is allocated from a supplied offset. Header size is bounded by the server before any semantic handling. Streams are bounded per pod and per visitor; each stream holds one upstream chunk and waits for the client, a disconnect cancels the upstream read, and a client that stops reading for 60 s is cut off.
 
-Downloads resolve the native asset through the same authorization and return attachment with sanitized filename for both full and partial content. No redirect leaves the Weather domain. Media buffering is bounded independently of object size.
+### Caches
 
-Current/catalog responses may use qualified short cache/conditional requests; private editor/raw routes never do. Image embargo/expiry/withdrawal checks occur before serving any alias, thumbnail, range or HEAD. A previously public cached image cannot be recalled by a database tombstone: D14 selects an initial five-second maximum origin authorization lease and no-store media/pointer responses with edge bypass. Apply its in-flight renewal/cancellation contract; optional media caching requires a separately qualified exposure/invalidation policy. Cloudflare Tunnel is the selected transport.
+Media bytes, downloads, previews and preview pointers are `no-store`, and shared edge caching is bypassed (D14's initial cache policy), including errors. Cloudflare caching is not pursued (R25); a later cache would need its own exposure and invalidation design. Current/catalog responses may use short, qualified caching; private editor and raw routes never do. Already downloaded bytes cannot be recalled.
 
 ## Acceptance ownership
 
@@ -155,7 +160,7 @@ The subsequent [hash-bound validation receipt](../archive/planning-2026-10/contr
 
 ## Preview expiry clarification
 
-`Image.expires_at` is logical derivative expiry, not current-preview freshness or permission to delete storage. The [preview policy contract](preview-policy-contract.md) distinguishes earliest publication, conservative current-display age and retention/recovery. A latest-preview response above its current-age cutoff is unavailable with no assets even while a historical direct asset is still eligible. Clients must age already-received current previews during failed polling. Origin authorization checks logical expiry/withdrawal before conditional 304, HEAD and range responses.
+`Image.expires_at` is logical derivative expiry, not current-preview freshness or permission to delete storage. The [preview policy contract](preview-policy-contract.md) distinguishes earliest publication, conservative current-display age and retention/recovery. A latest-preview response above its current-age cutoff is unavailable with no assets even while a historical direct asset is still eligible. Clients must age already-received current previews during failed polling. Origin authorization checks logical expiry/withdrawal before every GET, HEAD and range response.
 
 ## Exact time ownership
 

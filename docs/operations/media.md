@@ -15,7 +15,7 @@ below. Live use starts with the pipeline Deployments (#15) and the bucket keys
 
 Object keys are `<class>/<sha256>.<ext>`, where the hash is computed locally
 from the bytes, never taken from an ETag. Public URLs are same-origin
-`/media/{asset_id}`; no bucket name or key leaves the service.
+`/media/{asset_id}` (see [Serve](#serve)); no bucket name or key leaves the service.
 
 Each bucket has its own key. The pipeline reads them from
 `$GARAGE_CREDENTIAL_DIRECTORY/<bucket>/access_key_id` and `secret_access_key`
@@ -111,6 +111,59 @@ One transaction writes the tombstones, a `withdrawal` audit row and a
 The API then lists the video with `withdrawn: true`, no media URLs and
 `keogram_state: withdrawn`. The bytes remain in Garage; hard purge is #19.
 Withdrawing again is a no-op. There is no un-withdraw: the database refuses it.
+
+## Serve
+
+The `api` streams published media itself (#20); code in `app/weather/media/`
+(`origin.py` is shared with #39's `weather-preview`). Contract:
+[api-contract](../contracts/api-contract.md#media-origin-implemented-20).
+
+- **Routes.** `/media/{asset_id}` serves any row of `public_api.assets`;
+  `/downloads/{video_id}/native` serves a listed video's native rendition as
+  an attachment named `weather-<camera>-<cycle-date>-<segment>-native.mp4`.
+  `deploy/k8s/ingress.yaml` sends both prefixes to `api` with the per-visitor
+  rate limit and `weather-media-in-flight` (6 open requests per visitor).
+- **Eligibility.** Checked on every GET and HEAD against the primary with the
+  database clock, never cached. A withdrawal (above) answers 404 from the
+  next request. Every denial is the same 404 with no ETag.
+- **Bytes.** The object key is rebuilt from the row's content address and read
+  from `weather-media` with the read-only key, Secret `weather-media-s3-reader`,
+  mounted optionally at `/var/run/weather-garage/weather-media`. Egress is
+  NetworkPolicy `api-garage-egress`. Without the Secret the api still starts,
+  HEAD answers from the catalog and GET answers 503; restart `deploy/api` after
+  the Secret appears.
+- **Limits.** 32 streams per pod (503 before any body beyond that), one 64 KiB
+  upstream chunk in flight per stream, a client that stops reading for 60 s is
+  cut off, and a disconnect closes the Garage read at once. A Garage error
+  before the headers is 503 `Retry-After: 5`; after them the connection is cut
+  short of its Content-Length.
+
+```sh
+id=<asset_id>
+curl -sI "https://weather.vallery.net/media/$id" \
+  | grep -iE '^(HTTP|etag|content-(type|length)|cache-control|accept-ranges)'
+curl -s -o /dev/null -w '%{http_code} %{size_download}\n' -H 'Range: bytes=0-1' \
+  "https://weather.vallery.net/media/$id"
+kubectl --context vallery -n weather exec deploy/api -- python -c \
+  "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:9000/metrics').read().decode())" \
+  | grep -E '^weather_media_'
+```
+
+| Metric | Meaning and action |
+|---|---|
+| `weather_media_requests_total{route,method,status}` | Responses by route (`media`, `download`) |
+| `weather_media_streams{route}` | Requests in progress; near 32 per pod means saturation (503s) |
+| `weather_media_bytes_total{route}` | Body bytes written |
+| `weather_media_denials_total{route,reason}` | `ineligible` (unknown, embargoed, withdrawn, original), `path`, `method`, `range` (400), `unsatisfiable` (416), `overload` (503) |
+| `weather_media_upstream_errors_total{route,source,phase}` | `catalog` or `store` failures before (`open`, a 503) or after (`stream`, a cut connection) the headers. Check `weather-pg`, then Garage and `api-garage-egress` |
+| `weather_media_cancels_total{route,reason}` | `disconnect` or `stalled` clients |
+| `weather_media_ttfb_seconds{route}` | Request start to first body byte |
+
+| Symptom | Likely cause | Action |
+|---|---|---|
+| Every GET 503, HEAD 200 | Reader Secret absent, or Garage unreachable | `kubectl -n weather get secret weather-media-s3-reader`; check `store` upstream errors and the traefik-apps route to `s3-hdd.vallery.net` |
+| GET and HEAD 503 | `weather-pg` unreachable or slow | `kubectl cnpg status weather-pg -n weather` |
+| 404 for a listed asset | Embargo not yet over, or withdrawn | Compare `public_not_before` and `withdrawn` in `weather.media_asset` |
 
 ## Reconcile
 
