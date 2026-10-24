@@ -1,9 +1,7 @@
 # SPDX-License-Identifier: MIT
-"""Bounded JPEG marker validation followed by strict, full Pillow decoding."""
+"""Bounded marker validation followed by full libjpeg-turbo decoding in strict mode."""
 
-import io
 import struct
-import warnings
 
 from .client import CaptureFailure
 
@@ -47,20 +45,21 @@ def validate_jpeg(body: bytes, allowed: tuple[int, int], max_bytes: int) -> tupl
     geometry = marker_geometry(body)
     if geometry != allowed:
         raise CaptureFailure("geometry", 200)
-    # Imported only when decoding; pure scheduling/chunk tests do no image processing.
-    from PIL import Image, ImageFile
+    # Imported only in the cluster decoder path; pure units do no media work.
+    from simplejpeg import decode_jpeg
 
-    if ImageFile.LOAD_TRUNCATED_IMAGES:
-        raise RuntimeError("Strict JPEG decoder configuration was relaxed")
     try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            with Image.open(io.BytesIO(body), formats=["JPEG"]) as image:
-                if image.size != allowed or image.format != "JPEG":
-                    raise CaptureFailure("geometry", 200)
-                image.load()  # verify() alone does not decode the entropy-coded scan.
+        pixels = decode_jpeg(
+            body,
+            colorspace="RGB",
+            fastdct=False,
+            fastupsample=False,
+            strict=True,
+        )
+        if pixels.shape != (allowed[1], allowed[0], 3):
+            raise CaptureFailure("geometry", 200)
     except CaptureFailure:
         raise
-    except OSError, ValueError, SyntaxError, Warning:
+    except ValueError, RuntimeError, OSError:
         raise CaptureFailure("decode_error", 200) from None
     return geometry
