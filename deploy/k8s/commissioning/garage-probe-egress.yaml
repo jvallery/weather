@@ -33,6 +33,7 @@ spec:
           podSelector:
             matchLabels:
               app.kubernetes.io/name: traefik
+              app.kubernetes.io/instance: traefik-apps-traefik-apps
       ports:
         # Service HTTPS and its websecure target; concrete CNI enforcement must
         # be proved by the restricted probe before credentials are minted.
