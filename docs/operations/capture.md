@@ -25,12 +25,14 @@ is part of the commissioned workload check.
 The metrics listener defaults to port 9000. `/livez` and `/readyz` fail after a
 filesystem operation has remained blocked for more than 30 seconds, independently
 of the collector event loop. Probe readiness does not imply fresh frames or a
-healthy camera. `/metrics` exposes camera-only application labels:
+healthy camera. `/metrics` exposes `camera` labels, plus a bounded `result`:
 
 - `weather_capture_last_good_frame_age_seconds` (`-1` before a successful capture)
-- `weather_capture_attempts_<result>_total` for captured, authentication, transport,
-  timeout, protocol, validation, overdue, backoff, staging pressure and persistence
-  outcomes; fixed metric names avoid arbitrary error labels
+- `weather_capture_attempts_total{camera,result}`, where `result` is one fixed value:
+  `captured`, a failure class (`timeout`, `transport`, `protocol`, `authentication`,
+  `redirect`, `http_status`, `content_type`, `oversized`, `truncated`, `jpeg_markers`,
+  `geometry`), `overdue`, `backoff`, `staging_full`, `persist_failed` or `shutdown`.
+  Every value is exported at zero from start-up
 - `weather_capture_request_seconds`, `weather_capture_request_bytes`
 - `weather_capture_seal_seconds`, `weather_capture_abandoned_chunks_total`,
   `weather_capture_seal_uncertain_total`
@@ -43,11 +45,26 @@ or use the owning cleanup/recovery workflow. The collector never spills frames o
 worker root storage. Camera authentication failures require owner investigation;
 the collector waits at least 60 seconds before another attempt.
 
+A storage error (for example ENOSPC, EDQUOT, ESTALE or EIO on write, seal or statvfs)
+abandons the current chunk, unlinks that collector's own tmp file and backs off
+1/2/4/8/16/30 seconds. During the backoff the collector makes no camera request and
+no NFS call; each slot is counted as `persist_failed` and summarized in the next
+sealed chunk's `loss_range`. The backoff resets after the next successful seal. A
+steady `persist_failed` rate with an empty tmp directory therefore means the share
+is refusing writes: check the PV quota and the NAS, not the collector.
+
+A camera-controlled status line outside 100-599, or a malformed header block, is
+recorded as `protocol` and the loop continues. Repeated response headers are
+combined; only a repeated `Content-Length` or `Transfer-Encoding` is a `protocol`
+failure. A 401 may offer several challenges; only the Digest challenge is used.
+Exit status 2 with "Invalid mounted capture configuration" means only that the
+mounted configuration or Secret failed to load.
+
 On SIGTERM the current HTTP exchange is cancelled, its attempt is recorded and the
 current complete chunk is sealed if storage permits. If storage cannot retain a
 ledger, later successful chunks carry explicit persistence-loss ranges. A hard-killed
-writer leaves tmp data and uncertain filename-window evidence, not an eligible
-sealed product. See the [v2 contract](../contracts/capture-contract.md) for the
+writer leaves its tmp file and uncertain filename-window evidence, not an eligible
+sealed product; tmp cleanup belongs to the scheduler (#19). See the [v2 contract](../contracts/capture-contract.md) for the
 reconciliation rule and post-rename fsync uncertainty. Never adopt, modify or remove
 another incarnation's file from a collector.
 
@@ -59,16 +76,11 @@ commissioning and monitoring-stack#1072; no alert delivery is claimed by this fi
 
 Validation: `scripts/ci.sh lint typecheck unit` covers small pure checks. The
 `integration` mode requires `WEATHER_CI_IN_CLUSTER=1` and runs the fake-camera
-Digest, five-second trickle, nonoverlap, malformed/native JPEG and body-cap cases.
-Never run those HTTP/latency/decode tests or image builds on the Mac.
+Digest, five-second trickle, nonoverlap, malformed-response and body-cap cases.
+Never run those HTTP/latency tests or image builds on the Mac.
 
-The selected full decoder is `simplejpeg` 1.9.0 (MIT), using its bundled
-libjpeg-turbo with `strict=True`; simplejpeg and NumPy 2.5.4 are hash-locked.
-The [dependency review](../decisions/capture-decoder-reuse.md) records the native
-runtime licenses and retained notices. The [upstream contract](https://github.com/jfolz/simplejpeg#decode_jpeg)
-explicitly rejects recoverable codec errors in strict mode. Set the commissioned
-container's `OPENBLAS_NUM_THREADS=1` and `OMP_NUM_THREADS=1` to bound the NumPy
-runtime; no matrix/BLAS workload is part of capture. Original bytes are never
-resized, re-encoded or metadata-mutated. Full decoded dimensions must still match
-the mounted native geometry. The corruption fixture preserves SOI/EOI/SOF/SOS
-headers while damaging the entropy stream; marker checks alone cannot pass it.
+The collector does not decode frames. It checks size, `Content-Type: image/jpeg`,
+SOI/EOI markers and that the SOF geometry equals the mounted native geometry, then
+stores the original bytes unchanged. The renderer decodes every frame with FFmpeg
+and records a decode failure as a reject for that slot
+([#15](https://github.com/jvallery/weather/issues/15) acceptance).

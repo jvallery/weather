@@ -6,10 +6,9 @@ writer-epoch/fencing, three-file chunk directory, binding-file and promotion
 working-set design. The collector has no coordinator, database, Kubernetes or
 internet access. Camera commissioning and actual NFS behavior belong to WX-03.
 
-The code-first private record union lives in `app/weather/capture/records.py`.
-`scripts/generate_capture_contract.py` renders [capture.schema.json](capture.schema.json).
-The shape fixtures and strict byte-reader tests are separate: JSON shape does not
-prove native JPEG decode or filesystem durability.
+The private record union lives in `app/weather/capture/records.py`; the writer and
+the reader share those Pydantic models, so there is no generated schema. Unit tests
+carry a few valid and invalid records as fixtures.
 
 ## Storage representation
 
@@ -17,23 +16,27 @@ One chunk is a plain USTAR containing zero or more regular
 `frames/<attempt_id>.jpg` members and one **final** `manifest.jsonl`. Original camera
 bytes are retained exactly. Attempt IDs are ASCII, at most 89 characters; complete
 member paths therefore fit USTAR's 100-byte name field without prefix splitting,
-PAX or GNU extensions. Readers reject links, devices, unknown members, traversal,
-duplicate names, invalid headers/checksums, nonzero padding, incomplete termination,
-unbound members and length/hash mismatches. They never extract generic TAR input.
+PAX or GNU extensions. Readers accept only contiguous plain `REGTYPE`/`AREGTYPE`
+headers and reject links, devices, sparse/contiguous members, PAX/GNU extension
+headers, unknown members, traversal, duplicate names, invalid headers/checksums,
+nonzero padding, anything but zero fill after the two end-of-archive blocks,
+unbound members and length/hash mismatches. The reader iterates with `tarfile` and
+never extracts.
 
 A collector exclusively creates
 `tmp/<camera>/<first-slot-ns>_<window-end-ns>__<pod-uid>-<incarnation>-<seq>.tar`
 with `O_EXCL`. Each process has a fresh random incarnation. The final name is
 `sealed/<camera>/<UTC-hour>/<pod-uid>-<incarnation>-<seq>.tar`. Default chunk duration
 is 60 seconds, maximum 300; captured slots never cross a UTC hour. Neither two
-processes nor restarted processes share a target name. No collector deletes a tmp
-file or edits/deletes a sealed file. Cleanup belongs to WX-18.
+processes nor restarted processes share a target name. A collector unlinks only its
+own abandoned tmp file and never edits or deletes a sealed file. Hard-kill leftovers
+in tmp are cleaned up by #19.
 
-Payload progress is flushed/fsynced at least every five seconds of active writing.
-The final manifest and TAR termination are written, the file is fsynced and closed,
-then renamed atomically and the source/destination directories are fsynced. Readers
-ignore tmp files. NFS read/write errors before rename abandon the complete uncertain
-file in tmp, record `persist_failed` loss accounting and never publish it.
+Nothing salvages a tmp file, so the file is fsynced only at seal: the final manifest
+and TAR termination are written, the file is fsynced and closed, then renamed
+atomically and the source/destination directories are fsynced. Readers ignore tmp
+files. NFS errors before rename abandon the chunk, unlink its tmp file, record
+`persist_failed` loss accounting and back off storage writes 1/2/4/8/16/30 seconds.
 A directory-fsync error after a successful rename is **commit uncertainty**: the
 complete sealed file may exist. The collector leaves it untouched and emits
 `seal_uncertain`; the scheduler reconciles it instead of asserting either loss or
@@ -51,7 +54,7 @@ station identities and exact site coordinates have no fields here.
   excluded from the hash/settings rather than published as reversible identifiers.
 - `capture_attempt`: unique attempt/slot identity, scheduled UTC, clock epoch,
   captured/skipped/request-failed status and a bounded failure class. Captured rows
-  bind the exact member name, byte count, SHA256 and decoded geometry. Identical
+  bind the exact member name, byte count, SHA256 and SOF geometry. Identical
   consecutive hashes set `duplicate_hash` but both frames remain valid inputs.
 - `skipped_range`: a compact, reconstructable consecutive monotonic slot range and
   count, for overdue slots. It prevents a long outage from creating a catch-up loop
@@ -63,25 +66,38 @@ station identities and exact site coordinates have no fields here.
   inventory overflow. It is never a captured-success or definite-loss assertion.
 
 The monotonic timer advances absolute deadlines and never launches overlapping
-attempts. All physical HTTP exchanges, including Digest negotiation, are also
+attempts. A slot is overdue, and skipped, only once it is more than half a period
+late.
+
+`slot_at_utc` is the canonical grid point
+`round((wall_ns - phase) / period) * period + phase`, so every writer emits the same
+key for the same slot. The key decides the chunk's UTC hour and window and is the
+scheduler's `capture_slot.slot_ts`. Each observation re-anchors the monotonic
+deadline to the grid, which also restores the phase after a wall-clock step. A
+re-anchor that would repeat or skip a key (a step of half a period or more) opens a
+new clock epoch, so keys within one epoch are consecutive grid points. All physical HTTP exchanges, including Digest negotiation, are also
 limited to the commissioned cadence. Connect/read defaults are 1/3 seconds; a
 separate five-second monotonic deadline covers negotiation, retry and the entire
-body. Redirects are rejected. Transport backoff is 1/2/4/8/16/30 seconds;
+body. Redirects are rejected. A status outside 100-599 is a `protocol` failure. Repeated
+response headers are combined; a repeated `Content-Length` or `Transfer-Encoding`
+is a `protocol` failure, and only the Digest challenge of a combined
+`WWW-Authenticate` is used. Transport backoff is 1/2/4/8/16/30 seconds;
 authentication backoff is at least 60 seconds.
 
 Each request records UTC start/response-end, monotonic nanoseconds as decimal
-strings, clock epoch and a request-midpoint source estimate. Without a mounted
-cache calibration, uncertainty and exposure bounds are null and freshness is
-`unknown`. With calibration, bounds are `[request-start-cache-allowance, response-end]`;
-uncertainty is the maximum distance from the request midpoint to either bound.
-A wall-clock step greater than one second changes the clock epoch and invalidates
-finite bounds for that request. HTTP Date and equal hashes never establish exposure
+strings, clock epoch and a request-midpoint source estimate. The frame cannot
+postdate the response, so `capture_upper_bound` is the response end whenever the
+clock is continuous, with or without calibration. A mounted cache calibration only
+adds the lower bound `request-start - cache-allowance`, the uncertainty (the maximum
+distance from the request midpoint to either bound) and `plausible` freshness;
+without it they are null and freshness is `unknown`. A wall-clock step greater than
+one second changes the clock epoch and nulls every bound for that request. HTTP Date and equal hashes never establish exposure
 certainty or staleness. A finite bound alone does not qualify public eligibility;
 request-time embargo and independent clock-health checks remain mandatory.
 
 Slot IDs combine a fresh clock epoch and increasing sequence; a backward clock step
 or process restart cannot reuse one. The scheduler deduplicates measured capture
-slots using camera plus scheduled UTC/cadence and selects at most one accepted
+slots using camera plus the grid `slot_at_utc` and selects at most one accepted
 attempt, retaining distinct attempt IDs and clock uncertainty. Timestamp coincidence
 is not a reason for the collector to erase evidence.
 

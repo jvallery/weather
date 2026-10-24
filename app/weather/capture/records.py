@@ -35,7 +35,6 @@ Failure = Literal[
     "truncated",
     "jpeg_markers",
     "geometry",
-    "decode_error",
     "overdue",
     "backoff",
     "staging_full",
@@ -158,13 +157,13 @@ class Attempt(Record):
                 raise ValueError("Captured attempt requires acquisition timing")
         elif self.member is not None or self.failure_class is None:
             raise ValueError("Failed/skipped attempt must contain a reason and no frame")
-        if self.capture_upper_bound is not None and (
-            self.source_lower_bound is None
-            or self.uncertainty_ms is None
-            or self.calibration_revision is None
-            or self.clock_discontinuity
+        if self.capture_upper_bound is not None and self.clock_discontinuity:
+            raise ValueError("Finite timing requires a continuous clock")
+        calibrated = [self.source_lower_bound, self.uncertainty_ms, self.calibration_revision]
+        if any(x is not None for x in calibrated) and (
+            any(x is None for x in calibrated) or self.capture_upper_bound is None
         ):
-            raise ValueError("Finite timing requires calibration and continuous clock")
+            raise ValueError("Calibration needs lower bound, uncertainty, revision, upper bound")
         if self.monotonic_started_ns is not None and self.monotonic_completed_ns is not None:
             if int(self.monotonic_completed_ns) < int(self.monotonic_started_ns):
                 raise ValueError("Monotonic time reversed")
