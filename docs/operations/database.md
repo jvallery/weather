@@ -89,6 +89,9 @@ An original must simultaneously have class `original`, bucket
 `weather-originals` and private visibility; equivalence checks reject every
 partial combination. Public media use immutable `<class>/<sha256>.<extension>`
 keys, available state, withdrawal checks and request-time embargo eligibility.
+Their `published_at` marker stays null while uploading/preparing, and is set
+only in the catalog publication transaction. Available-but-unpublished objects
+remain invisible to the API; private originals cannot receive that marker.
 Preview rows require trustworthy bounds and at least 630 seconds between the
 capture upper bound and eligibility (600-second embargo plus 30-second margin).
 No public view returns an original, receipt, private device identity, staging
