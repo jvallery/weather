@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Explicit source-owned job handlers and outbox routing; unknown work fails closed."""
+"""Explicit source-owned job handlers and outbox routing; unknown work is never run."""
 
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
@@ -59,6 +59,12 @@ class Registry:
         self._handlers[kind] = handler
         for topic in topics:
             self._topics[topic] = kind
+
+    def kinds(self) -> frozenset[str]:
+        return frozenset(self._handlers)
+
+    def topics(self) -> frozenset[str]:
+        return frozenset(self._topics)
 
     def handler(self, kind: str) -> Handler:
         try:

@@ -39,6 +39,7 @@ async def run() -> None:
         ),
         spool,
     )
+    # No first-connect wait: the drain retries every second while the spool holds receipts.
     drain = Drain(
         spool, engine, config.future_seconds, config.hub_identity, config.device_identities
     )
@@ -85,11 +86,12 @@ def _config() -> ReceiverConfig:
 
 
 async def run_reproject(since: datetime) -> tuple[int, int, int]:
-    from weather.db.connection import create_database_engine
+    from weather.db.connection import create_database_engine, wait_for_database
 
     config = _config()
     engine = create_database_engine()
     try:
+        await wait_for_database(engine)
         async with engine.begin() as db:
             await seed(db, config.hub_identity, config.device_identities)
         receipts, rows, counts = await reproject(engine, since, config.future_seconds)

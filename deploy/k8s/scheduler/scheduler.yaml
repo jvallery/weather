@@ -10,8 +10,12 @@ metadata:
     weather.vallery.net/database-role: worker
     agent-fleet.vallery.net/owner: jvallery
     agent-fleet.vallery.net/project: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
 spec:
-  replicas: 0
+  replicas: 1
+  strategy:
+    type: Recreate
   revisionHistoryLimit: 3
   selector:
     matchLabels: *id001

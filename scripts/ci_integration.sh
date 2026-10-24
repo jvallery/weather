@@ -48,14 +48,23 @@ wx_vector="$(psql -h "$wx_pg_root/socket" -U postgres -d weather_ci -Atqc "SELEC
 psql -h "$wx_pg_root/socket" -U postgres -d weather_ci -v ON_ERROR_STOP=1 \
   -c "SELECT version() AS postgres_version, (SELECT extversion FROM pg_extension WHERE extname='vector') AS vector_version"
 createdb -h "$wx_pg_root/socket" -U postgres weather_ci_empty
+# Production already holds the restore-drill sentinel schema; the baseline must ignore it.
 psql -h "$wx_pg_root/socket" -U postgres -d weather_ci_empty -v ON_ERROR_STOP=1 -q <<'SQL'
 CREATE EXTENSION vector;
 ALTER DATABASE weather_ci_empty OWNER TO weather_migrator;
+CREATE SCHEMA weather_recovery_drill;
+CREATE TABLE weather_recovery_drill.sentinel(operation text NOT NULL, sequence integer NOT NULL,
+  PRIMARY KEY (operation, sequence));
+INSERT INTO weather_recovery_drill.sentinel VALUES ('ci', 0);
 SQL
 export WEATHER_CI_DATABASE_URL="postgresql+asyncpg://weather_migrator@/weather_ci_empty?host=$wx_pg_root/socket"
 uv run --frozen python -m alembic upgrade head
 uv run --frozen python -m alembic check
 uv run --frozen python -m alembic current --check-heads
+[[ "$(psql -h "$wx_pg_root/socket" -U postgres -d weather_ci_empty -Atqc "SELECT count(*) FROM weather_recovery_drill.sentinel")" == 1 ]] || {
+  echo 'Baseline touched the restore-drill sentinel schema' >&2
+  exit 1
+}
 echo "Production PostgreSQL timezone package: $(cat /usr/share/doc/weather-ci/production-tzdata.txt)"
 sha256sum -c /usr/share/doc/weather-ci/production-denver.sha256
 echo "CI timezone package: $(dpkg-query -W -f='${Version}' tzdata)"
@@ -65,15 +74,8 @@ print(f'Python timezone package: tzdata {TZDATA_VERSION}, IANA {IANA_VERSION}')
 PY
 export WEATHER_CI_DATABASE_URL="postgresql+asyncpg://weather_migrator@/weather_ci?host=$wx_pg_root/socket"
 export WEATHER_CI_ADMIN_DATABASE_URL="postgresql+asyncpg://postgres@/weather_ci?host=$wx_pg_root/socket"
-uv run --frozen python -m alembic upgrade 0000_namespace
-psql -h "$wx_pg_root/socket" -U weather_migrator -d weather_ci -v ON_ERROR_STOP=1 -q <<'SQL'
-INSERT INTO weather.station(alias,site) VALUES('migration-seed','migration-seed');
-SQL
 uv run --frozen python -m alembic upgrade head
-[[ "$(psql -h "$wx_pg_root/socket" -U weather_migrator -d weather_ci -Atqc "SELECT count(*) FROM weather.station WHERE alias='migration-seed'")" == 1 ]] || {
-  echo 'Upgrade failed to preserve previous-head station row' >&2
-  exit 1
-}
+# A repeated upgrade at head is a no-op.
 uv run --frozen python -m alembic upgrade head
 uv run --frozen python -m alembic check
 uv run --frozen pytest -m integration

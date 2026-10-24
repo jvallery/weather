@@ -372,12 +372,17 @@ def test_spool_owner_and_invalid_capacity(tmp_path: Path) -> None:
         spool.close()
 
 
-def test_schema_ddl_has_no_accidental_sqlalchemy_value_bindings() -> None:
-    from sqlalchemy import text
-    from weather.db.ddl_v1 import statements
-    from weather.db.models import metadata
+def test_baseline_ddl_has_no_accidental_sqlalchemy_value_bindings() -> None:
+    import importlib.util
 
-    for statement in statements([table.name for table in metadata.sorted_tables]):
+    from sqlalchemy import text
+
+    path = Path(__file__).resolve().parents[2] / "migrations/versions/0001_baseline.py"
+    spec = importlib.util.spec_from_file_location("baseline", path)
+    assert spec is not None and spec.loader is not None
+    baseline = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(baseline)
+    for statement in baseline.statements():
         assert not text(statement)._bindparams
 
 

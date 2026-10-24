@@ -72,9 +72,7 @@ def isolated_telemetry() -> None:
             async with db.begin() as c:
                 from weather.db.models import metadata
 
-                tables = ",".join(
-                    "weather." + t.name for t in metadata.sorted_tables if t.name != "camera"
-                )
+                tables = ",".join("weather." + t.name for t in metadata.sorted_tables)
                 await c.execute(text("TRUNCATE TABLE " + tables + " CASCADE"))
         finally:
             await db.dispose()

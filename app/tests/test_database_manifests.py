@@ -144,6 +144,56 @@ class DatabaseManifestTests(unittest.TestCase):
         self.assertEqual(ports["weather-pg"], {53, 443, 5432, 6443, 8000})
         self.assertEqual(ports["weather-database-clients"], {53, 5432})
 
+    def test_migrate_is_a_wave_1_sync_hook_and_db_clients_follow_it(self):
+        objects = [
+            obj
+            for path in sorted((ROOT / "deploy/k8s").rglob("*.yaml"))
+            for obj in yaml.safe_load_all(path.read_text())
+            if obj and obj.get("kind") in {"Deployment", "StatefulSet", "Job", "CronJob"}
+        ]
+        migrate = next(o for o in objects if o["metadata"]["name"] == "weather-migrate")
+        annotations = migrate["metadata"]["annotations"]
+        self.assertEqual(annotations["argocd.argoproj.io/hook"], "Sync")
+        self.assertEqual(annotations["argocd.argoproj.io/sync-wave"], "1")
+        # The hard cap: each wait (60 s connect, 120 s roles) bounds every attempt to 5 s
+        # and fails sooner, and each migration statement has its own lock/statement timeout.
+        self.assertEqual(migrate["spec"]["activeDeadlineSeconds"], 300)
+        self.assertEqual(migrate["spec"]["backoffLimit"], 0)
+
+        def database_secrets(workload: dict) -> set[str]:
+            spec = workload["spec"]
+            pod = (spec.get("jobTemplate", {}).get("spec", spec))["template"]["spec"]
+            names = set()
+            for volume in pod.get("volumes", []):
+                names.add(volume.get("secret", {}).get("secretName"))
+                for source in volume.get("projected", {}).get("sources", []):
+                    names.add(source.get("secret", {}).get("name"))
+            for container in pod.get("containers", []) + pod.get("initContainers", []):
+                for env in container.get("env", []):
+                    names.add(env.get("valueFrom", {}).get("secretKeyRef", {}).get("name"))
+                for source in container.get("envFrom", []):
+                    names.add(source.get("secretRef", {}).get("name"))
+            return {n for n in names if n and n.startswith("weather-pg-")}
+
+        # A client is anything labelled with a database role or holding a weather-pg Secret.
+        clients = [
+            o
+            for o in objects
+            if o is not migrate
+            and (
+                "weather.vallery.net/database-role" in o["metadata"].get("labels", {})
+                or database_secrets(o)
+            )
+        ]
+        self.assertIn("scheduler", {o["metadata"]["name"] for o in clients})
+        for client in clients:
+            wave = client["metadata"].get("annotations", {}).get("argocd.argoproj.io/sync-wave")
+            self.assertGreaterEqual(int(wave or 0), 2, client["metadata"]["name"])
+        scheduler = next(o for o in clients if o["metadata"]["name"] == "scheduler")
+        self.assertEqual(scheduler["spec"]["replicas"], 1)
+        # Two scheduler versions never overlap, so an old one cannot race a new topic.
+        self.assertEqual(scheduler["spec"]["strategy"], {"type": "Recreate"})
+
     def test_operation_cannot_inject_sql_names_or_labels(self):
         for operation in ("bad'name", "../weather-pg", "UPPER", "", "bad-", "-bad", "a" * 32):
             with self.assertRaises(ValueError):
