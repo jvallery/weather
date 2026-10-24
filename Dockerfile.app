@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-FROM registry.vallery.net/jvallery/weather-python-base:3.14.9-slim-bookworm@sha256:945c2676dc2b18e0c1f16879244122c57c0ffede60006bf3df159c507a31bcae AS ffmpeg
+FROM registry.vallery.net/jvallery/weather-python-base@sha256:099ee58eb685a16faff6f87a2541d20a56142de087ab317906a5affe9c5f0acd AS ffmpeg
 # The fixed Debian snapshot pins the entire compiler/libx264 dependency closure.
 RUN printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20261023T000000Z bookworm main\n' > /etc/apt/sources.list \
  && rm -f /etc/apt/sources.list.d/debian.sources \
@@ -16,12 +16,12 @@ RUN curl --fail --location https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz -o ff
  && cp COPYING.GPLv2 COPYING.GPLv3 LICENSE.md /opt/ffmpeg/share/licenses/ \
  && cp /usr/share/doc/libx264-164/copyright /opt/ffmpeg/share/licenses/libx264-copyright
 
-FROM registry.vallery.net/jvallery/weather-python-base:3.14.9-slim-bookworm@sha256:945c2676dc2b18e0c1f16879244122c57c0ffede60006bf3df159c507a31bcae AS dependencies
+FROM registry.vallery.net/jvallery/weather-python-base@sha256:099ee58eb685a16faff6f87a2541d20a56142de087ab317906a5affe9c5f0acd AS dependencies
 WORKDIR /app
 COPY requirements.lock ./
 RUN pip install --no-cache-dir --require-hashes --only-binary=:all: --target=/opt/python -r requirements.lock
 
-FROM registry.vallery.net/jvallery/weather-python-base:3.14.9-slim-bookworm@sha256:945c2676dc2b18e0c1f16879244122c57c0ffede60006bf3df159c507a31bcae
+FROM registry.vallery.net/jvallery/weather-python-base@sha256:099ee58eb685a16faff6f87a2541d20a56142de087ab317906a5affe9c5f0acd
 ENV PYTHONPATH=/opt/python:/app/app PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
     PATH=/opt/ffmpeg/bin:$PATH LD_LIBRARY_PATH=/opt/ffmpeg/lib PORT=8000 METRICS_PORT=9000
 COPY --from=dependencies /opt/python /opt/python

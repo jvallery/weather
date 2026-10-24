@@ -46,7 +46,7 @@ Lane table and rules: [estate README](https://github.com/jvallery/agents/blob/ma
 ## In transition
 
 - Implementation starts from the re-planned backlog; nothing is deployed yet. Planning history lives in [docs/archive/planning-2026-10/](docs/archive/planning-2026-10). It is context, not instructions.
-- Weather is not yet in the estate ownership map, registry or branch-protection baseline. agents#5366 delivers this.
+- agents#5366 registered Weather as a `ci-only` cell with generated CI profiles, estate ownership and GitOps roots. The first Weather CI callback completes branch-check activation. WX-01 (#2) commissions the application workloads and public route.
 
 ## Deliver and verify
 

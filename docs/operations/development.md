@@ -49,3 +49,7 @@ The inventory generator restricts this exception to that exact release.
 
 The image scan writes `artifacts/sbom-app.json` or `artifacts/sbom-web.json` and its SHA-256 sidecar.
 WX-01 owns artifact custody and the evidence producer; the scaffold does not submit a separate scan workflow.
+
+The completed runtime import receipts are in `base-imports.json`: Python3.14.9 and Node24.22.1 were
+imported by the fixed in-cluster profiles, then both registry manifest/config SHA-256 identities and
+Linux amd64/runtime metadata were read back independently. Application startup remains WX-01.
