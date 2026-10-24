@@ -15,6 +15,9 @@ images:
 - name: weather-node-base
   dockerfile: images/upstream-imports/node/Dockerfile
   context: .
+- name: weather-ci
+  dockerfile: Dockerfile.ci
+  context: .
 checks:
   steps:
   - name: application
@@ -22,3 +25,5 @@ checks:
       all
   - name: manifests
     command: kubectl kustomize deploy/k8s >/dev/null
+  - name: supply-chain-evidence
+    command: WEATHER_CI_IN_CLUSTER=1 bash scripts/bootstrap-ci.sh bash scripts/ci-evidence.sh
