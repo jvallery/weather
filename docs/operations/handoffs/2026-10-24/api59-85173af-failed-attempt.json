@@ -1,0 +1,29 @@
+[
+  {
+    "pod": "repo-validate-jvallery-weather-85173af51a25-pr-run-check-3567784430",
+    "uid": "aba43f6e-8f3b-4a5d-b3f0-19248fb30d87",
+    "node": "vm-k3s-node5",
+    "workflow_uid": "9b359f2b-ebc6-4312-ad72-741243139af0",
+    "phase": "Failed",
+    "states": [
+      {
+        "container": "main",
+        "terminated": {
+          "exitCode": 255,
+          "finishedAt": "2026-10-24T16:19:38Z",
+          "reason": "Unknown",
+          "startedAt": "2026-10-24T16:12:10Z"
+        }
+      },
+      {
+        "container": "wait",
+        "terminated": {
+          "exitCode": 255,
+          "finishedAt": "2026-10-24T16:19:38Z",
+          "reason": "Unknown",
+          "startedAt": "2026-10-24T16:12:10Z"
+        }
+      }
+    ]
+  }
+]

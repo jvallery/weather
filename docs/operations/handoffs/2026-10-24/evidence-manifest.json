@@ -1,0 +1,37 @@
+[
+  {
+    "name": "api59-85173af-qualified.json",
+    "bytes": 1557,
+    "sha256": "75a75f38caa13fbda2c610316e11769a67093fd7e4ea3f3aad32ffa37318c84f"
+  },
+  {
+    "name": "api59-85173af-evidence-expected.json",
+    "bytes": 517,
+    "sha256": "c83d99b4412cb08d183a3a76dc28c8edfa51521b48739e21590f1e7b40dd2673"
+  },
+  {
+    "name": "api59-85173af-independent-readback.json",
+    "bytes": 2218,
+    "sha256": "f969d35c7a80024b607af124cfa252c56de46606582bfd1a2d3ecb5c633c50db"
+  },
+  {
+    "name": "api59-85173af-application-retained-tail.log",
+    "bytes": 4000,
+    "sha256": "4b016fef8e0a9233427c518d06c2a28504a49199f9f8799c68ac35eb68cf8ecd"
+  },
+  {
+    "name": "weather-shutdown-probe-observation.json",
+    "bytes": 1672,
+    "sha256": "5ac9d25eace17f5f07c1634ce856ea7a282d00ec26320ec58ea7a2267dbf6345"
+  },
+  {
+    "name": "weather-shutdown-probe-observation.raw.json",
+    "bytes": 183252,
+    "sha256": "d00de87b8a165c528f8d0df63dea27a2b7729f5c3fc03db4ab5069a76056fd3d"
+  },
+  {
+    "name": "audit-outcome.json",
+    "bytes": 1056,
+    "sha256": "b5e1e9ffc89751a9b8b1db325650a3433cdfd862ef6125cb49fc68ad7c795f27"
+  }
+]

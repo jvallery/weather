@@ -1,0 +1,69 @@
+ts older ancestor drops out (12.949913ms)
+✔ different bytes under one filename fail without replacing current data (2.394475ms)
+✔ inventory checksum drift and path escape fail closed (4.432043ms)
+✔ missing inventory requires the explicit first-baseline exception (2.278464ms)
+✔ inventory paths cannot escape through a parent-directory symlink (2.384988ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 156.684449
+$ vitest run
+
+[1m[46m RUN [49m[22m [36mv4.1.0 [39m[90m/workspace/repo/web[39m
+
+ [32m✓[39m app/lib/polling.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 407[2mms[22m[39m
+ [32m✓[39m app/lib/contracts.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 68[2mms[22m[39m
+ [32m✓[39m app/lib/public-api.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 56[2mms[22m[39m
+ [32m✓[39m app/components/video-player.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 343[2mms[22m[39m
+   [33m[2m✓[22m[39m native controls never autoplay, one player, quality change preserves the playhead [33m 311[2mms[22m[39m
+[90mstderr[2m | app/components/common.test.tsx[2m > [22m[2mdisplay units follow URL navigation after the select has been edited
+[22m[39mNo `HydrateFallback` element provided to render during initial hydration
+
+ [32m✓[39m app/components/common.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 131[2mms[22m[39m
+ [32m✓[39m app/lib/csp.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 246[2mms[22m[39m
+ [32m✓[39m app/entry.server.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m app/home.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 11[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m8 passed[39m[22m[90m (8)[39m
+[2m      Tests [22m [1m[32m36 passed[39m[22m[90m (36)[39m
+[2m   Start at [22m 16:21:47
+[2m   Duration [22m 7.52s[2m (transform 393ms, setup 0ms, import 1.78s, tests 1.29s, environment 2.81s)[22m
+
+                                                   postgres_version                                                   | vector_version 
+----------------------------------------------------------------------------------------------------------------------+----------------
+ PostgreSQL 16.15 (Debian 16.15-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit | 0.8.6
+(1 row)
+
+No new upgrade operations detected.
+0005_aggregate_revisions (head)
+Production PostgreSQL timezone package: tzdata 2026b-0+deb13u1
+/usr/share/zoneinfo/America/Denver: OK
+CI timezone package: 2026b-0+deb13u1
+Python timezone package: tzdata 2026.5, IANA 2026e
+No new upgrade operations detected.
+============================= test session starts ==============================
+platform linux -- Python 3.14.9, pytest-9.0.2, pluggy-1.7.0
+rootdir: /workspace/repo
+configfile: pyproject.toml
+testpaths: app/tests
+plugins: cov-7.1.0, anyio-4.15.1
+collected 410 items / 338 deselected / 72 selected
+
+app/tests/capture/test_integration.py ............                       [ 16%]
+app/tests/telemetry/test_ingest_integration.py ...........               [ 31%]
+app/tests/test_aggregate_store_integration.py .....                      [ 38%]
+app/tests/test_aggregate_worker_integration.py .....                     [ 45%]
+app/tests/test_current_publication_integration.py .........              [ 58%]
+app/tests/test_evidence_revision_integration.py ........                 [ 69%]
+app/tests/test_public_sql_source_integration.py ........                 [ 80%]
+app/tests/test_schema_integration.py ..............                      [100%]
+
+================ 72 passed, 338 deselected in 337.72s (0:05:37) ================
+PostgreSQL 16.15 / pgvector 0.8.6 integration completed; disposable server stopped
+[90m4:28PM[0m [32mINF[0m [1mscanned ~6844060 bytes (6.84 MB) in 1.91s[0m
+[90m4:28PM[0m [32mINF[0m [1mno leaks found[0m
+License allowlist passed: 471 locked package versions

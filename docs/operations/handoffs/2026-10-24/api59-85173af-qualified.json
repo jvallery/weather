@@ -1,0 +1,36 @@
+{
+  "observed_at": "2026-10-24T16:34:24.772327+00:00",
+  "source": "85173af51a25b66475dda4053a31769960465e59",
+  "workflow": "repo-validate-jvallery-weather-85173af51a25-pr",
+  "uid": "9b359f2b-ebc6-4312-ad72-741243139af0",
+  "phase": "Succeeded",
+  "finished_at": "2026-10-24T16:28:49Z",
+  "checks": [
+    {
+      "name": "application",
+      "exit_code": 0,
+      "node_id": "repo-validate-jvallery-weather-85173af51a25-pr-2587964025",
+      "phase": "Succeeded"
+    },
+    {
+      "name": "supply-chain-evidence",
+      "exit_code": 0,
+      "evidence_manifest_sha256": "ec1c073d44bc681025d32dae760cef52b02ac76b01f6eac5841676a8d30030e5",
+      "evidence_prefix": "native-ci/v1/weather/supply-chain/9b359f2b-ebc6-4312-ad72-741243139af0/repo-validate-jvallery-weather-85173af51a25-pr-run-check-weather-evidence-3977229077/",
+      "node_id": "repo-validate-jvallery-weather-85173af51a25-pr-3988913479",
+      "phase": "Succeeded"
+    },
+    {
+      "name": "manifests",
+      "exit_code": 0,
+      "node_id": "repo-validate-jvallery-weather-85173af51a25-pr-4080389036",
+      "phase": "Succeeded"
+    }
+  ],
+  "integration_tests": 72,
+  "integration_elapsed_seconds": 337.72,
+  "web_unit_tests": 36,
+  "license_versions": 471,
+  "failure_history": "First application pod Unknown255 during node5 maintenance, preserved. Existing workflow automatic retry succeeded; no manual retry/status changes.",
+  "log_limit": "Successful application pod already garbage-collected; authoritative workflow retained log tail captured. Full application log not claimed."
+}

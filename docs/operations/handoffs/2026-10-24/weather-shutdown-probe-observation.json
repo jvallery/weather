@@ -1,0 +1,41 @@
+{
+  "schema": "weather-public-probe-observation/v2",
+  "observed_at": "2026-10-24T16:33:49.867145+00:00",
+  "requested_start": "2026-10-24T14:47:43.058000+00:00",
+  "context": "vallery",
+  "selector": "probe_success{job=\"weather-probes\",component=\"edge\",namespace=\"weather\",instance=\"https://weather.vallery.net/\"}",
+  "collection": "union of actual HA observations; no interpolation; any failed value preserved",
+  "replicas": [
+    {
+      "pod": "prometheus-5c89dfdd4d-2dnxl",
+      "pod_uid": "9f79d36b-c1c7-4137-9391-fdd1073df995",
+      "node": "vm-k3s-node7",
+      "actual_samples": 207,
+      "first_sample_at": "2026-10-24T14:47:43.058000+00:00",
+      "last_sample_at": "2026-10-24T16:33:33.329000+00:00",
+      "failed_sample_times": []
+    },
+    {
+      "pod": "prometheus-replica-699d5978d-w44xm",
+      "pod_uid": "61edbf55-a597-4309-bd2f-b035fbfff06d",
+      "node": "vm-k3s-node6",
+      "actual_samples": 212,
+      "first_sample_at": "2026-10-24T14:47:56.718000+00:00",
+      "last_sample_at": "2026-10-24T16:33:26.718000+00:00",
+      "failed_sample_times": []
+    }
+  ],
+  "unique_samples": 419,
+  "first_sample_at": "2026-10-24T14:47:43.058000+00:00",
+  "last_sample_at": "2026-10-24T16:33:33.329000+00:00",
+  "observed_span_seconds": 6350.270999908447,
+  "elapsed_since_requested_start_seconds": 6366.809145,
+  "minimum": 1.0,
+  "latest_value": 1.0,
+  "failed_sample_times": [],
+  "maximum_sample_gap_seconds": 30.0,
+  "last_sample_age_seconds": 16.538145065307617,
+  "acceptance_claimed": false,
+  "sample_gaps_over_45_seconds": [],
+  "raw_evidence": "/Users/jason/maintenance/weather-slice1/weather-shutdown-probe-observation.raw.json"
+}

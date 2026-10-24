@@ -1,0 +1,24 @@
+{
+  "at": "2026-10-24T16:04:19.131841+00:00",
+  "result": "durable existing retention roots verified; no source/live change needed",
+  "targets": [
+    "sha256:b31d9d54d737d6cc1607618f4aa0ba99f8c6a4c8e256a5b931d825f8984342a1",
+    "sha256:7ff8819af3890a77e3ec9dbacbc111ca6a1dba21fe57097d364f5a545ada09d9"
+  ],
+  "protected_generation_preserved": 192,
+  "whole_repositories_held": [
+    "jvallery/weather-app",
+    "jvallery/weather-web"
+  ],
+  "observed_manifest_pairs_kept": 11,
+  "no_new_ci_or_job": true,
+  "layer_or_config_blob_payload_downloaded": false,
+  "source_change": false,
+  "completed_at": "2026-10-24T16:05:03.099047+00:00",
+  "actual_final_live_generation": 192,
+  "actual_final_count": 331,
+  "actual_final_hash": "60ae7a9a09280df49df466d1ba66bb70e0229c56ede1f5fcb7d83c203aed6cf0",
+  "protected_cm_uid": "cbda3dd6-2c4f-4b3b-9b34-0bdac3bde7bf",
+  "owner_evidence": "https://github.com/jvallery/storage-infra/issues/177#issuecomment-6386398680",
+  "consumer_evidence": "https://github.com/jvallery/weather/pull/72#issuecomment-6386404660"
+}

@@ -1,0 +1,789 @@
+{
+  "snapshot_at": "2026-10-24T16:37:24.949816+00:00",
+  "total_issues": 50,
+  "open": 28,
+  "closed": 22,
+  "delivered_closed": 7,
+  "superseded_closed": 15,
+  "issues": [
+    {
+      "number": 1,
+      "title": "WX-00: Complete evidence-backed planning audit and qualify the implementation backlog",
+      "url": "https://github.com/jvallery/weather/issues/1",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Delivered and closed",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 2,
+      "title": "WX-01: Walking skeleton live: namespace baseline, in-cluster CI/build, digest promotion, weather.vallery.net",
+      "url": "https://github.com/jvallery/weather/issues/2",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Delivered and closed",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 3,
+      "title": "WX-02: Repository scaffold, pinned toolchains, scripts/ci.sh and container images",
+      "url": "https://github.com/jvallery/weather/issues/3",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Delivered and closed",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 4,
+      "title": "WX-03: Commission camera capture: NFS staging PV, three collectors, cadence and isolation",
+      "url": "https://github.com/jvallery/weather/issues/4",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "Blocked by Sentinel550; collector core and staging prerequisite complete. No live collector commissioning.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/sentinel/issues/550",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "title": "WX-04: Commission the Tempest receiver on the VLAN-10 attachment with live packet reception",
+      "url": "https://github.com/jvallery/weather/issues/5",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "Blocked by6 and agents5368. Ingest12 complete; CNI/NAD not delivered, private actual hub source unresolved. Reception24h clock not started.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/agents/issues/5368",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/6",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "title": "WX-05: Production CNPG weather-pg with Barman to dedicated B2, scheduled backups and PITR restore drill",
+      "url": "https://github.com/jvallery/weather/issues/6",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "Source, app image and encrypted login prerequisites prepared/delivered; production cluster/migration excluded. Live backups, failover and PITR not accepted. Native dependency set is satisfied; execution still needs fresh safe3-host placement excluding ongoing maintenance.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 7,
+      "title": "WX-06: Isolated Garage bucket/tier, quotas, keys and verified local durability contract.",
+      "url": "https://github.com/jvallery/weather/issues/7",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 8,
+      "title": "WX-07: Shared-bucket authorization boundary, independent backup/restore credentials and Barman-compatible prefix enforcement.",
+      "url": "https://github.com/jvallery/weather/issues/8",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 9,
+      "title": "WX-08: Database schema v1, Alembic migrations, roles, job queue and outbox",
+      "url": "https://github.com/jvallery/weather/issues/9",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Delivered and closed",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 10,
+      "title": "WX-09: Time model library: civil twilight segments, 7,200-frame allocation, calendar day and hour slots, DST golden tests",
+      "url": "https://github.com/jvallery/weather/issues/10",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Delivered and closed",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 11,
+      "title": "WX-10: Snapshot collector: timer-driven native JPEG capture into sealed TAR chunks",
+      "url": "https://github.com/jvallery/weather/issues/11",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Delivered and closed",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 12,
+      "title": "WX-11: Tempest ingest: UDP receiver, SQLite spool, raw and normalized persistence, dedupe and coverage",
+      "url": "https://github.com/jvallery/weather/issues/12",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Delivered and closed",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 13,
+      "title": "WX-12: All-field/row normalization, event deduplication, timeseries partitions/history and coverage.",
+      "url": "https://github.com/jvallery/weather/issues/13",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 14,
+      "title": "WX-13: Weather API: current conditions (~15 s), history, aggregates and exports",
+      "url": "https://github.com/jvallery/weather/issues/14",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "DraftPR59 head85173af; normal fleet qualification succeeded16:28:49UTC,72 PG integrations and36 web tests. Not merged or enabled; depends6 and later live verification.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/6",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 15,
+      "title": "WX-14: Streaming renderer: observed-exposure accumulation, mezzanine, renditions, posters and validation",
+      "url": "https://github.com/jvallery/weather/issues/15",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/18",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 16,
+      "title": "WX-15: Interpolation A/B pilot: observed exposure vs minterpolate 4x, for Jason's decision",
+      "url": "https://github.com/jvallery/weather/issues/16",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "Deferred until real corpus and slice2; then bounded observed-exposure vs4x minterpolate A/B clips for Jason.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/15",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/4",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/49",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 17,
+      "title": "WX-16: Native/web/mobile encodes, both MP4 timescales, posters, checksums and full validation.",
+      "url": "https://github.com/jvallery/weather/issues/17",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 18,
+      "title": "WX-17: Publication pipeline: immutable Garage uploads, catalog commit, outbox, sidecars and readback",
+      "url": "https://github.com/jvallery/weather/issues/18",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "Native dependency9 closed: ready by graph, but no delivered publication pipeline; paused.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 19,
+      "title": "WX-18: Staging cleanup, backpressure and recovery-aware GC",
+      "url": "https://github.com/jvallery/weather/issues/19",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/18",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/37",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/38",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/15",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 20,
+      "title": "WX-19: Same-origin media origin: GET/HEAD/range, downloads and request-time eligibility",
+      "url": "https://github.com/jvallery/weather/issues/20",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "Native dependency9 closed: ready by graph, but no delivered same-origin media service; paused.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 21,
+      "title": "WX-20: Web app: design system, Today, history, archive, day and video pages",
+      "url": "https://github.com/jvallery/weather/issues/21",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "SourcePR60 merged;96-browser qualification and7ff image prepared. Draft promotionPR72 green but unmerged; network799 edge-injected RUM unresolved. Old0761 web still live.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/network-infra/issues/799",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 22,
+      "title": "WX-21: Qualified completed-video adapter, temporal control tests, clip mapping and bounded inference capability handling.",
+      "url": "https://github.com/jvallery/weather/issues/22",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 23,
+      "title": "WX-22: AI weather descriptions from sampled frames, keograms and measured evidence",
+      "url": "https://github.com/jvallery/weather/issues/23",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/14",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/18",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/21",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/cortex-ai-compute/issues/402",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 24,
+      "title": "WX-23: Text-embedding profile/extension/storage and exact baseline; compatible ANN only if justified; reserve visual profile boundary.",
+      "url": "https://github.com/jvallery/weather/issues/24",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 25,
+      "title": "WX-24: Search backend: documents, embeddings, FTS, typed measured filters and hybrid ranking",
+      "url": "https://github.com/jvallery/weather/issues/25",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/14",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/cortex-ai-compute/issues/402",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 26,
+      "title": "WX-25: Bounded hybrid semantic/lexical API with exact measured predicates, numeric-only mode, recall and outage behavior.",
+      "url": "https://github.com/jvallery/weather/issues/26",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 27,
+      "title": "WX-26: Search UI: typed filter URLs, result evidence and validated video seeks",
+      "url": "https://github.com/jvallery/weather/issues/27",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/21",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/25",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 28,
+      "title": "WX-27: If selected: plan-compliant Cloudflare routing/cache, object-size/range/Safari tests and purge controls.",
+      "url": "https://github.com/jvallery/weather/issues/28",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 29,
+      "title": "WX-28: Barman physical base/WAL archives, unique identities, retention and real gateway backup/restore qualification.",
+      "url": "https://github.com/jvallery/weather/issues/29",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 30,
+      "title": "WX-29: Central full and exact-WAL custody enrollment, budgets, monitoring and independently checked receipts.",
+      "url": "https://github.com/jvallery/weather/issues/30",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 31,
+      "title": "WX-30: Joint checkpoint closure and recovery-aware GC including keograms, hourly originals/day FKs and public/private assets.",
+      "url": "https://github.com/jvallery/weather/issues/31",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 32,
+      "title": "WX-31: Integrated operational dashboards/alerts, SLOs, capacity and dependency-failure visibility.",
+      "url": "https://github.com/jvallery/weather/issues/32",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 33,
+      "title": "WX-32: B2-only joint restore drill: database PITR plus media and originals",
+      "url": "https://github.com/jvallery/weather/issues/33",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/6",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/49",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/50",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 34,
+      "title": "WX-33: Integrated security/browser/accessibility/quality acceptance for all selected initial features and privacy boundaries.",
+      "url": "https://github.com/jvallery/weather/issues/34",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 35,
+      "title": "WX-34: Fleet deployment, customization, upgrades, capacity and recovery runbooks; selected upstream provenance and licenses.",
+      "url": "https://github.com/jvallery/weather/issues/35",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 36,
+      "title": "WX-35: Initial scope complete: R01-R37 closure, 14-day SLO evidence and open decisions",
+      "url": "https://github.com/jvallery/weather/issues/36",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/33",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/48",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/49",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/50",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/VerdifyConsultancy/wordpress/issues/242",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/42",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 37,
+      "title": "WX-36: Keograms for all three cameras and both civil segments",
+      "url": "https://github.com/jvallery/weather/issues/37",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/18",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/15",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/21",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 38,
+      "title": "WX-37: Hourly private originals and sanitized comparison stills",
+      "url": "https://github.com/jvallery/weather/issues/38",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/18",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/21",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/15",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 39,
+      "title": "WX-38: Delayed current previews for all three cameras",
+      "url": "https://github.com/jvallery/weather/issues/39",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/20",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/21",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/15",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 40,
+      "title": "WX-39: Linked video, keogram and measured-weather plot exploration",
+      "url": "https://github.com/jvallery/weather/issues/40",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/21",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/14",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/18",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/15",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 41,
+      "title": "WX-40: Weather events: bookmarks, daily event strip and in-site feed",
+      "url": "https://github.com/jvallery/weather/issues/41",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/14",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/21",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 42,
+      "title": "WX-41: Local almanac: records, precipitation calendar, wind rose, sun/moon and comparisons",
+      "url": "https://github.com/jvallery/weather/issues/42",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "DraftPR68 deterministic almanac preparation only:25 focused tests. Depends14/21; API/UI/DB/live acceptance remain.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/14",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/21",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 43,
+      "title": "WX-42: Typed measured-weather search predicates and bounded source-interval evidence queries.",
+      "url": "https://github.com/jvallery/weather/issues/43",
+      "github_state": "CLOSED",
+      "checkpoint_state": "Closed by accepted re-plan: superseded/absorbed, not implemented product",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": []
+    },
+    {
+      "number": 44,
+      "title": "WX-43: Private editor behind Authentik: corrections, tags, favorites and poster selection",
+      "url": "https://github.com/jvallery/weather/issues/44",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "No completed delivery recorded; acceptance remains open. Resume only after explicit unpause and native dependencies permit.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/21",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/25",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/23",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 45,
+      "title": "WX-44: Embeddable current-weather card for vallery.net",
+      "url": "https://github.com/jvallery/weather/issues/45",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "Card source4520034 preserved,13 focused tests; no registered route/framing exception/homepage block. Depends14/21 and WordPress242.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/21",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/14",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 46,
+      "title": "WX-45: Follow-on: composite east/west skycam timelapse",
+      "url": "https://github.com/jvallery/weather/issues/46",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "Explicit follow-on after36.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/36",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 47,
+      "title": "WX-46: Deferred research: local visual-search index",
+      "url": "https://github.com/jvallery/weather/issues/47",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "Explicit deferred research after36.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/36",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 48,
+      "title": "WX-47: Launch slice 1: public live weather (current conditions and history)",
+      "url": "https://github.com/jvallery/weather/issues/48",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "Slice1 NOT launched. Foundation healthy. Remaining5,6,14,21 and integrated live acceptance/24h evidence.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/5",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/6",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/14",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/21",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 49,
+      "title": "WX-48: Launch slice 2: public timelapses, keograms, hourly stills and previews",
+      "url": "https://github.com/jvallery/weather/issues/49",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "Slice2 NOT launched. Media storage1107 source CI/runtime blocked; camera550 blocks4. Rendering/publication/origin/GC/products and live3-cycle acceptance remain.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/4",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/15",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/18",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/19",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/20",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/37",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/38",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/39",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/40",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/storage-infra/issues/1107",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/48",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "number": 50,
+      "title": "WX-49: Launch slice 3: AI descriptions, search, events and editor",
+      "url": "https://github.com/jvallery/weather/issues/50",
+      "github_state": "OPEN",
+      "checkpoint_state": "Paused; open",
+      "status": "Slice3 NOT launched. Cortex402 partial capability proof only; descriptions/search/events/editor and combined acceptance remain.",
+      "open_native_blockers": [
+        {
+          "url": "https://github.com/jvallery/weather/issues/23",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/25",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/27",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/41",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/44",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/cortex-ai-compute/issues/402",
+          "state": "open"
+        },
+        {
+          "url": "https://github.com/jvallery/weather/issues/49",
+          "state": "open"
+        }
+      ]
+    }
+  ]
+}
