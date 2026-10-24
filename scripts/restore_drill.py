@@ -244,6 +244,8 @@ def verify(args, evidence):
 
 
 def run(args):
+    if dt.date.fromisoformat(args.expires) <= dt.datetime.now(dt.UTC).date():
+        raise ValueError("a new drill requires an expiry date after today in UTC")
     preflight()
     name = "weather-drill-pg-" + args.operation
     # Admission and capacity are checked again by Kubernetes; refuse an existing
@@ -320,7 +322,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--operation", required=True)
     parser.add_argument("--target", default=dt.datetime.now(dt.UTC).isoformat())
-    parser.add_argument("--expires", default=(dt.date.today() + dt.timedelta(days=1)).isoformat())
+    parser.add_argument(
+        "--expires", default=(dt.datetime.now(dt.UTC).date() + dt.timedelta(days=1)).isoformat()
+    )
     parser.add_argument("--evidence", type=Path, required=True)
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument("--run", action="store_true")
