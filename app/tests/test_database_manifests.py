@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 """Security and data-custody invariants; no database or cluster is started here."""
 
 import importlib.util
