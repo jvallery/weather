@@ -53,6 +53,17 @@ one untrusted pod in Weather and one metrics probe in `observability`, with a
 no private addresses. Retain it before closing WX-01. PSA root rejection and
 API internet-egress denial are separate commissioning checks.
 
+The public verifier identifies itself as `weather-foundation-probe/1.0`. During
+initial commissioning, Cloudflare browser-integrity checking rejected the default Python client signature with error1010; the self-identifying probe, normal
+curl and deployed Blackbox Exporter passed. Compare those paths when diagnosing
+an edge denial. The API egress check uses a positive operator control connection
+and generated policy counter changes: kube-router's ICMP policy rejection
+returns ECONNREFUSED, which must not be described as a timeout.
+
+Dated acceptance receipts are under `docs/operations/evidence/`. WX-01 still
+requires durable SBOM upload/readback and final onboarding source closure; the
+walking skeleton does not establish live Tempest conditions or database recovery.
+
 API and web disable Kubernetes Service environment injection with
 `enableServiceLinks: false`. This keeps later `WEATHER_PG_*` service variables
 out of the strict `WEATHER_*` application settings; clients use Service DNS.

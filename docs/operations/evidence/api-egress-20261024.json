@@ -1,0 +1,101 @@
+{
+  "verified_at": "2026-10-24T05:03:31.168365+00:00",
+  "pod": "api-69f97dc69b-qvvk5",
+  "pod_uid": "53207a31-ec2f-47cd-be9f-f39f798cb085",
+  "node": "vm-k3s-node6",
+  "image_ids": [
+    "registry.vallery.net/jvallery/weather-app@sha256:30adc5315ae33e453adde6591054df938291813e1d1f39173fd0a5d8d7f0c4d2"
+  ],
+  "operator_control_same_destination_before_after": true,
+  "destination_class": "global IPv4 TCP443; address omitted",
+  "socket": {
+    "connection": "failed",
+    "exception": "ConnectionRefusedError",
+    "errno": 111,
+    "elapsed_ms": 17.82
+  },
+  "generated_pod_chain": "KUBE-POD-FW-OPYCAQYPWQWNQUU6",
+  "rules": [
+    {
+      "rule_sha256": "4b359e756991bc2011d5c9579d9ba969d057f6b6cc1ed70ed210399c219c718e",
+      "rule": "-A KUBE-POD-FW-OPYCAQYPWQWNQUU6 -m comment --comment \"common bi-directional traffic policy rules\" -j KUBE-NWPLCY-COMMON",
+      "before_packets": 0,
+      "after_packets": 2,
+      "delta_packets": 2,
+      "delta_bytes": 148
+    },
+    {
+      "rule_sha256": "d75c71d7cdd685064d641d67cf6b1bd9e3442c3ccba06270be44af06a0c1449c",
+      "rule": "-A KUBE-POD-FW-OPYCAQYPWQWNQUU6 -d [address] -m comment --comment \"rule to permit the traffic traffic to pods when source is the pod\\'s local node\" -m addrtype --src-type LOCAL -j ACCEPT",
+      "before_packets": 0,
+      "after_packets": 0,
+      "delta_packets": 0,
+      "delta_bytes": 0
+    },
+    {
+      "rule_sha256": "b05861df0b2e7466a871af57e45b8dcb97bfb5a8a91f9ae01055c578961f7dfb",
+      "rule": "-A KUBE-POD-FW-OPYCAQYPWQWNQUU6 -d [address] -m comment --comment \"run through nw policy api-ingress\" -j KUBE-NWPLCY-4KINRQHGU4NUPUOG",
+      "before_packets": 0,
+      "after_packets": 0,
+      "delta_packets": 0,
+      "delta_bytes": 0
+    },
+    {
+      "rule_sha256": "017fbe53937f4e9d9c4b28575e0290ae125ca610415c50c04c00d27e7a9384a2",
+      "rule": "-A KUBE-POD-FW-OPYCAQYPWQWNQUU6 -m comment --comment \"run through nw policy default-deny\" -j KUBE-NWPLCY-CI6IF47MZGRPOS5Q",
+      "before_packets": 0,
+      "after_packets": 1,
+      "delta_packets": 1,
+      "delta_bytes": 60
+    },
+    {
+      "rule_sha256": "291b7b480e4135644e2d636946bbfb1a6c8d9fd1a6434f356945fa54e4944891",
+      "rule": "-A KUBE-POD-FW-OPYCAQYPWQWNQUU6 -m comment --comment \"rule to log dropped traffic POD name:api-69f97dc69b-qvvk5 namespace: weather\" -m mark ! --mark 0x10000/0x10000 -m limit --limit 10/min --limit-burst 10 -j NFLOG --nflog-group 100",
+      "before_packets": 0,
+      "after_packets": 1,
+      "delta_packets": 1,
+      "delta_bytes": 60
+    },
+    {
+      "rule_sha256": "a156a36bd05556cd92b88c8ee75d554753f413ff5b989e81efd348f6e8382cb2",
+      "rule": "-A KUBE-POD-FW-OPYCAQYPWQWNQUU6 -m comment --comment \"rule to REJECT traffic destined for POD name:api-69f97dc69b-qvvk5 namespace: weather\" -m mark ! --mark 0x10000/0x10000 -j REJECT --reject-with icmp-port-unreachable",
+      "before_packets": 0,
+      "after_packets": 1,
+      "delta_packets": 1,
+      "delta_bytes": 60
+    },
+    {
+      "rule_sha256": "180cefbbf9ad3e122f587b8e4192a7df9616f40ead2b8474f0cde923affbf34e",
+      "rule": "-A KUBE-POD-FW-OPYCAQYPWQWNQUU6 -j MARK --set-xmark 0x0/0x10000",
+      "before_packets": 0,
+      "after_packets": 0,
+      "delta_packets": 0,
+      "delta_bytes": 0
+    },
+    {
+      "rule_sha256": "d83f2b395fe36684084a493b6b9a9fbc3d1e2f868370ccd7c18fd879dbeb2376",
+      "rule": "-A KUBE-POD-FW-OPYCAQYPWQWNQUU6 -m comment --comment \"set mark to ACCEPT traffic that comply to network policies\" -j MARK --set-xmark 0x20000/0x20000",
+      "before_packets": 0,
+      "after_packets": 0,
+      "delta_packets": 0,
+      "delta_bytes": 0
+    },
+    {
+      "rule_sha256": "c0b210d2b2e098c670254ab93f0864180e97f439b65ec975965ecd49448fef40",
+      "rule": "-A KUBE-ROUTER-FORWARD -s [address] -m comment --comment \"rule to jump traffic from POD name:api-69f97dc69b-qvvk5 namespace: weather to chain KUBE-POD-FW-OPYCAQYPWQWNQUU6\" -j KUBE-POD-FW-OPYCAQYPWQWNQUU6",
+      "before_packets": 0,
+      "after_packets": 1,
+      "delta_packets": 1,
+      "delta_bytes": 60
+    },
+    {
+      "rule_sha256": "5b65d5c1941010ab0204ba4592eb220be5aa445ea2be82bbf668dbe1b61a5309",
+      "rule": "-A KUBE-ROUTER-FORWARD -s [address] -m physdev --physdev-is-bridged -m comment --comment \"rule to jump traffic from POD name:api-69f97dc69b-qvvk5 namespace: weather to chain KUBE-POD-FW-OPYCAQYPWQWNQUU6\" -j KUBE-POD-FW-OPYCAQYPWQWNQUU6",
+      "before_packets": 0,
+      "after_packets": 0,
+      "delta_packets": 0,
+      "delta_bytes": 0
+    }
+  ],
+  "policy_reject_counter_increased": true
+}
