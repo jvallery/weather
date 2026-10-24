@@ -8,6 +8,7 @@ resources:
 - network-policy.yaml
 - application.yaml
 - ingress.yaml
+- database
 images:
 - name: weather-app
   newName: registry.vallery.net/jvallery/weather-app
