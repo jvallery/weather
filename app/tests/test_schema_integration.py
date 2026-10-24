@@ -27,7 +27,14 @@ from weather.timemodel import weather_day
 pytestmark = pytest.mark.integration
 
 ROLES = ("weather_migrator", "weather_ingest", "weather_worker", "weather_api", "weather_editor")
-API_VIEWS = ("public_api.obs_st", "public_api.rapid_wind", "public_api.station")
+API_VIEWS = (
+    "public_api.obs_st",
+    "public_api.rapid_wind",
+    "public_api.station",
+    "public_api.search_documents",
+    "public_api.search_vectors",
+)
+SEARCH = ("embedding_profile", "search_document", "search_embedding")
 TELEMETRY = (
     "station",
     "device",
@@ -118,9 +125,9 @@ def test_baseline_head_roles_and_least_privilege() -> None:
             async with admin.begin() as connection:
                 assert await scalar(
                     connection, "SELECT version_num FROM public.alembic_version"
-                ) == ("0003_publication")
-                # Slice-1 relations, the observations view, the API's views (0002) and the
-                # publication catalog (0003).
+                ) == ("0004_search")
+                # Slice-1 relations, the observations view, the API's views (0002), the
+                # publication catalog (0003) and search (0004).
                 relations = (
                     await connection.execute(
                         text("""
@@ -132,6 +139,7 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                 ).scalars()
                 assert set(relations) == {
                     *(f"weather.{name}" for name in TELEMETRY),
+                    *(f"weather.{name}" for name in SEARCH),
                     "weather.weather_day",
                     "weather.job",
                     "weather.outbox",

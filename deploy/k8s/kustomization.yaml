@@ -11,6 +11,9 @@ resources:
 - database
 - migrate
 - scheduler
+# Search (#25): uncomment in the deploy commit that pins an app digest carrying weather.search.
+# components:
+# - search
 images:
 - name: weather-app
   newName: registry.vallery.net/jvallery/weather-app

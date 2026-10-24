@@ -12,6 +12,7 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     Column,
+    Computed,
     Date,
     DateTime,
     ForeignKey,
@@ -26,8 +27,25 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import DOUBLE_PRECISION, JSONB, TSVECTOR
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.dialects.postgresql.base import ischema_names
+from sqlalchemy.types import UserDefinedType
+
+
+class Vector(UserDefinedType[Any]):
+    """pgvector column type for drift checks only; values are bound as text and cast in SQL."""
+
+    cache_ok = True
+
+    def __init__(self, dimensions: int = 2560) -> None:
+        self.dimensions = dimensions
+
+    def get_col_spec(self, **kw: Any) -> str:
+        return f"VECTOR({self.dimensions})"
+
+
+ischema_names["vector"] = Vector
 
 TELEMETRY_FAMILIES = (
     "obs_st",
@@ -473,4 +491,92 @@ Table(
     _ref("withdrawal_id", "withdrawal"),
     _created(),
     CheckConstraint(f"{PRODUCT} AND {CAMERA} AND {PRODUCT_KEY}", name="identity"),
+)
+
+# 0004_search (#25): embedding profiles, immutable search document revisions and vectors.
+Table(
+    "embedding_profile",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("model", String(128), nullable=False),
+    Column("dimensions", Integer, nullable=False),
+    Column("query_prefix", Text, nullable=False),
+    _created(),
+    CheckConstraint("id ~ '^[a-z0-9][a-z0-9.-]{0,63}$' AND dimensions = 2560", name="identity"),
+)
+search_document = Table(
+    "search_document",
+    metadata,
+    _identity(),
+    _ref("video_id", "video"),
+    Column("kind", String(8), nullable=False),
+    Column("camera_id", String(32), nullable=False),
+    Column("segment", String(16), nullable=False),
+    _instant("video_start"),
+    _instant("video_end"),
+    _instant("source_start"),
+    _instant("source_end"),
+    Column("media_start_seconds", DOUBLE_PRECISION),
+    Column("media_end_seconds", DOUBLE_PRECISION),
+    Column("media_revision", Integer, nullable=False),
+    Column("description_revision", Integer, nullable=False),
+    Column("editorial_revision", Integer, nullable=False),
+    Column("analysis_mode", String(32), nullable=False),
+    Column("poster_asset_id", PGUUID(as_uuid=True)),
+    _instant("public_not_before"),
+    Column("text", Text, nullable=False),
+    Column("text_hash", String(64), nullable=False),
+    # The migration spells the configuration 'pg_catalog.english'; PostgreSQL reflects this.
+    Column("lexical", TSVECTOR, Computed("to_tsvector('english'::regconfig, text)")),
+    Column("visibility", String(16), nullable=False, server_default=text("'public'")),
+    Column("index_status", String(16), nullable=False),
+    _instant("withdrawn_at", True),
+    _created(),
+    UniqueConstraint("id", "text_hash"),
+    CheckConstraint("kind IN ('video','window')", name="identity"),
+    CheckConstraint("video_start < video_end", name="interval"),
+    CheckConstraint("media_start_seconds IS NULL OR media_start_seconds >= 0", name="seek"),
+    CheckConstraint("public_not_before >= video_end + interval '630 seconds'", name="embargo"),
+    CheckConstraint("length(text) BETWEEN 1 AND 8000", name="text"),
+    CheckConstraint("visibility IN ('public','withdrawn')", name="state"),
+)
+Index(
+    "uq_search_document_video",
+    search_document.c.video_id,
+    unique=True,
+    postgresql_where=text("kind = 'video' AND visibility = 'public'"),
+)
+Index(
+    "uq_search_document_window",
+    search_document.c.video_id,
+    search_document.c.source_start,
+    unique=True,
+    postgresql_where=text("kind = 'window' AND visibility = 'public'"),
+)
+Index("ix_search_document_video_id", search_document.c.video_id)
+Index(
+    "ix_search_document_lexical",
+    search_document.c.lexical,
+    postgresql_using="gin",
+    postgresql_where=text("visibility = 'public'"),
+)
+Table(
+    "search_embedding",
+    metadata,
+    Column("document_id", PGUUID(as_uuid=True), primary_key=True),
+    Column(
+        "profile_id",
+        String(64),
+        ForeignKey("weather.embedding_profile.id", ondelete="RESTRICT"),
+        primary_key=True,
+    ),
+    Column("text_hash", String(64), nullable=False),
+    Column("embedding", Vector(2560), nullable=False),
+    _created(),
+    ForeignKeyConstraint(
+        ["document_id", "text_hash"],
+        ["weather.search_document.id", "weather.search_document.text_hash"],
+        ondelete="RESTRICT",
+    ),
+    CheckConstraint("abs(public.vector_norm(embedding) - 1) <= 0.001", name="normalized"),
 )

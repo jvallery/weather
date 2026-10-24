@@ -16,6 +16,7 @@ from weather.timemodel import ScheduleError, SiteConfig, load_site
 from .cursors import CursorCodec
 from .registry import cadences
 from .routes import install
+from .search import SearchReader, SearchService
 from .service import WeatherService
 from .source import WeatherReader
 from .timelapses import Catalog, DatabaseSource, TimelapseCursor
@@ -48,10 +49,13 @@ def read_site(path: Path = SITE_FILE) -> SiteConfig | None:
         return None
 
 
-def build_app(service: WeatherService | None = None) -> FastAPI:
+def build_app(
+    service: WeatherService | None = None, search: SearchService | None = None
+) -> FastAPI:
     """Without a service (no database configured) data routes answer 503."""
     app = FastAPI(title="Weather", version="1", docs_url=None, redoc_url=None)
     app.state.weather = service
+    app.state.search = search
 
     @app.get("/healthz", include_in_schema=False)
     @app.get("/api/healthz", include_in_schema=False)
@@ -74,6 +78,7 @@ def create_app(settings: Settings, registry: CollectorRegistry = REGISTRY) -> Fa
         create_database_engine,
         wait_for_database,
     )
+    from weather.search.cortex import load_embedder
 
     engine = create_database_engine(
         pool_size=POOL_SIZE,
@@ -90,6 +95,18 @@ def create_app(settings: Settings, registry: CollectorRegistry = REGISTRY) -> Fa
         WeatherReader(engine), CursorCodec(key), cadences=cadences(settings),
         registry=registry, site=read_site(),
     )
+    # Without Cortex configuration or its key, search stays available as lexical/numeric.
+    embedder = load_embedder(
+        str(settings.cortex_base_url) if settings.cortex_base_url else None,
+        settings.search_profile,
+    )
+    search = SearchService(
+        SearchReader(engine),
+        embedder,
+        profile_id=settings.search_profile,
+        cadences=cadences(settings),
+        registry=registry,
+    )
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
@@ -99,13 +116,17 @@ def create_app(settings: Settings, registry: CollectorRegistry = REGISTRY) -> Fa
             # Stay up but unready; the refresh loop keeps retrying.
             log.warning("Database unreachable at startup; serving 503 until it answers")
         service.start()
+        search.start()
         try:
             yield
         finally:
+            await search.stop()
             await service.stop()
+            if embedder is not None:
+                await embedder.aclose()
             await engine.dispose()
 
-    app = build_app(service)
+    app = build_app(service, search)
     app.state.timelapses = Catalog(DatabaseSource(engine), TimelapseCursor(key))
     app.router.lifespan_context = lifespan
     return app

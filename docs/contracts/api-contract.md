@@ -26,6 +26,12 @@ Freshness: `obs_st` metrics expect 60 s and stay fresh for 150 s; `rapid_wind` e
 
 Aggregates follow the [aggregation contract](weather-aggregation-contract.md). Per C5 they carry an evidence count and a SHA-256 over the contributing row IDs, not ID lists, and no revision binding: they are recomputed on every read.
 
+## Search (implemented, #25)
+
+`POST /api/v1/search` takes `start`, `end` (UTC `Z`), `query` (≤512 characters; no control characters), `cameras`, `segments` (`daytime`/`overnight`), `predicates` (≤8) and `top_k` (1–20, default 10); unknown fields are rejected. A predicate is `metric`/`statistic` (`precipitation`/`sum`, `wind_gust`/`max`, `temperature`/`min`, `max`, `mean`), `op` (`<`, `<=`, `=`, `>=`, `>`), `value`, `unit` (a registry unit of that metric) and `min_coverage` (default 0.95). Predicates apply to the whole video interval over the on-read aggregates and need a window of at most 31 days; a missing or under-covered value never matches.
+
+The response has `mode` (`hybrid_exact`, `lexical`, `numeric`), `degraded_reason` (`embedding_unavailable`, `embedding_busy`, `lexical_no_terms` or null), `profile_id` (set for `hybrid_exact`), `count` and `hits`. Each hit has `rank`, `video_id`, `document_id`, `camera_id`, `segment`, `video_interval`, `source_interval`, `evidence_precision`, `analysis_mode`, `snippet`, `media_revision`, `poster_asset_id`, a nullable `seek` (`media_seconds`, `source_at` inside the cited interval) and `matched_measurements`. Errors: 400 invalid input or `range_too_large`, 429 `busy` with `Retry-After`, 503 `unavailable` for a SQL failure or deadline (never an empty success). Every response is `no-store`. Behaviour and limits: [search operations](../operations/search.md).
+
 ## Effective editorial content and analysis coverage
 
 `EditorialPublic.description` is the effective, currently eligible description, whether generated or human-edited; null means no eligible description. It is separate from immutable automated claims. `human_edited` and the effective revision label its provenance. An invalidated evidence binding cannot remain visible merely because this string still validates. Public sidecars, UI and lexical/semantic indexing must consume the same effective revision. Private notes and favorites remain excluded. The 8,000-character interface bound is a protective ceiling, not permission to bypass grounding.

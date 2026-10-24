@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "declarative_implementation_obligations_not_executed",
+  "status": "declarative_obligations; executed by app/tests/test_search.py and test_search_integration.py (#25)",
   "requirements": [
     "14.1",
     "14.2",
@@ -13,9 +13,9 @@
   "cases": [
     {
       "id": "SI-01",
-      "name": "profile-same-dimension",
-      "given": "A cached vector has the same dimension but a different tokenizer/model/profile fingerprint",
-      "expected": "Reject cache reuse; current-profile embedding or labeled lexical fallback"
+      "name": "profile-isolation",
+      "given": "Stored vectors exist for a profile other than the configured one, including the same dimension",
+      "expected": "Other-profile rows are never ranked; only the configured profile's vectors enter the semantic branch"
     },
     {
       "id": "SI-02",
@@ -99,13 +99,15 @@
       "id": "SI-15",
       "name": "shadow-correction-race",
       "given": "Document correction lands during shadow generation backfill/activation",
-      "expected": "Catch up to watermark and serialize final activation; old text remains withdrawn"
+      "expected": "Catch up to watermark and serialize final activation; old text remains withdrawn",
+      "obsolete": "P10: no shadow generations or query-vector cache"
     },
     {
       "id": "SI-16",
       "name": "rollback-withdrawal",
       "given": "Prior retained generation contains a now-invalid document",
-      "expected": "Rollback never restores eligibility; use current lexical fallback where vectors are absent"
+      "expected": "Rollback never restores eligibility; use current lexical fallback where vectors are absent",
+      "obsolete": "P10: no shadow generations or query-vector cache"
     },
     {
       "id": "SI-17",
@@ -147,7 +149,8 @@
       "id": "SI-23",
       "name": "query-cache-pressure",
       "given": "Cache exceeds entry/byte cap or reaches absolute expiry while requests remain frequent",
-      "expected": "Enforce deployment-wide 256-entry/8-MiB bound and 15-minute non-sliding TTL; reuse only exact transformed hash/profile and rerun current filters"
+      "expected": "Enforce deployment-wide 256-entry/8-MiB bound and 15-minute non-sliding TTL; reuse only exact transformed hash/profile and rerun current filters",
+      "obsolete": "P10: no shadow generations or query-vector cache"
     },
     {
       "id": "SI-24",

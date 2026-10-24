@@ -21,8 +21,11 @@ from .models import (
     ObservationQuery,
     Observations,
     Problem,
+    SearchRequest,
+    SearchResults,
 )
 from .registry import PublicError, unavailable
+from .search import SearchService
 from .service import WeatherService
 from .timelapses import router as timelapses
 
@@ -30,6 +33,10 @@ ERRORS: dict[int | str, dict[str, Any]] = {
     400: {"model": Problem, "description": "Invalid request."},
     503: {"model": Problem, "description": "Weather data is temporarily unavailable."},
 }
+STATUS = {"unavailable": 503, "busy": 429}
+# A search body is a few hundred bytes; refuse to parse anything far larger.
+MAX_SEARCH_BODY = 16 * 1024
+SEARCH = "/api/v1/search"
 ROUTES = {
     "/api/v1/weather/current": "current",
     "/api/v1/weather/metrics": "metrics",
@@ -37,6 +44,7 @@ ROUTES = {
     "/api/v1/weather/aggregates": "aggregates",
     "/api/v1/weather/almanac": "almanac",
     "/api/v1/timelapses": "timelapses",
+    SEARCH: "search",
 }
 router = APIRouter()
 
@@ -136,11 +144,32 @@ async def get_almanac(
     return result
 
 
+@router.post(
+    SEARCH,
+    response_model=SearchResults,
+    operation_id="search",
+    responses={
+        **ERRORS,
+        429: {"model": Problem, "description": "Search is busy; retry after Retry-After."},
+    },
+)
+async def search(request: Request, response: Response, body: SearchRequest) -> SearchResults:
+    service = getattr(request.app.state, "search", None)
+    if not isinstance(service, SearchService):
+        raise unavailable()
+    result = await service.search(body)
+    response.headers["Cache-Control"] = "no-store"
+    return result
+
+
 def _problem(status: int, problem: Problem) -> JSONResponse:
+    headers = {"Cache-Control": "no-store"}
+    if status == 429:
+        headers["Retry-After"] = "1"
     return JSONResponse(
         status_code=status,
         media_type="application/problem+json",
-        headers={"Cache-Control": "no-store"},
+        headers=headers,
         content=problem.model_dump(mode="json"),
     )
 
@@ -156,13 +185,25 @@ def install(app: FastAPI) -> None:
     @app.exception_handler(PublicError)
     async def public(_request: Request, error: PublicError) -> JSONResponse:
         return _problem(
-            503 if error.code == "unavailable" else 400,
+            STATUS.get(error.code, 400),
             Problem(
                 code=error.code,
                 message=error.message,
                 suggested_resolution_seconds=error.suggested_resolution_seconds,
             ),
         )
+
+    @app.middleware("http")
+    async def bounded(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        if request.url.path == SEARCH and request.method == "POST":
+            length = request.headers.get("content-length", "")
+            if not length.isdigit() or int(length) > MAX_SEARCH_BODY:
+                return _problem(
+                    400, Problem(code="invalid_request", message="Invalid request body.")
+                )
+        return await call_next(request)
 
     @app.middleware("http")
     async def observe(
@@ -188,7 +229,7 @@ def public_openapi() -> dict[str, Any]:
         for operation in path.values():
             responses = operation.get("responses", {})
             responses.pop("422", None)
-            for code in ("400", "503"):
+            for code in ("400", "429", "503"):
                 if code in responses and "content" in responses[code]:
                     responses[code]["content"] = {
                         "application/problem+json": responses[code]["content"]["application/json"]

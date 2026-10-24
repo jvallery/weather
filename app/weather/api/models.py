@@ -3,10 +3,12 @@
 
 import math
 import re
+import unicodedata
 from datetime import UTC, date, datetime
 from typing import Annotated, Any, Literal
 
 from pydantic import (
+    AfterValidator,
     BaseModel,
     BeforeValidator,
     ConfigDict,
@@ -444,3 +446,116 @@ def rounded(value: float | None, digits: int = 6) -> float | None:
     if value is None or not math.isfinite(value):
         return None
     return round(value, digits)
+
+
+# Search (#25) ---------------------------------------------------------------------------
+
+MAX_QUERY = 512
+MAX_PREDICATES = 8
+MAX_HITS = 20
+CameraID = Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]{0,31}$")]
+Segment = Literal["daytime", "overnight"]
+SearchMode = Literal["hybrid_exact", "lexical", "numeric"]
+DegradedReason = Literal["embedding_unavailable", "embedding_busy", "lexical_no_terms"]
+Operator = Literal["<", "<=", "=", ">=", ">"]
+# Whitelisted measured predicates over the whole video segment (api-contract).
+PREDICATES: dict[str, tuple[str, ...]] = {
+    "precipitation": ("sum",),
+    "wind_gust": ("max",),
+    "temperature": ("min", "max", "mean"),
+}
+
+
+def _plain_text(value: str) -> str:
+    """Reject malformed Unicode and control characters; never normalize or trim (D12)."""
+    for character in value:
+        if 0xD800 <= ord(character) <= 0xDFFF or unicodedata.category(character) == "Cc":
+            raise ValueError("Query contains prohibited characters")
+    return value
+
+
+class Predicate(PublicModel):
+    metric: Literal["precipitation", "wind_gust", "temperature"]
+    statistic: Literal["sum", "max", "min", "mean"]
+    op: Operator
+    value: float
+    unit: Annotated[str, StringConstraints(min_length=1, max_length=16)]
+    # Unknown or under-covered aggregates never satisfy a comparison, even "= 0".
+    min_coverage: Annotated[float, Field(gt=0, le=1)] = 0.95
+
+    @model_validator(mode="after")
+    def supported(self) -> Predicate:
+        if self.statistic not in PREDICATES[self.metric]:
+            raise ValueError("Statistic is unsupported for this metric")
+        return self
+
+
+class SearchRequest(Window):
+    """Explicit UTC bounds; empty or whitespace-only text browses newest first (numeric)."""
+
+    query: Annotated[str, StringConstraints(max_length=MAX_QUERY), AfterValidator(_plain_text)] = ""
+    cameras: Annotated[list[CameraID], Field(max_length=16)] = []
+    segments: Annotated[list[Segment], Field(max_length=2)] = []
+    predicates: Annotated[list[Predicate], Field(max_length=MAX_PREDICATES)] = []
+    top_k: Annotated[int, Field(ge=1, le=MAX_HITS)] = 10
+
+
+class Seek(PublicModel):
+    """A playback offset inside the hit's cited media interval and its source instant."""
+
+    media_seconds: Annotated[float, Field(ge=0)]
+    source_at: UTCInstant
+
+
+class MatchedMeasurement(PublicModel):
+    """A whole-video aggregate that satisfied a predicate; never a clip-time event."""
+
+    metric: MetricID
+    statistic: str
+    value: float
+    unit: str
+    interval: Interval
+    coverage: Coverage
+    evidence_count: Annotated[int, Field(ge=0)]
+    evidence_hash: str | None
+
+
+class SearchHit(PublicModel):
+    rank: Annotated[int, Field(ge=1)]
+    video_id: str
+    document_id: str
+    camera_id: str
+    segment: Segment
+    video_interval: Interval
+    source_interval: Interval
+    evidence_precision: Literal["frame", "interval", "clip", "segment"]
+    analysis_mode: str
+    snippet: str
+    media_revision: Annotated[int, Field(ge=1)]
+    poster_asset_id: str | None
+    seek: Seek | None
+    matched_measurements: list[MatchedMeasurement]
+
+    @model_validator(mode="after")
+    def cited(self) -> SearchHit:
+        source, video = self.source_interval, self.video_interval
+        if not video.start <= source.start < source.end <= video.end:
+            raise ValueError("A hit cites an interval inside its video")
+        if self.seek and not source.start <= self.seek.source_at < source.end:
+            raise ValueError("A seek lies inside the cited interval")
+        return self
+
+
+class SearchResults(PublicModel):
+    generated_at: UTCInstant
+    mode: SearchMode
+    degraded_reason: DegradedReason | None
+    profile_id: str | None
+    count: Annotated[int, Field(ge=0, le=MAX_HITS)]
+    hits: Annotated[list[SearchHit], Field(max_length=MAX_HITS)]
+
+    @model_validator(mode="after")
+    def counted(self) -> SearchResults:
+        if self.count != len(self.hits):
+            raise ValueError("count equals the number of hits")
+        return self

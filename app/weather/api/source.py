@@ -81,7 +81,7 @@ WHERE observed_at >= :after_time AND observed_at < :end AND inserted_at <= :snap
 ORDER BY observed_at, id LIMIT :rows"""
 
 
-def _cells_sql(source: Source, *, day: bool, wind: bool) -> str:
+def _cells_sql(source: Source, *, day: bool, wind: bool, intervals: bool = False) -> str:
     value = "wind_avg" if wind else source.column
     direction = ",wind_direction AS d" if wind else ""
     carry = ",d" if wind else ""
@@ -103,7 +103,13 @@ def _cells_sql(source: Source, *, day: bool, wind: bool) -> str:
         home = "ts > bin_start AND ts <= bin_end"
         observed = "home"
     last = "greatest(sup.e - interval '1 microsecond', sup.s)"
-    if day:
+    if intervals:
+        # Arbitrary, possibly overlapping intervals (search predicates over whole videos): the
+        # same membership as the bounds below, b.lo <= last support instant and b.hi > start.
+        bins = f"""SELECT b.lo, b.hi
+    FROM unnest(CAST(:los AS timestamptz[]), CAST(:his AS timestamptz[])) AS b(lo, hi)
+    WHERE b.lo <= {last} AND b.hi > sup.s"""
+    elif day:
         bounds = "CAST(:bounds AS timestamptz[])"
         bins = f"""SELECT ({bounds})[k] AS lo, ({bounds})[k + 1] AS hi
     FROM generate_series(width_bucket(sup.s, {bounds}), width_bucket({last}, {bounds})) AS k
@@ -135,7 +141,7 @@ def _cells_sql(source: Source, *, day: bool, wind: bool) -> str:
 """
 
 
-def aggregate_sql(source: Source, *, day: bool, wind: bool) -> str:
+def aggregate_sql(source: Source, *, day: bool, wind: bool, intervals: bool = False) -> str:
     directional = f"v >= {CALM_MPS} AND d IS NOT NULL"
     wind_columns = (
         f""",sum(secs) FILTER (WHERE v < {CALM_MPS}) AS calm_seconds,
@@ -147,7 +153,7 @@ def aggregate_sql(source: Source, *, day: bool, wind: bool) -> str:
         else ""
     )
     return (
-        _cells_sql(source, day=day, wind=wind)
+        _cells_sql(source, day=day, wind=wind, intervals=intervals)
         + f"""SELECT bin_start,bin_end,sum(secs) AS support_seconds,
   sum(v * secs) / nullif(sum(secs), 0) AS mean,
   min(v) FILTER (WHERE observed) AS minimum,max(v) FILTER (WHERE observed) AS maximum,

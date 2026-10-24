@@ -24,7 +24,7 @@ STATISTICS = ("observed", "mean", "min", "max", "sum", "vector_mean", "rose")
 
 
 class PublicError(ValueError):
-    """A sanitized client-visible failure; ``unavailable`` maps to 503, the rest to 400."""
+    """A sanitized client-visible failure: ``unavailable`` 503, ``busy`` 429, the rest 400."""
 
     def __init__(
         self, code: str, message: str, suggested_resolution_seconds: int | None = None
