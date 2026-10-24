@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "kind": "weather-ci-supply-chain-qualification",
+  "recorded_at_utc": "2026-10-24T08:48:55.711551+00:00",
+  "platform_source_revision": "84a1a5d284aefe3e3f32c455a260ea73b222d18f",
+  "validation_image_digest": "sha256:7d61fca39280efb3b26419a111609f4713f3a1cc54b736a7af624fdf03c8f0e6",
+  "scanner_input": "fixed read-only OCI directories for the exact deployment image pins",
+  "image_digests": {
+    "app": "sha256:30adc5315ae33e453adde6591054df938291813e1d1f39173fd0a5d8d7f0c4d2",
+    "web": "sha256:0761f4ebf5f5cf73a4d261446b296fa77c1a3fb7e755585306c218a6e70764bd"
+  },
+  "oci_closure_observation": {
+    "source_revision": "ea45d53db77db8b5ae4323b24d46c2934d2a8df4",
+    "workflow_uid": "d2d8b5e2-f48b-41e1-817f-37b437b24d1c",
+    "evidence_pod_uid": "ba75c505-f367-4f28-a694-f0e57f26059a",
+    "candidate_uid": 1001,
+    "blob_bytes_by_role": {
+      "app": 106909318,
+      "web": 87766473
+    },
+    "total_blob_bytes": 194675791
+  },
+  "security_readback": {
+    "candidate_registry_or_archive_secret_mounts": false,
+    "oci_input_mount_read_only": true,
+    "candidate_secret_api_get_or_list_permitted": false,
+    "writer_and_reader_identities_distinct": true,
+    "credential_values_recorded": false,
+    "ordinary_check_artifact_outputs": 0,
+    "evidence_artifact_outputs": 4,
+    "logs_archived": false
+  },
+  "verification": "Independent authenticated GETs checked the trusted manifest output SHA, exact source and Workflow/Pod identities, file allowlist, byte bounds, every size and every SHA-256. SBOMs are nonempty CycloneDX documents.",
+  "runs": [
+    {
+      "role": "merged-main",
+      "source_revision": "4c401fe2077289db111d48268b594489e4dc3782",
+      "workflow_name": "repo-validate-jvallery-weather-4c401fe20772-push",
+      "workflow_uid": "b1ca1d7a-c1b7-4f68-a865-d7093ec67986",
+      "evidence_pod_name": "repo-validate-jvallery-weather-4c401fe20772-push-run-check-weather-evidence-600881803",
+      "evidence_pod_uid": "c0e38cb9-3287-43e8-8b1c-0a2c21042257",
+      "terminal_phase": "Succeeded",
+      "finished_at_utc": "2026-10-24T08:45:11Z",
+      "checks": [
+        {
+          "name": "application",
+          "passed": true,
+          "exit_code": 0
+        },
+        {
+          "name": "manifests",
+          "passed": true,
+          "exit_code": 0
+        },
+        {
+          "name": "supply-chain-evidence",
+          "passed": true,
+          "exit_code": 0
+        }
+      ],
+      "object_key_prefix": "native-ci/v1/weather/supply-chain/b1ca1d7a-c1b7-4f68-a865-d7093ec67986/repo-validate-jvallery-weather-4c401fe20772-push-run-check-weather-evidence-600881803/",
+      "objects": [
+        {
+          "name": "sbom-app.json",
+          "size_bytes": 1226477,
+          "sha256": "fb936b7f19c47e24088073b77b1e50fa746833f83bac13028729435101476512",
+          "independent_readback_verified": true,
+          "format": "CycloneDX",
+          "component_count": 3406
+        },
+        {
+          "name": "sbom-web.json",
+          "size_bytes": 1403639,
+          "sha256": "fe4501bfc5bc286d51b44644b748a9a1fed64856ee4545b8c91749f9f7185e39",
+          "independent_readback_verified": true,
+          "format": "CycloneDX",
+          "component_count": 3541
+        },
+        {
+          "name": "licenses.json",
+          "size_bytes": 70943,
+          "sha256": "126aeb31a9b078bf6ae83723dc141d56fa42f500e36ebe4f992b7d544daa49ad",
+          "independent_readback_verified": true,
+          "json_top_level_entries": 396
+        },
+        {
+          "name": "manifest.json",
+          "size_bytes": 1339,
+          "sha256": "74147f99df4e5fe5b7cfaa8e7a90b7e449ae683d215cef36e7368d9c6096c5fd",
+          "independent_readback_verified": true
+        }
+      ],
+      "payload_bytes": 2701059,
+      "readback_at_utc": "2026-10-24T08:46:20.098009+00:00",
+      "workflow_template_reference": "repo-validate-events"
+    },
+    {
+      "role": "consumer-pr",
+      "source_revision": "4ea95aa83b29bf0417f444c4355b974ba59313a1",
+      "workflow_name": "repo-validate-jvallery-weather-4ea95aa83b29-pr",
+      "workflow_uid": "2e82b6d5-6b65-4d1b-b544-0c9b90605003",
+      "evidence_pod_name": "repo-validate-jvallery-weather-4ea95aa83b29-pr-run-check-weather-evidence-3901454938",
+      "evidence_pod_uid": "e78d54ba-1a96-4375-b08a-7b38a340a5e3",
+      "terminal_phase": "Succeeded",
+      "finished_at_utc": "2026-10-24T08:37:06Z",
+      "checks": [
+        {
+          "name": "application",
+          "passed": true,
+          "exit_code": 0
+        },
+        {
+          "name": "manifests",
+          "passed": true,
+          "exit_code": 0
+        },
+        {
+          "name": "supply-chain-evidence",
+          "passed": true,
+          "exit_code": 0
+        }
+      ],
+      "object_key_prefix": "native-ci/v1/weather/supply-chain/2e82b6d5-6b65-4d1b-b544-0c9b90605003/repo-validate-jvallery-weather-4ea95aa83b29-pr-run-check-weather-evidence-3901454938/",
+      "objects": [
+        {
+          "name": "sbom-app.json",
+          "size_bytes": 1226477,
+          "sha256": "9e80ef586102b0abaf06ac10b28508adddad9489618dd53ac9b581a2460fb0ed",
+          "independent_readback_verified": true,
+          "format": "CycloneDX",
+          "component_count": 3406
+        },
+        {
+          "name": "sbom-web.json",
+          "size_bytes": 1403639,
+          "sha256": "5399cd6e906aab16dd3fd4b6ef3b4cf0fc13b31ef33694f7d3b2f63744ce8d40",
+          "independent_readback_verified": true,
+          "format": "CycloneDX",
+          "component_count": 3541
+        },
+        {
+          "name": "licenses.json",
+          "size_bytes": 70943,
+          "sha256": "126aeb31a9b078bf6ae83723dc141d56fa42f500e36ebe4f992b7d544daa49ad",
+          "independent_readback_verified": true,
+          "json_top_level_entries": 396
+        },
+        {
+          "name": "manifest.json",
+          "size_bytes": 1333,
+          "sha256": "f59aa7eb56f33f6b45bd8b5764a8d28153d35ad5299bf6e78bee157f35138b2d",
+          "independent_readback_verified": true
+        }
+      ],
+      "payload_bytes": 2701059,
+      "readback_at_utc": "2026-10-24T08:38:21.453303+00:00",
+      "workflow_template_reference": "repo-validate-events"
+    }
+  ],
+  "bounds_bytes": {
+    "each_payload_file": 16777216,
+    "payload_total": 50331648,
+    "manifest": 4096
+  },
+  "retention_scope": "Existing native-ci/v1 hot lifecycle is seven days with owner-managed backup. These receipts prove upload and independent readback at the recorded times; they do not prove backup/restore completion, indefinite hot retention, or DR.",
+  "runtime_scope": "The recorded checks used the generic CI tools image above. PostgreSQL/browser runtime qualification of the separate shared Weather CI image is outside this receipt.",
+  "prior_failures_retained": [
+    {
+      "workflow_uid": "98ba0dc0-39f3-4cd9-abdd-3e20137be6eb",
+      "stage": "pre-Pod strict template-reference validation",
+      "pods_created": 0
+    },
+    {
+      "workflow_uid": "8911e769-142e-4055-ac39-3dcc2aa43e30",
+      "stage": "pre-Pod invalid artifact identifiers",
+      "pods_created": 0
+    },
+    {
+      "workflow_uid": "b2d65237-3e88-499a-aa0f-cd436fd73a98",
+      "stage": "trusted init ownership check",
+      "candidate_started": false,
+      "evidence_pod_uids": [
+        "9a49ef25-2457-4fc7-be2f-b5c9f976a176",
+        "00584a4b-8487-4341-b6c6-b5f489f138d2"
+      ]
+    }
+  ],
+  "immutable_runner_counterpart": "repo-validate-f702f141520a0a72",
+  "immutable_wrapper_counterpart": "repo-validate-events-c2957ae5c39694c8"
+}
