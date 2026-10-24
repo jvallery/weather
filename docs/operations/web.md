@@ -99,3 +99,11 @@ Metrics `weather_web_api_requests_total{route,result}`, `weather_web_api_infligh
 200 degraded page. Labels are fixed route templates and a bounded result vocabulary; no query,
 station identity or upstream address is logged. `weather_web_request_duration_seconds` covers HTTP
 status and asset 404s. Monitoring-stack owns scraping and alert/probe policy.
+
+The web Dockerfile pins the commissioned predecessor and retains its hashed assets. A build emits
+`.weather-assets.json` with only that build's own path, size and SHA-256 identities before copying
+one predecessor. Subsequent builds read that inventory, verify every predecessor byte and reject
+filename collisions with different content. The closure is limited to 512 files / 64 MiB total and
+8 MiB per file; older ancestors do not accumulate. The original scaffold image has one explicit
+legacy-inventory exception; remove that flag when repinning to the first inventoried web image.
+The rolling qualification checks immutable public cache headers as well as bytes and origin custody.

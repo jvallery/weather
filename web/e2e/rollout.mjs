@@ -42,10 +42,12 @@ async function assetProof(request, asset, phase) {
   const url = new URL(asset); url.searchParams.set("weather_rollout", `${operationId}-${phase}`);
   const response = await request.get(url.href, { timeout: remaining(), maxRedirects: 0 });
   if (response.status() !== 200) throw new Error(`Old asset is unavailable after ${phase}`);
+  const cacheControl = response.headers()["cache-control"] || "";
+  if (!/\bpublic\b/.test(cacheControl) || !/\bimmutable\b/.test(cacheControl) || !/max-age=31536000/.test(cacheControl)) throw new Error("Hashed asset lacks the public immutable cache policy");
   if (Number(response.headers()["content-length"] || 0) > 8 * 1024 * 1024) throw new Error("Asset exceeds qualification byte budget");
   const bytes = await response.body();
   if (bytes.length > 8 * 1024 * 1024) throw new Error("Asset exceeds qualification byte budget");
-  return { url: asset, path: new URL(asset).pathname, bytes: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") };
+  return { url: asset, path: new URL(asset).pathname, cache_control: cacheControl, bytes: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") };
 }
 async function emit(path, data) {
   const json = JSON.stringify(data);

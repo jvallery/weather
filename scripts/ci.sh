@@ -27,6 +27,7 @@ while (( $# )); do
     unit)
       uv run --frozen pytest -m 'not integration' \
         --cov=weather.timemodel --cov-report=term-missing --cov-fail-under=95
+      node --test scripts/retain-web-assets.test.mjs
       (cd web && pnpm test)
       ;;
     integration)
