@@ -137,13 +137,11 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     "public_api.observations",
                     *API_VIEWS,
                 }
-                for view in ("public_api.observations", *API_VIEWS):
-                    options = await scalar(
-                        connection,
-                        "SELECT reloptions FROM pg_class WHERE oid=CAST(:v AS regclass)",
-                        v=view,
-                    )
-                    assert "security_barrier=true" in options
+                options = await scalar(
+                    connection,
+                    "SELECT reloptions FROM pg_class WHERE oid='public_api.observations'::regclass",
+                )
+                assert "security_barrier=true" in options
 
                 async def table(role: str, name: str, privilege: str) -> bool:
                     return bool(

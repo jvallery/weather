@@ -5,6 +5,11 @@ Expand-only on top of the frozen baseline. Inline DDL; never import application 
 A value is public only when its row is valid, the field is not listed invalid and it is a JSON
 number. The views read only through the existing ix_obs_st_source_ts and
 ix_rapid_wind_source_ts btrees, so the API's newest-row and keyset queries never scan history.
+
+They are deliberately not security_barrier views: they have no row filter (gating happens per
+column in the select list, and raw values/quality are not exposed), so a barrier protects
+nothing, while it would stop the planner flattening the view and using the btree for
+ORDER BY ... LIMIT.
 """
 
 from alembic import op
@@ -46,7 +51,7 @@ def view(family: str) -> str:
              THEN (o."values"->>'{name}')::double precision END AS {name}"""
         for name in COLUMNS[family]
     )
-    return f"""CREATE VIEW public_api.{family} WITH (security_barrier=true) AS
+    return f"""CREATE VIEW public_api.{family} AS
         SELECT o.id,o.source_ts AS observed_at,r.received_at,{VALID} AS valid,{fields}
         FROM weather.{family} o JOIN weather.telemetry_receipt r ON r.id=o.receipt_id"""
 
@@ -55,8 +60,7 @@ def statements() -> list[str]:
     return [
         view("obs_st"),
         view("rapid_wind"),
-        """CREATE VIEW public_api.station WITH (security_barrier=true) AS
-           SELECT alias FROM weather.station""",
+        "CREATE VIEW public_api.station AS SELECT alias FROM weather.station",
         "REVOKE ALL ON public_api.obs_st,public_api.rapid_wind,public_api.station FROM PUBLIC",
         "GRANT SELECT ON public_api.obs_st,public_api.rapid_wind,public_api.station TO weather_api",
     ]
