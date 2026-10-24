@@ -390,3 +390,59 @@ def test_full_window_keeps_invalid_preceding_ties_and_following_report_support()
             await db.dispose()
 
     asyncio.run(check())
+
+
+def test_evidence_snapshot_evaluation_keeps_tolerated_future_sample_ineligible() -> None:
+    async def check() -> None:
+        db = engine()
+        budget = PublicDatabaseBudget(pool_size=2)
+        api = await api_engine(budget)
+        try:
+            async with db.begin() as connection:
+                d, alias = await station(connection)
+                await observation(connection, d, source=SOURCE - timedelta(seconds=10))
+                future, _ = await observation(
+                    connection,
+                    d,
+                    source=SOURCE + timedelta(seconds=5),
+                    values={"air_temperature": 22},
+                )
+            window = Interval(
+                start=SOURCE + timedelta(seconds=10), end=SOURCE + timedelta(seconds=30)
+            )
+            first = await read_evidence_window(
+                source(api, alias, budget, seconds=0),
+                window,
+                ["temperature"],
+                preceding_hold_seconds=30,
+                following_report_seconds=0,
+                evaluated_at=SOURCE,
+            )
+            repeated = await read_evidence_window(
+                source(api, alias, budget, seconds=60),
+                window,
+                ["temperature"],
+                preceding_hold_seconds=30,
+                following_report_seconds=0,
+                snapshot_watermark=first.watermark,
+                evaluated_at=SOURCE,
+            )
+            assert repeated == first
+            assert all(r.observation_id != future for r in repeated.rows)
+            assert repeated.rows[0].point.observed_at == SOURCE - timedelta(seconds=10)
+            advanced = await read_evidence_window(
+                source(api, alias, budget, seconds=60),
+                window,
+                ["temperature"],
+                preceding_hold_seconds=30,
+                following_report_seconds=0,
+                snapshot_watermark=first.watermark,
+                evaluated_at=SOURCE + timedelta(seconds=60),
+            )
+            eligible = next(r for r in advanced.rows if r.observation_id == future)
+            assert eligible.source_time_eligible and eligible.exact_value == 22
+        finally:
+            await api.dispose()
+            await db.dispose()
+
+    asyncio.run(check())

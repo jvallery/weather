@@ -103,7 +103,7 @@ aggregate math.
 
 `weather.db.public_evidence.read_evidence_window(reader, window, metrics, *,
 preceding_hold_seconds, following_report_seconds, snapshot_watermark=None,
-maximum_points=5000)` is an internal complete read, never a raw page subset.
+evaluated_at=None, maximum_points=5000)` is an internal complete read, never a raw page subset.
 Spans are explicit calibrated integers from zero through 86400 seconds and must
 cover every forward hold and preceding-report interval the caller accepts.
 
@@ -139,6 +139,14 @@ The helper selects the latest `revision_seq<=W` per publication from
 `public_api.telemetry_evidence_revisions`, fixing aggregate values/quality as well
 as membership. Its input hash still binds exact/null/quality/support and
 calibration state, not W alone. No connection remains held after return.
+`evaluated_at` defaults to the reader clock captured once for the read. An
+explicit value must be a UTC-aware Python datetime no later than the current
+reader clock; rejection uses a constant message without the supplied value.
+Both SQL source-time qualification and point mapping use this same exact instant.
+The aggregate adapter binds its first evaluation instant at microsecond precision
+into its signed opaque continuation position and reuses it with W. Thus tolerated
+future source/receipt times cannot age into eligibility or replace a preceding
+hold boundary within one snapshot. The helper accepts no unsigned HTTP time input.
 Raw observation pages retain their live-eligibility v3 view so
 later disputes return null/reason without dropping snapshot members.
 
