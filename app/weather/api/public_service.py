@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from typing import Protocol, TypeVar
 
 from .cursors import CursorCodec, CursorState, Snapshot, position, watermark
-from .metric_registry import REGISTRY, PublicInputError
+from .metric_registry import REGISTRY, MetricRegistry, PublicInputError, discovery
 from .public_common import utc_instant
 from .public_metrics import PublicMetrics, SourceAges
 from .public_models import (
@@ -67,6 +67,7 @@ class PublicWeatherService:
         source_timeout_seconds: float = 5,
         metrics: PublicMetrics | None = None,
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+        metric_registry: MetricRegistry | None = None,
     ) -> None:
         if maximum_raw_seconds <= 0 or not 0 < source_timeout_seconds <= 60:
             raise ValueError("Invalid public service budgets")
@@ -78,6 +79,7 @@ class PublicWeatherService:
         self._closed = False
         self._background: asyncio.Task[None] | None = None
         self.metrics = metrics if metrics is not None else PublicMetrics()
+        self.metric_registry = metric_registry if metric_registry is not None else discovery()
         self._cached: Current | None = None
         self._age_snapshot: tuple[Current | None, datetime | None] = (None, None)
         self._refresh_after = float("-inf")

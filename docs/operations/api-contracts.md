@@ -2,7 +2,8 @@
 
 `weather.api.public_models` and `metric_registry` are the code-first public boundary for WX-13.
 They contain no database access, credentials, collector logic or inference. `public_schema` builds
-an app from the real shared `public_routes.router`; it is not registered by the runtime CLI. Data
+an app from the real shared `public_routes.router`. The runtime factory registers it only after
+explicit data activation; the default remains the health-only skeleton. Data
 routes return sanitized 503 until the API owner injects a service with real bounded readers and its
 existing signing key. The discovery route remains available with explicitly uncommissioned cadence.
 
@@ -52,8 +53,8 @@ received at 08:15:01Z. No real station location or identity appears in these fix
 `public_routes.router` now contains the real async route implementation, and `contract_app` installs
 that same router and exception handlers. There are no metadata-only data handlers. The production
 owner calls `install_public_api(app, service)`; without an injected service data routes return a
-sanitized 503 with no-store. This source preparation does not change `weather.api.app` or enable
-any deployment. There is no generated/default production HMAC key or environment-secret reader.
+sanitized 503 with no-store. Runtime activation is documented in [API runtime](api-runtime.md);
+this source preparation enables no deployment. There is no generated/default production HMAC key.
 
 Construct `PublicWeatherService` with a typed `PublicSource`, `CursorCodec(existing_key)`, a
 commissioned raw-window budget, and the actual source-read timeout. The default outer source deadline

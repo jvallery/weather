@@ -7,6 +7,7 @@ entry advertises calculation vocabulary; it does not qualify source support or f
 
 import hashlib
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import Annotated, Literal
@@ -254,9 +255,26 @@ def convert(metric: str, value: Number, unit: str) -> Fraction:
     ) + Fraction(conversion.offset_numerator, conversion.offset_denominator)
 
 
-def discovery() -> MetricRegistry:
+def discovery(cadences: Mapping[str, float | None] | None = None) -> MetricRegistry:
+    if cadences is None:
+        return MetricRegistry(
+            revision=REGISTRY_REVISION, metrics=tuple(entry.definition for entry in _ENTRIES)
+        )
+    if any(metric not in REGISTRY for metric in cadences):
+        raise ValueError("Invalid public cadence vocabulary")
+    definitions = []
+    for entry in _ENTRIES:
+        values = {
+            **entry.definition.model_dump(),
+            "expected_interval_seconds": cadences.get(entry.definition.metric),
+        }
+        values["revision"] = _revision(
+            "metric_v1_", {key: value for key, value in values.items() if key != "revision"}
+        )
+        definitions.append(MetricDefinition.model_validate(values))
     return MetricRegistry(
-        revision=REGISTRY_REVISION, metrics=tuple(entry.definition for entry in _ENTRIES)
+        revision=_revision("registry_v1_", [row.model_dump(mode="json") for row in definitions]),
+        metrics=tuple(definitions),
     )
 
 

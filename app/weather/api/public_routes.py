@@ -12,13 +12,11 @@ from fastapi import APIRouter, FastAPI, Header, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from .metric_registry import PublicInputError
-from .metric_registry import router as discovery_router
+from .metric_registry import MetricRegistry, PublicInputError, discovery
 from .public_models import AggregateQuery, Aggregates, Current, History, ObservationQuery, Problem
 from .public_service import PublicWeatherService, unavailable
 
 router = APIRouter()
-router.include_router(discovery_router)
 CURRENT_HEADERS = {
     "ETag": {
         "description": "Weak validator of values, source timing, quality and data state.",
@@ -62,6 +60,14 @@ def _service(request: Request) -> PublicWeatherService:
     if not isinstance(service, PublicWeatherService):
         raise unavailable()
     return service
+
+
+@router.get(
+    "/api/v1/weather/metrics", response_model=MetricRegistry, operation_id="getMetricRegistry"
+)
+def get_metric_registry(request: Request) -> MetricRegistry:
+    service = getattr(request.app.state, "weather_public_service", None)
+    return service.metric_registry if isinstance(service, PublicWeatherService) else discovery()
 
 
 @router.get(
@@ -169,14 +175,15 @@ def install_public_api(app: FastAPI, service: PublicWeatherService | None = None
         response: Response = await call_next(request)
         if response.status_code >= 400:
             response.headers["Cache-Control"] = "no-store"
-        if service is not None:
+        active = getattr(request.app.state, "weather_public_service", None)
+        if isinstance(active, PublicWeatherService):
             routes = {
                 "/api/v1/weather/current": "current",
                 "/api/v1/weather/metrics": "metrics",
                 "/api/v1/weather/observations": "observations",
                 "/api/v1/weather/aggregates": "aggregates",
             }
-            service.metrics.http.labels(
+            active.metrics.http.labels(
                 routes.get(request.url.path, "other"), str(response.status_code)
             ).observe(time.monotonic() - started)
         return response

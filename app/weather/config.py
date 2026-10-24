@@ -13,6 +13,9 @@ class Settings(BaseModel):
     public_origin: HttpUrl
     port: int = Field(default=8000, ge=1, le=65535)
     metrics_port: int = Field(default=9000, ge=1, le=65535)
+    api_data_enabled: bool = False
+    api_station_alias: str | None = Field(default=None, min_length=1, max_length=64)
+    api_raw_window_seconds: int = Field(default=2678400, ge=60, le=31622400)
 
     @field_validator("public_origin")
     @classmethod
@@ -53,4 +56,8 @@ def load_settings(environment: Mapping[str, str] | None = None) -> Settings:
         raise ConfigurationError("Invalid configuration fields: " + ", ".join(fields)) from None
     if settings.port == settings.metrics_port:
         raise ConfigurationError("Invalid configuration fields: port, metrics_port")
+    if settings.api_data_enabled and (
+        not settings.api_station_alias or any(ord(char) < 32 for char in settings.api_station_alias)
+    ):
+        raise ConfigurationError("Invalid configuration fields: api_station_alias")
     return settings
