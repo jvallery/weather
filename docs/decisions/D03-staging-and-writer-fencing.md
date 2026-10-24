@@ -1,5 +1,7 @@
 # D03 — Snapshot staging, writer authority and failure recovery
 
+> **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): P2: staging stays on a dedicated Obsidian NFS share, but writer epochs, lock inodes, handover proofs and fence receipts are **withdrawn**. One StatefulSet per camera, writer-unique chunk names, fsync+rename sealing and scheduler dedupe by slot replace them. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
+
 Status: ownership/recovery protocol selected; exact NFS grant, durability and fencing integration remain material owner qualification. Requirements §§6.2–6.9, 17 and 18.2; R06/R07/R08/R19/R26/R28/R30. Consumers WX-03/08/10/18/36/37/38; OWN-NFS is the storage prerequisite, with OWN-CAM supplying sustained source characteristics. No staging share, workload or mount policy is created here.
 
 ## Observed platform and capacity

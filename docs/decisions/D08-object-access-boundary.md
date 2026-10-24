@@ -1,5 +1,7 @@
 # D08 — role-scoped object gateway and independent archive access
 
+> **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): **Superseded in full by O1.** No shared bucket and no custom S3 gateway: native per-bucket Garage keys plus CNPG archives direct to B2 meet R18. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
+
 Status: **boundary and operation policy selected; owner implementation/admission and Barman qualification pending**. Requirements R17/R18/R23/R27/R30/R31; WX-07/17/19/28/32/37/38. Owner prerequisite: [OWN-GATEWAY](https://github.com/jvallery/storage-infra/issues/1108). No credentials, gateway or bucket changed during this planning work.
 
 ## Architecture and trust
@@ -46,7 +48,7 @@ Reject caller-controlled ACLs, public-read grants, bucket policy/lifecycle/versi
 
 Bind each upload to an expected asset identity, size/hash and fencing generation. Existing same-identity/same-content retries may return the verified original result; differing content is a conflict. The gateway must prevent racing multipart completions from overwriting an immutable key. A preflight HEAD followed by unconditional PUT is insufficient. Qualify the installed provider's conditional operation behavior or use the owner's serialized immutable reservation/journal protocol; do not claim atomic immutability before that mechanism is proven.
 
-Upload/readback alone does not establish power-loss durability or public eligibility. D07's durability receipt and the [publication transaction](../implementation/publication-recovery-contract.md) remain mandatory before pointer activation or raw cleanup. The media origin checks tombstone, expiry, class, revision and exposure upper bound plus 600 seconds before headers, conditional responses or bytes. Unavailable authorization does not permit stale original/backup access.
+Upload/readback alone does not establish power-loss durability or public eligibility. D07's durability receipt and the [publication transaction](../archive/planning-2026-10/implementation/publication-recovery-contract.md) remain mandatory before pointer activation or raw cleanup. The media origin checks tombstone, expiry, class, revision and exposure upper bound plus 600 seconds before headers, conditional responses or bytes. Unavailable authorization does not permit stale original/backup access.
 
 Retention receives an exact candidate set and rechecks active publication, pending jobs and recovery/PITR pins immediately before deletion. An expired lease or tombstone alone is insufficient. Archive retention uses independent archive/catalog recovery metadata available during Weather DB loss; fail closed if required protection evidence is unavailable. Qualification must reconcile Barman's retention behavior with these checks without pretending a denied deletion was successful. Orphan multipart cleanup is identity-bound and must not abort another live uploader.
 

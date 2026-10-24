@@ -1,16 +1,18 @@
 # D15 — central custody and independent application recovery
 
+> **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): O1/P7: Barman directly to B2, custody mirrors for media, GC grace ≥ max(PITR window, B2 versions)+7 d, post-restore reconcile. The joint checkpoint, closure shards, canonicalization and verifier ledger are **withdrawn**. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
+
 Status: **protocol and integration target selected; material research still open**. This is not a completed ADR or production acceptance. Requirements R14/R16/R17/R19/R22/R23/R26/R29–R36; implementation WX-28/29/30/32/34; external prerequisite [OWN-CUSTODY](https://github.com/jvallery/storage-infra/issues/1109).
 
 ## Decision and purpose
 
 Use the supported Barman Cloud Plugin to archive Weather's physical base backups and continuous WAL into the private database hierarchy of the one Weather Garage bucket. Enroll that bucket in central full and exact-WAL custody. Preserve separate archive identity per database incarnation and independently recoverable authorization. This follows the accepted local-then-offsite policy while keeping media publication and telemetry independent of inference.
 
-Use the existing central B2 destination with its live-verified private, provider-encrypted, 45-day governance default and scoped writer/reader. [E02](../research/custody-evidence.md) proves current policy and capability metadata, not Weather enrollment or complete object protection.
+Use the existing central B2 destination with its live-verified private, provider-encrypted, 45-day governance default and scoped writer/reader. [E02](../archive/planning-2026-10/research/custody-evidence.md) proves current policy and capability metadata, not Weather enrollment or complete object protection.
 
-Bind application catalog state to a named WAL marker using the [publication/recovery protocol](../implementation/publication-recovery-contract.md). The checkpoint's full immutable object closure, base/WAL chain and manifest must be independently verified offsite before marking joint recovery successful. Maintain database-only, media and joint ages separately.
+Bind application catalog state to a named WAL marker using the [publication/recovery protocol](../archive/planning-2026-10/implementation/publication-recovery-contract.md). The checkpoint's full immutable object closure, base/WAL chain and manifest must be independently verified offsite before marking joint recovery successful. Maintain database-only, media and joint ages separately.
 
-The [private recovery contract and schema](../contracts/recovery-contract.md) separate candidates, per-object exact-version verification, incomplete attempts and verified checkpoints. Success requires complete set equality and qualified base/WAL/bootstrap ledgers, not merely matching counts or schema-valid fields. The central-owner ledger formats, receipt provenance/discovery and admission remain unresolved integration obligations.
+The [private recovery contract and schema](../archive/planning-2026-10/contracts/recovery-contract.md) separate candidates, per-object exact-version verification, incomplete attempts and verified checkpoints. Success requires complete set equality and qualified base/WAL/bootstrap ledgers, not merely matching counts or schema-valid fields. The central-owner ledger formats, receipt provenance/discovery and admission remain unresolved integration obligations.
 
 ## Why these choices
 
@@ -44,7 +46,7 @@ Provisional targets from requirements remain database offsite age under 30 minut
 ## Open research that prevents closure
 
 1. **Per-class copy coverage:** database primary + local physical archive + offsite archive can form the intended three-copy topology. Durable media currently has only two named copies. Select a supported central-owner third-copy/two-media disposition or obtain the exact scoped owner exception; do not silently change the one canonical bucket or invent compliance.
-2. **Independent bootstrap:** use the selected [owner capsule extension](../contracts/recovery-contract.md#bootstrap-capsule-integration-target) for exact-version image/config/credential inventory. Resolve its fixed estate-profile, size and remaining-protection constraints; establish independent trusted pin/reader/decryption custody without original Mac/NAS/DB. Existing offline-bootstrap proof explicitly assumes the surviving Mac/age key and does not meet this failure scenario.
+2. **Independent bootstrap:** use the selected [owner capsule extension](../archive/planning-2026-10/contracts/recovery-contract.md#bootstrap-capsule-integration-target) for exact-version image/config/credential inventory. Resolve its fixed estate-profile, size and remaining-protection constraints; establish independent trusted pin/reader/decryption custody without original Mac/NAS/DB. Existing offline-bootstrap proof explicitly assumes the surviving Mac/age key and does not meet this failure scenario.
 3. **Full closure verification integration:** specify the admitted independent-reader verifier, receipt custody/version IDs, resume/budget policy and how central object manifests feed the application checkpoint. The algorithm is selected but the supported job/admission binding is not yet qualified.
 4. **Capacity and lifecycle:** admit Weather's retained counts/bytes and copy/hash budgets; prove preview churn does not routinely trip the global hide guard; coordinate PITR pins and hidden-version lifecycle.
 5. **Barman/gateway compatibility:** D08 must support real archive, list, multipart, retention and independent restore operations under exact roles. No bucket-wide credential may bypass the boundary.
@@ -67,4 +69,4 @@ E01: private initial fleet/operator baseline, evidence limits in the decision re
 
 ## Canonical closure contract
 
-[Recovery byte contract v1](../contracts/recovery-canonicalization.md) defines deterministic rows, shards, root and target hashes. Cross-language synthetic vectors and candidate shape fixtures have a [separate validation receipt](../contracts/recovery-validation-receipt.json). This closes the byte-format ambiguity, not central ledger integration, trusted discovery, copy coverage, independent bootstrap or real restore qualification.
+[Recovery byte contract v1](../archive/planning-2026-10/contracts/recovery-canonicalization.md) defines deterministic rows, shards, root and target hashes. Cross-language synthetic vectors and candidate shape fixtures have a [separate validation receipt](../archive/planning-2026-10/contracts/recovery-validation-receipt.json). This closes the byte-format ambiguity, not central ledger integration, trusted discovery, copy coverage, independent bootstrap or real restore qualification.

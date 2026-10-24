@@ -102,7 +102,7 @@ These references bind the issue's scope to normative requirements sections. They
 
 ## Accepted product choices
 
-The [owner decision table](../decisions/2026-10-23-product-scope.md) binds Q01–Q16 to stable R/WX identities. All those WX identities now resolve through the [filed index](backlog.md). Q15's final choice is [MIT with permissive reuse](../decisions/license-and-reuse.md), accepted on 2026-10-23. Other owner choices are preserved; no questionnaire has been reopened.
+The [owner decision table](../../../decisions/2026-10-23-product-scope.md) binds Q01–Q16 to stable R/WX identities. All those WX identities now resolve through the [filed index](../../../implementation/backlog.md). Q15's final choice is [MIT with permissive reuse](../../../decisions/license-and-reuse.md), accepted on 2026-10-23. Other owner choices are preserved; no questionnaire has been reopened.
 
 ## Evidence required for closure
 
@@ -116,7 +116,7 @@ The [§§12.6–12.8 audit](ui-clause-audit.md) maps all 38 source sentences to 
 
 ## Configuration boundary
 
-[Public product configuration](../contracts/configuration-contract.md) covers §17.1 categories and rejects unresolved placeholder policies. Private bundle formats, semantic/admission checks and production startup remain incomplete; 13 synthetic shape fixtures do not close §17.
+[Public product configuration](../../../contracts/configuration-contract.md) covers §17.1 categories and rejects unresolved placeholder policies. Private bundle formats, semantic/admission checks and production startup remain incomplete; 13 synthetic shape fixtures do not close §17.
 
 ## Time-model paragraph audit
 

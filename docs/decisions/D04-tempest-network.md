@@ -1,5 +1,7 @@
 # D04 — direct Tempest reception through isolated secondary L2 attachments
 
+> **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): P4: one receiver on a single macvlan NAD (agents#5368, network-infra#774). Dual receivers and the custom fail-closed CNI guard are **withdrawn**; the residual same-L2 risk is documented. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
+
 Status: **attachment architecture selected; CNI/isolation admission and pod-level qualification pending**. Requirements R02/R08/R13/R14/R16/R27/R28; Weather consumers WX-04/11/12. Owners: [OWN-UDP](https://github.com/jvallery/network-infra/issues/774) and [OWN-L2](https://github.com/jvallery/agents/issues/5368).
 
 ## Decision

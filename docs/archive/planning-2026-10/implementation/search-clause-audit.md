@@ -44,7 +44,7 @@ The [source-bound ledger](search-clause-audit.json) preserves every section 14 s
 
 ## Contract defect corrected
 
-The API draft previously carried evidence precision only within nullable `seek`. A nonplayable result could therefore lose required §14.4 precision. `SearchHit.evidence_precision` now preserves frame/interval/clip/segment scope independently of playback. The [API contract](../contracts/api-contract.md) requires semantic agreement with any seek and separately labels whole-segment matched measurements. Five new fixtures cover null-seek clip, absent/invalid precision, measured-only segment and playable clip; the [receipt](../contracts/search-precision-validation.json) verifies all 57 API shape cases with explicit date/UTC checks. It does not prove evidence resolution or cross-field equality.
+The API draft previously carried evidence precision only within nullable `seek`. A nonplayable result could therefore lose required §14.4 precision. `SearchHit.evidence_precision` now preserves frame/interval/clip/segment scope independently of playback. The [API contract](../../../contracts/api-contract.md) requires semantic agreement with any seek and separately labels whole-segment matched measurements. Five new fixtures cover null-seek clip, absent/invalid precision, measured-only segment and playable clip; the [receipt](../contracts/search-precision-validation.json) verifies all 57 API shape cases with explicit date/UTC checks. It does not prove evidence resolution or cross-field equality.
 
 ## Evidence and remaining planning gaps
 

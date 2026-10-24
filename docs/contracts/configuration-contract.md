@@ -32,7 +32,7 @@ Wrong credentials, endpoint redirects and dependency unavailability are operatio
 
 ## Verification and limits
 
-[Thirteen shape fixtures](configuration-fixtures.json) cover complete synthetic settings and rejected secret fields, missing bindings, weakened privacy/embargo/CPU/telemetry invariants, placeholder retention, wrong output rate, second bucket, zero cadence and unknown keys. They do not resolve private policies, enforce admission or test startup.
+[Thirteen shape fixtures](../archive/planning-2026-10/contracts/configuration-fixtures.json) cover complete synthetic settings and rejected secret fields, missing bindings, weakened privacy/embargo/CPU/telemetry invariants, placeholder retention, wrong output rate, second bucket, zero cadence and unknown keys. They do not resolve private policies, enforce admission or test startup.
 
 WX-08/34 must add semantic cases for mismatched policy hashes, absent/forged owner custody, another tenant's grant, unresolvable timezone, invalid shifted twilight ordering, zero/free-space exhaustion, unsafe operational bounds and stale policy rollback. WX-03/10 qualify real staging/camera bindings; WX-18 tests retention and pin safety; WX-31 reports sanitized failure. No test may depend on real credentials in untrusted CI. Whole private configuration coverage, exact capacity/lifecycle values and live role startup remain unverified.
 

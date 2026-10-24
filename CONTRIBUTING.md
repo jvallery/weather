@@ -1,11 +1,15 @@
 # Contributing
 
-Weather is in the planning phase. Start with [requirements](docs/requirements.md), [accepted product decisions](docs/decisions/2026-10-23-product-scope.md), the [planning audit](docs/research/adversarial-audit.md) and [issue #1](https://github.com/jvallery/weather/issues/1). Do not implement the application until the planning pass is complete.
+Agents and maintainers start with [AGENTS.md](AGENTS.md). It covers the definition of done, how to pick ready work and the hazards. Design context is in [docs/architecture.md](docs/architecture.md) and the [simplification record](docs/decisions/2026-10-24-simplification.md). Work items are the GitHub issues; an issue is ready when all of its native "blocked by" issues are closed.
 
-Changes must identify the requirement, stable WX issue key, relevant decisions and observable acceptance. Preserve the fixed time, raw telemetry, privacy, durable publication and recovery contracts. Describe the smallest complete change and its validation; preserve unrelated work.
+Every change should:
 
-Use synthetic fixtures in public contributions. Do not publish camera credentials, station serials, precise coordinates, private network information, household imagery or raw operational receipts. Examples must use unmistakable placeholders. Report security issues through [SECURITY.md](SECURITY.md).
+- name its WX issue key and requirement IDs;
+- preserve the fixed contracts: time model, raw telemetry, privacy and embargo, immutable publication, and recovery;
+- be the smallest complete change, validated with the cheapest reliable check.
 
-Original contributions use the [MIT license](LICENSE). Follow the [reuse policy](docs/decisions/license-and-reuse.md) for third-party source/assets. Record provenance and notices before importing.
+Use synthetic fixtures in public contributions. Never publish camera credentials, station serials, precise coordinates, private network information, household imagery or raw operational receipts. Examples must use unmistakable placeholders. Report security issues through [SECURITY.md](SECURITY.md).
 
-The local CI/CD path is planned, not implemented. No workflow here currently qualifies application behavior. Once delivered, all gates must call the single documented check entrypoint; untrusted contributions use isolated synthetic validation without production access. Resource-intensive tests/builds run through the admitted cluster path. Documentation changes need diff/readback; meaningful data-integrity and security behavior needs focused regression evidence.
+Original contributions use the [MIT license](LICENSE). Third-party source and assets follow the [reuse policy](docs/decisions/license-and-reuse.md), with provenance and notices recorded before import.
+
+Checks run through `scripts/ci.sh` in fleet CI, inside the cluster. Builds, integration suites and media pilots never run on a workstation. **Pull requests from forks are not executed by fleet CI.** A maintainer reviews the change and re-pushes it as a same-repository branch to run checks.

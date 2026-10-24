@@ -1,5 +1,7 @@
 # D06 — dedicated PostgreSQL, native partitions and explicit durability
 
+> **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): P5: copy the options-pg pattern (longhorn-v1-rwo, sync 1/1, host anti-affinity); no partitions in v1; Alembic migrations. `dataDurability: required`, failover-quorum work and R1 admission are **withdrawn**. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
+
 Status: **database architecture selected; storage/capacity and failover qualification pending**. Requirements R14/R16/R20/R22/R23/R28/R30; WX-05/08/11/28/32. Storage admission is [OWN-DB](https://github.com/jvallery/storage-infra/issues/1112); the existing snapshot NFS prerequisite does not cover database volumes or telemetry spools.
 
 ## Decision and alternatives
@@ -42,7 +44,7 @@ Partition receipt payloads by immutable receive month and normalized observation
 
 Use a bounded default/quarantine path when a partition is unavailable, with visible backlog and transactional relocation after the correct partition exists. A partition maintenance failure cannot silently drop a receipt or mark normalization complete. Qualify default-partition locking and movement under concurrent ingest; never attach overlapping ranges or detach retained history from the query API as an unannounced retention action. Native indexes, partition maintenance and indefinitely growing identity registries need measured space/query budgets.
 
-Migrations enforce day/hour/camera/source relationships and asset-class constraints under the [migration contract](../implementation/database-migration-contract.md). Retained originals cannot cascade-delete with shorter-lived video records. Use scoped roles, verified TLS, bounded SQL and transactional revision/outbox interfaces; public readers do not access private raw tables. Barman archive authorization remains independent of the Weather application database.
+Migrations enforce day/hour/camera/source relationships and asset-class constraints under the [migration contract](../archive/planning-2026-10/implementation/database-migration-contract.md). Retained originals cannot cascade-delete with shorter-lived video records. Use scoped roles, verified TLS, bounded SQL and transactional revision/outbox interfaces; public readers do not access private raw tables. Barman archive authorization remains independent of the Weather application database.
 
 ## Acceptance and rollback
 

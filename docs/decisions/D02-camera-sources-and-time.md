@@ -1,5 +1,7 @@
 # D02 — native camera snapshots and qualified source time
 
+> **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): Unchanged in substance. Camera access is via view-only users (sentinel#550); cadence is commissioned in WX-03. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
+
 Status: **three snapshot endpoints verified; full-view/no-mask public policy approved; sustained cadence, source-time calibration and keogram-region qualification pending**. Requirements R03–R06/R08/R30–R32; WX-09/10/36/37/38/39. Camera ownership and commissioning are tracked by [OWN-CAM](https://github.com/jvallery/sentinel/issues/550); no camera settings or NVR deployment changed.
 
 ## Selected adapter and E06

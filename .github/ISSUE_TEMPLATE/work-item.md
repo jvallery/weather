@@ -1,25 +1,25 @@
 ---
-name: Requirement-backed work item
-about: Define an actionable implementation, qualification or follow-on task
+name: Work item
+about: An implementation task with verifiable acceptance
 title: "WX-XX: "
 ---
 
-## Outcome and why it matters
+> **WX-XX** · slice label · [architecture](https://github.com/jvallery/weather/blob/main/docs/architecture.md)
 
-Stable key, requirement IDs, decision IDs, phase and release gate:
+## Outcome
 
-## Scope and approach
+## Scope
 
-Interfaces, data contracts and exact owner boundaries:
+## Not in scope
 
-## Dependencies and readiness
+## Acceptance
+- [ ] ...
+- [ ] Common definition of done in AGENTS.md
 
-Link prerequisite issues and native blocked-by relationships. Distinguish missing research, implementation prerequisites and production qualification. Do not infer readiness from a priority label.
+## Dependencies
+Blocked by (native): ...  Unblocks: ...
 
-## Acceptance and evidence
+## References
+Requirement IDs, docs, related issues.
 
-Describe successful and failure behavior, test method, source/live evidence destination and how the result proves the requirement. Keep private receipts out of public issues.
-
-## Operations and rollout
-
-Resource limits, freshness/error/capacity signals, controlled delivery, readback and recovery-preserving rollback:
+## Estate standards

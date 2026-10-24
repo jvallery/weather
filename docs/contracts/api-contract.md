@@ -1,10 +1,10 @@
 # HTTP and schema contract
 
-Status: machine-readable design draft for Phase 1; not deployed and not yet a completed full-contract audit. [OpenAPI](openapi.json) describes 16 paths; [JSON Schema](api.schema.json) defines public and private operator representations. Schemas describe allowed shapes, not authorization. Publicly publishing a private-response schema does not authorize serving its data anonymously.
+Status: machine-readable design draft for Phase 1; not deployed and not yet a completed full-contract audit. [OpenAPI](../archive/planning-2026-10/contracts/openapi.json) describes 16 paths; [JSON Schema](../archive/planning-2026-10/contracts/api.schema.json) defines public and private operator representations. Schemas describe allowed shapes, not authorization. Publicly publishing a private-response schema does not authorize serving its data anonymously.
 
 Use [OpenAPI 3.1.1](https://spec.openapis.org/oas/v3.1.1.html) and [JSON Schema 2020-12](https://json-schema.org/draft/2020-12/json-schema-core), reviewed 2026-10-23. Validation must enable date/time format assertion and resolve references locally; production must not fetch schema URLs on requests. Schema URLs identify versions, not required runtime network dependencies.
 
-Consumers: WX-08/13/17/19/20/24/25/26/36/37/38/39/40/41/42/43/44. The private [capture/index and seal contract](capture-contract.md) and [recovery envelopes](recovery-contract.md) are separate from public serializers. Deployment configuration, private hourly archival receipts and the central owner's detailed recovery-ledger integration remain outstanding Phase-1 artifacts. The private candidate [visual-model schema](visual-analysis.schema.json) implements §13.5's shape; its semantic checks are specified below.
+Consumers: WX-08/13/17/19/20/24/25/26/36/37/38/39/40/41/42/43/44. The private [capture/index and seal contract](capture-contract.md) and [recovery envelopes](../archive/planning-2026-10/contracts/recovery-contract.md) are separate from public serializers. Deployment configuration, private hourly archival receipts and the central owner's detailed recovery-ledger integration remain outstanding Phase-1 artifacts. The private candidate [visual-model schema](visual-analysis.schema.json) implements §13.5's shape; its semantic checks are specified below.
 
 ## Effective editorial content and analysis coverage
 
@@ -45,7 +45,7 @@ The proposed session/CSRF names describe the same-origin interface. D13 must bin
 | History/almanac | Bounded pages, units/evidence/coverage, gaps and revision | Stable cursor snapshot, exact supported statistic/formula, coverage interval arithmetic, history period, source-support semantics and late-evidence revision |
 | Private receipts | Bounded exact-byte base64 representation and hash | Authorized diagnostic access, canonical decode/hash, complete retained payload and parser lineage, no public cache or logging |
 
-Schema validation alone does not qualify any of these temporal, privacy or relational invariants. The [publication/recovery protocol](../implementation/publication-recovery-contract.md) and [migration contract](../implementation/database-migration-contract.md) define authoritative transaction/retention behavior.
+Schema validation alone does not qualify any of these temporal, privacy or relational invariants. The [publication/recovery protocol](../archive/planning-2026-10/implementation/publication-recovery-contract.md) and [migration contract](../archive/planning-2026-10/implementation/database-migration-contract.md) define authoritative transaction/retention behavior.
 
 ## Time, units and missing data
 
@@ -108,11 +108,11 @@ Synthetic schema fixtures are design checks only. Server temporal checks, access
 
 ## Design validation receipt — 2026-10-23
 
-The Draft 2020-12 metaschema check passed for the schema document. All 21 [synthetic positive/negative fixtures](schema-fixtures.json) passed, covering missing versus zero, UTC/calendar validation, numeric unit/statistic mismatch, request limits, editorial actor/measurement injection and private-original/provider-URL exclusion. Reference resolution, 16 route paths, 19 unique operations, path parameters and explicit operator security declarations were checked locally. This was a small bounded schema check, not a workload experiment.
+The Draft 2020-12 metaschema check passed for the schema document. All 21 [synthetic positive/negative fixtures](../archive/planning-2026-10/contracts/schema-fixtures.json) passed, covering missing versus zero, UTC/calendar validation, numeric unit/statistic mismatch, request limits, editorial actor/measurement injection and private-original/provider-URL exclusion. Reference resolution, 16 route paths, 19 unique operations, path parameters and explicit operator security declarations were checked locally. This was a small bounded schema check, not a workload experiment.
 
 The installed validator's optional date-time checker was absent; the initial impossible-date fixture exposed this. The successful check explicitly registered UTC/calendar assertions using Python datetime/date parsing and a UTC-Z representation with at most microsecond precision. Implementations must prove format assertion is active using the invalid-date fixture, rather than assume passing a FormatChecker object enables every optional format.
 
-The subsequent [hash-bound validation receipt](validation-receipt.json) records a successful check against the [official OpenAPI 3.1 document schema](https://spec.openapis.org/oas/3.1/schema/2022-10-07). The three referenced JSON Schema documents and inline Schema Objects were separately metaschema-checked because OpenAPI document validation alone does not validate their complete semantics. All 371 local reference occurrences resolve, operation IDs are unique and path-parameter bindings match. All 45 shape fixtures pass: 24 API, 13 capture and eight visual-candidate cases. This resolves the outstanding structural OpenAPI check for the receipt's exact hashes. Subsequent contract edits require renewed validation. HTTP conformance, authorization, cross-record semantics, live behavior and missing configuration/archival/recovery contracts remain unproven.
+The subsequent [hash-bound validation receipt](../archive/planning-2026-10/contracts/validation-receipt.json) records a successful check against the [official OpenAPI 3.1 document schema](https://spec.openapis.org/oas/3.1/schema/2022-10-07). The three referenced JSON Schema documents and inline Schema Objects were separately metaschema-checked because OpenAPI document validation alone does not validate their complete semantics. All 371 local reference occurrences resolve, operation IDs are unique and path-parameter bindings match. All 45 shape fixtures pass: 24 API, 13 capture and eight visual-candidate cases. This resolves the outstanding structural OpenAPI check for the receipt's exact hashes. Subsequent contract edits require renewed validation. HTTP conformance, authorization, cross-record semantics, live behavior and missing configuration/archival/recovery contracts remain unproven.
 
 
 ## Editorial description write/public parity
@@ -133,7 +133,7 @@ The subsequent [hash-bound validation receipt](validation-receipt.json) records 
 
 ## Exact time ownership
 
-The [section 5 audit](../implementation/time-clause-audit.md) binds civil schedules, calendar/hour identities and frame ownership. Interval ordering and membership are semantic, not JSON Schema guarantees. Derive seeks from validated rational source/frame maps; decimal browser seek values never define capture/clip ownership. Exclusive endpoints and explicit UI clamping must not introduce an adjacent-segment sample.
+The [section 5 audit](../archive/planning-2026-10/implementation/time-clause-audit.md) binds civil schedules, calendar/hour identities and frame ownership. Interval ordering and membership are semantic, not JSON Schema guarantees. Derive seeks from validated rational source/frame maps; decimal browser seek values never define capture/clip ownership. Exclusive endpoints and explicit UI clamping must not introduce an adjacent-segment sample.
 
 ## Wind-rose structure
 

@@ -1,5 +1,7 @@
 # D13 — UI, theme and editorial boundaries
 
+> **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): P11/P12: editor behind Authentik forward-auth (in-app OIDC withdrawn); code-first API contracts. React Router SSR, wireframes, theme and card placement are unchanged. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
+
 Status: owner-approved React/TypeScript framework/layout and theme policy selected; direct frontend pins selected, full lock/image/build qualification, identity integration and implemented responsive/browser behavior remain open; static wireframes are rendered; exact font provenance is resolved by the separate review. Requirements R14/R24/R25/R30–R37, §§12.1–12.8; consumers WX-20/26/39/40/41/43/44 and integration WX-33. This is design collateral, not an application implementation or evidence of a deployed Weather UI.
 
 ## Architecture and why
@@ -136,7 +138,7 @@ Self-host scripts, icons, fonts and player assets. Render narrative/editorial va
 
 ## Completion evidence still required
 
-WX-20/26 must implement the linked rendered wireframes and prove pinned build/runtime compatibility and route/schema integration. WX-39/40/41/43/44 retain the detailed [38-clause UI audit](../implementation/ui-clause-audit.md) in addition to this layout policy. Verify all required §12.2 surfaces, no-JavaScript navigation, all lifecycle/error states, native panorama and lazy loading, text equivalents, focus/contrast/zoom, source-time linking and private/public separation. The separate font review resolves upstream provenance and license obligations; neither it nor live asset hashes prove correct artifact distribution or pixel-level visual acceptance. Identity integration and actual parent embed delivery remain material open decisions. No D13 completion is claimed from this document.
+WX-20/26 must implement the linked rendered wireframes and prove pinned build/runtime compatibility and route/schema integration. WX-39/40/41/43/44 retain the detailed [38-clause UI audit](../archive/planning-2026-10/implementation/ui-clause-audit.md) in addition to this layout policy. Verify all required §12.2 surfaces, no-JavaScript navigation, all lifecycle/error states, native panorama and lazy loading, text equivalents, focus/contrast/zoom, source-time linking and private/public separation. The separate font review resolves upstream provenance and license obligations; neither it nor live asset hashes prove correct artifact distribution or pixel-level visual acceptance. Identity integration and actual parent embed delivery remain material open decisions. No D13 completion is claimed from this document.
 
 ### Approved homepage placement
 

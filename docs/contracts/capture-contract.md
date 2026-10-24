@@ -40,7 +40,7 @@ Empty-input segments are valid manifests with zero accepted samples and reasoned
 
 Binding and manifest hashes establish integrity, not storage durability or cleanup permission. The coordinator accepts only admitted writer generations; stale processes can leave quarantined files but cannot advance accepted manifests. No collector writes directly to the database or calls the Kubernetes API to acquire this authority.
 
-Keep durable pins for video, cross-segment samples, hourly candidates and keogram extraction. Transfer exact bytes and obligations to the bounded promotion working set before releasing dense-source pins, as specified in the [publication contract](../implementation/publication-recovery-contract.md). A lease expiry is not deletion authority. Delayed preview buffers have a separate bounded policy; no public request triggers capture. AI uses completed media and does not retain dense captures.
+Keep durable pins for video, cross-segment samples, hourly candidates and keogram extraction. Transfer exact bytes and obligations to the bounded promotion working set before releasing dense-source pins, as specified in the [publication contract](../archive/planning-2026-10/implementation/publication-recovery-contract.md). A lease expiry is not deletion authority. Delayed preview buffers have a separate bounded policy; no public request triggers capture. AI uses completed media and does not retain dense captures.
 
 ## Mandatory acceptance cases
 
@@ -50,4 +50,4 @@ WX-08/09/10 test stale-writer return, clock reversal, source-time/slot boundary 
 
 ## TAR representation boundary audit
 
-The earlier generic 128-character Id limit allowed member basenames too long for the no-extension layout. CaptureAttempt and SelectionRow now share a bounded AttemptId, and member paths use the identical bound. Six added fixtures cover 89/90/128-character identities, zero/unaligned offsets and selection consistency. [Capture validation receipt](capture-validation-receipt.json) records the current shape checks and bounded in-memory USTAR header probe. This does not validate an application writer, JPEG decode, actual NFS persistence or crash recovery; full header/index membership and bounds still require semantic checks.
+The earlier generic 128-character Id limit allowed member basenames too long for the no-extension layout. CaptureAttempt and SelectionRow now share a bounded AttemptId, and member paths use the identical bound. Six added fixtures cover 89/90/128-character identities, zero/unaligned offsets and selection consistency. [Capture validation receipt](../archive/planning-2026-10/contracts/capture-validation-receipt.json) records the current shape checks and bounded in-memory USTAR header probe. This does not validate an application writer, JPEG decode, actual NFS persistence or crash recovery; full header/index membership and bounds still require semantic checks.

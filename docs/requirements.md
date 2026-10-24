@@ -1,7 +1,7 @@
 # Weather — requirements and implementation research brief
 
-**Version:** 4.0  
-**Updated:** 2026-10-23  
+**Version:** 4.1 (amended by the [2026-10-24 simplification record](decisions/2026-10-24-simplification.md))  
+**Updated:** 2026-10-24  
 **Owner:** jvallery  
 **Target repository:** `jvallery/weather` — new, public, open source  
 **Target namespace:** `weather`  
@@ -33,6 +33,8 @@
 
 ## 1. Purpose, authority, and fixed requirements
 
+> **v4.1 amendment (2026-10-24).** Jason accepted the [simplification record](decisions/2026-10-24-simplification.md) (O1–O4) after an adversarial audit against live estate evidence. It **overrides** this document wherever they conflict: R09, R10, R17, R18 and R23 below are amended; §§2, 19 (planning assignment, candidate catalog) are historical; and the mechanisms in §§3–18 are implementation guidance unless restated in [architecture.md](architecture.md) or an issue's acceptance. The product scope (Q01–Q16) is unchanged.
+
 This is the requirements document for an independent weather observation and timelapse service. Codex's **first assignment is to research the existing estate, resolve the implementation decisions identified here, complete configuration of the public `jvallery/weather` repository, and file a complete set of actionable GitHub implementation issues with a verified dependency graph**. Application implementation follows that research and issue-filing pass.
 
 The owner has now supplied the existing public repository at <https://github.com/jvallery/weather>. This handoff is published there. Reuse it; the earlier instruction to create a repository is satisfied. Repository policy, license, CI/CD and deployment configuration still need the first-pass decisions and subsequent implementation work below.
@@ -49,14 +51,14 @@ This document specifies required outcomes and the contracts that implementations
 |---|---|
 | Project ownership | A new public `jvallery/weather` repository, independent namespace, local CI/CD, and application lifecycle. Sentinel is a reference/integration boundary, not the application repository. |
 | Snapshot staging | **An NFS PVC backed by Obsidian HDDs.** The earlier single-replica Longhorn staging recommendation is withdrawn. |
-| Published media | **One private, isolated Garage bucket** containing media and database backups. The earlier two-replica Longhorn media PVC is withdrawn. Select the Garage tier through the required capacity/availability investigation. |
+| Published media | *(v4.1, O1)* Weather-dedicated Garage buckets `weather-media` and `weather-originals` with native per-bucket keys; database backups go directly to a dedicated B2 bucket. The single shared bucket and enforcing gateway are withdrawn. |
 | Weather source | **Direct local Tempest UDP**, using Verdify's implementation as a reference. Home Assistant and Tempest cloud APIs are not the ingestion path. |
 | Database | **CNPG-managed PostgreSQL** for complete received weather history, timelapse metadata, jobs/provenance, and semantic search. The static-only/no-database restriction is withdrawn. |
-| Backups | Physical database backups and WAL go to the weather Garage bucket. Enroll it in the central Garage-to-B2 custody system. This supersedes a separate weather-specific NAS media export and separate direct B2 uploader. |
-| GPU decision | Investigate **co-tenancy with existing allocations** and propose an admitted, measured operating envelope. Assigned GPUs are not automatically unavailable; neither are they automatically shareable. CPU fallback remains mandatory. |
+| Backups | *(v4.1, O1)* CNPG Barman base backups and WAL go directly to a dedicated B2 bucket (options-tracker pattern); central custody mirrors the media buckets to B2. |
+| GPU decision | *(v4.1, O2)* CPU baseline for the initial release; GPU co-tenancy deferred unless the WX-15 interpolation pilot leads Jason to select a GPU-requiring profile. |
 | Preview | Publish a real-frame poster/thumbnail alongside every playable video. |
 | Search | Store versioned embeddings of video metadata and validated descriptions in CNPG; expose bounded semantic search with structured camera/time filters. |
-| Framework | Decide between Astro with an API and a suitable full-stack design after reviewing history/search/live-data needs. Database use does not itself require server rendering for every page. |
+| Framework | React + TypeScript with React Router Framework Mode (SSR + client navigation) and a separate Python API/workers, per D13 and Jason's 2026-10-23 instruction. Astro is no longer a candidate. |
 | Reuse and product scope | Independent, fleet-first Weather implementation with documented customization and specific upstream references. Codex proposes license/reuse policy in Phase 1; record the owner's final choice before upstream code imports. |
 | Camera-derived additions | Day/night keograms and delayed current previews for **all three cameras**. Archive one private native still per actual elapsed local hour in Garage with explicit database/day relationships and sanitized public comparison derivatives. |
 | Exploration and control | Per-camera linked weather/video plots, event bookmarks and in-site feed, local almanac, measured search filters, private editorial controls and a main-site weather card. |
@@ -78,21 +80,21 @@ Every requirement below must map to one or more implementation issues and accept
 | R06 | Timer-driven native-resolution snapshot acquisition; no continuous RTSP decode or retained full-day source video. |
 | R07 | Snapshot staging is an Obsidian-backed NFS PVC, bounded and automatically purged after qualified durable publication and completion of required source-dependent products; only the explicitly selected hourly originals are retained under R30. |
 | R08 | Capture pods initiate network traffic only to their assigned cameras; storage transport, scheduling, weather collection, inference, and publication are separated. |
-| R09 | High-interpolation rendering, synthetic exposure/motion blur, conservative exposure processing, exact source timing, and tested CPU fallback. |
-| R10 | Optional GPU acceleration with a phase-1 inventory of all nine GPUs and a measured, owner-supported co-tenancy proposal. |
+| R09 | Rendering from real captured frames with timestamp-weighted synthetic exposure/motion blur, conservative exposure processing, exact source timing, CPU execution. *(v4.1, O2: motion interpolation is decided by the WX-15 A/B pilot, not a launch gate.)* |
+| R10 | GPU acceleration is optional and deferred; the D09 nine-device census plus a justified CPU baseline satisfies the initial release. *(v4.1, O2.)* |
 | R11 | Native downloadable MP4 plus broadly playable web/mobile renditions and real-frame preview thumbnails, all served through `weather.vallery.net`. |
 | R12 | Responsive, accessible, mobile-friendly presentation consistent with <https://vallery.net>; date archive and clear day/overnight navigation. |
 | R13 | Local Tempest UDP listener and explicit k3s network path; Verdify reference investigated without copying its data omissions. |
 | R14 | Persist all received allowed-source Tempest payloads and normalized observations in CNPG; expose bounded historical queries and meaningful aggregates. |
 | R15 | Current conditions API/UI refreshed approximately every 15 seconds, with per-measurement freshness, cached last-known values and explicit missing/stale states; all received telemetry remains retained independently. |
 | R16 | HA database and application service following qualified fleet patterns; documented failure domains, failover, storage, and capacity. |
-| R17 | One private weather Garage bucket for videos, posters, keograms, private selected originals and public image derivatives, immutable metadata exports, database base backups/WAL and recovery manifests; controlled credentials and lifecycle. |
-| R18 | No direct Garage browser delivery, anonymous bucket, arbitrary object proxy, or media identity able to read database backups. |
+| R17 | Weather-dedicated Garage buckets with native per-bucket keys: `weather-media` (videos, posters, keograms, sanitized stills, metadata sidecars) and `weather-originals` (private hourly originals), both mirrored to B2 by central custody; CNPG archives in a dedicated B2 bucket. Controlled credentials and lifecycle. *(v4.1, O1.)* |
+| R18 | No direct Garage browser delivery, anonymous bucket, arbitrary object proxy, or web/media identity able to read database backups or private originals. *(v4.1, O1: met natively by per-bucket keys.)* |
 | R19 | Crash-safe automatic publication and metadata updates, durable jobs/outbox, immutable artifacts, safe cleanup, and per-camera fault isolation. |
 | R20 | Per-video metadata includes exact window/time map, weather evidence and coverage, processing provenance, preview/media identities, and analysis state. |
 | R21 | Automated weather-focused analysis of completed video through the qualified local `llm.primary.longctx.mm` route, with evidence-grounded prompts and honest fallback labels. |
 | R22 | Versioned CNPG text embeddings and bounded semantic/lexical search with camera/date/time filters, seekable results and inference-outage isolation; reserve a later visual-index extension without deploying an image embedding model initially. |
-| R23 | CNPG base backups and continuous WAL in Garage, central full/WAL custody to B2, coordinated media/database recovery checkpoints, and demonstrated restore. |
+| R23 | CNPG base backups and continuous WAL directly to a dedicated B2 bucket (writer cannot delete; independent restore reader), central custody mirrors for media buckets, recovery-aware GC with post-restore reconciliation, and a demonstrated B2-only restore. *(v4.1, O1.)* |
 | R24 | Local, reproducible, pinned build/deployment artifacts; no public runtime image/package/font/model dependency or external SaaS required for core operation. |
 | R25 | Optional Cloudflare caching only after plan, routing, limits, security, and video-delivery terms are validated; Garage remains primary media storage. |
 | R26 | Measured operational SLOs, resource limits, observability, failure tests, retention policy, and runbooks, including NAS and model outages. |
@@ -1591,7 +1593,7 @@ flowchart TD
 
 The first pass is complete when planning repository configuration is in place, accepted scope and component/owner boundaries are coherent, R01–R38 and D01–D16 map to filed issues with infrastructure constraints and acceptance criteria, the native DAG/coverage check passes, and the execution-wave handoff identifies ready work, discovery responsibilities and release gates. Existing live/source evidence anchors fleet alignment; it is not runtime qualification or a current resource grant.
 
-The [execution handoff](implementation/execution-handoff.md) must distinguish selected decisions, execution discovery and implementation pending, including GPU/CPU, UDP, database/search, shared-bucket access/durability, frontend/Tunnel, recovery objectives, critical path, original/preview lifecycle and WordPress ownership. Preserve Q01–Q16 and subsequent owner decisions. Do not imply any application, cluster resource, pipeline or recovery path is deployed merely because planning is complete.
+The [execution handoff](archive/planning-2026-10/implementation/execution-handoff.md) must distinguish selected decisions, execution discovery and implementation pending, including GPU/CPU, UDP, database/search, shared-bucket access/durability, frontend/Tunnel, recovery objectives, critical path, original/preview lifecycle and WordPress ownership. Preserve Q01–Q16 and subsequent owner decisions. Do not imply any application, cluster resource, pipeline or recovery path is deployed merely because planning is complete.
 
 ## 20. Research sources and evidence handling
 

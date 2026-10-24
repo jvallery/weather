@@ -1,10 +1,12 @@
 # D16 — Service measurements, product deadlines and pressure policy
 
+> **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): P15/O3: four SLOs (publish ≤2 h, current age ≤90 s, availability ≥99.5%, DB offsite ≤30 min), Tier 2 service, per-slice launches. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
+
 Status: measurement definitions and initial operational policies selected; achievable numeric SLOs and resource grants remain unqualified. Requirements R07/R15/R16/R26/R28–R37, §§6.8–6.11, 15.5–15.6 and 18.1–18.2. Consumers WX-18/31/33/35/36/37/38. No production policy, monitoring rule, deletion or workload is enabled by this document.
 
 ## What constitutes success
 
-Report process readiness, dependency availability, data freshness and completed product work separately. A ready API cannot make a stalled capture, unreadable object, stale measurement or incomplete recovery checkpoint green. Do not collapse these dimensions into a single uptime percentage. The [acceptance matrix](../implementation/acceptance-matrix.md) remains mandatory; meeting a latency target does not compensate for a privacy, integrity or recovery failure.
+Report process readiness, dependency availability, data freshness and completed product work separately. A ready API cannot make a stalled capture, unreadable object, stale measurement or incomplete recovery checkpoint green. Do not collapse these dimensions into a single uptime percentage. The [acceptance matrix](../archive/planning-2026-10/implementation/acceptance-matrix.md) remains mandatory; meeting a latency target does not compensate for a privacy, integrity or recovery failure.
 
 Each measurement records product/camera where applicable, immutable work identity, recipe/config generation, scheduled/source instant, durable completion instant, observation time and explicit result/reason. Use UTC for cross-process events and monotonic elapsed time for in-process deadlines; preserve clock uncertainty. Export aggregate low-cardinality metrics; keep capture/job IDs and private topology in protected receipts, not Prometheus labels. Counts and distributions include failures and timeouts, not just successful requests.
 

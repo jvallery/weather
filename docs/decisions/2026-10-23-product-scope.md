@@ -47,7 +47,7 @@ The database needs a real local-calendar-day identity in addition to `solar_cycl
 
 Codex must investigate current cluster capability rather than ask the owner to decide implementation details that can be established from evidence. In particular, the preview/keogram worker design, per-camera keogram region, hourly-selection tolerance, schema/partition strategy, public/private API authorization, almanac formulas and coverage, reusable components, GPU co-tenancy and layout for the later composite belong in the Phase-1 design records and the filed issues.
 
-The historical [candidate graph](../implementation/backlog-candidate.json) preserves the original proposal. The [filed graph](../implementation/backlog.json) now records WX-01–WX-46 and the owner prerequisites, distinguishing initial work from conditional GPU/CDN work and deferred follow-ons. WX-45 and the reserved WX-46 investigation are filed and excluded from the required initial-release closure. Final issue consolidation and dependency verification remain part of the audit.
+The historical [candidate graph](../archive/planning-2026-10/implementation/backlog-candidate.json) preserves the original proposal. The [filed graph](../implementation/backlog.json) now records WX-01–WX-46 and the owner prerequisites, distinguishing initial work from conditional GPU/CDN work and deferred follow-ons. WX-45 and the reserved WX-46 investigation are filed and excluded from the required initial-release closure. Final issue consolidation and dependency verification remain part of the audit.
 
 ## Subsequent owner-approved frontend decision
 

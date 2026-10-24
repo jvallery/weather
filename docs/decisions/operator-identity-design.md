@@ -1,5 +1,7 @@
 # Operator identity — D13 protocol selection
 
+> **Superseded 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md) P11: the editor uses Authentik forward-auth at the edge; this in-app OIDC design is historical.
+
 Status: select server-side OIDC authorization code with PKCE S256 and opaque Weather sessions. Actual Weather provider enrollment, client adapter qualification, claim mapping and provider-session revocation remain unqualified. Requirements §12.7 and R36; implementation WX-01/43, security acceptance WX-33. Fleet identity belongs to agents; no provider, credential, role or access rule was created.
 
 ## Source and live evidence

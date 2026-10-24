@@ -1,6 +1,6 @@
 # Security reporting and boundaries
 
-Weather is currently a planning repository; no Weather application release is deployed by this project.
+Weather is under active implementation. No Weather application release is deployed yet.
 
 Report suspected vulnerabilities using the repository's private vulnerability reporting feature when enabled. If that feature is unavailable, contact the repository owner through an existing private channel. Do not put exploit details, credentials, private media or infrastructure receipts into a public issue. A public issue may request a private contact without disclosing the vulnerability.
 

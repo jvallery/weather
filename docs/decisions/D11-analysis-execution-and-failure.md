@@ -1,5 +1,7 @@
 # D11 — Bounded video analysis, uncertainty and publication
 
+> **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): P9: sampled frames plus keogram through the proven image path, advisory-lock concurrency 1, timeout plus bounded nightly retry, raw-response TTL table. The call-ownership state machine and native-video gate are **withdrawn**. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
+
 Status: job/slot/publication protocol selected; actual native-video capability and backend termination remain material OWN-MODELS qualification. Requirements §§13.1–13.7, 12.7 and 14.2; consumers WX-21/22/24/31/33/40/43. This design introduces no live model request or server setting.
 
 ## Inputs and qualification

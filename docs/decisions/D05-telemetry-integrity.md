@@ -1,6 +1,8 @@
 # D05 — receipt durability, canonical measurements and coverage
 
-Status: **protocol selected; storage/capacity admission and observed cadence qualification pending**. Implements requirements §§9.1–9.4, 10.1–10.7 through WX-08/11/12/13/40/41/42. [D04](D04-tempest-network.md) selects two independent receivers; [D06 in the register](implementation-register.md) owns database and spool storage admission. This is a design, not an implemented collector or evidence of loss-free reception.
+> **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): P4: SQLite WAL spool on a 1 GiB RWO PVC and dedupe on (device, type, source_ts, row) replace the custom framed spool and cross-receiver variant model. Complete raw-byte retention is unchanged. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
+
+Status: **protocol selected; storage/capacity admission and observed cadence qualification pending**. Implements requirements §§9.1–9.4, 10.1–10.7 through WX-08/11/12/13/40/41/42. [D04](D04-tempest-network.md) selects two independent receivers; [D06 in the register](../archive/planning-2026-10/decisions/implementation-register.md) owns database and spool storage admission. This is a design, not an implemented collector or evidence of loss-free reception.
 
 ## Decision and alternatives
 

@@ -89,6 +89,6 @@ Three distinct obligations must stay separate: required observed CPU fallback; r
 
 ## Evidence and remaining decisions
 
-[D10](../decisions/D10-media-recipe-and-qualification.md) defines the source-aware recipe, exposure threshold, bounded processing and observed keogram selection. [D09](../decisions/D09-gpu-and-cpu-admission.md) records the E04 all-nine-device census and supported-admission gaps. E06 establishes individual JPEG geometry only. None is a native-resolution render/quality/deadline or co-tenancy receipt.
+[D10](../../../decisions/D10-media-recipe-and-qualification.md) defines the source-aware recipe, exposure threshold, bounded processing and observed keogram selection. [D09](../../../decisions/D09-gpu-and-cpu-admission.md) records the E04 all-nine-device census and supported-admission gaps. E06 establishes individual JPEG geometry only. None is a native-resolution render/quality/deadline or co-tenancy receipt.
 
 Complete exact build/license/capability qualification, admitted CPU throughput, camera-specific privacy/keogram regions and scene comparisons. Optional GPU work additionally needs actual supported allocation and resident-service envelope. Preserve these as material planning gaps rather than relabeling an unqualified baseline as complete. No image build, heavy render, GPU job or device configuration was run by this audit.

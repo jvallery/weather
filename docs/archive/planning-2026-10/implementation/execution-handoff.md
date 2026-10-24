@@ -29,7 +29,7 @@ The [standards matrix](standards-mapping.md) maps direct/shared/inherited estate
 
 ## Execution waves
 
-Waves are coordination groups, not new global barriers. The [filed native graph](backlog.json) controls task readiness. Start any task whose own prerequisites are satisfied; do not wait for unrelated tasks in its wave.
+Waves are coordination groups, not new global barriers. The [filed native graph](../../../implementation/backlog.json) controls task readiness. Start any task whose own prerequisites are satisfied; do not wait for unrelated tasks in its wave.
 
 1. **Owner discovery and foundations:** launch the dependency-free owner issues for CI, NFS, database, objects/gateway, UDP/L2, cameras, edge, models/GPU and monitoring. OWN-CUSTODY follows OWN-OBJECT; OWN-EMBED follows WX-44. Complete WX-01/02 when OWN-CI is ready. Owner discovery may begin without a finished application; owner closure must supply a usable interface, not require downstream Weather acceptance.
 2. **Acquisition and persistence:** WX-03–12 and WX-17 establish the admitted platform, schema, source clocks, sealed camera inputs, complete UDP capture and history. Independent camera and telemetry lanes proceed as their dependencies clear. Resolve fencing, spool and immutable-write details here.
@@ -48,7 +48,7 @@ This is an ordering result, not an elapsed-time estimate. Owner delivery duratio
 
 ## Acceptance and evidence map
 
-Use [R/ADR/issue traceability](traceability.md), the [acceptance matrix](acceptance-matrix.md), [accepted Q01–Q16 decisions](../decisions/2026-10-23-product-scope.md), individual issue criteria and their linked contract/section audits. Requirements and issue acceptance remain binding; detailed implementation choices may evolve with recorded evidence while preserving those contracts. If discovery reveals an actual architectural conflict or product tradeoff, present the concrete conflict and remedy rather than silently reducing scope.
+Use [R/ADR/issue traceability](traceability.md), the [acceptance matrix](acceptance-matrix.md), [accepted Q01–Q16 decisions](../../../decisions/2026-10-23-product-scope.md), individual issue criteria and their linked contract/section audits. Requirements and issue acceptance remain binding; detailed implementation choices may evolve with recorded evidence while preserving those contracts. If discovery reveals an actual architectural conflict or product tradeoff, present the concrete conflict and remedy rather than silently reducing scope.
 
 **Decisions complete:** product scope, React/Python split, data/storage/owner boundaries, native acquisition, publication/retention architecture, local inference/search approach, Tunnel, MIT, full camera views and homepage placement.
 
