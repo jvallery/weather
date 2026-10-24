@@ -103,9 +103,15 @@ aggregate math.
 
 `weather.db.public_evidence.read_evidence_window(reader, window, metrics, *,
 preceding_hold_seconds, following_report_seconds, snapshot_watermark=None,
-evaluated_at=None, maximum_points=5000)` is an internal complete read, never a raw page subset.
+evaluated_at=None, enforce_raw_range=True, maximum_points=5000)` is an internal
+complete read, never a raw page subset.
 Spans are explicit calibrated integers from zero through 86400 seconds and must
 cover every forward hold and preceding-report interval the caller accepts.
+The strictly boolean `enforce_raw_range` defaults to the raw-export duration
+limit. Internal aggregate callers explicitly set it to `False` for coarse bins
+longer than that limit. This changes no raw endpoint policy and does not bypass
+the exact 50000-input ceiling, fail-on-overflow behavior, or database statement,
+pool and source-selection bounds. There is no silent truncation or resolution switch.
 
 It atomically reads/binds W, all selected rows from start through the inclusive
 end-plus-report span, and all ties at the latest source-time-eligible timestamp
