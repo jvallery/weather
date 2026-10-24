@@ -148,6 +148,10 @@ job and rechecks fencing in one transaction. If completion is stale, expired or
 fails, the catalog writes roll back too. Do not open an independent transaction
 inside a handler for publication writes. External uploads must be immutable;
 uncommitted orphan objects are reconciled by their owning pipeline issue.
+If a network failure makes the final commit acknowledgment uncertain, read the
+original job/catalog identities after reconnecting; both changes share one
+transaction. Do not create another identity or assume an unknown outcome lost
+its data.
 
 Outbox dispatch locks rows with SKIP LOCKED and creates idempotent jobs before
 marking those rows dispatched in the same transaction. Unknown topics remain
