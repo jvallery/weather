@@ -96,3 +96,17 @@ test("public client assets contain no private upstream or source maps", async ({
     expect((await request.get(`${url}.map`)).status()).toBe(404);
   }
 });
+
+test("degraded SSR is observable and public errors stay sanitized", async ({ page, request }) => {
+  await request.post("http://localhost:4174/__control", { data: { apiUnavailable: true } });
+  await page.goto("/"); await expect(page.getByText(/API unavailable/)).toBeVisible();
+  const metrics = await request.get("http://localhost:9175/metrics"); expect(metrics.ok()).toBe(true);
+  expect(await metrics.text()).toMatch(/weather_web_api_requests_total\{route="\/api\/v1\/weather\/current",result="http_error"\} [1-9]/);
+  expect((await request.get("/metrics")).status()).toBe(404);
+  for (const path of ["/missing/", "/day/invalid/", "/weather/history/?start=invalid"]) {
+    const response = await request.get(path); expect([400, 404]).toContain(response.status());
+    expect(response.headers()["content-security-policy"]).not.toContain("unsafe-inline");
+    expect(response.headers()["x-frame-options"]).toBe("DENY");
+    expect(await response.text()).not.toMatch(/http:\/\/api|localhost:4174|API_ORIGIN|node_modules|Error:|\bat [A-Za-z].*\.js:/);
+  }
+});

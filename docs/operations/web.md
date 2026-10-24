@@ -45,7 +45,9 @@ Builds, Playwright and synthetic media generation run only through approved
 in-cluster fleet CI. The shared Weather CI tooling image bakes PostgreSQL, exact Playwright 1.64.1
 browsers and system libraries, and qualified FFmpeg 9.0.2; `bootstrap-browser.sh` only verifies the
 readable `/opt/ms-playwright` closure and generates synthetic fixtures as UID1001. It never runs apt
-or installs system libraries at validation runtime. WX-20 is not complete until the three-engine responsive/axe/JS-off/rollout checks
+or installs system libraries at validation runtime. The browser check also scans every compiled client
+asset, including lazy routes, for private endpoints/configuration, fixture identifiers and source maps
+without printing asset contents. WX-20 is not complete until the three-engine responsive/axe/JS-off/rollout checks
 and live pinned web image have passed. Source tests alone do not establish those outcomes.
 
 ## Operator rolling-deployment qualification
@@ -96,7 +98,8 @@ recreating a still-live qualification handle.
 
 Metrics `weather_web_api_requests_total{route,result}`, `weather_web_api_inflight` and
 `weather_web_ssr_inflight` distinguish API transport/shape/body-budget/admission failures from an HTTP
-200 degraded page. Labels are fixed route templates and a bounded result vocabulary; no query,
+200 degraded page. `weather_web_ssr_failures_total{reason}` records overload, absolute deadline
+termination and uncaught render failures, including connections closed before an HTTP finish event. Labels are fixed route templates and a bounded result vocabulary; no query,
 station identity or upstream address is logged. `weather_web_request_duration_seconds` covers HTTP
 status and asset 404s. Monitoring-stack owns scraping and alert/probe policy.
 

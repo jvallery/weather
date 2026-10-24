@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -34,4 +34,11 @@ test("inventory checksum drift and path escape fail closed", (t) => {
 });
 test("missing inventory requires the explicit first-baseline exception", (t) => {
   const [old, current] = trees(t); assert.throws(() => retainWebAssets(current, old), /lacks/);
+});
+
+test("inventory paths cannot escape through a parent-directory symlink", (t) => {
+  const [old, current, next] = trees(t);
+  writeFileSync(join(next, "assets/outside.js"), "private"); symlinkSync(join(next, "assets"), join(old, "assets/link"));
+  writeFileSync(join(old, ".weather-assets.json"), JSON.stringify({ schema: 1, assets: [{ path: "assets/link/outside.js", bytes: 7, sha256: "a".repeat(64) }] }));
+  assert.throws(() => retainWebAssets(current, old), /Invalid asset directory/);
 });

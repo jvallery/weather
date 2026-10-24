@@ -4,7 +4,7 @@ import { performance } from "node:perf_hooks";
 import { clearTimeout, setTimeout } from "node:timers";
 import express from "express";
 import { createRequestHandler } from "@react-router/express";
-import { collectDefaultMetrics, register, Histogram, Gauge } from "prom-client";
+import { collectDefaultMetrics, register, Histogram, Gauge, Counter } from "prom-client";
 
 const app = express();
 app.disable("x-powered-by");
@@ -44,18 +44,19 @@ app.use((req, res, next) => {
 });
 app.use(express.static("build/client", { immutable: true, maxAge: "1y", setHeaders(res) { res.setHeader("Cache-Control", "public, max-age=31536000, immutable"); } }));
 let rendering = 0;
+const renderFailures = new Counter({ name: "weather_web_ssr_failures_total", help: "Bounded SSR failures by cause", labelNames: ["reason"] });
 const activeRenders = new Gauge({ name: "weather_web_ssr_inflight", help: "Active bounded document/data responses" });
 app.use((_req, res, next) => {
-  if (rendering >= 4) { res.setHeader("Retry-After", "5"); return res.status(503).type("text").send("Weather is busy. Please retry shortly."); }
+  if (rendering >= 4) { renderFailures.labels("overloaded").inc(); res.setHeader("Retry-After", "5"); return res.status(503).type("text").send("Weather is busy. Please retry shortly."); }
   rendering += 1; activeRenders.inc();
   let released = false;
-  const timer = setTimeout(() => res.destroy(), 15_000); timer.unref();
+  const timer = setTimeout(() => { renderFailures.labels("deadline").inc(); res.destroy(); }, 15_000); timer.unref();
   const release = () => { if (!released) { released = true; rendering -= 1; activeRenders.dec(); clearTimeout(timer); } };
   res.once("finish", release); res.once("close", release);
   next();
 });
 app.use(createRequestHandler({ build: () => import("./build/server/index.js") }));
-app.use((_error, _req, res, _next) => { if (res.headersSent) { res.destroy(); return; } res.status(503).type("text").send("Weather is temporarily unavailable."); });
+app.use((_error, _req, res, _next) => { renderFailures.labels("render_error").inc(); if (res.headersSent) { res.destroy(); return; } res.status(503).type("text").send("Weather is temporarily unavailable."); });
 const server = app.listen(Number(process.env.PORT || 3000), "0.0.0.0");
 server.requestTimeout = 15_000;
 server.headersTimeout = 10_000;
