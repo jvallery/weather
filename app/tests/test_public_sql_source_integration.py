@@ -278,7 +278,7 @@ def test_full_window_keeps_invalid_preceding_ties_and_following_report_support()
                     source=SOURCE + timedelta(seconds=10),
                     values={"air_temperature": 20, "wind_avg": 2},
                 )
-                reported, _ = await observation(
+                reported, reported_raw = await observation(
                     connection,
                     d,
                     source=SOURCE + timedelta(seconds=90),
@@ -331,6 +331,12 @@ def test_full_window_keeps_invalid_preceding_ties_and_following_report_support()
             assert following.point.support_interval.end == SOURCE + timedelta(seconds=90)
             async with ingest.begin() as connection:
                 late, _ = await observation(connection, d, source=SOURCE + timedelta(seconds=20))
+                conflict = await incident(
+                    connection, reported, reported_raw, source=SOURCE + timedelta(seconds=90)
+                )
+                await connection.execute(
+                    text("SELECT weather.qualify_telemetry_conflict(:id)"), {"id": conflict}
+                )
             repeated = await read_evidence_window(
                 reader,
                 window,
@@ -340,6 +346,34 @@ def test_full_window_keeps_invalid_preceding_ties_and_following_report_support()
                 snapshot_watermark=result.watermark,
             )
             assert all(r.observation_id != late for r in repeated.rows)
+            old_temperature = next(
+                r
+                for r in result.rows
+                if r.observation_id == reported and r.point.metric == "temperature"
+            )
+            frozen_temperature = next(
+                r
+                for r in repeated.rows
+                if r.observation_id == reported and r.point.metric == "temperature"
+            )
+            assert frozen_temperature.exact_value == old_temperature.exact_value == 21
+            assert frozen_temperature.quality_revision == old_temperature.quality_revision
+            fresh = await read_evidence_window(
+                reader,
+                window,
+                ["temperature", "wind_avg"],
+                preceding_hold_seconds=90,
+                following_report_seconds=60,
+            )
+            current_temperature = next(
+                r
+                for r in fresh.rows
+                if r.observation_id == reported and r.point.metric == "temperature"
+            )
+            assert (
+                current_temperature.exact_value is None and current_temperature.point.value is None
+            )
+            assert current_temperature.quality_revision != old_temperature.quality_revision
             with pytest.raises(PublicInputError) as failure:
                 await read_evidence_window(
                     reader,

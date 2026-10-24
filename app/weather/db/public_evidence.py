@@ -48,6 +48,13 @@ EVIDENCE_SQL = text("""WITH boundary AS MATERIALIZED (
 ), bindings AS MATERIALIZED (
   SELECT * FROM jsonb_to_recordset(CAST(:bindings AS jsonb))
     AS b(metric text,family text,field text,unit text)
+), revisions AS MATERIALIZED (
+  SELECT DISTINCT ON (r.id,r.message_type COLLATE "C") r.*
+  FROM public_api.telemetry_evidence_revisions r CROSS JOIN boundary
+  WHERE r.revision_seq<=boundary.watermark AND r.publication_seq<=boundary.watermark
+    AND r.observed_at>=:lower AND r.observed_at<=:upper
+    AND r.message_type IN (SELECT family FROM bindings)
+  ORDER BY r.id,r.message_type COLLATE "C",r.revision_seq DESC
 ), raw AS MATERIALIZED (
   SELECT p.id,p.device_alias,p.message_type,p.observed_at,p.received_at,
     p.publication_seq,b.metric,b.unit,
@@ -55,7 +62,7 @@ EVIDENCE_SQL = text("""WITH boundary AS MATERIALIZED (
     p.field_quality->b.field AS field_quality,p.quality,
     coalesce(p.quality->'valid'='true'::jsonb,false)
       AND p.observed_at<=:now AND p.received_at<=:now AS source_time_eligible
-  FROM public_api.telemetry_publications p JOIN bindings b ON b.family=p.message_type
+  FROM revisions p JOIN bindings b ON b.family=p.message_type
   CROSS JOIN boundary
   WHERE p.publication_seq<=boundary.watermark AND p.station_alias=:station
     AND p.observed_at>=:lower AND p.observed_at<=:upper

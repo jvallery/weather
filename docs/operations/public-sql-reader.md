@@ -2,7 +2,8 @@
 
 This is an isolated source adaptor for the service protocol in `c70ffa0`, after
 the database source in `71003ba`. It requires #9, #12 and migration
-`0003_current_publication`; it does not compose their unmerged models into #9,
+`0003_current_publication`, plus `0004_evidence_revisions` for complete-window
+aggregate evidence; it does not compose their unmerged models into #9,
 activate a workload, implement HTTP/cache/HMAC, or install an aggregate handler.
 All PostgreSQL reader proof cases remain **unrun**.
 
@@ -132,12 +133,13 @@ reported policy is `v171-wind-report-interval-1`.
 The complete-window budget is explicit (maximum 50000 internal points). Above
 it, the read fails instead of returning partial input; split worker windows when
 needed. The caller owns authority, calibrated hold assembly, overlap/coverage/
-statistic math, resource bounds and publication fencing. Qualification does not
-advance W, so its input hash must include current exact/null/quality/support and
+statistic math, resource bounds and publication fencing. Under 0004, effective
+qualification changes advance the shared clock and append immutable safe states.
+The helper selects the latest `revision_seq<=W` per publication from
+`public_api.telemetry_evidence_revisions`, fixing aggregate values/quality as well
+as membership. Its input hash still binds exact/null/quality/support and
 calibration state, not W alone. No connection remains held after return.
-The separately prepared 0004 immutable qualification ledger requires a followup
-adapter selecting the latest safe revision at or below W per publication for
-aggregate evidence. Raw observation pages retain their live-eligibility view so
+Raw observation pages retain their live-eligibility v3 view so
 later disputes return null/reason without dropping snapshot members.
 
 ## Failure handling and proof limits
@@ -168,7 +170,8 @@ current/observation reads including zero and large integer counts plus explicit
 conflict invalidation plus empty boundaries; and API pool saturation/statement
 timeout while ingest commits independently and subsequent reads remain read-only;
 and complete-window reads preserving invalid tied bookends, following reported
-support and the frozen boundary.
+support, and immutable qualification at the frozen boundary while newer reads
+observe the later dispute.
 They reuse the socket/version/marker guard and reference-seed cleanup from the
 v3 migration tests. TLS negotiation against live CNPG remains a commissioning
 check; the disposable socket fixture does not pretend to prove it.
