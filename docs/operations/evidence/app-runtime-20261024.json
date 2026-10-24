@@ -1,0 +1,20 @@
+{
+  "pod": "weather-foundation-runtime-20261024-01",
+  "uid": "bb985669-90d8-459b-823f-8296a5a107a1",
+  "phase": "Succeeded",
+  "image": "registry.vallery.net/jvallery/weather-app@sha256:30adc5315ae33e453adde6591054df938291813e1d1f39173fd0a5d8d7f0c4d2",
+  "image_ids": [
+    "registry.vallery.net/jvallery/weather-app@sha256:30adc5315ae33e453adde6591054df938291813e1d1f39173fd0a5d8d7f0c4d2"
+  ],
+  "log_sha256": "407446e90c61305926b3ff070735d9f706fbb5dc22d18d5427f6fb369095b32b",
+  "result": {
+    "uid": 10001,
+    "ffmpeg_version": "ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffmpeg_configuration": "configuration: --prefix=/opt/ffmpeg --enable-gpl --enable-libx264 --disable-debug --disable-doc --disable-ffplay",
+    "libx264_encoder": true,
+    "ffprobe_version": "ffprobe version 9.0.2 Copyright (c) 2007-2026 the FFmpeg developers",
+    "unknown_key_exit": 2,
+    "unknown_key_log": "Invalid configuration fields: sentinel_key"
+  },
+  "cleanup_verified_absent": true
+}

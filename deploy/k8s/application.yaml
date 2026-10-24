@@ -8,7 +8,7 @@ metadata:
     agent-fleet.vallery.net/owner: jvallery
     agent-fleet.vallery.net/project: weather
 spec:
-  replicas: 0
+  replicas: 2
   revisionHistoryLimit: 3
   selector:
     matchLabels: &id001
@@ -143,7 +143,7 @@ metadata:
     agent-fleet.vallery.net/owner: jvallery
     agent-fleet.vallery.net/project: weather
 spec:
-  replicas: 0
+  replicas: 2
   revisionHistoryLimit: 3
   selector:
     matchLabels: &id001
