@@ -59,11 +59,13 @@ spec:
         - {port: 53, protocol: UDP}
         - {port: 53, protocol: TCP}
     # B2 has dynamic addresses; the instance manager also requires the
-    # Kubernetes API. Native NetworkPolicy has no FQDN selector. Admit HTTPS
+    # Kubernetes API (443 Service, 6443 endpoint after service translation).
+    # Native NetworkPolicy has no FQDN selector. Admit these TLS ports
     # without publishing private API addresses; provider and Kubernetes RBAC
     # restrict each identity's authority.
     - ports:
         - {port: 443, protocol: TCP}
+        - {port: 6443, protocol: TCP}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

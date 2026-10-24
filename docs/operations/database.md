@@ -45,7 +45,10 @@ It must never be a PreSync hook during first commissioning. Database-client
 Pods carry `weather.vallery.net/database-role` with one of the five role names.
 NetworkPolicies allow those clients on 5432, `cnpg-system` on the instance API,
 observability on 9187 and same-cluster replication. Instance HTTPS egress covers
-the Kubernetes API and B2; native NetworkPolicy cannot select a B2 FQDN. The
+the Kubernetes API and B2: TCP 443 plus the observed API endpoint port 6443,
+including in reader-only drills. Service address translation can expose the
+endpoint port to policy enforcement; a 443-only rule is insufficient for that
+path. Native NetworkPolicy cannot select a B2 FQDN. The
 bucket key and generated CNPG Kubernetes RBAC restrict authority.
 
 `deploy/acceptance/restore/role-logins.yaml` is an excluded, bounded acceptance
