@@ -22,6 +22,7 @@ spec:
     metadata:
       labels: *id001
     spec:
+      enableServiceLinks: false
       automountServiceAccountToken: false
       serviceAccountName: migrate
       imagePullSecrets:
