@@ -1,0 +1,46 @@
+{
+  "source_revision": "bed09184608c947dc0b95a784d8ca7f2facde28f",
+  "argo_sync": "Synced",
+  "argo_health": "Healthy",
+  "namespace_uid": "3e55407c-04f9-465a-af61-815e68b14e76",
+  "psa": "restricted",
+  "root_pod_server_dry_run": "rejected: runAsUser=0",
+  "tokenless_role_accounts": [
+    "api",
+    "collector-frontyard-1",
+    "collector-skycam-east",
+    "collector-skycam-west",
+    "intel",
+    "migrate",
+    "pipeline-frontyard-1",
+    "pipeline-skycam-east",
+    "pipeline-skycam-west",
+    "scheduler",
+    "tempest-receiver",
+    "web"
+  ],
+  "network_policies": [
+    "api-ingress",
+    "default-deny",
+    "web-egress",
+    "web-ingress"
+  ],
+  "quota": {
+    "limits.cpu": "40",
+    "limits.memory": "64Gi",
+    "persistentvolumeclaims": "16",
+    "pods": "40",
+    "requests.cpu": "12",
+    "requests.memory": "20Gi",
+    "requests.storage": "500Gi",
+    "services.loadbalancers": "0",
+    "services.nodeports": "0"
+  },
+  "limit_range_present": true,
+  "runtime_deployments": 0,
+  "runtime_pods": 0,
+  "pull_secret_present": true,
+  "limits": [
+    "Application runtime, image promotion and public/network probes are not commissioned."
+  ]
+}
