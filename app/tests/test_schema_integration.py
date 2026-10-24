@@ -85,15 +85,19 @@ async def rejects(
 
 
 async def asset(
-    connection: AsyncConnection, kind: str, *, embargo: bool = False
+    connection: AsyncConnection,
+    kind: str,
+    *,
+    embargo: bool = False,
+    published: bool = True,
 ) -> UUID:
     digest = uuid4().hex * 2
     return (
         await connection.execute(
             text("""
         INSERT INTO weather.media_asset(class,bucket,visibility,sha256,extension,object_key,
-                                        bytes,content_type,public_not_before)
-        VALUES(:kind,:bucket,:visibility,:digest,'jpg',:key,123,'image/jpeg',:eligible)
+                                        bytes,content_type,public_not_before,published_at)
+        VALUES(:kind,:bucket,:visibility,:digest,'jpg',:key,123,'image/jpeg',:eligible,:published)
         RETURNING id
     """),
             {
@@ -106,6 +110,9 @@ async def asset(
                 "key": f"{kind}/{digest}.jpg",
                 "eligible": datetime.now(UTC)
                 + (timedelta(hours=1) if embargo else -timedelta(hours=1)),
+                "published": datetime.now(UTC)
+                if published and kind != "original"
+                else None,
             },
         )
     ).scalar_one()
@@ -367,6 +374,7 @@ def test_asset_class_and_request_time_public_views() -> None:
                 original = await asset(connection, "original")
                 public = await asset(connection, "still")
                 await asset(connection, "still", embargo=True)
+                await asset(connection, "still", published=False)
                 withdrawn = await asset(connection, "poster")
                 await connection.execute(
                     text("""

@@ -155,10 +155,11 @@ def statements(table_names: list[str]) -> list[str]:
         """CREATE VIEW public_api.cameras WITH (security_barrier=true) AS SELECT id,label FROM weather.camera""",
         """CREATE VIEW public_api.assets WITH (security_barrier=true) AS
            SELECT id,class,sha256,extension,bytes,content_type,width,height,
-                  public_not_before,created_at
+                  public_not_before,published_at,created_at
            FROM weather.media_asset WHERE class<>'original' AND bucket='weather-media'
              AND visibility='public' AND state='available' AND NOT withdrawn
-             AND public_not_before <= clock_timestamp()""",
+             AND public_not_before <= clock_timestamp()
+             AND published_at IS NOT NULL AND published_at <= clock_timestamp()""",
         """CREATE VIEW public_api.segments WITH (security_barrier=true) AS
            SELECT s.id,s.camera_id,s.kind,s.starts_at,s.ends_at,s.frames,s.revision,s.state,
                   c.cycle_date FROM weather.segment s

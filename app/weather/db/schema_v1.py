@@ -379,6 +379,7 @@ def build_metadata() -> MetaData:
         Column("width", Integer),
         Column("height", Integer),
         instant("public_not_before", True),
+        instant("published_at", True),
         Column("state", String(16), nullable=False, server_default=text("'available'")),
         created(),
         *withdrawn(),
@@ -395,6 +396,9 @@ def build_metadata() -> MetaData:
         ),
         CheckConstraint(
             "class = 'original' OR public_not_before IS NOT NULL", name="embargo"
+        ),
+        CheckConstraint(
+            "class <> 'original' OR published_at IS NULL", name="original_not_published"
         ),
         CheckConstraint(
             "sha256 ~ '^[0-9a-f]{64}$' AND extension ~ '^[a-z0-9]{1,8}$' AND "
