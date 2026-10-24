@@ -128,7 +128,7 @@ The selected integration changes two independent policies:
 
 The distinction and fallback are documented in [frame-src](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-src) and [frame-ancestors](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-ancestors). Inspect every effective CSP header; an additional permissive header does not override a restrictive one. The child policy must be an HTTP response header, not a meta tag. Do not add www, wildcard subdomains, localhost or a WordPress admin origin to make a failing test pass.
 
-Parent implementation uses a titled, responsive iframe pointed at the fixed HTTPS embed route, with a visible ordinary Weather link outside the frame as a failure/no-script alternative. Reserve enough layout space for all card states and 200% zoom; avoid parent DOM access, postMessage sizing, third-party code or privileged cookies. The card fetches its own same-origin sanitized data. Exact placement and sizing belong to the WordPress owner and must be recorded before its implementation; Weather does not edit arbitrary page content during planning.
+Parent implementation uses a titled, responsive iframe pointed at the fixed HTTPS embed route, with a visible ordinary Weather link outside the frame as a failure/no-script alternative. Reserve enough layout space for all card states and 200% zoom; avoid parent DOM access, postMessage sizing, third-party code or privileged cookies. The card fetches its own same-origin sanitized data. The approved placement and sizing proposal are recorded below. WordPress owns implementation and final responsive sizing; Weather does not edit arbitrary page content during planning.
 
 WX-44 and OWN-EMBED verify the apex parent succeeds, www redirects before framing, an unrelated/nested unauthorized ancestor fails, normal/private Weather routes remain unframeable, multiple effective CSP headers agree, and parent editor/security behavior remains unchanged. Include mobile containers, keyboard traversal, no-script link, zoom, failed data polling and embed-route error responses. Recheck the parent serving revision/health before rollout; the header probe alone does not prove browser behavior or authorize a production change.
 
@@ -137,3 +137,20 @@ Self-host scripts, icons, fonts and player assets. Render narrative/editorial va
 ## Completion evidence still required
 
 WX-20/26 must implement the linked rendered wireframes and prove pinned build/runtime compatibility and route/schema integration. WX-39/40/41/43/44 retain the detailed [38-clause UI audit](../implementation/ui-clause-audit.md) in addition to this layout policy. Verify all required §12.2 surfaces, no-JavaScript navigation, all lifecycle/error states, native panorama and lazy loading, text equivalents, focus/contrast/zoom, source-time linking and private/public separation. The separate font review resolves upstream provenance and license obligations; neither it nor live asset hashes prove correct artifact distribution or pixel-level visual acceptance. Identity integration and actual parent embed delivery remain material open decisions. No D13 completion is claimed from this document.
+
+### Approved homepage placement
+
+Jason selected the full-width Weather section immediately after **“What I am doing now”** and before **“The technical work is one part of the story.”** A live read-only browser inspection of `https://vallery.net/` on 2026-10-23 confirmed those sections in that order. The hero contains the personal introduction and latest-writing panel; the selected placement preserves that existing introduction and places local conditions alongside the current home projects. This is an approved layout decision, not a deployed parent change.
+
+Parent page sequence:
+
+1. Existing hero and introductory fact strip.
+2. Existing “What I am doing now” section and its three project links.
+3. New full-width **“Weather in Longmont”** section, aligned to the existing content container, containing the Weather iframe and a visible ordinary **“Open Weather”** link to `https://weather.vallery.net/` outside the frame.
+4. Existing “The technical work is one part of the story” section and subsequent writing/site content.
+
+Use `title="Current weather in Longmont"` for the iframe, the fixed `/embed/weather/` source and lazy loading since this is below the introduction. The parent supplies the section heading; the child provides measurement timestamps, freshness, temperature/wind/rain and the full-site link under the existing card contract. Do not add camera imagery, navigation or a second polling implementation to the parent. The public city label already appears on the homepage and does not disclose the private station coordinates.
+
+The iframe spans its parent container at desktop and mobile widths. Start layout qualification with a 24rem frame at container widths of at least 48rem and 36rem below that width; these are proposed sizing inputs, not verified final dimensions. Keep internal scrolling available and keyboard reachable rather than clipping overflow. OWN-EMBED must adjust dimensions against all card states at narrow width and 200% zoom, preserving the outside fallback link and avoiding page-width overflow or unexpected layout shifts. No automatic postMessage sizing is introduced. Weather's child card can complete before this live parent integration, as specified in WX-44.
+
+Verify exact placement and unchanged existing project links/content on the actual WordPress homepage, effective parent/child CSP, ordinary link access when frame loading is blocked or scripting is off, and child error/stale/empty states. WX-33 checks the combined live experience. The browser inspection confirmed current layout only; no CMS content, CSP or deployment was changed.
