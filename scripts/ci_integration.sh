@@ -45,6 +45,8 @@ ALTER DATABASE weather_ci OWNER TO weather_migrator;
 SQL
 wx_vector="$(psql -h "$wx_pg_root/socket" -U postgres -d weather_ci -Atqc "SELECT extversion FROM pg_extension WHERE extname='vector'")"
 [[ "$wx_vector" == 0.8.6 ]] || { echo 'Integration requires production pgvector 0.8.6' >&2; exit 2; }
+psql -h "$wx_pg_root/socket" -U postgres -d weather_ci -v ON_ERROR_STOP=1 \
+  -c "SELECT version() AS postgres_version, (SELECT extversion FROM pg_extension WHERE extname='vector') AS vector_version"
 createdb -h "$wx_pg_root/socket" -U postgres weather_ci_empty
 psql -h "$wx_pg_root/socket" -U postgres -d weather_ci_empty -v ON_ERROR_STOP=1 -q <<'SQL'
 CREATE EXTENSION vector;
