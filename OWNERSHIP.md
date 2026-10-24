@@ -2,13 +2,14 @@
 
 What this repository owns, where each item lives, and its current state. Central record: agents `control-plane/agent-fleet-control/registry/policy/estate-ownership/`. Update both in the same change set.
 
-State as of 2026-10-24: **planned, not deployed.** Fill in each row's health and verification once its delivering issue lands.
+State as of 2026-10-24: namespace guardrails are defined in WX-01; application commissioning remains pending. Record live revision and health after Argo adoption.
 
 | Item | Kind | Where | Delivered by | State |
 |---|---|---|---|---|
-| `jvallery/weather` | Repository (public, MIT) | GitHub | — | Exists; fleet registry `gh-1431367372` pending (agents#5366) |
-| `weather` | Namespace (PSA restricted, quota, default-deny) | k3s `vallery` | WX-01 | Planned |
-| `weather` | Argo Application (source `deploy/k8s`) | agents catalog / AppProject `weather` | agents#5366, WX-01 | Planned |
+| `jvallery/weather` | Repository (public, MIT) | GitHub | — | Fleet registry `gh-1431367372` enrolled; source and live onboarding tracked in agents#5366 |
+| `weather` | Namespace (PSA restricted, quota, default-deny) | k3s `vallery` | WX-01 | Source defined; live adoption pending |
+| Quota `weather-budget`, LimitRange `weather-defaults`, default-deny and role policies, tokenless role ServiceAccounts | Namespace guardrails, no RBAC | `weather`, rendered by `deploy/k8s` | WX-01 | Source defined; no application or ingress enabled |
+| `weather` | Argo Application (source `deploy/k8s`) | agents catalog / AppProject `weather` | agents#5366, WX-01 | Catalog enrolled; namespace baseline adoption pending |
 | `weather.vallery.net` | Hostname (backend + route owner) | IngressRoutes in `weather` via wildcard tunnel | WX-01, network-infra#775 | DNS wildcard resolves; returns Traefik 404 today |
 | `weather-app`, `weather-web` | Images, digest-pinned | `registry.vallery.net/jvallery/` | WX-02, WX-01 | Reproducible recipes in WX-02; in-cluster build/runtime qualification remains WX-01 |
 | `weather-python-base`, `weather-node-base` | Upstream runtime mirrors, imported in-cluster and digest-pinned | `registry.vallery.net/jvallery/` | WX-02, agents#5366 | Imported via fixed fleet profiles; both manifests/configs SHA-verified as Linux amd64 at the pinned runtime versions (see docs/operations/base-imports.json) |
