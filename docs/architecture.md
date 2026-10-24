@@ -1,6 +1,6 @@
 # Weather architecture
 
-**Status:** authoritative design summary as of 2026-10-24 ([simplification record](decisions/2026-10-24-simplification.md)). Required outcomes: [requirements](requirements.md) R01–R38, as amended by that record. Live state: nothing is deployed yet. GitHub issues and their native dependencies are the work plan.
+**Status:** authoritative design summary as of 2026-10-24 ([simplification record](decisions/2026-10-24-simplification.md), amended by the [takeover re-plan](decisions/2026-10-24-takeover-replan.md)). Required outcomes: [requirements](requirements.md) R01–R38, as amended by those records. Live state: the walking skeleton only (API `/healthz` and the scaffold web image); no slice is launched. GitHub issues and their native dependencies are the work plan.
 
 ## What it is
 
@@ -26,7 +26,7 @@ All application workloads run in namespace `weather` and are rendered from `depl
 | `api` | Deployment ×2 | FastAPI public API, media origin (GET/HEAD/range), operator API | – | CNPG, Garage `weather-media` (read-only), Cortex embed (query) |
 | `web` | Deployment ×2 | React Router SSR + client navigation | – | `api` only |
 | `weather-pg` | CNPG Cluster, 3 instances | Canonical store; Barman → B2 | `longhorn-v1-rwo` | B2 |
-| `migrate` | Argo PreSync Job | Alembic migrations (migrator role) | – | CNPG |
+| `migrate` | Argo Sync hook Job, wave 1 (DB clients at wave ≥2) | Alembic migrations (migrator role) | – | CNPG |
 
 There are two images, each built in-cluster by Kaniko, published to `registry.vallery.net/jvallery/weather-*` and pinned by digest:
 
@@ -88,14 +88,14 @@ Pins start from [backend](research/backend-pin-evidence.json) and [frontend](res
 
 ## Delivery slices
 
-| Slice | Goes public when | Issues |
+| Slice | Goes public when | Issues (numbers; see the [takeover re-plan](decisions/2026-10-24-takeover-replan.md#critical-path-and-order) for order) |
 |---|---|---|
-| 0 Foundation | Skeleton live at weather.vallery.net (health page, no data) | WX-02, WX-01, WX-08, WX-09, WX-05 |
-| 1 Live weather | WX-47 passes | WX-11, WX-04, WX-13, WX-20, WX-41, WX-44 |
-| 2 Timelapse | WX-48 passes | WX-10, WX-03, WX-14, WX-17, WX-19, WX-36, WX-37, WX-38, WX-18, WX-39 |
-| 3 Intelligence | WX-49 passes | WX-22, WX-24, WX-26, WX-40, WX-43 |
-| Closeout | WX-35 | WX-32 restore drill, homepage card (wordpress#242), 14-day SLO evidence |
-| Non-blocking | – | WX-15 interpolation A/B pilot, WX-45 composite, WX-46 visual index |
+| 0 Foundation | done: skeleton live | #2, #3, #9, #10 closed; #6 database, #74 schema baseline |
+| 1 Live weather | #48 passes | #73, #5, #14, #21; #42 almanac and #45 card follow |
+| 2 Timelapse | #49 passes | #75, #4, #15, #18, #19, #20, #37, #38, #39, #40; #77 restore smoke |
+| 3 Intelligence | #50 passes | #23, #25, #27, #41, #44, #78 |
+| Closeout | #36 | #33 joint drill, wordpress#242 homepage card, 14-day SLO evidence, #79 dated GC follow-up |
+| Non-blocking | – | #76 cleanup, #16 interpolation pilot, #46 composite, #47 visual index |
 
 ## Estate alignment
 

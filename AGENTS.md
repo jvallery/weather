@@ -21,7 +21,7 @@ Jason's direct request authorizes the work it describes, across code, infrastruc
 - If the supported cluster path, required access, ownership/admission clearance or safe capacity is unavailable, stop the intensive work and report the exact blocker. Do not silently fall back to intensive execution on the Mac. Work that inherently requires local execution needs an explicit, task-scoped exception approved by Jason before it runs, with its workload bounds stated. This policy is the estate minimum: preserve stronger repository/subdirectory restrictions, existing holds and data-custody rules. A repository command or general task authorization does not override this placement policy; only Jason's explicit scoped exception does.
 <!-- estate-contract:end -->
 
-Owns the public Weather application at `weather.vallery.net`: Tempest telemetry history, three-camera civil-twilight timelapses and camera products, local almanac, AI descriptions, search, editor and the vallery.net weather card. Design: [docs/architecture.md](docs/architecture.md). Binding changes since requirements v4.0: [docs/decisions/2026-10-24-simplification.md](docs/decisions/2026-10-24-simplification.md).
+Owns the public Weather application at `weather.vallery.net`: Tempest telemetry history, three-camera civil-twilight timelapses and camera products, local almanac, AI descriptions, search, editor and the vallery.net weather card. Design: [docs/architecture.md](docs/architecture.md). Binding changes since requirements v4.0: [simplification record](docs/decisions/2026-10-24-simplification.md), amended by the [takeover re-plan](docs/decisions/2026-10-24-takeover-replan.md) (C1–C16), which wins where they conflict.
 
 ## Owns
 
@@ -45,8 +45,9 @@ Lane table and rules: [estate README](https://github.com/jvallery/agents/blob/ma
 
 ## In transition
 
-- The walking skeleton is deployed and verified; WX-01 (#2) is closed. Slice 1 launch remains tracked in #48. Planning history lives in [docs/archive/planning-2026-10/](docs/archive/planning-2026-10). It is context, not instructions.
-- agents#5366 delivered Weather's `ci-only` ownership, registry, generated CI profiles, GitOps roots and enforced branch protection. Weather has no coding repository pod.
+- Claude took over from Codex on 2026-10-24. The [takeover re-plan](docs/decisions/2026-10-24-takeover-replan.md) records the audit, decisions C1–C16 and the critical path. Codex's shutdown handoff branch (`docs/weather-shutdown-20261024`) is history, not instructions.
+- Live: the walking skeleton only. The API serves `/healthz`, the web runs the scaffold image, and `weather-pg` does not exist. Slice 1 launches in #48.
+- agents#5366 delivered Weather's `ci-only` ownership, registry, generated CI profiles, GitOps roots and enforced branch protection. Weather has no coding repository pod. Planning history lives in [docs/archive/planning-2026-10/](docs/archive/planning-2026-10).
 
 ## Deliver and verify
 
@@ -68,8 +69,11 @@ Lane table and rules: [estate README](https://github.com/jvallery/agents/blob/ma
   6. OWNERSHIP.md is updated for new objects.
   7. No secret, exact coordinates, camera IP or station serial in Git, issues or logs.
   8. The issue gets a closing comment: what changed, what was verified (command plus result), and remaining limits.
-- **Contracts.** API contracts are code-first (Pydantic → OpenAPI → `openapi-typescript`). Golden vectors in `docs/contracts/*-vectors.json` become tests.
-- **Disposable namespaces.** Pilots and qualification namespaces carry `estate.vallery.net/disposable=true` and `estate.vallery.net/expires=<date>` (estate R23). Delete them after their evidence is committed.
+- **Proof and comments (C2).** Don't commit evidence, receipt, custody or handoff files. CI proof is the PR's fleet check link; live proof goes in the closing comment. Each issue gets at most one blocker note, naming the decision or owner, and one closing comment. Don't post progress checkpoints, workflow or pod UIDs, or local paths.
+- **No self-imposed gates (C1).** Acceptance is the issue's checklist. Don't add qualification programs, held-tab or placement-reservation proofs, or zero-failure clocks. A probe window means availability ≥99.5% over the window, measured after the relevant digests are live.
+- **Issue bodies.** Outcome; Acceptance (at most about 10 checkboxes, each one a command or an observable behaviour); Blocked by (native links only); Not in scope. Refer to issues by number; WX keys are retired.
+- **Contracts.** API contracts are code-first (Pydantic → OpenAPI → `openapi-typescript`). A vector file in `docs/contracts/` exists only if a test loads it.
+- **Disposable namespaces.** Pilots and qualification namespaces carry `estate.vallery.net/disposable=true` and `estate.vallery.net/expires=<date>` (estate R23). Delete them once the result is recorded in the issue.
 - **Restore drills.** Restore drills (#6 and #33) are the exception: they run as `weather-drill-*` resources inside `weather` with the disposable/expires labels, so read-only restore keys are referenced in place and never copied. A drill NetworkPolicy isolates them from production, and they are deleted after use.
 
 ## Hazards
@@ -78,5 +82,6 @@ Lane table and rules: [estate README](https://github.com/jvallery/agents/blob/ma
 - **Privacy.** Camera originals are private. Public images must satisfy the ≥600 s embargo at request time. Never publish exact coordinates, camera addresses, station serials or credentials.
 - **Cameras.** Collectors may only poll their own camera's snapshot endpoint at the commissioned cadence. Public requests never trigger camera access.
 - **Disabled-by-default manifests.** Ship a new workload's manifests disabled (`replicas: 0`, or left out of the kustomization) until its Secrets, PVCs and keys exist. The issue that commissions it, or the slice launch, enables it. Argo `weather` must never go Degraded for want of a prerequisite.
-- **Generated CI config.** `.agent-fleet/ci.yaml` (once present) is generated from the agents registry. Change the registry, not the file.
+- **Migrations.** Never rewrite a migration that has run on `weather-pg`. Before the first production migration (#74), squash freely; after it, use expand/contract only. The migrate Job is an Argo Sync hook at wave 1, and DB clients run at wave ≥2.
+- **Generated CI config.** `.agent-fleet/ci.yaml` is generated from the agents registry. Change the registry, not the file.
 - **Inference.** The Cortex routes are shared with other consumers. Keep AI concurrency at 1 and stay within the scoped key's limits.
