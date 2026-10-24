@@ -1,6 +1,40 @@
 // SPDX-License-Identifier: MIT
 // Generated from code-first Pydantic OpenAPI; run scripts/ci.sh contracts --write.
 export interface paths {
+    readonly "/api/v1/timelapses": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /** List Timelapses */
+        readonly get: operations["listTimelapses"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/api/v1/timelapses/{video_id}": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /** Get Timelapse */
+        readonly get: operations["getTimelapse"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
     readonly "/api/v1/weather/aggregates": {
         readonly parameters: {
             readonly query?: never;
@@ -146,7 +180,7 @@ export interface components {
         };
         /** Almanac */
         readonly Almanac: {
-            readonly comparison_interval: components["schemas"]["Interval"] | null;
+            readonly comparison_interval: components["schemas"]["weather__api__models__Interval"] | null;
             readonly coverage: components["schemas"]["Coverage"] | null;
             /** Derived */
             readonly derived: boolean;
@@ -161,8 +195,8 @@ export interface components {
              * Format: date-time
              */
             readonly generated_at: string;
-            readonly history_interval: components["schemas"]["Interval"] | null;
-            readonly interval: components["schemas"]["Interval"];
+            readonly history_interval: components["schemas"]["weather__api__models__Interval"] | null;
+            readonly interval: components["schemas"]["weather__api__models__Interval"];
             /** Items */
             readonly items: readonly (components["schemas"]["RecordItem"] | components["schemas"]["RainDayItem"] | components["schemas"]["WindRoseBinItem"] | components["schemas"]["AstronomyItem"] | components["schemas"]["ComparisonItem"])[];
             /** Label */
@@ -189,6 +223,29 @@ export interface components {
             readonly timezone: "America/Denver";
             /** Unit */
             readonly unit: string | null;
+        };
+        /** Asset */
+        readonly Asset: {
+            /**
+             * Asset Id
+             * Format: uuid
+             */
+            readonly asset_id: string;
+            /** Bytes */
+            readonly bytes: number;
+            /**
+             * Class
+             * @enum {string}
+             */
+            readonly class: "video" | "poster" | "keogram" | "sidecar";
+            /** Height */
+            readonly height: number | null;
+            /** Mime */
+            readonly mime: string;
+            /** Url */
+            readonly url: string;
+            /** Width */
+            readonly width: number | null;
         };
         /**
          * AstronomyItem
@@ -329,22 +386,6 @@ export interface components {
             readonly schema_version: 1;
             /** Station Alias */
             readonly station_alias: string;
-        };
-        /**
-         * Interval
-         * @description Half-open UTC interval [start, end).
-         */
-        readonly Interval: {
-            /**
-             * End
-             * Format: date-time
-             */
-            readonly end: string;
-            /**
-             * Start
-             * Format: date-time
-             */
-            readonly start: string;
         };
         /** Metric */
         readonly Metric: {
@@ -532,6 +573,15 @@ export interface components {
             /** Value */
             readonly value: number | null;
         };
+        /** Rendition */
+        readonly Rendition: {
+            readonly asset: components["schemas"]["Asset"];
+            /**
+             * Role
+             * @enum {string}
+             */
+            readonly role: "native" | "web" | "mobile";
+        };
         /**
          * RoseBin
          * @description Duration in one category; directional sectors are half-open, from-direction degrees.
@@ -552,6 +602,104 @@ export interface components {
             readonly speed_max: number | null;
             /** Speed Min */
             readonly speed_min: number | null;
+        };
+        /** Timelapse */
+        readonly Timelapse: {
+            /** Allocated Frames */
+            readonly allocated_frames: number;
+            /** Camera */
+            readonly camera: string;
+            /**
+             * Cycle Date
+             * Format: date
+             */
+            readonly cycle_date: string;
+            readonly keogram: components["schemas"]["Asset"] | null;
+            /**
+             * Keogram State
+             * @enum {string}
+             */
+            readonly keogram_state: "pending" | "published" | "partial" | "unavailable" | "withdrawn";
+            /** Native Download Url */
+            readonly native_download_url: string | null;
+            readonly poster: components["schemas"]["Asset"] | null;
+            /** Reason */
+            readonly reason: string | null;
+            /** Renditions */
+            readonly renditions: readonly components["schemas"]["Rendition"][];
+            /** Revision */
+            readonly revision: number;
+            /**
+             * Schema Version
+             * @default 1
+             * @constant
+             */
+            readonly schema_version: 1;
+            /**
+             * Segment
+             * @enum {string}
+             */
+            readonly segment: "daytime" | "overnight";
+            readonly sidecar: components["schemas"]["Asset"] | null;
+            readonly source_interval: components["schemas"]["weather__api__timelapses__Interval"];
+            /**
+             * State
+             * @enum {string}
+             */
+            readonly state: "published" | "partial" | "unavailable" | "withdrawn";
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            readonly updated_at: string;
+            /**
+             * Video Id
+             * Format: uuid
+             */
+            readonly video_id: string;
+            /** Withdrawn */
+            readonly withdrawn: boolean;
+        };
+        /** TimelapsePage */
+        readonly TimelapsePage: {
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            readonly generated_at: string;
+            /** Items */
+            readonly items: readonly components["schemas"]["Timelapse"][];
+            /** Next Cursor */
+            readonly next_cursor: string | null;
+        };
+        /**
+         * Interval
+         * @description Half-open UTC interval [start, end).
+         */
+        readonly weather__api__models__Interval: {
+            /**
+             * End
+             * Format: date-time
+             */
+            readonly end: string;
+            /**
+             * Start
+             * Format: date-time
+             */
+            readonly start: string;
+        };
+        /** Interval */
+        readonly weather__api__timelapses__Interval: {
+            /**
+             * End
+             * Format: date-time
+             */
+            readonly end: string;
+            /**
+             * Start
+             * Format: date-time
+             */
+            readonly start: string;
         };
         /**
          * WindRoseBinItem
@@ -590,6 +738,106 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    readonly listTimelapses: {
+        readonly parameters: {
+            readonly query?: {
+                readonly camera?: string | null;
+                readonly cursor?: string | null;
+                readonly cycle_date?: string | null;
+                /** @description First cycle date, inclusive */
+                readonly from?: string | null;
+                readonly limit?: number;
+                /** @description YYYY-MM */
+                readonly month?: string | null;
+                readonly segment?: string | null;
+                readonly state?: string | null;
+                /** @description Last cycle date, inclusive */
+                readonly to?: string | null;
+            };
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["TimelapsePage"];
+                };
+            };
+            /** @description Invalid request. */
+            readonly 400: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The catalog is temporarily unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    readonly getTimelapse: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path: {
+                readonly video_id: string;
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["Timelapse"];
+                };
+            };
+            /** @description Invalid request. */
+            readonly 400: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such timelapse. */
+            readonly 404: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The catalog is temporarily unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     readonly getAggregates: {
         readonly parameters: {
             readonly query: {

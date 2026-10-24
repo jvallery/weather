@@ -26,6 +26,9 @@ export type WindRoseBinItem = Schemas["WindRoseBinItem"];
 export type AstronomyItem = Schemas["AstronomyItem"];
 export type ComparisonItem = Schemas["ComparisonItem"];
 export type ComparisonWindow = Schemas["ComparisonWindow"];
+// The archive month page renders only these fields of each /api/v1/timelapses entry.
+export type ArchiveEntry = Pick<Schemas["Timelapse"], "video_id" | "camera" | "cycle_date" | "segment" | "state" | "reason">;
+export type ArchivePage = { items: ArchiveEntry[]; next_cursor: string | null };
 
 const text = z.string();
 // A new server enum value degrades that one field instead of rejecting the whole response.
@@ -93,6 +96,11 @@ const almanac = z.object({
   coverage: coverage.nullable().default(null), missing_reasons: reasons, next_cursor: text.nullable().default(null),
   items: z.array(almanacItem).transform((items) => items.filter((item) => item !== null)),
 });
+const archiveEntry = z.object({
+  video_id: text, camera: text, cycle_date: text, segment: z.enum(["daytime", "overnight"]),
+  state: lenient(["published", "partial", "unavailable", "withdrawn"], "unavailable"), reason: text.nullable().default(null),
+});
+const archive = z.object({ items: z.array(archiveEntry), next_cursor: text.nullable() });
 
 // The parsed shapes must stay assignable to the generated types; tsc fails on drift.
 const checks: [
@@ -100,7 +108,8 @@ const checks: [
   (value: z.infer<typeof registry>) => MetricRegistry,
   (value: z.infer<typeof aggregates>) => Aggregates,
   (value: z.infer<typeof almanac>) => Almanac,
-] = [(value) => value, (value) => value, (value) => value, (value) => value];
+  (value: z.infer<typeof archive>) => ArchivePage,
+] = [(value) => value, (value) => value, (value) => value, (value) => value, (value) => value];
 void checks;
 
 export type Parser<T> = (value: unknown) => T | null;
@@ -111,3 +120,4 @@ export const parseCurrent: Parser<Current> = parser(current);
 export const parseRegistry: Parser<MetricRegistry> = parser(registry);
 export const parseAggregates: Parser<Aggregates> = parser(aggregates);
 export const parseAlmanac: Parser<Almanac> = parser(almanac);
+export const parseArchive: Parser<ArchivePage> = parser(archive);

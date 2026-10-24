@@ -84,3 +84,13 @@ if not (root / "syft").exists():
     assert member is not None
     (root / "syft").write_bytes(member.read())
     (root / "syft").chmod(0o755)
+
+# Disposable Garage for the publication integration suite; the estate runs the same v2.3.0.
+if not (root / "garage").exists():
+    (root / "garage").write_bytes(
+        download(
+            "https://garagehq.deuxfleurs.fr/_releases/v2.3.0/x86_64-unknown-linux-musl/garage",
+            "f98d317942bb341151a2775162016bb50cf86b865d0108de03eb5db16e2120cd",
+        )
+    )
+    (root / "garage").chmod(0o755)

@@ -13,6 +13,11 @@ def main() -> None:
 
         capture_main(sys.argv[2:])
         return
+    if sys.argv[1:2] == ["media"]:
+        from weather.publish.cli import main as media_main
+
+        media_main(sys.argv[2:])
+        return
     if sys.argv[1:2] == ["tempest-receiver"]:
         receiver_parser = argparse.ArgumentParser(
             prog="weather tempest-receiver",
@@ -34,7 +39,10 @@ def main() -> None:
         receiver_main()
         return
     parser = argparse.ArgumentParser(prog="weather", description="Weather archive services")
-    parser.epilog = "Snapshot acquisition: weather capture collect --camera <id>"
+    parser.epilog = (
+        "Snapshot acquisition: weather capture collect --camera <id>; "
+        "publication: weather media withdraw|reconcile"
+    )
     parser.add_argument("role", choices=["api", "scheduler", "tempest-receiver"], nargs="?")
     args = parser.parse_args()
     if args.role == "api":

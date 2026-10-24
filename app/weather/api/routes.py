@@ -24,6 +24,7 @@ from .models import (
 )
 from .registry import PublicError, unavailable
 from .service import WeatherService
+from .timelapses import router as timelapses
 
 ERRORS: dict[int | str, dict[str, Any]] = {
     400: {"model": Problem, "description": "Invalid request."},
@@ -35,6 +36,7 @@ ROUTES = {
     "/api/v1/weather/observations": "observations",
     "/api/v1/weather/aggregates": "aggregates",
     "/api/v1/weather/almanac": "almanac",
+    "/api/v1/timelapses": "timelapses",
 }
 router = APIRouter()
 
@@ -145,6 +147,7 @@ def _problem(status: int, problem: Problem) -> JSONResponse:
 
 def install(app: FastAPI) -> None:
     app.include_router(router)
+    app.include_router(timelapses)
 
     @app.exception_handler(RequestValidationError)
     async def invalid(_request: Request, _error: RequestValidationError) -> JSONResponse:

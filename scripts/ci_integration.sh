@@ -11,9 +11,15 @@ postgres --version | grep -F 'PostgreSQL) 16.15' >/dev/null || {
   echo 'Integration requires the production PostgreSQL 16.15 image' >&2
   exit 2
 }
+command -v garage >/dev/null || { echo 'Integration requires the bootstrapped Garage binary' >&2; exit 2; }
 wx_pg_root="$(mktemp -d "${TMPDIR:-/tmp}/weather-schema-ci.XXXXXX")"
 wx_pg_started=0
+wx_garage_pid=
 cleanup() {
+  if [[ -n "$wx_garage_pid" ]]; then
+    kill "$wx_garage_pid" 2>/dev/null || true
+    wait "$wx_garage_pid" 2>/dev/null || true
+  fi
   if [[ "$wx_pg_started" == 1 ]]; then
     if ! pg_ctl -D "$wx_pg_root/data" -m immediate -w -t 20 stop >/dev/null 2>&1; then
       if pg_ctl -D "$wx_pg_root/data" status >/dev/null 2>&1; then
@@ -72,6 +78,37 @@ uv run --frozen python - <<'PY'
 from weather.timemodel.site import IANA_VERSION, TZDATA_VERSION
 print(f'Python timezone package: tzdata {TZDATA_VERSION}, IANA {IANA_VERSION}')
 PY
+# A loopback-only, single-node Garage with the two production bucket names and one test key.
+wx_garage="$wx_pg_root/garage"
+mkdir -p "$wx_garage/meta" "$wx_garage/data"
+cat > "$wx_garage/garage.toml" <<TOML
+metadata_dir = "$wx_garage/meta"
+data_dir = "$wx_garage/data"
+db_engine = "sqlite"
+replication_factor = 1
+rpc_bind_addr = "127.0.0.1:3901"
+rpc_public_addr = "127.0.0.1:3901"
+rpc_secret = "$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+
+[s3_api]
+s3_region = "garage"
+api_bind_addr = "127.0.0.1:3900"
+TOML
+garage -c "$wx_garage/garage.toml" server >"$wx_garage/server.log" 2>&1 &
+wx_garage_pid=$!
+wx_g() { garage -c "$wx_garage/garage.toml" "$@"; }
+for _ in $(seq 60); do wx_g status >/dev/null 2>&1 && break; sleep 0.5; done
+wx_g layout assign -z ci -c 1G "$(wx_g node id -q | cut -d@ -f1)" >/dev/null
+wx_g layout apply --version 1 >/dev/null
+WEATHER_CI_S3_ACCESS_KEY="GK$(python3 -c 'import secrets; print(secrets.token_hex(12))')"
+WEATHER_CI_S3_SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+wx_g key import --yes -n weather-ci "$WEATHER_CI_S3_ACCESS_KEY" "$WEATHER_CI_S3_SECRET_KEY" >/dev/null
+for wx_bucket in weather-media weather-originals; do
+  wx_g bucket create "$wx_bucket" >/dev/null
+  wx_g bucket allow --read --write --owner "$wx_bucket" --key weather-ci >/dev/null
+done
+export WEATHER_CI_S3_ENDPOINT=http://127.0.0.1:3900 WEATHER_CI_S3_ACCESS_KEY WEATHER_CI_S3_SECRET_KEY
+echo "Garage $(wx_g --version 2>/dev/null | head -n1 || true) ready on loopback"
 export WEATHER_CI_DATABASE_URL="postgresql+asyncpg://weather_migrator@/weather_ci?host=$wx_pg_root/socket"
 export WEATHER_CI_ADMIN_DATABASE_URL="postgresql+asyncpg://postgres@/weather_ci?host=$wx_pg_root/socket"
 uv run --frozen python -m alembic upgrade head
@@ -82,4 +119,4 @@ uv run --frozen pytest -m integration
 # Confirm terminal test success before removing all disposable server state.
 pg_ctl -D "$wx_pg_root/data" -m fast -w -t 20 stop >/dev/null
 wx_pg_started=0
-echo 'PostgreSQL 16.15 / pgvector 0.8.6 integration completed; disposable server stopped'
+echo 'PostgreSQL 16.15 / pgvector 0.8.6 / Garage integration completed; disposable servers stopped'

@@ -170,7 +170,7 @@
           "comparison_interval": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Interval"
+                "$ref": "#/components/schemas/weather__api__models__Interval"
               },
               {
                 "type": "null"
@@ -220,7 +220,7 @@
           "history_interval": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Interval"
+                "$ref": "#/components/schemas/weather__api__models__Interval"
               },
               {
                 "type": "null"
@@ -228,7 +228,7 @@
             ]
           },
           "interval": {
-            "$ref": "#/components/schemas/Interval"
+            "$ref": "#/components/schemas/weather__api__models__Interval"
           },
           "items": {
             "items": {
@@ -374,6 +374,71 @@
           "next_cursor"
         ],
         "title": "Almanac",
+        "type": "object"
+      },
+      "Asset": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "format": "uuid",
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "bytes": {
+            "title": "Bytes",
+            "type": "integer"
+          },
+          "class": {
+            "enum": [
+              "video",
+              "poster",
+              "keogram",
+              "sidecar"
+            ],
+            "title": "Class",
+            "type": "string"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "mime": {
+            "title": "Mime",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          }
+        },
+        "required": [
+          "asset_id",
+          "class",
+          "url",
+          "mime",
+          "bytes",
+          "width",
+          "height"
+        ],
+        "title": "Asset",
         "type": "object"
       },
       "AstronomyItem": {
@@ -852,30 +917,6 @@
           "metrics"
         ],
         "title": "Current",
-        "type": "object"
-      },
-      "Interval": {
-        "additionalProperties": false,
-        "description": "Half-open UTC interval [start, end).",
-        "properties": {
-          "end": {
-            "format": "date-time",
-            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
-            "title": "End",
-            "type": "string"
-          },
-          "start": {
-            "format": "date-time",
-            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
-            "title": "Start",
-            "type": "string"
-          }
-        },
-        "required": [
-          "start",
-          "end"
-        ],
-        "title": "Interval",
         "type": "object"
       },
       "Metric": {
@@ -1437,6 +1478,29 @@
         "title": "RecordItem",
         "type": "object"
       },
+      "Rendition": {
+        "additionalProperties": false,
+        "properties": {
+          "asset": {
+            "$ref": "#/components/schemas/Asset"
+          },
+          "role": {
+            "enum": [
+              "native",
+              "web",
+              "mobile"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "asset"
+        ],
+        "title": "Rendition",
+        "type": "object"
+      },
       "RoseBin": {
         "additionalProperties": false,
         "description": "Duration in one category; directional sectors are half-open, from-direction degrees.",
@@ -1510,6 +1574,196 @@
           "duration_seconds"
         ],
         "title": "RoseBin",
+        "type": "object"
+      },
+      "Timelapse": {
+        "additionalProperties": false,
+        "properties": {
+          "allocated_frames": {
+            "title": "Allocated Frames",
+            "type": "integer"
+          },
+          "camera": {
+            "title": "Camera",
+            "type": "string"
+          },
+          "cycle_date": {
+            "format": "date",
+            "title": "Cycle Date",
+            "type": "string"
+          },
+          "keogram": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Asset"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "keogram_state": {
+            "enum": [
+              "pending",
+              "published",
+              "partial",
+              "unavailable",
+              "withdrawn"
+            ],
+            "title": "Keogram State",
+            "type": "string"
+          },
+          "native_download_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Native Download Url"
+          },
+          "poster": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Asset"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "renditions": {
+            "items": {
+              "$ref": "#/components/schemas/Rendition"
+            },
+            "title": "Renditions",
+            "type": "array"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "segment": {
+            "enum": [
+              "daytime",
+              "overnight"
+            ],
+            "title": "Segment",
+            "type": "string"
+          },
+          "sidecar": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Asset"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_interval": {
+            "$ref": "#/components/schemas/weather__api__timelapses__Interval"
+          },
+          "state": {
+            "enum": [
+              "published",
+              "partial",
+              "unavailable",
+              "withdrawn"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "video_id": {
+            "format": "uuid",
+            "title": "Video Id",
+            "type": "string"
+          },
+          "withdrawn": {
+            "title": "Withdrawn",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "video_id",
+          "camera",
+          "cycle_date",
+          "segment",
+          "state",
+          "reason",
+          "withdrawn",
+          "revision",
+          "updated_at",
+          "source_interval",
+          "allocated_frames",
+          "renditions",
+          "poster",
+          "sidecar",
+          "native_download_url",
+          "keogram_state",
+          "keogram"
+        ],
+        "title": "Timelapse",
+        "type": "object"
+      },
+      "TimelapsePage": {
+        "additionalProperties": false,
+        "properties": {
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Timelapse"
+            },
+            "maxItems": 100,
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "generated_at",
+          "items",
+          "next_cursor"
+        ],
+        "title": "TimelapsePage",
         "type": "object"
       },
       "WindRoseBinItem": {
@@ -1599,6 +1853,51 @@
         ],
         "title": "WindRoseBinItem",
         "type": "object"
+      },
+      "weather__api__models__Interval": {
+        "additionalProperties": false,
+        "description": "Half-open UTC interval [start, end).",
+        "properties": {
+          "end": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "End",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "Interval",
+        "type": "object"
+      },
+      "weather__api__timelapses__Interval": {
+        "additionalProperties": false,
+        "properties": {
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "Interval",
+        "type": "object"
       }
     }
   },
@@ -1608,6 +1907,252 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/timelapses": {
+      "get": {
+        "operationId": "listTimelapses",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "camera",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Camera"
+            }
+          },
+          {
+            "in": "query",
+            "name": "segment",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Segment"
+            }
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cycle_date",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cycle Date"
+            }
+          },
+          {
+            "description": "YYYY-MM",
+            "in": "query",
+            "name": "month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM",
+              "title": "Month"
+            }
+          },
+          {
+            "description": "First cycle date, inclusive",
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "First cycle date, inclusive",
+              "title": "From"
+            }
+          },
+          {
+            "description": "Last cycle date, inclusive",
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Last cycle date, inclusive",
+              "title": "To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 2048,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimelapsePage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Invalid request."
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The catalog is temporarily unavailable."
+          }
+        },
+        "summary": "List Timelapses"
+      }
+    },
+    "/api/v1/timelapses/{video_id}": {
+      "get": {
+        "operationId": "getTimelapse",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "video_id",
+            "required": true,
+            "schema": {
+              "title": "Video Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Timelapse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Invalid request."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No such timelapse."
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The catalog is temporarily unavailable."
+          }
+        },
+        "summary": "Get Timelapse"
+      }
+    },
     "/api/v1/weather/aggregates": {
       "get": {
         "operationId": "getAggregates",

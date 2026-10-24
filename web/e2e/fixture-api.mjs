@@ -82,6 +82,7 @@ createServer(async (req, res) => {
   if (url.pathname === "/api/v1/timelapses") {
     const value = snapshot();
     for (const key of ["camera", "cycle_date", "segment", "state"]) if (url.searchParams.has(key)) value.items = value.items.filter((video) => video[key] === url.searchParams.get(key));
+    if (url.searchParams.has("month")) value.items = value.items.filter((video) => video.cycle_date.startsWith(`${url.searchParams.get("month")}-`));
     return json(res, value);
   }
   if (url.pathname.startsWith("/api/v1/timelapses/")) {
