@@ -1,0 +1,40 @@
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: weather-pg-b2
+  namespace: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '-6'
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  configuration:
+    destinationPath: s3://weather-db-vallery/cnpg
+    endpointURL: https://s3.us-west-000.backblazeb2.com
+    s3Credentials:
+      accessKeyId:
+        name: weather-pg-backup-b2-writer
+        key: AWS_ACCESS_KEY_ID
+      secretAccessKey:
+        name: weather-pg-backup-b2-writer
+        key: AWS_SECRET_ACCESS_KEY
+      region:
+        name: weather-pg-backup-b2-writer
+        key: AWS_REGION
+    data:
+      compression: gzip
+      jobs: 1
+    wal:
+      compression: gzip
+      maxParallel: 2
+  # Omit retentionPolicy: v0.14.0 skips cloud pruning only for an empty policy.
+  # B2 writeFiles still permits hide-by-name; no deleteFiles blocks version erasure.
+  # The cnpg/ provider lifecycle alone schedules archive expiry (33d hide + 7d).
+  instanceSidecarConfiguration:
+    logLevel: info
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: '1'
+        memory: 512Mi
