@@ -1,0 +1,117 @@
+# Rendered by scripts/restore-drill.sh; never included in deploy/k8s.
+# All resources stay in weather; the independent reader Secret is referenced
+# in place, never exported or copied into a separate namespace.
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: __DRILL_NAME__-reader
+  namespace: weather
+  labels:
+    estate.vallery.net/disposable: 'true'
+    estate.vallery.net/expires: '__EXPIRES__'
+    weather.vallery.net/restore-drill: '__OPERATION__'
+spec:
+  configuration:
+    destinationPath: s3://weather-db-vallery/cnpg
+    endpointURL: https://s3.us-west-000.backblazeb2.com
+    s3Credentials:
+      accessKeyId:
+        name: weather-pg-backup-b2-reader
+        key: AWS_ACCESS_KEY_ID
+      secretAccessKey:
+        name: weather-pg-backup-b2-reader
+        key: AWS_SECRET_ACCESS_KEY
+      region:
+        name: weather-pg-backup-b2-reader
+        key: AWS_REGION
+    data:
+      compression: gzip
+      jobs: 1
+    wal:
+      compression: gzip
+      maxParallel: 2
+  instanceSidecarConfiguration:
+    resources:
+      requests: {cpu: 100m, memory: 128Mi}
+      limits: {cpu: '1', memory: 512Mi}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: __DRILL_NAME__
+  namespace: weather
+  labels:
+    estate.vallery.net/disposable: 'true'
+    estate.vallery.net/expires: '__EXPIRES__'
+    weather.vallery.net/restore-drill: '__OPERATION__'
+spec:
+  instances: 1
+  imageName: registry.vallery.net/jvallery/mirror-ghcr-io-cloudnative-pg-postgresql-777ad6774e00fff6@sha256:d66df406385b9f3c43c47e94fe3a0002278ef56d21b82a8c9d3a22f91aa9c3f0
+  enableSuperuserAccess: false
+  bootstrap:
+    recovery:
+      source: weather-production-archive
+      recoveryTarget:
+        targetTime: '__RECOVERY_TARGET__'
+  externalClusters:
+    - name: weather-production-archive
+      plugin:
+        name: barman-cloud.cloudnative-pg.io
+        parameters:
+          barmanObjectName: __DRILL_NAME__-reader
+          serverName: weather-pg
+  # Deliberately no spec.plugins: recovery reads B2 but enables no WAL archiver.
+  # No managed roles or owner/password rewrite: restored role state is retained.
+  storage:
+    size: 20Gi
+    storageClass: longhorn-v1-rwo
+  affinity:
+    nodeSelector:
+      agentfleet.vallery.net/control-plane: 'false'
+      storage.vallery.net/longhorn: 'true'
+  inheritedMetadata:
+    labels:
+      estate.vallery.net/disposable: 'true'
+      estate.vallery.net/expires: '__EXPIRES__'
+      weather.vallery.net/restore-drill: '__OPERATION__'
+  resources:
+    requests: {cpu: '1', memory: 2Gi}
+    limits: {cpu: '2', memory: 4Gi}
+  monitoring:
+    enablePodMonitor: false
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: __DRILL_NAME__-isolation
+  namespace: weather
+  labels:
+    estate.vallery.net/disposable: 'true'
+    estate.vallery.net/expires: '__EXPIRES__'
+    weather.vallery.net/restore-drill: '__OPERATION__'
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: __DRILL_NAME__
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cnpg-system
+      ports:
+        - {port: 5432, protocol: TCP}
+        - {port: 8000, protocol: TCP}
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - {port: 53, protocol: UDP}
+        - {port: 53, protocol: TCP}
+    - ports:
+        - {port: 443, protocol: TCP}
