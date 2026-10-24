@@ -189,6 +189,118 @@ class Problem(PublicModel):
     suggested_resolution_seconds: int | None = None
 
 
+class EventInterval(PublicModel):
+    """Half-open [start, end) source-time interval; never empty."""
+
+    start: UTCInstant
+    end: UTCInstant
+
+    @model_validator(mode="after")
+    def nonempty(self) -> EventInterval:
+        if self.start >= self.end:
+            raise ValueError("An interval must be non-empty")
+        return self
+
+
+Camera = Literal["skycam_east", "skycam_west", "frontyard_1"]
+EventOrigin = Literal["measured", "visual", "synthesis", "manual"]
+EventKind = Literal[
+    "precipitation_onset",
+    "daily_gust_max",
+    "lightning_strike",
+    "lightning_interval",
+    "visual",
+    "synthesis",
+    "manual",
+]
+EVENT_BASIS = {"measured": "instrument", "visual": "visual", "synthesis": "inference"}
+
+
+class EventSeek(PublicModel):
+    """Player seconds for the event's overlap with one published video, via its source map."""
+
+    start_seconds: Annotated[float, Field(ge=0)]
+    end_seconds: Annotated[float, Field(ge=0)]
+    source_interval: EventInterval
+
+
+class EventVideo(PublicModel):
+    """Navigation context only: not a claim that this camera visibly recorded the event."""
+
+    camera: Camera
+    state: Literal["available", "unavailable"]
+    video_id: str | None
+    cycle_date: date | None
+    segment: Literal["daytime", "overnight"] | None
+    seek: EventSeek | None
+
+    @model_validator(mode="after")
+    def honest(self) -> EventVideo:
+        linked = (self.video_id, self.cycle_date, self.segment, self.seek)
+        if (self.state == "available") != all(item is not None for item in linked) or (
+            self.state == "unavailable" and any(item is not None for item in linked)
+        ):
+            raise ValueError("Only an available video carries a link and seek")
+        return self
+
+
+class Event(PublicModel):
+    id: str
+    revision: Annotated[int, Field(ge=1)]
+    kind: EventKind
+    label: Annotated[str, StringConstraints(min_length=1, max_length=240)]
+    origin: EventOrigin
+    basis: Literal["instrument", "visual", "inference"]
+    human_edited: bool
+    rule_revision: str
+    precision: Literal["second", "interval", "clip"]
+    source_interval: EventInterval
+    # Null camera scope means station-wide.
+    camera: Camera | None
+    local_dates: Annotated[list[date], Field(min_length=1, max_length=400)]
+    evidence_ids: Annotated[list[str], Field(max_length=256)]
+    gust_mps: float | None = None
+    strikes: Annotated[int, Field(ge=1)] | None = None
+    distance_km: float | None = None
+    coverage: Coverage | None = None
+    videos: list[EventVideo]
+    updated_at: UTCInstant
+
+    @model_validator(mode="after")
+    def provenance(self) -> Event:
+        if self.origin != "manual" and self.basis != EVENT_BASIS[self.origin]:
+            raise ValueError("Origin and basis disagree")
+        if self.origin == "manual" and not self.human_edited:
+            raise ValueError("Manual events carry human attribution")
+        if self.origin != "manual" and (
+            not self.evidence_ids or len(set(self.evidence_ids)) != len(self.evidence_ids)
+        ):
+            raise ValueError("Automatic events need unique nonempty evidence")
+        if len(set(self.local_dates)) != len(self.local_dates):
+            raise ValueError("Calendar days must be unique")
+        if self.origin in ("visual", "synthesis") and self.precision != "clip":
+            raise ValueError("A visual or synthesis event keeps its clip interval")
+        return self
+
+
+class Events(PublicModel):
+    generated_at: UTCInstant
+    items: Annotated[list[Event], Field(max_length=100)]
+    next_cursor: str | None
+
+
+class EventQuery(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, hide_input_in_errors=True)
+
+    day: date | None = None
+    # Events scoped to this camera plus station-wide events.
+    camera: Camera | None = None
+    origin: EventOrigin | None = None
+    order: Literal["asc", "desc"] = "asc"
+    limit: Annotated[int, Field(ge=1, le=100)] = 50
+    cursor: Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9_.-]{1,4096}$")] | None = None
+
+
 class Window(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, hide_input_in_errors=True)
 

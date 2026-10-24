@@ -6,6 +6,7 @@ import json
 import time
 from collections.abc import Awaitable, Callable
 from typing import Annotated, Any
+from uuid import UUID
 
 from fastapi import APIRouter, FastAPI, Header, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
@@ -17,6 +18,9 @@ from .models import (
     Almanac,
     AlmanacQuery,
     Current,
+    Event,
+    EventQuery,
+    Events,
     MetricRegistry,
     ObservationQuery,
     Observations,
@@ -45,7 +49,9 @@ ROUTES = {
     "/api/v1/weather/almanac": "almanac",
     "/api/v1/timelapses": "timelapses",
     SEARCH: "search",
+    "/api/v1/events": "events",
 }
+NOT_FOUND = Problem(code="not_found", message="No such public event.")
 router = APIRouter()
 
 
@@ -162,6 +168,31 @@ async def search(request: Request, response: Response, body: SearchRequest) -> S
     return result
 
 
+@router.get("/api/v1/events", response_model=Events, operation_id="getEvents", responses=ERRORS)
+async def get_events(
+    request: Request, response: Response, query: Annotated[EventQuery, Query()]
+) -> Events:
+    result = await _service(request).events(query)
+    # A withdrawal must disappear at once; nothing caches the feed.
+    response.headers["Cache-Control"] = "no-store"
+    return result
+
+
+@router.get(
+    "/api/v1/events/{event_id}",
+    response_model=Event,
+    operation_id="getEvent",
+    responses={**ERRORS, 404: {"model": Problem, "description": "No such public event."}},
+)
+async def get_event(request: Request, response: Response, event_id: UUID) -> Event | JSONResponse:
+    event = await _service(request).event(event_id)
+    if event is None:
+        # Identical for never-existed, private and withdrawn events.
+        return _problem(404, NOT_FOUND)
+    response.headers["Cache-Control"] = "no-store"
+    return event
+
+
 def _problem(status: int, problem: Problem) -> JSONResponse:
     headers = {"Cache-Control": "no-store"}
     if status == 429:
@@ -212,7 +243,8 @@ def install(app: FastAPI) -> None:
         started = time.monotonic()
         response = await call_next(request)
         service = getattr(request.app.state, "weather", None)
-        route = ROUTES.get(request.url.path)
+        path = request.url.path
+        route = ROUTES.get(path) or ("event" if path.startswith("/api/v1/events/") else None)
         if isinstance(service, WeatherService) and route:
             service.metrics.latency.labels(route, str(response.status_code)).observe(
                 time.monotonic() - started
@@ -229,7 +261,7 @@ def public_openapi() -> dict[str, Any]:
         for operation in path.values():
             responses = operation.get("responses", {})
             responses.pop("422", None)
-            for code in ("400", "429", "503"):
+            for code in ("400", "404", "429", "503"):
                 if code in responses and "content" in responses[code]:
                     responses[code]["content"] = {
                         "application/problem+json": responses[code]["content"]["application/json"]

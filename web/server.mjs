@@ -16,7 +16,7 @@ function routeName(path) {
   if (/^\/day\/\d{4}-\d\d-\d\d\/?$/.test(path)) return "/day/:date/";
   if (/^\/timelapses\/[^/]+\/[^/]+\/[^/]+\/?$/.test(path)) return "/timelapses/:camera/:date/:segment/";
   if (/^\/archive\/\d{4}\/\d\d\/?$/.test(path)) return "/archive/:year/:month/";
-  return ["/", "/about/", "/archive/", "/weather/history/", "/weather/almanac/", "/search/", "/embed/weather/", "/healthz", "/readyz"].includes(path) ? path : "/other";
+  return ["/", "/about/", "/archive/", "/weather/history/", "/weather/almanac/", "/events/", "/search/", "/embed/weather/", "/healthz", "/readyz"].includes(path) ? path : "/other";
 }
 app.use((req, res, next) => {
   const nonce = randomBytes(24).toString("base64");

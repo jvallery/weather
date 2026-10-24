@@ -4,6 +4,9 @@
 A cursor carries the keyset position (observed_at, id) and the database insert-time snapshot taken
 on the first page, so rows that land later never shift an export. Its expiry slides with each page
 but never passes an absolute cap from the first page.
+
+Event feed cursors (#41) carry (source start, event id) and the first page's exact PostgreSQL MVCC
+snapshot (pg_snapshot text), so concurrent inserts and revisions never repeat or drop an event.
 """
 
 import base64
@@ -13,9 +16,10 @@ import json
 import re
 from dataclasses import dataclass
 from datetime import datetime
+from typing import cast
 from uuid import UUID
 
-from .models import AlmanacQuery, ObservationQuery, utc_instant, utc_text
+from .models import AlmanacQuery, EventQuery, ObservationQuery, utc_instant, utc_text
 from .registry import PublicError
 
 SLIDING_SECONDS = 3600
@@ -29,6 +33,19 @@ class Position:
     after_id: UUID
     issued_at: int
     expires_at: int
+
+
+@dataclass(frozen=True)
+class EventPosition:
+    snapshot: str
+    after_start: datetime
+    after_id: UUID
+    issued_at: int
+    expires_at: int
+
+
+# xmin:xmax:xip-list. The in-progress list is tiny in practice; a cursor stays URL-sized.
+SNAPSHOT_PATTERN = r"[0-9]{1,20}:[0-9]{1,20}:(?:[0-9]{1,20}(?:,[0-9]{1,20}){0,63})?"
 
 
 def _b64(data: bytes) -> str:
@@ -75,6 +92,18 @@ def filters_digest(query: Query) -> str:
     return hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
 
 
+def event_filters_digest(query: EventQuery) -> str:
+    data = {
+        "kind": "events",
+        "day": query.day.isoformat() if query.day else None,
+        "camera": query.camera,
+        "origin": query.origin,
+        "order": query.order,
+        "limit": query.limit,
+    }
+    return hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
+
+
 class CursorCodec:
     def __init__(
         self,
@@ -90,6 +119,70 @@ class CursorCodec:
 
     def _sign(self, payload: bytes) -> bytes:
         return hmac.digest(self._key, payload, "sha256")
+
+    def _seal(self, data: dict[str, object], now: datetime, issued_at: int | None) -> str:
+        epoch = int(now.timestamp())
+        issued = epoch if issued_at is None else issued_at
+        payload = json.dumps(
+            {**data, "a": issued, "x": min(epoch + self._sliding, issued + self._absolute)},
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode()
+        return _b64(payload) + "." + _b64(self._sign(payload))
+
+    def _open(self, token: str, digest: str, now: datetime) -> dict[str, object]:
+        encoded, mac = token.split(".")
+        payload, signature = _unb64(encoded), _unb64(mac)
+        if not hmac.compare_digest(signature, self._sign(payload)):
+            raise ValueError("signature")
+        data = json.loads(payload)
+        epoch = int(now.timestamp())
+        if (
+            data["v"] != 1
+            or not hmac.compare_digest(str(data["f"]), digest)
+            or not isinstance(data["a"], int)
+            or not isinstance(data["x"], int)
+            or not data["a"] <= epoch < data["x"] <= data["a"] + self._absolute
+        ):
+            raise ValueError("binding or expiry")
+        return cast(dict[str, object], data)
+
+    def encode_events(
+        self,
+        query: EventQuery,
+        *,
+        snapshot: str,
+        after_start: datetime,
+        after_id: UUID,
+        now: datetime,
+        previous: EventPosition | None = None,
+    ) -> str:
+        if not re.fullmatch(SNAPSHOT_PATTERN, snapshot):
+            raise PublicError("unavailable", "Weather data is temporarily unavailable.")
+        data: dict[str, object] = {
+            "v": 1,
+            "f": event_filters_digest(query),
+            "s": snapshot,
+            "t": utc_text(after_start),
+            "i": str(after_id),
+        }
+        return self._seal(data, now, previous.issued_at if previous else None)
+
+    def decode_events(self, token: str, query: EventQuery, *, now: datetime) -> EventPosition:
+        try:
+            data = self._open(token, event_filters_digest(query), now)
+            snapshot = str(data["s"])
+            if not re.fullmatch(SNAPSHOT_PATTERN, snapshot):
+                raise ValueError("snapshot")
+            return EventPosition(
+                snapshot=snapshot,
+                after_start=utc_instant(data["t"]),
+                after_id=UUID(str(data["i"])),
+                issued_at=cast(int, data["a"]),
+                expires_at=cast(int, data["x"]),
+            )
+        except (ValueError, KeyError, TypeError, UnicodeError):
+            raise invalid_cursor() from None
 
     def encode(
         self,

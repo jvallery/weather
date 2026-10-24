@@ -1,6 +1,6 @@
 # Public Weather API
 
-The `api` Deployment (2 replicas, `weather` namespace) serves `/api/v1/weather/{current,metrics,observations,aggregates,almanac}` and `POST /api/v1/search` ([search operations](search.md)) read-only from `weather-pg` as `weather_api`. Contract: [api-contract.md](../contracts/api-contract.md#weather-data-routes-implemented-14). Code: `app/weather/api/`.
+The `api` Deployment (2 replicas, `weather` namespace) serves `/api/v1/weather/{current,metrics,observations,aggregates,almanac}` `POST /api/v1/search` ([search operations](search.md)) and the event feed `/api/v1/events` ([events runbook](events.md)) read-only from `weather-pg` as `weather_api`. Contract: [api-contract.md](../contracts/api-contract.md#weather-data-routes-implemented-14). Code: `app/weather/api/`.
 
 ## How it works
 
@@ -58,7 +58,7 @@ kubectl --context vallery -n weather exec deploy/api -- python -c \
 | Symptom | Likely cause | Action |
 |---|---|---|
 | `/current` 503, pods unready | Database unreachable for > 30 s and no fresh cache | `kubectl cnpg status weather-pg -n weather`; check the `weather-database-clients` NetworkPolicy and the `weather-pg-api` Secret. Pods recover on their own when the database answers. |
-| `/current` 503, pods ready | Database answers but the views are missing (migration not applied) or there is no reading yet | Check the `weather-migrate` hook Job and `SELECT version_num FROM alembic_version` (expect `0003_publication`). |
+| `/current` 503, pods ready | Database answers but the views are missing (migration not applied) or there is no reading yet | Check the `weather-migrate` hook Job and `SELECT version_num FROM alembic_version` (expect `0005_events`). |
 | `data_state: cached` | Database reads failing while the cache is fresh | As above; values keep their original times and turn stale on schedule. |
 | `data_state: unavailable` and all metrics null | No telemetry yet (receiver not live) | Expected before #5; not an API fault. |
 | Aggregates 503 | 10 s statement timeout or queueing | Narrow the window or coarsen the resolution; watch `weather_api_db_errors_total{operation="aggregates"}`. |

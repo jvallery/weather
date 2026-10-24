@@ -1,0 +1,248 @@
+{
+  "generated_at": "2026-11-01T08:15:00Z",
+  "items": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "revision": 1,
+      "kind": "precipitation_onset",
+      "label": "Precipitation onset",
+      "origin": "measured",
+      "basis": "instrument",
+      "human_edited": false,
+      "rule_revision": "precipitation_onset/1",
+      "precision": "second",
+      "source_interval": {
+        "start": "2026-10-31T15:20:00Z",
+        "end": "2026-10-31T15:20:01Z"
+      },
+      "camera": null,
+      "local_dates": [
+        "2026-10-31"
+      ],
+      "evidence_ids": [
+        "10000000-0000-4000-8000-000000000001"
+      ],
+      "gust_mps": null,
+      "strikes": null,
+      "distance_km": null,
+      "coverage": null,
+      "videos": [
+        {
+          "camera": "skycam_east",
+          "state": "available",
+          "video_id": "synthetic-skycam_east-daytime",
+          "cycle_date": "2026-10-31",
+          "segment": "daytime",
+          "seek": {
+            "start_seconds": 13.6,
+            "end_seconds": 13.616667,
+            "source_interval": {
+              "start": "2026-10-31T15:20:00Z",
+              "end": "2026-10-31T15:20:01Z"
+            }
+          }
+        },
+        {
+          "camera": "skycam_west",
+          "state": "unavailable",
+          "video_id": null,
+          "cycle_date": null,
+          "segment": null,
+          "seek": null
+        },
+        {
+          "camera": "frontyard_1",
+          "state": "unavailable",
+          "video_id": null,
+          "cycle_date": null,
+          "segment": null,
+          "seek": null
+        }
+      ],
+      "updated_at": "2026-11-01T08:15:00Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "revision": 1,
+      "kind": "visual",
+      "label": "Clouds clearing",
+      "origin": "visual",
+      "basis": "visual",
+      "human_edited": false,
+      "rule_revision": "synthetic-model/1",
+      "precision": "clip",
+      "source_interval": {
+        "start": "2026-10-31T17:00:00Z",
+        "end": "2026-10-31T17:04:00Z"
+      },
+      "camera": "skycam_west",
+      "local_dates": [
+        "2026-10-31"
+      ],
+      "evidence_ids": [
+        "10000000-0000-4000-8000-000000000002"
+      ],
+      "gust_mps": null,
+      "strikes": null,
+      "distance_km": null,
+      "coverage": null,
+      "videos": [
+        {
+          "camera": "skycam_west",
+          "state": "unavailable",
+          "video_id": null,
+          "cycle_date": null,
+          "segment": null,
+          "seek": null
+        }
+      ],
+      "updated_at": "2026-11-01T08:15:00Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000003",
+      "revision": 1,
+      "kind": "manual",
+      "label": "Hail on the deck",
+      "origin": "manual",
+      "basis": "visual",
+      "human_edited": true,
+      "rule_revision": "manual/1",
+      "precision": "interval",
+      "source_interval": {
+        "start": "2026-10-31T19:30:00Z",
+        "end": "2026-10-31T19:45:00Z"
+      },
+      "camera": "frontyard_1",
+      "local_dates": [
+        "2026-10-31"
+      ],
+      "evidence_ids": [],
+      "gust_mps": null,
+      "strikes": null,
+      "distance_km": null,
+      "coverage": null,
+      "videos": [
+        {
+          "camera": "frontyard_1",
+          "state": "unavailable",
+          "video_id": null,
+          "cycle_date": null,
+          "segment": null,
+          "seek": null
+        }
+      ],
+      "updated_at": "2026-11-01T08:15:00Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000004",
+      "revision": 1,
+      "kind": "daily_gust_max",
+      "label": "Daily maximum gust",
+      "origin": "measured",
+      "basis": "instrument",
+      "human_edited": false,
+      "rule_revision": "daily_gust_max/1",
+      "precision": "interval",
+      "source_interval": {
+        "start": "2026-10-31T21:04:00Z",
+        "end": "2026-10-31T21:05:00Z"
+      },
+      "camera": null,
+      "local_dates": [
+        "2026-10-31"
+      ],
+      "evidence_ids": [
+        "10000000-0000-4000-8000-000000000004"
+      ],
+      "gust_mps": 14.2,
+      "strikes": null,
+      "distance_km": null,
+      "coverage": {
+        "fraction": 0.98,
+        "support_seconds": 84672,
+        "expected_seconds": 86400
+      },
+      "videos": [
+        {
+          "camera": "skycam_east",
+          "state": "unavailable",
+          "video_id": null,
+          "cycle_date": null,
+          "segment": null,
+          "seek": null
+        },
+        {
+          "camera": "skycam_west",
+          "state": "unavailable",
+          "video_id": null,
+          "cycle_date": null,
+          "segment": null,
+          "seek": null
+        },
+        {
+          "camera": "frontyard_1",
+          "state": "unavailable",
+          "video_id": null,
+          "cycle_date": null,
+          "segment": null,
+          "seek": null
+        }
+      ],
+      "updated_at": "2026-11-01T08:15:00Z"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000005",
+      "revision": 1,
+      "kind": "lightning_strike",
+      "label": "Lightning strike reported",
+      "origin": "measured",
+      "basis": "instrument",
+      "human_edited": false,
+      "rule_revision": "lightning_strike/1",
+      "precision": "second",
+      "source_interval": {
+        "start": "2026-11-01T00:40:12Z",
+        "end": "2026-11-01T00:40:13Z"
+      },
+      "camera": null,
+      "local_dates": [
+        "2026-10-31"
+      ],
+      "evidence_ids": [
+        "10000000-0000-4000-8000-000000000005"
+      ],
+      "gust_mps": null,
+      "strikes": 1,
+      "distance_km": 12,
+      "coverage": null,
+      "videos": [
+        {
+          "camera": "skycam_east",
+          "state": "unavailable",
+          "video_id": null,
+          "cycle_date": null,
+          "segment": null,
+          "seek": null
+        },
+        {
+          "camera": "skycam_west",
+          "state": "unavailable",
+          "video_id": null,
+          "cycle_date": null,
+          "segment": null,
+          "seek": null
+        },
+        {
+          "camera": "frontyard_1",
+          "state": "unavailable",
+          "video_id": null,
+          "cycle_date": null,
+          "segment": null,
+          "seek": null
+        }
+      ],
+      "updated_at": "2026-11-01T08:15:00Z"
+    }
+  ],
+  "next_cursor": null
+}

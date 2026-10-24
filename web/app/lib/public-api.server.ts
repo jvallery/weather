@@ -3,15 +3,15 @@ import { z } from "zod";
 import { data } from "react-router";
 import { Counter, Gauge, register } from "prom-client";
 import { catalogSchema } from "./contracts";
-import { parseAggregates, parseAlmanac, parseArchive, parseCurrent, parser, parseRegistry, type Current, type Parser } from "./weather-api";
+import { parseAggregates, parseAlmanac, parseArchive, parseCurrent, parseEvents, parser, parseRegistry, type Current, type Parser } from "./weather-api";
 
-const ALLOWED = /^\/api\/v1\/(?:weather\/(?:current|observations|aggregates|almanac|metrics)|timelapses(?:\/[A-Za-z0-9_-]{1,128})?)$/;
+const ALLOWED = /^\/api\/v1\/(?:weather\/(?:current|observations|aggregates|almanac|metrics)|events|timelapses(?:\/[A-Za-z0-9_-]{1,128})?)$/;
 const parseCatalog = parser(catalogSchema);
 const requests = (register.getSingleMetric("weather_web_api_requests_total") as Counter<"route" | "result"> | undefined) || new Counter({ name: "weather_web_api_requests_total", help: "Bounded SSR public API reads by result", labelNames: ["route", "result"] });
 const inFlight = (register.getSingleMetric("weather_web_api_inflight") as Gauge | undefined) || new Gauge({ name: "weather_web_api_inflight", help: "Active bounded SSR API reads" });
 let active = 0;
-// Two reads per admitted SSR document (Today) across server.mjs's four slots.
-const API_SLOTS = 8;
+// Three reads per admitted SSR document (Today) across server.mjs's four slots.
+const API_SLOTS = 12;
 /** Overload is "busy, retry", never "API unavailable": the root boundary renders it with Retry-After. */
 export function busy() { return data("busy", { status: 503, headers: { "Retry-After": "5" } }); }
 function origin(): string {
@@ -92,4 +92,7 @@ export async function almanacRead(request: Request, params: URLSearchParams) {
 }
 export async function metricRegistryRead(request: Request) {
   return publicRead("/api/v1/weather/metrics", parseRegistry, request.signal);
+}
+export async function eventsRead(request: Request, params: URLSearchParams) {
+  return publicRead("/api/v1/events", parseEvents, request.signal, params);
 }

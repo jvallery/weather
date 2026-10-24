@@ -27,7 +27,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import DOUBLE_PRECISION, JSONB, TSVECTOR
+from sqlalchemy.dialects.postgresql import ARRAY, DOUBLE_PRECISION, JSONB, TSVECTOR
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.dialects.postgresql.base import ischema_names
 from sqlalchemy.types import UserDefinedType
@@ -580,3 +580,74 @@ Table(
     ),
     CheckConstraint("abs(public.vector_norm(embedding) - 1) <= 0.001", name="normalized"),
 )
+# 0005_events (#41): identity, immutable revisions (stamped by a trigger) and day links.
+weather_event = Table(
+    "weather_event",
+    metadata,
+    _identity(),
+    Column("logical_key", String(256), nullable=False, unique=True),
+    Column("rule_family", String(32), nullable=False),
+    Column("revision", Integer, nullable=False, server_default=text("0")),
+    _created(),
+    CheckConstraint(
+        "rule_family IN ('precipitation_onset','daily_gust_max','lightning_strike',"
+        "'lightning_interval','visual','synthesis','manual')",
+        name="rule_family",
+    ),
+    CheckConstraint("revision >= 0", name="revision"),
+)
+event_revision = Table(
+    "weather_event_revision",
+    metadata,
+    Column(
+        "event_id",
+        PGUUID(as_uuid=True),
+        ForeignKey("weather.weather_event.id", ondelete="RESTRICT"),
+        primary_key=True,
+    ),
+    Column("revision", Integer, primary_key=True, autoincrement=False),
+    Column("recorded_xid", BigInteger, nullable=False),
+    _instant("recorded_at"),
+    Column("visibility", String(16), nullable=False),
+    Column("withdrawal_reason", String(32)),
+    Column("origin", String(16), nullable=False),
+    Column("basis", String(16), nullable=False),
+    Column("camera_id", String(32)),
+    _instant("starts_at"),
+    _instant("ends_at"),
+    Column("time_precision", String(16), nullable=False),
+    Column("rule_revision", String(64), nullable=False),
+    Column("author_kind", String(16), nullable=False),
+    Column("author", String(256)),
+    Column("reason", Text),
+    Column("label", String(240)),
+    _data("measurement"),
+    Column(
+        "evidence_ids",
+        ARRAY(PGUUID(as_uuid=True)),
+        nullable=False,
+        server_default=text("'{}'::uuid[]"),
+    ),
+    Column("evidence_hash", String(64), nullable=False),
+    CheckConstraint("revision > 0", name="number"),
+    CheckConstraint("starts_at < ends_at", name="interval"),
+)
+Index("ix_weather_event_revision_starts_at", event_revision.c.starts_at, event_revision.c.event_id)
+event_day = Table(
+    "weather_event_day",
+    metadata,
+    Column("event_id", PGUUID(as_uuid=True), primary_key=True),
+    Column("revision", Integer, primary_key=True, autoincrement=False),
+    Column(
+        "local_date",
+        Date,
+        ForeignKey("weather.weather_day.local_date", ondelete="RESTRICT"),
+        primary_key=True,
+    ),
+    ForeignKeyConstraint(
+        ["event_id", "revision"],
+        ["weather.weather_event_revision.event_id", "weather.weather_event_revision.revision"],
+        ondelete="RESTRICT",
+    ),
+)
+Index("ix_weather_event_day_local_date", event_day.c.local_date)

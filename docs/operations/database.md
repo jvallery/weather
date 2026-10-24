@@ -101,7 +101,8 @@ After a real production recovery, give the recovered cluster a new Barman
 Weather owns the `weather` schema and the `public_api` views inside its
 dedicated `weather` database. Revision `0001_baseline` (#74) holds the
 slice-1 schema, `0002_api` (#14) adds the API's views, `0003_publication`
-(#18) the publication catalog and `0004_search` (#25) the search tables; all are
+(#18) the publication catalog, `0004_search` (#25) the search tables and `0005_events` (#41)
+weather events; all are
 inline DDL and import no application module. The restore-drill schema `weather_recovery_drill` is not Alembic's;
 the baseline and `alembic check` leave it alone.
 
@@ -113,6 +114,8 @@ the baseline and `alembic check` leave it alone.
 | `weather_day` | One row per America/Denver day, keyed by `local_date` (23, 24 or 25 hours) |
 | `job`, `outbox` | Durable work and causal events |
 | `public_api.observations` | Public union view of all families (security barrier) |
+| `weather_event`, `weather_event_revision`, `weather_event_day` | Events (0005): identity, immutable trigger-stamped revisions with the non-empty interval and provenance CHECKs, per-revision day links ([events runbook](events.md)) |
+| `public_api.event_revisions`, `public_api.event_revision_markers`, `public_api.event_days` | Security-barrier event views for the feed (0005) |
 | `public_api.obs_st`, `public_api.rapid_wind`, `public_api.station` | API views (0002): typed, gated double-precision columns plus `received_at`, `inserted_at`, `valid` and the allowlisted `invalid_fields`; the station alias. No row filter, so no security barrier; that keeps them flattenable onto the `source_ts` btrees |
 | `upload_intent`, `media_asset`, `publication`, `publication_asset`, `video`, `withdrawal`, `product_tombstone` | Publication catalog (0003, #18); see [media operations](media.md) |
 | `public_api.assets`, `public_api.videos` | Public media views (0003; security barrier, embargo and `ends_at + 630 s` guards) |
@@ -125,7 +128,7 @@ the baseline and `alembic check` leave it alone.
 ### Slice-2/3 DDL removed from the baseline
 
 The baseline does not create the catalog, media, publication, keogram, still,
-preview, event, editorial, search or hour-slot tables. Their earlier DDL is at
+preview, event, editorial, search or hour-slot tables (#41 has since added events in `0005_events`). Their earlier DDL is at
 commit `fc34b83` in `app/weather/db/schema_v1.py` and `app/weather/db/ddl_v1.py`.
 That includes the privacy CHECKs (original/bucket/visibility equivalence,
 content addressing, the 630-second preview margin, withdrawal reasons) and the
@@ -155,7 +158,7 @@ every second while the spool holds receipts.
 |---|---|
 | `weather_migrator` | Database/schema owner, DDL and migrations |
 | `weather_ingest` | Insert on station and device, select on their non-private columns (not `private_configuration`); select/insert on receipts and family rows; no update/delete |
-| `weather_worker` | Read/write `job` and `outbox`; select/insert `weather_day`; select/insert `media_asset`, `upload_intent`, `video` with UPDATE only on the columns the publisher writes; select/insert the append-only `publication`, `publication_asset`, `withdrawal`, `product_tombstone`; the fence sequence; select/insert search documents and vectors, update only a document's `visibility`, `withdrawn_at` and `index_status`; no telemetry access |
+| `weather_worker` | Read/write `job` and `outbox`; select/insert `weather_day`; select/insert `media_asset`, `upload_intent`, `video` with UPDATE only on the columns the publisher writes; select/insert the append-only `publication`, `publication_asset`, `withdrawal`, `product_tombstone`; the fence sequence; select/insert search documents and vectors, update only a document's `visibility`, `withdrawn_at` and `index_status`; select only `id, device_id, source_ts, values, quality` of `evt_precip`, `evt_strike`, `obs_st` and a device's `station_id` (event rules); select/insert events, revisions and day links, update an event's `revision` pointer; no receipts, serials or other telemetry |
 | `weather_api` | Select the `public_api` views (including the two search views) and execute the two value-gating functions and `search_lexical`; no base-table access or `weather` schema usage |
 | `weather_editor` | Login only. No editorial functions exist yet; #44 adds them and grants EXECUTE to this role alone |
 
@@ -167,7 +170,7 @@ migrator creates, so a later function is private until granted.
 
 ## Expand/contract migrations
 
-The head is `0004_search`. `0001_baseline` has run on production, so every change is
+The head is `0005_events`. `0001_baseline` has run on production, so every change is
 expand/contract. Add a new revision with inline DDL; never edit an applied
 revision or import current application modules into one. `models.metadata`
 describes the current schema for `alembic check` and must change in the same

@@ -1,6 +1,40 @@
 // SPDX-License-Identifier: MIT
 // Generated from code-first Pydantic OpenAPI; run scripts/ci.sh contracts --write.
 export interface paths {
+    readonly "/api/v1/events": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /** Get Events */
+        readonly get: operations["getEvents"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
+    readonly "/api/v1/events/{event_id}": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /** Get Event */
+        readonly get: operations["getEvent"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
     readonly "/api/v1/search": {
         readonly parameters: {
             readonly query?: never;
@@ -403,6 +437,122 @@ export interface components {
             readonly schema_version: 1;
             /** Station Alias */
             readonly station_alias: string;
+        };
+        /** Event */
+        readonly Event: {
+            /**
+             * Basis
+             * @enum {string}
+             */
+            readonly basis: "instrument" | "visual" | "inference";
+            /** Camera */
+            readonly camera: ("skycam_east" | "skycam_west" | "frontyard_1") | null;
+            readonly coverage: components["schemas"]["Coverage"] | null;
+            /** Distance Km */
+            readonly distance_km: number | null;
+            /** Evidence Ids */
+            readonly evidence_ids: readonly string[];
+            /** Gust Mps */
+            readonly gust_mps: number | null;
+            /** Human Edited */
+            readonly human_edited: boolean;
+            /** Id */
+            readonly id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            readonly kind: "precipitation_onset" | "daily_gust_max" | "lightning_strike" | "lightning_interval" | "visual" | "synthesis" | "manual";
+            /** Label */
+            readonly label: string;
+            /** Local Dates */
+            readonly local_dates: readonly string[];
+            /**
+             * Origin
+             * @enum {string}
+             */
+            readonly origin: "measured" | "visual" | "synthesis" | "manual";
+            /**
+             * Precision
+             * @enum {string}
+             */
+            readonly precision: "second" | "interval" | "clip";
+            /** Revision */
+            readonly revision: number;
+            /** Rule Revision */
+            readonly rule_revision: string;
+            readonly source_interval: components["schemas"]["EventInterval"];
+            /** Strikes */
+            readonly strikes: number | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            readonly updated_at: string;
+            /** Videos */
+            readonly videos: readonly components["schemas"]["EventVideo"][];
+        };
+        /**
+         * EventInterval
+         * @description Half-open [start, end) source-time interval; never empty.
+         */
+        readonly EventInterval: {
+            /**
+             * End
+             * Format: date-time
+             */
+            readonly end: string;
+            /**
+             * Start
+             * Format: date-time
+             */
+            readonly start: string;
+        };
+        /** Events */
+        readonly Events: {
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            readonly generated_at: string;
+            /** Items */
+            readonly items: readonly components["schemas"]["Event"][];
+            /** Next Cursor */
+            readonly next_cursor: string | null;
+        };
+        /**
+         * EventSeek
+         * @description Player seconds for the event's overlap with one published video, via its source map.
+         */
+        readonly EventSeek: {
+            /** End Seconds */
+            readonly end_seconds: number;
+            readonly source_interval: components["schemas"]["EventInterval"];
+            /** Start Seconds */
+            readonly start_seconds: number;
+        };
+        /**
+         * EventVideo
+         * @description Navigation context only: not a claim that this camera visibly recorded the event.
+         */
+        readonly EventVideo: {
+            /**
+             * Camera
+             * @enum {string}
+             */
+            readonly camera: "skycam_east" | "skycam_west" | "frontyard_1";
+            /** Cycle Date */
+            readonly cycle_date: string | null;
+            readonly seek: components["schemas"]["EventSeek"] | null;
+            /** Segment */
+            readonly segment: ("daytime" | "overnight") | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            readonly state: "available" | "unavailable";
+            /** Video Id */
+            readonly video_id: string | null;
         };
         /**
          * MatchedMeasurement
@@ -911,6 +1061,100 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    readonly getEvents: {
+        readonly parameters: {
+            readonly query?: {
+                readonly camera?: ("skycam_east" | "skycam_west" | "frontyard_1") | null;
+                readonly cursor?: string | null;
+                readonly day?: string | null;
+                readonly limit?: number;
+                readonly order?: "asc" | "desc";
+                readonly origin?: ("measured" | "visual" | "synthesis" | "manual") | null;
+            };
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["Events"];
+                };
+            };
+            /** @description Invalid request. */
+            readonly 400: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Weather data is temporarily unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    readonly getEvent: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path: {
+                readonly event_id: string;
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["Event"];
+                };
+            };
+            /** @description Invalid request. */
+            readonly 400: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No such public event. */
+            readonly 404: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Weather data is temporarily unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     readonly search: {
         readonly parameters: {
             readonly query?: never;
@@ -1048,7 +1292,7 @@ export interface operations {
                     readonly [name: string]: unknown;
                 };
                 content: {
-                    readonly "application/json": components["schemas"]["Problem"];
+                    readonly "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The catalog is temporarily unavailable. */
