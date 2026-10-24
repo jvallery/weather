@@ -322,7 +322,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--operation", required=True)
     parser.add_argument(
-        "--target", help="manifest-plan timestamp only; --run chooses between its new sentinel commits"
+        "--target", help="plan-only timestamp; --run selects a target from new sentinel commits"
     )
     parser.add_argument(
         "--expires", default=(dt.datetime.now(dt.UTC).date() + dt.timedelta(days=1)).isoformat()
