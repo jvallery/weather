@@ -38,6 +38,7 @@ ALTER DATABASE weather_ci OWNER TO weather_migrator;
 SQL
 wx_vector="$(psql -h "$wx_pg_root/socket" -U postgres -d weather_ci -Atqc "SELECT extversion FROM pg_extension WHERE extname='vector'")"
 [[ "$wx_vector" == 0.8.6 ]] || { echo 'Integration requires production pgvector 0.8.6' >&2; exit 2; }
+echo "PostgreSQL timezone package: $(dpkg-query -W -f='${Version}' tzdata)"
 export WEATHER_CI_DATABASE_URL="postgresql+asyncpg://weather_migrator@/weather_ci?host=$wx_pg_root/socket"
 export WEATHER_CI_ADMIN_DATABASE_URL="postgresql+asyncpg://postgres@/weather_ci?host=$wx_pg_root/socket"
 uv run --frozen python -m alembic upgrade 0000_namespace

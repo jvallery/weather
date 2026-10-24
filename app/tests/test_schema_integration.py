@@ -13,7 +13,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
-from sqlalchemy import make_url, text
+from sqlalchemy import insert, make_url, select, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, create_async_engine
 
@@ -251,6 +251,43 @@ def test_day_helper_dst_and_idempotence() -> None:
     asyncio.run(check())
 
 
+def test_sql_hours_match_the_pinned_python_time_model_when_installed() -> None:
+    calendar = pytest.importorskip("weather.timemodel.calendar")
+    site = pytest.importorskip("weather.timemodel.site")
+
+    async def check() -> None:
+        db = engine("weather_worker")
+        try:
+            async with db.begin() as connection:
+                for day in (date(2026, 3, 8), date(2026, 11, 1), date(2026, 10, 23)):
+                    await ensure_days(connection, day, day)
+                    rows = (
+                        await connection.execute(
+                            text("""
+                        SELECT h.starts_at,h.ends_at,h.local_label,h.utc_offset_minutes,h.fold
+                        FROM weather.archive_hour_slot h JOIN weather.weather_day d
+                        ON d.id=h.weather_day_id WHERE d.local_date=:day ORDER BY h.starts_at
+                    """),
+                            {"day": day},
+                        )
+                    ).all()
+                    expected = calendar.hour_slots(day)
+                    assert len(rows) == len(expected)
+                    for row, slot in zip(rows, expected, strict=True):
+                        local = slot.start.astimezone(site.site_timezone())
+                        assert tuple(row) == (
+                            slot.start,
+                            slot.end,
+                            local.strftime("%H:%M"),
+                            int(local.utcoffset().total_seconds() / 60),
+                            slot.fold,
+                        )
+        finally:
+            await db.dispose()
+
+    asyncio.run(check())
+
+
 def test_still_relationships_active_uniqueness_and_retention() -> None:
     async def check() -> None:
         db = engine()
@@ -429,6 +466,248 @@ def test_editorial_append_only_and_concurrent_cas() -> None:
                 )
         finally:
             await api.dispose()
+            await db.dispose()
+
+    asyncio.run(check())
+
+
+def test_withdrawal_cascades_through_public_views_without_deleting_originals() -> None:
+    async def check() -> None:
+        db = engine()
+        api = engine("weather_api")
+        try:
+            async with db.begin() as connection:
+                graph = await product_graph(connection)
+                still = (
+                    await connection.execute(
+                        text(STILL_INSERT), {**graph, "revision": 1}
+                    )
+                ).scalar_one()
+                assets = {
+                    role: await asset(
+                        connection, "still" if role == "derivative" else role
+                    )
+                    for role in (
+                        "native",
+                        "web",
+                        "mobile",
+                        "poster",
+                        "sidecar",
+                        "derivative",
+                        "keogram",
+                    )
+                }
+                await connection.execute(
+                    text("""
+                    UPDATE weather.video SET state='published',native_asset_id=:native,
+                      web_asset_id=:web,mobile_asset_id=:mobile,poster_asset_id=:poster,
+                      sidecar_asset_id=:sidecar WHERE id=:video
+                """),
+                    {**assets, "video": graph["video"]},
+                )
+                await connection.execute(
+                    text("UPDATE weather.segment SET state='published' WHERE id=:id"),
+                    {"id": graph["segment"]},
+                )
+                await connection.execute(
+                    text("""
+                    INSERT INTO weather.publication(video_id,revision,generation,public_not_before)
+                    VALUES(:video,1,1,clock_timestamp()-interval '1 hour')
+                """),
+                    {"video": graph["video"]},
+                )
+                await connection.execute(
+                    text("""
+                    INSERT INTO weather.still_derivative(archival_still_id,asset_id,asset_class,
+                      recipe_revision,state,committed_at)
+                    VALUES(:still,:asset,'still','test','published',clock_timestamp())
+                """),
+                    {"still": still, "asset": assets["derivative"]},
+                )
+                await connection.execute(
+                    text("""
+                    INSERT INTO weather.keogram(segment_id,asset_id,revision,lineage_sha256,state)
+                    VALUES(:segment,:asset,1,:hash,'published')
+                """),
+                    {
+                        "segment": graph["segment"],
+                        "asset": assets["keogram"],
+                        "hash": "a" * 64,
+                    },
+                )
+                await rejects(
+                    connection,
+                    """
+                    INSERT INTO weather.still_derivative(archival_still_id,asset_id,asset_class,
+                      recipe_revision,state) VALUES(:still,:asset,'original','test','published')
+                """,
+                    {"still": still, "asset": graph["original"]},
+                    "23514",
+                )
+            async with api.begin() as connection:
+                for view in ("videos", "stills", "keograms"):
+                    assert (
+                        await connection.execute(
+                            text("SELECT count(*) FROM public_api." + view)
+                        )
+                    ).scalar_one() == 1
+            async with db.begin() as connection:
+                for role in ("native", "derivative", "keogram"):
+                    await connection.execute(
+                        text("""
+                        UPDATE weather.media_asset SET withdrawn=true,withdrawn_at=clock_timestamp(),
+                          withdraw_reason='test' WHERE id=:id
+                    """),
+                        {"id": assets[role]},
+                    )
+            async with api.begin() as connection:
+                for view in ("videos", "stills", "keograms"):
+                    assert (
+                        await connection.execute(
+                            text("SELECT count(*) FROM public_api." + view)
+                        )
+                    ).scalar_one() == 0
+            async with db.begin() as connection:
+                assert (
+                    await connection.execute(
+                        text("SELECT count(*) FROM weather.archival_still")
+                    )
+                ).scalar_one() == 1
+                assert (
+                    await connection.execute(
+                        text(
+                            "SELECT count(*) FROM weather.media_asset "
+                            "WHERE class='original'"
+                        )
+                    )
+                ).scalar_one() == 1
+        finally:
+            await api.dispose()
+            await db.dispose()
+
+    asyncio.run(check())
+
+
+def test_preview_embargo_trust_and_expiry_are_enforced() -> None:
+    async def check() -> None:
+        db = engine()
+        api = engine("weather_api")
+        now = datetime.now(UTC)
+        try:
+            async with db.begin() as connection:
+                values = {
+                    "lower": now - timedelta(seconds=1001),
+                    "upper": now - timedelta(seconds=1000),
+                    "eligible": now - timedelta(seconds=370),
+                    "expires": now + timedelta(minutes=10),
+                    "first": now - timedelta(seconds=300),
+                    "sha": "a" * 64,
+                }
+                statement = """
+                    INSERT INTO weather.camera_preview(camera_id,generation,bytes,width,height,
+                      captured_lower,captured_upper,path,sha256,public_not_before,expires_at,
+                      first_published_at,timing_trusted)
+                    VALUES('frontyard_1',:generation,100,100,100,:lower,:upper,
+                           'previews/frontyard_1/'||CAST(:generation AS text)||'.jpg',:sha,:eligible,:expires,:first,:trusted)
+                    RETURNING id
+                """
+                await rejects(
+                    connection,
+                    statement,
+                    {
+                        **values,
+                        "eligible": now - timedelta(seconds=401),
+                        "generation": 1,
+                        "trusted": True,
+                    },
+                    "23514",
+                )
+                await rejects(
+                    connection,
+                    statement,
+                    {
+                        **values,
+                        "first": now - timedelta(seconds=500),
+                        "generation": 1,
+                        "trusted": True,
+                    },
+                    "23514",
+                )
+                good = (
+                    await connection.execute(
+                        text(statement), {**values, "generation": 1, "trusted": True}
+                    )
+                ).scalar_one()
+                await connection.execute(
+                    text(statement), {**values, "generation": 2, "trusted": False}
+                )
+                await connection.execute(
+                    text(statement),
+                    {
+                        **values,
+                        "generation": 3,
+                        "expires": now - timedelta(seconds=1),
+                        "trusted": True,
+                    },
+                )
+            async with api.begin() as connection:
+                ids = (
+                    (
+                        await connection.execute(
+                            text("SELECT id FROM public_api.previews")
+                        )
+                    )
+                    .scalars()
+                    .all()
+                )
+                assert ids == [good]
+                columns = (
+                    await connection.execute(text("SELECT * FROM public_api.previews"))
+                ).keys()
+                assert "path" not in columns and "policy" not in columns
+        finally:
+            await api.dispose()
+            await db.dispose()
+
+    asyncio.run(check())
+
+
+def test_vector_dimension_and_sqlalchemy_roundtrip() -> None:
+    async def check() -> None:
+        db = engine()
+        try:
+            async with db.begin() as connection:
+                graph = await product_graph(connection)
+                await connection.execute(
+                    text("""
+                    INSERT INTO weather.embedding_profile(id,model) VALUES('test','test-embedding')
+                """)
+                )
+                document = metadata.tables["weather.search_document"]
+                await connection.execute(
+                    insert(document).values(
+                        video_id=graph["video"],
+                        profile_id="test",
+                        revision=1,
+                        text="synthetic test",
+                        embedding=[1.0] + [0.0] * 2559,
+                    )
+                )
+                vector = (
+                    await connection.execute(select(document.c.embedding))
+                ).scalar_one()
+                assert len(vector) == 2560
+                assert vector[0] == 1.0 and all(v == 0 for v in vector[1:])
+                await rejects(
+                    connection,
+                    """
+                    INSERT INTO weather.search_document(video_id,profile_id,revision,text,embedding)
+                    VALUES(:video,'test',2,'test','[1,0]'::vector)
+                """,
+                    {"video": graph["video"]},
+                    "22000",
+                )
+        finally:
             await db.dispose()
 
     asyncio.run(check())
@@ -807,6 +1086,15 @@ def test_telemetry_exact_receipts_dedupe_privacy_and_no_retention() -> None:
                 """)
                     )
                 ).scalar_one() == 0
+                assert (
+                    await connection.execute(
+                        text("""
+                    SELECT count(*) FROM pg_index i JOIN pg_class c ON c.oid=i.indexrelid
+                    JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_am a ON a.oid=c.relam
+                    WHERE n.nspname='weather' AND a.amname='brin'
+                """)
+                    )
+                ).scalar_one() == 9
         finally:
             await api.dispose()
             await ingest.dispose()
