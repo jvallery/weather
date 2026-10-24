@@ -143,28 +143,28 @@ def statements(table_names: list[str]) -> list[str]:
                ('valid','missing','invalid','suspect','unknown','source_clock_invalid',
                 'source_time_missing','stale','unsupported','out_of_range','duplicate')
                THEN p_quality->>'reason' ELSE 'unknown' END) $$""",
-        """CREATE VIEW public_api.stations AS SELECT id,alias,site FROM weather.station""",
-        """CREATE VIEW public_api.devices AS SELECT d.id,d.alias,s.alias AS station_alias,
+        """CREATE VIEW public_api.stations WITH (security_barrier=true) AS SELECT id,alias,site FROM weather.station""",
+        """CREATE VIEW public_api.devices WITH (security_barrier=true) AS SELECT d.id,d.alias,s.alias AS station_alias,
            d.valid_from,d.valid_until FROM weather.device d
            JOIN weather.station s ON s.id=d.station_id""",
-        """CREATE VIEW public_api.weather_days AS
+        """CREATE VIEW public_api.weather_days WITH (security_barrier=true) AS
            SELECT id,site,local_date,timezone,starts_at,ends_at FROM weather.weather_day""",
-        """CREATE VIEW public_api.hour_slots AS
+        """CREATE VIEW public_api.hour_slots WITH (security_barrier=true) AS
            SELECT id,weather_day_id,site,starts_at,ends_at,local_label,utc_offset_minutes,fold
            FROM weather.archive_hour_slot""",
-        """CREATE VIEW public_api.cameras AS SELECT id,label FROM weather.camera""",
-        """CREATE VIEW public_api.assets AS
+        """CREATE VIEW public_api.cameras WITH (security_barrier=true) AS SELECT id,label FROM weather.camera""",
+        """CREATE VIEW public_api.assets WITH (security_barrier=true) AS
            SELECT id,class,sha256,extension,bytes,content_type,width,height,
                   public_not_before,created_at
            FROM weather.media_asset WHERE class<>'original' AND bucket='weather-media'
              AND visibility='public' AND state='available' AND NOT withdrawn
              AND public_not_before <= clock_timestamp()""",
-        """CREATE VIEW public_api.segments AS
+        """CREATE VIEW public_api.segments WITH (security_barrier=true) AS
            SELECT s.id,s.camera_id,s.kind,s.starts_at,s.ends_at,s.frames,s.revision,s.state,
                   c.cycle_date FROM weather.segment s
            JOIN weather.solar_cycle c ON c.id=s.solar_cycle_id
            WHERE s.state IN ('published','partial','unavailable')""",
-        """CREATE VIEW public_api.videos AS
+        """CREATE VIEW public_api.videos WITH (security_barrier=true) AS
            SELECT v.id,v.segment_id,s.camera_id,s.kind,s.starts_at,s.ends_at,s.frames,
                   v.revision,v.state,v.time_map,v.quality,p.generation,p.committed_at,
                   CASE WHEN v.state IN ('published','partial') THEN v.native_asset_id END
@@ -187,25 +187,25 @@ def statements(table_names: list[str]) -> list[str]:
                  AND EXISTS(SELECT 1 FROM public_api.assets a WHERE a.id=v.mobile_asset_id)
                  AND EXISTS(SELECT 1 FROM public_api.assets a WHERE a.id=v.poster_asset_id)
                  AND EXISTS(SELECT 1 FROM public_api.assets a WHERE a.id=v.sidecar_asset_id)))""",
-        """CREATE VIEW public_api.keograms AS
+        """CREATE VIEW public_api.keograms WITH (security_barrier=true) AS
            SELECT k.id,k.segment_id,k.asset_id,k.revision,k.utc_bin_map,k.state
            FROM weather.keogram k JOIN public_api.assets a ON a.id=k.asset_id
            JOIN public_api.segments s ON s.id=k.segment_id
            WHERE k.state IN ('published','partial')""",
-        """CREATE VIEW public_api.stills AS
+        """CREATE VIEW public_api.stills WITH (security_barrier=true) AS
            SELECT d.id,s.camera_id,s.weather_day_id,s.hour_slot_id,s.source_segment_id,
                   s.source_ts,s.uncertainty_seconds,s.revision,d.asset_id,d.recipe_revision
            FROM weather.still_derivative d
            JOIN weather.archival_still s ON s.id=d.archival_still_id
            JOIN public_api.assets a ON a.id=d.asset_id
            WHERE d.state='published' AND d.committed_at IS NOT NULL AND s.state='active'""",
-        """CREATE VIEW public_api.previews AS
+        """CREATE VIEW public_api.previews WITH (security_barrier=true) AS
            SELECT id,camera_id,generation,bytes,width,height,captured_lower,captured_upper,
                   public_not_before,expires_at,first_published_at
            FROM weather.camera_preview WHERE timing_trusted
              AND public_not_before<=clock_timestamp() AND expires_at>clock_timestamp()
              AND first_published_at IS NOT NULL""",
-        """CREATE VIEW public_api.events AS
+        """CREATE VIEW public_api.events WITH (security_barrier=true) AS
            SELECT id,weather_day_id,starts_at,ends_at,origin,basis,revision
            FROM weather.weather_event WHERE published AND NOT withdrawn""",
         "REVOKE ALL ON SCHEMA weather,public_api FROM PUBLIC",
@@ -226,7 +226,9 @@ def statements(table_names: list[str]) -> list[str]:
     ]
     # Create the union before granting views; status families and private IDs are absent.
     result.insert(
-        -5, "CREATE VIEW public_api.observations AS " + " UNION ALL ".join(unions)
+        -5,
+        "CREATE VIEW public_api.observations WITH (security_barrier=true) AS "
+        + " UNION ALL ".join(unions),
     )
     telemetry = {"station", "device", "telemetry_receipt", *TELEMETRY_FAMILIES}
     for name in sorted(telemetry):

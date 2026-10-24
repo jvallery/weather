@@ -93,6 +93,9 @@ Preview rows require trustworthy bounds and at least 630 seconds between the
 capture upper bound and eligibility (600-second embargo plus 30-second margin).
 No public view returns an original, receipt, private device identity, staging
 path, operator allowlist, private note or favorite.
+All public views use PostgreSQL security barriers so an API-role predicate
+function cannot run on filtered private rows before the view's eligibility
+checks. Direct API-role access to base tables remains denied.
 
 `public_api.observations` has this stable contract for ingest/API work:
 
