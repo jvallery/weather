@@ -78,6 +78,10 @@ Weather also owns immutable safe telemetry qualification history (migration 0004
 revisions and fenced heads (0005), and their read-only public projections. These remain prepared
 source until the WX-13 cluster/database qualification and disabled scheduler commissioning complete.
 
+The excluded `deploy/k8s/api-data` component prepares the namespace-owned public policy ConfigMap,
+API-only credential mounts and singleton scheduler activation. Its public policy files contain no
+station identity or location coordinates. The root render does not enable this component.
+
 ## Tempest ingestion source preparation
 
 Weather owns the `tempest-receiver` role source, its private SQLite WAL/FULL receipt spool, additive telemetry provenance/conflict/coverage schema and receiver metrics. Migration `0002_telemetry` extends schema v1 without changing its snapshot. This source preparation creates no active receiver, PVC, network attachment or credential; #5 commissions those objects after native prerequisites. See [Tempest operations](docs/operations/tempest-ingest.md).

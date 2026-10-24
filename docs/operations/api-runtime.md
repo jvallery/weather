@@ -66,7 +66,7 @@ uncommissioned metrics. Set measured policy values and verify the public alias `
 ingest before enabling the component.
 
 Commission only after accepted code/images, all required Secrets, migrations and real cluster
-database/browser checks are ready. Add `components: [api-data]` to the existing root kustomization
+database checks are ready. Add `components: [api-data]` to the existing root kustomization
 in the digest-promotion change; do not hand-apply its patches or mount the cursor into another role.
 The current root render remains the health-only API/web skeleton. Component render/volume-ref and
 sync-wave checks have passed locally; nothing was applied to the cluster by those checks.
