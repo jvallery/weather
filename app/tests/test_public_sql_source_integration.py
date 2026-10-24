@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""UNRUN SQL-reader proofs; only the guarded fleet PostgreSQL socket fixture."""
+"""SQL-reader proofs; only the guarded fleet PostgreSQL socket fixture."""
 
 import asyncio
 import json

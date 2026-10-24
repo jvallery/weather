@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""UNRUN fleet-only Changed/dispatch/revision/fence integration proofs.
+"""Fleet-only Changed/dispatch/revision/fence integration proofs.
 
 Never execute on the Mac. The imported fixture validates the disposable socket,
 server marker, PostgreSQL16.15 and vector0.8.6 before any test writes occur.

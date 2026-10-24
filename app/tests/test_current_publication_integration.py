@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""UNRUN source preparation: requires merged 0001/0002/0003 and fleet-only PG.
+"""Publication proofs requiring migrations 0001/0002/0003 and fleet-only PG.
 
 Never run this module on the Mac. The parent issue's database integration runner
 must supply its isolated PostgreSQL 16.15/vector0.8.6 Unix socket and test marker.

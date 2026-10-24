@@ -48,14 +48,16 @@ access logs remain disabled to keep raw queries out of logs.
 Current integration metadata composes immutable schema v1, telemetry v2, publication v3,
 qualification history v4 and aggregate revisions v5.
 Disposable integration cleanup preserves the camera seed, metric bindings and publication-clock
-singleton; production tables are never truncated by these helpers. Source and pure startup/cache
-tests do not prove real database permissions, export concurrency, saturation, outage recovery or
-aggregate-revision handling. Those require the qualified in-cluster CI image and actual database
-tests before WX-13 deployment. The guarded integration suite includes a real API-backend outage:
+singleton; production tables are never truncated by these helpers. Actual PostgreSQL tests on the
+qualified fleet image verified database permissions, export snapshots, saturation, outage recovery
+and aggregate-revision handling. The guarded integration suite includes a real API-backend outage:
 it disables login only on the disposable instance's API role, terminates that role's connections,
 checks aging warm-cache and cold-process 503 behavior, restores login, and checks persisted-value
 recovery. Its fixture verifies the isolated socket, server marker and versions before changing
-the test role; this is not a production outage procedure. The prepared test remains unexecuted.
+the test role; this is not a production outage procedure. The
+[source qualification record](https://github.com/jvallery/weather/issues/14#issuecomment-6385418712)
+retains the failed predecessors, 71 passing cases and the separately passing full-cadence pilot.
+Normal CI on the final integrated PR and live API commissioning remain required.
 Aggregate requests now use the complete as-of source and bounded
 calculator, with one nonwaiting process slot, cooperative work accounting and explicit overflow;
 they do not silently truncate inputs or change the statistic. Their signed continuation position

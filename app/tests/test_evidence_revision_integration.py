@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""UNRUN PostgreSQL evidence-history proofs; fleet-only disposable socket fixture.
+"""PostgreSQL evidence-history proofs; fleet-only disposable socket fixture.
 
 Collection and source lint are allowed on the Mac; executing any test here is not.
 """
