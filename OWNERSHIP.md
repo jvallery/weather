@@ -72,3 +72,7 @@ are never added to Argo. See `docs/operations/database.md` for the exact limits
 and cleanup evidence. Central namespace ownership is supplied by agents#5366;
 all application objects inherit Weather ownership, while central Secrets remain
 agents contributions and provider B2 identities remain storage-infra's.
+
+## Tempest ingestion source preparation
+
+Weather owns the `tempest-receiver` role source, its private SQLite WAL/FULL receipt spool, additive telemetry provenance/conflict/coverage schema and receiver metrics. Migration `0002_telemetry` extends schema v1 without changing its snapshot. This source preparation creates no active receiver, PVC, network attachment or credential; #5 commissions those objects after native prerequisites. See [Tempest operations](docs/operations/tempest-ingest.md).
