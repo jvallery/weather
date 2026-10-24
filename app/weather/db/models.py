@@ -224,3 +224,8 @@ Index(
     outbox.c.id,
     postgresql_where=outbox.c.dispatched_at.is_(None),
 )
+Index(
+    "ix_outbox_job_id",
+    outbox.c.job_id,
+    postgresql_where=outbox.c.job_id.is_not(None),
+)

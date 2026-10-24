@@ -8,7 +8,7 @@ import time
 
 from sqlalchemy import text
 
-from weather.db.connection import create_database_engine, wait_for_database
+from weather.db.connection import attempt_seconds, create_database_engine, wait_for_database
 
 ROLES = ("weather_migrator", "weather_ingest", "weather_worker", "weather_api", "weather_editor")
 ROLE_SECONDS = 120
@@ -21,7 +21,10 @@ async def wait_for_roles() -> None:
         deadline = time.monotonic() + ROLE_SECONDS
         while time.monotonic() < deadline:
             try:
-                async with engine.connect() as connection:
+                async with (
+                    asyncio.timeout(attempt_seconds(deadline)),
+                    engine.connect() as connection,
+                ):
                     count = (
                         await connection.execute(
                             text("SELECT count(*) FROM pg_roles WHERE rolname = ANY(:roles)"),

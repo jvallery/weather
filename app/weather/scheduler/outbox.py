@@ -2,7 +2,7 @@
 """Transactional outbox -> idempotent job dispatch."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, cast
 from uuid import UUID
 
@@ -18,10 +18,13 @@ QUARANTINED = Counter(
     "weather_outbox_quarantined_total", "Outbox rows quarantined for an unregistered topic"
 )
 UNROUTED = "unregistered_topic"
+# During a rollout an older scheduler may see a new topic first; only rows still unrouted
+# after this long are quarantined, so a newer scheduler can claim young ones.
+QUARANTINE_AFTER = timedelta(minutes=10)
 
 
 async def dispatch(connection: AsyncConnection, registry: Registry, *, limit: int = 100) -> int:
-    """Route pending rows; an unknown topic quarantines only its own row."""
+    """Route pending rows; an unknown topic quarantines only its own row once it is old."""
     if not 1 <= limit <= 100:
         raise ValueError("Invalid outbox batch size")
     rows = (
@@ -29,10 +32,12 @@ async def dispatch(connection: AsyncConnection, registry: Registry, *, limit: in
             await connection.execute(
                 text("""
         SELECT id,topic,payload,not_before,deadline FROM weather.outbox
-        WHERE dispatched_at IS NULL ORDER BY created_at,id
-        FOR UPDATE SKIP LOCKED LIMIT :limit
+        WHERE dispatched_at IS NULL
+          AND (topic = ANY(CAST(:topics AS text[]))
+               OR created_at < clock_timestamp() - CAST(:grace AS interval))
+        ORDER BY created_at,id FOR UPDATE SKIP LOCKED LIMIT :limit
     """),
-                {"limit": limit},
+                {"topics": sorted(registry.topics()), "grace": QUARANTINE_AFTER, "limit": limit},
             )
         )
         .mappings()

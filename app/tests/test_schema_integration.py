@@ -159,6 +159,20 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                         assert not await table("weather_ingest", relation, privilege)
                     for role in ("weather_worker", "weather_api", "weather_editor"):
                         assert not await table(role, relation, "SELECT")
+                # Ingest resolves station/device ids but cannot read private configuration.
+                for relation in ("weather.station", "weather.device"):
+                    assert not await table("weather_ingest", relation, "SELECT")
+                    for column, allowed in (("alias", True), ("private_configuration", False)):
+                        assert (
+                            await scalar(
+                                connection,
+                                "SELECT has_column_privilege(:role,:name,:column,'SELECT')",
+                                role="weather_ingest",
+                                name=relation,
+                                column=column,
+                            )
+                            is allowed
+                        )
                 for relation in ("weather.job", "weather.outbox"):
                     assert await table("weather_worker", relation, "UPDATE")
                     for role in ("weather_ingest", "weather_api", "weather_editor"):
@@ -402,7 +416,19 @@ def test_unknown_outbox_topic_quarantines_only_its_row() -> None:
                 with pytest.raises(jobs.IdempotencyConflict):
                     await append(connection, "other.topic", "known")
             async with db.begin() as connection:
-                assert await dispatch(connection, registry) == 2
+                # A young unknown row waits for a newer scheduler; the known row behind it routes.
+                assert await dispatch(connection, registry) == 1
+                assert await scalar(
+                    connection, "SELECT dispatched_at IS NULL FROM weather.outbox WHERE id=:id",
+                    id=unknown,
+                )
+                await connection.execute(
+                    text("""UPDATE weather.outbox SET created_at=created_at-interval '11 minutes'
+                            WHERE id=:id"""),
+                    {"id": unknown},
+                )
+            async with db.begin() as connection:
+                assert await dispatch(connection, registry) == 1
             async with db.begin() as connection:
                 assert await dispatch(connection, registry) == 0
                 rows = {
@@ -471,6 +497,30 @@ def test_tick_is_idempotent_fills_days_ahead_and_prunes_finished_work() -> None:
                 )
                 assert await scalar(connection, "SELECT count(*) FROM weather.job") == 1
                 await tick(connection, now)
+                assert await scalar(connection, "SELECT count(*) FROM weather.job") == 1
+        finally:
+            await db.dispose()
+
+    asyncio.run(check())
+
+
+def test_concurrent_ticks_enqueue_one_days_job() -> None:
+    async def check() -> None:
+        db = engine("weather_worker")
+        now = datetime.now(UTC)
+        try:
+            async with db.connect() as first, db.connect() as second:
+                await first.begin()
+                await second.begin()
+                await tick(first, now)
+                # The second tick waits on the first's uncommitted key, then becomes a no-op.
+                waiting = asyncio.create_task(tick(second, now))
+                await asyncio.sleep(0.5)
+                assert not waiting.done()
+                await first.commit()
+                await asyncio.wait_for(waiting, 10)
+                await second.commit()
+            async with db.begin() as connection:
                 assert await scalar(connection, "SELECT count(*) FROM weather.job") == 1
         finally:
             await db.dispose()

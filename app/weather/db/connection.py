@@ -13,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 # kube-router programs a new pod's NetworkPolicy a few seconds after start, so the first
 # connection is refused briefly; every DB client waits this long before failing.
 FIRST_CONNECT_SECONDS = 60
+# A dropped SYN or stalled DNS must not hold one attempt past the overall budget.
+ATTEMPT_SECONDS = 5
 
 
 class DatabaseConfigurationError(ValueError):
@@ -74,14 +76,20 @@ def create_database_engine() -> AsyncEngine:
     )
 
 
+def attempt_seconds(deadline: float) -> float:
+    """Bound one connection attempt by ATTEMPT_SECONDS and what is left of the deadline."""
+    return max(0.1, min(ATTEMPT_SECONDS, deadline - time.monotonic()))
+
+
 async def wait_for_database(engine: AsyncEngine, timeout: float = FIRST_CONNECT_SECONDS) -> None:
     """Retry the first connection with bounded backoff; never log the underlying error."""
     deadline = time.monotonic() + timeout
     delay = 0.5
     while True:
         try:
-            async with engine.connect() as connection:
-                await connection.execute(text("SELECT 1"))
+            async with asyncio.timeout(attempt_seconds(deadline)):
+                async with engine.connect() as connection:
+                    await connection.execute(text("SELECT 1"))
             return
         except Exception:
             remaining = deadline - time.monotonic()

@@ -63,6 +63,9 @@ class Registry:
     def kinds(self) -> frozenset[str]:
         return frozenset(self._handlers)
 
+    def topics(self) -> frozenset[str]:
+        return frozenset(self._topics)
+
     def handler(self, kind: str) -> Handler:
         try:
             return self._handlers[kind]

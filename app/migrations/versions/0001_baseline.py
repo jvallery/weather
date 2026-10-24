@@ -102,9 +102,7 @@ def statements() -> list[str]:
             JOIN weather.telemetry_receipt r ON r.id=o.receipt_id"""
         for family in PUBLIC_FAMILIES
     )
-    telemetry = ", ".join(
-        f"weather.{name}" for name in ("station", "device", "telemetry_receipt", *FAMILIES)
-    )
+    telemetry = ", ".join(f"weather.{name}" for name in ("telemetry_receipt", *FAMILIES))
     return [
         "CREATE SCHEMA weather",
         "CREATE SCHEMA public_api",
@@ -209,6 +207,9 @@ def statements() -> list[str]:
         )""",
         """CREATE INDEX ix_outbox_pending ON weather.outbox (created_at, id)
            WHERE dispatched_at IS NULL""",
+        # Indexes the job FK so pruning a job does not scan the outbox.
+        """CREATE INDEX ix_outbox_job_id ON weather.outbox (job_id)
+           WHERE job_id IS NOT NULL""",
         """CREATE FUNCTION weather.reject_deadline_change() RETURNS trigger
            LANGUAGE plpgsql SET search_path=pg_catalog AS $$
            BEGIN
@@ -251,6 +252,11 @@ def statements() -> list[str]:
         "GRANT USAGE ON SCHEMA weather TO weather_ingest,weather_worker",
         "GRANT USAGE ON SCHEMA public_api TO weather_api",
         f"GRANT SELECT,INSERT ON {telemetry} TO weather_ingest",
+        # Ingest seeds and resolves station/device but never reads private_configuration.
+        "GRANT INSERT ON weather.station,weather.device TO weather_ingest",
+        "GRANT SELECT (id,alias,site) ON weather.station TO weather_ingest",
+        "GRANT SELECT (id,station_id,alias,private_id,kind,valid_from,valid_until)"
+        " ON weather.device TO weather_ingest",
         "GRANT SELECT,INSERT ON weather.weather_day TO weather_worker",
         "GRANT SELECT,INSERT,UPDATE,DELETE ON weather.job,weather.outbox TO weather_worker",
         "GRANT SELECT ON public_api.observations TO weather_api",

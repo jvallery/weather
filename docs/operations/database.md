@@ -146,7 +146,7 @@ every second while the spool holds receipts.
 | Role | Capability |
 |---|---|
 | `weather_migrator` | Database/schema owner, DDL and migrations |
-| `weather_ingest` | Select/insert on station, device, receipts and family rows; no update/delete |
+| `weather_ingest` | Insert on station and device, select on their non-private columns (not `private_configuration`); select/insert on receipts and family rows; no update/delete |
 | `weather_worker` | Read/write `job` and `outbox`; select/insert `weather_day`; no telemetry access |
 | `weather_api` | Select `public_api.observations` and execute its two value-gating functions; no base-table access |
 | `weather_editor` | Login only. No editorial functions exist yet; #44 adds them and grants EXECUTE to this role alone |
@@ -265,8 +265,11 @@ transaction.
 
 Outbox dispatch locks pending rows with SKIP LOCKED and creates idempotent jobs
 before marking those rows dispatched in the same transaction. A row whose
-topic has no route is **quarantined**: `dispatched_at` is set, `job_id` stays
-null and `error='unregistered_topic'`. Later rows still dispatch. After the
+topic has no route is left pending for 10 minutes, so a newer scheduler can
+route it during a rollout, and is then **quarantined**: `dispatched_at` is set,
+`job_id` stays null and `error='unregistered_topic'`. Later rows still
+dispatch. Deploy the scheduler that routes a new topic before its producer;
+the scheduler uses the Recreate strategy, so two versions never overlap. After the
 route ships, re-queue the retained rows as `weather_worker`:
 
 ```sql
