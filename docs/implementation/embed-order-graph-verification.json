@@ -1,6 +1,6 @@
 {
-  "observed_at": "2026-10-23T23:45:05.458522+00:00",
-  "backlog_sha256": "734a856cf5fa79b76eb395c7a0ca76f5231660f7cf9e7f1f8c12aaab99ba1564",
+  "observed_at": "2026-10-24T00:10:19.106166+00:00",
+  "backlog_sha256": "7fadd29c5bbacdf73b852f8f3182fdfd6d53579c84a75566633f5f8277ac0f6b",
   "scope": "All 46 Weather work issues and 14 owner prerequisite native dependency sets, including owner-side edges",
   "verified_native_edges": 123,
   "acyclic": true,

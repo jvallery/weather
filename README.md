@@ -2,12 +2,12 @@
 
 Requirements and implementation planning for **[weather.vallery.net](https://weather.vallery.net)**: a public weather history and timelapse service using three security cameras, direct Tempest UDP telemetry, CNPG, Garage, and local inference.
 
-**Status:** planning audit in progress under [WX-00 / issue #1](https://github.com/jvallery/weather/issues/1). All 46 implementation/follow-on issues are [filed](docs/implementation/backlog.md), and their 122 native prerequisite relationships (including the planning gate and 14 owner issues) have been read back and matched in a fresh complete graph audit. See the [adversarial audit](docs/research/adversarial-audit.md), [decision register](docs/decisions/implementation-register.md) and [traceability](docs/implementation/traceability.md). Material research and contract work remain; application implementation, cluster resources and CI/CD have not been built.
+**Status:** planning audit in progress under [WX-00 / issue #1](https://github.com/jvallery/weather/issues/1). All 46 implementation/follow-on issues are [filed](docs/implementation/backlog.md), and their 123 native prerequisite relationships (including the planning gate and 14 owner issues) have been read back and matched in a fresh complete graph audit. See the [adversarial audit](docs/research/adversarial-audit.md), [decision register](docs/decisions/implementation-register.md) and [traceability](docs/implementation/traceability.md). Detailed discovery is assigned to execution waves under the owner-revised planning scope; application implementation, cluster resources and CI/CD have not been built.
 
 ## Start here
 
 1. Read [the v4.0 requirements and design research brief](docs/requirements.md) and the [accepted product decisions](docs/decisions/2026-10-23-product-scope.md).
-2. Follow [Codex's first assignment](docs/codex-first-task.md): investigate the live estate, resolve the decisions, complete repository configuration, then file the implementation issues and their dependency graph.
+2. Read the [execution-wave handoff](docs/implementation/execution-handoff.md) for architecture, owner responsibilities, discovery tasks and the first ready work.
 3. Use the [filed backlog](docs/implementation/backlog.md) and [machine-readable graph](docs/implementation/backlog.json). The [candidate graph](docs/implementation/backlog-candidate.json) is retained as the historical seed. Stable WX keys are distinct from GitHub issue numbers: 42 required initial-release items, two conditional GPU/CDN items, an accepted composite-video follow-on and a reserved visual-index investigation.
 
 The [planning closure inventory](docs/implementation/planning-closure.md) separates established decisions, material open research and subsequent implementation proof, with the next safe execution order.
@@ -35,7 +35,7 @@ The [planning closure inventory](docs/implementation/planning-closure.md) separa
 - [D11 analysis execution and failure states](docs/decisions/D11-analysis-execution-and-failure.md), including persistent remote-call occupancy and bounded reanalysis; [API execution validation snapshot](docs/contracts/analysis-execution-validation.json).
 - [D12 embedding and search consistency](docs/decisions/D12-search-and-profile-consistency.md), with versioned profile/withdrawal rules and declarative integrity vectors.
 - [D13 UI and editor boundaries](docs/decisions/D13-ui-and-editor-boundaries.md), with live theme evidence, responsive composition and verified [font reuse provenance](docs/decisions/font-reuse-review.md) and unresolved identity qualification.
-- [D14 public media transport](docs/decisions/D14-public-media-transport.md), with live zone/tunnel evidence and an explicit unresolved external-route decision.
+- [D14 public media transport](docs/decisions/D14-public-media-transport.md), with the owner-selected Tunnel route, initial cache policy and withdrawal contract.
 - [D15 custody/recovery design and open decisions](docs/decisions/D15-custody-and-recovery.md), grounded in [live central custody evidence](docs/research/custody-evidence.md).
 - [D16 product targets and pressure policy](docs/decisions/D16-service-targets-and-pressure.md), separating targets from admitted capacity and measured service behavior.
 - [Preview eligibility, current-display age and logical retention](docs/contracts/preview-policy-contract.md), with strict selected-policy schema and 12 shape fixtures.

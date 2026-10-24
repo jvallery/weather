@@ -1916,7 +1916,7 @@
     "url": "https://github.com/jvallery/weather/issues/1"
   },
   "native_verification": {
-    "observed_at": "2026-10-23T23:45:05.456861+00:00",
+    "observed_at": "2026-10-24T00:10:19.104439+00:00",
     "verified_nodes": 46,
     "verified_external_prerequisites": 14,
     "verified_edges": 123,

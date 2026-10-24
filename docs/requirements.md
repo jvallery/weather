@@ -1587,11 +1587,11 @@ flowchart TD
 
 ### 19.4 Definition of done for Codex's first pass
 
-The first pass is complete only when the repository configuration relevant to planning is in place, D01–D16 have evidence-backed decisions or explicitly acknowledged research blockers, the full selected implementation backlog is filed with actual URLs/native dependencies, the committed DAG/coverage validation passes, and the owner receives a clear report separating **decisions complete**, **research blocked**, and **implementation pending**. If material research blockers remain, report the pass as partial/blocked, while retaining every completed artifact and issue.
+**Owner scope clarification:** Jason directed the review to establish architecture/design consistency with current fleet standards and leave detailed discovery and implementation to the execution sprint waves. This supersedes the earlier requirement to resolve or experimentally qualify every implementation mechanism during Phase 1.
 
-The handoff report must include the chosen architecture, GPU co-tenancy proposal or qualified CPU path, UDP/network design, database/time-series/search design, shared-bucket authorization/durability decision, framework/CDN decision, recovery objectives, critical path and first ready implementation issues. It must not imply that the website, ingestion, cluster resources or backups are deployed merely because the planning repository is populated.
+The first pass is complete when planning repository configuration is in place, accepted scope and component/owner boundaries are coherent, R01–R38 and D01–D16 map to filed issues with infrastructure constraints and acceptance criteria, the native DAG/coverage check passes, and the execution-wave handoff identifies ready work, discovery responsibilities and release gates. Existing live/source evidence anchors fleet alignment; it is not runtime qualification or a current resource grant.
 
-Include Q01–Q16-to-requirement/ADR/issue traceability, the initial-versus-follow-on milestone split, the selected original/preview lifecycle and disclosure policy, and the linked owner prerequisite for embedding on `vallery.net`. The original questionnaire is answered; only evidence-backed implementation decisions and the owner's concrete license/reuse selection remain to be completed during Phase 1.
+The [execution handoff](implementation/execution-handoff.md) must distinguish selected decisions, execution discovery and implementation pending, including GPU/CPU, UDP, database/search, shared-bucket access/durability, frontend/Tunnel, recovery objectives, critical path, original/preview lifecycle and WordPress ownership. Preserve Q01–Q16 and subsequent owner decisions. Do not imply any application, cluster resource, pipeline or recovery path is deployed merely because planning is complete.
 
 ## 20. Research sources and evidence handling
 
