@@ -20,6 +20,7 @@ class DatabaseManifestTests(unittest.TestCase):
         pod = probe["spec"]["template"]["spec"]
         self.assertFalse(pod["automountServiceAccountToken"])
         self.assertTrue(pod["securityContext"]["runAsNonRoot"])
+        self.assertEqual(pod["securityContext"]["runAsUser"], 26)
         projected = pod["volumes"][0]["projected"]
         self.assertEqual(
             {source["secret"]["name"] for source in projected["sources"]},
