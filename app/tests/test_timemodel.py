@@ -219,7 +219,7 @@ def test_polar_missing_event_and_bad_shift_are_visible_errors():
 
 def test_site_altitude_is_not_an_observer_horizon_correction():
     original = solar_cycle(date(2026, 10, 23), SYNTHETIC)
-    elevated = solar_cycle(date(2026, 10, 23), replace(SYNTHETIC, elevation_meters=5000))
+    elevated = solar_cycle(date(2026, 10, 23), replace(SYNTHETIC, elevation_meters=1000000))
     assert (original.dawn, original.dusk, original.next_dawn) == (
         elevated.dawn,
         elevated.dusk,

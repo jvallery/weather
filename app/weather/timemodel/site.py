@@ -74,7 +74,7 @@ class SiteConfig:
         object.__setattr__(
             self,
             "elevation_meters",
-            _number(self.elevation_meters, minimum=-12000, maximum=100000),
+            _number(self.elevation_meters, minimum=-math.inf, maximum=math.inf),
         )
         for field in ("dawn_offset_seconds", "dusk_offset_seconds"):
             object.__setattr__(self, field, _integer(getattr(self, field)))
@@ -131,8 +131,8 @@ class SiteConfig:
             dusk_offset_seconds=_integer(values.get("dusk_offset_seconds", 0)),
             elevation_meters=_number(
                 values.get("elevation_meters", 0),
-                minimum=-12000,
-                maximum=100000,
+                minimum=-math.inf,
+                maximum=math.inf,
             ),
             horizon_model=horizon,
         )
