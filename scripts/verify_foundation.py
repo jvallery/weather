@@ -31,9 +31,29 @@ def read(namespace: str, kind: str, name: str = "") -> Any:
     return json.loads(kube(*args, "-o", "json"))
 
 
+def documents(raw: str) -> list[dict[str, Any]]:
+    """kubectl printers may emit a List or concatenated JSON resource documents."""
+    decoder = json.JSONDecoder()
+    result: list[dict[str, Any]] = []
+    position = 0
+    while position < len(raw):
+        if raw[position].isspace():
+            position += 1
+            continue
+        value, position = decoder.raw_decode(raw, position)
+        if not isinstance(value, dict):
+            raise ValueError("Expected Kubernetes JSON objects")
+        result.extend(value["items"] if value.get("kind") == "List" else [value])
+    return result
+
+
 def public_probe(path: str, expected: int) -> None:
+    request = urllib.request.Request(
+        "https://weather.vallery.net" + path,
+        headers={"User-Agent": "weather-foundation-probe/1.0"},
+    )
     try:
-        response = urllib.request.urlopen("https://weather.vallery.net" + path, timeout=15)
+        response = urllib.request.urlopen(request, timeout=15)
     except urllib.error.HTTPError as error:
         response = error
     with response:
@@ -121,10 +141,10 @@ def main() -> None:
     read("weather", "resourcequota", "weather-budget")
     read("weather", "limitrange", "weather-defaults")
     deployments = {name: read("weather", "deployment", name) for name in ("api", "web")}
-    rendered = json.loads(kube("create", "--dry-run=client", "-k", "deploy/k8s", "-o", "json"))
+    rendered = documents(kube("create", "--dry-run=client", "-k", "deploy/k8s", "-o", "json"))
     desired = {
         item["metadata"]["name"]: item["spec"]["template"]["spec"]["containers"][0]["image"]
-        for item in rendered["items"]
+        for item in rendered
         if item["kind"] == "Deployment" and item["metadata"]["name"] in deployments
     }
     digests = {}
