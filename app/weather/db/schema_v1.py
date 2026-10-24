@@ -163,9 +163,9 @@ def build_metadata() -> MetaData:
         identity(),
         instant("received_at"),
         Column("raw_bytes", LargeBinary, nullable=False),
-        Column("parsed_json", JSONB),
         digest(),
         Column("parse_state", String(32), nullable=False),
+        Column("parse_reason", String(64)),
         Column("parser_revision", String(64), nullable=False),
         Column("receiver_incarnation", String(128), nullable=False),
         CheckConstraint(
@@ -174,8 +174,7 @@ def build_metadata() -> MetaData:
             name="digest",
         ),
         CheckConstraint(
-            "parse_state IN ('received','parsed','malformed',"
-            "'unsupported','quarantined')",
+            "parse_state IN ('parsed','unsupported','quarantined')",
             name="parse_state",
         ),
     )

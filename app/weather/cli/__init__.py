@@ -15,10 +15,17 @@ def main() -> None:
         return
     if sys.argv[1:2] == ["tempest-receiver"]:
         receiver_parser = argparse.ArgumentParser(
-            prog="weather tempest-receiver", description="Receive using mounted configuration only"
+            prog="weather tempest-receiver",
+            description="Receive using mounted configuration only",
+            epilog="Rebuild typed rows: weather tempest-receiver reproject --since <ISO-8601>",
         )
         if sys.argv[2:] in (["--help"], ["-h"]):
             receiver_parser.print_help()
+            return
+        if sys.argv[2:3] == ["reproject"]:
+            from weather.telemetry.runtime import reproject_main
+
+            reproject_main(sys.argv[3:])
             return
         if sys.argv[2:]:
             receiver_parser.exit(2, "tempest-receiver accepts mounted configuration only\n")

@@ -1,0 +1,83 @@
+{
+  "contract_version": 2,
+  "kind": "withdrawn_telemetry_vectors",
+  "withdrawn_by": "../../../decisions/2026-10-24-takeover-replan.md (C4, C5)",
+  "reason": "P4 removed the cross-receipt conflict/variant model and C5 removed the aggregate revision store; history only.",
+  "vectors": [
+    {
+      "id": "T03",
+      "case": "receipt identity collision",
+      "input": {
+        "same_receipt_id": true,
+        "different_payloads": true
+      },
+      "expect": {
+        "overwrite_allowed": false,
+        "integrity_incident": true,
+        "both_payloads_retained_as_evidence": true
+      }
+    },
+    {
+      "id": "T08",
+      "case": "same timestamp conflicting temperature",
+      "input": {
+        "source_timestamp": 1700000000,
+        "temperature_variants_c": [
+          20,
+          23
+        ],
+        "matching_humidity_percent": 50
+      },
+      "expect": {
+        "temperature_qualified": false,
+        "humidity_may_remain_qualified": true,
+        "last_arrival_wins": false
+      }
+    },
+    {
+      "id": "T09",
+      "case": "ambiguous identical lightning events",
+      "input": {
+        "authoritative_interval_count": 2,
+        "evt_strike_deliveries": [
+          [
+            1700000000,
+            10,
+            100
+          ],
+          [
+            1700000000,
+            10,
+            100
+          ],
+          [
+            1700000000,
+            10,
+            100
+          ]
+        ]
+      },
+      "expect": {
+        "raw_event_receipts": 3,
+        "measured_strike_count": 2,
+        "event_multiplicity": "ambiguous",
+        "add_events_to_interval_count": false
+      }
+    },
+    {
+      "id": "T19",
+      "case": "late correction invalidates dependents",
+      "input": {
+        "aggregate_revision": 7,
+        "late_observation_changes_evidence": true,
+        "inference_available": false
+      },
+      "expect": {
+        "new_aggregate_revision": 8,
+        "outbox_recompute_enqueued": true,
+        "stale_synthesis_invalidated": true,
+        "measurements_available": true
+      }
+    }
+  ]
+}
