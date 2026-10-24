@@ -42,3 +42,31 @@ policy only for the bounded commissioning operation and delete its exact UID
 when all probe Jobs are terminal. Leave the policy out of the foundation
 kustomization; adding permanent app egress belongs to that app's commissioning
 issue. Never delete buckets, data or key projections as probe cleanup.
+
+`custody-probe-egress.yaml` is a separate, excluded policy for the independent
+B2 restore-reader proof in storage-infra#1107. It reuses the prepared database
+restore isolation pattern: DNS to kube-dns plus TCP 443 for dynamic B2
+addresses. Native NetworkPolicy has no FQDN selector; this is a documented TLS
+port exception, not an endpoint allowlist enforced by the network. The probe
+must separately allow only the source-declared B2 HTTPS origin, validate its
+certificate, and use only `weather-custody-restore-reader` in place. It mounts
+no provider management identity or ServiceAccount token. No API endpoint port
+is needed. Do not reuse the native controller's configured proxy or create a
+new proxy, identity or RBAC for this probe.
+
+The policy selects only pods with all three: managed-by
+`weather-custody-probe`, `estate.vallery.net/disposable=true`, and a
+`weather.vallery.net/operation` label. Use a unique `weather-drill-*` Job name,
+future expiry, small bounded resources, no retries and a deadline. Keep the
+foundation disabled until required Secrets exist. After merged source and
+required CI, server-dry-run and create the exact policy, retain its UID, run
+the reader-only Job, and delete only its terminal disposable resources and
+that exact policy UID. Retain failed evidence and any unexpectedly created
+probe object; never delete production data as failure cleanup.
+
+A passing proof reads the two known seeded custody copies with exact hashes,
+then shows write, delete and outside-prefix read denial. No response body,
+credential, signed URL or request header belongs in output. Authorization
+scope, central copy completion, observer state and actual restore permissions
+are separate evidence. The central Garage-HDD full-copy window remains
+06:00–08:00 UTC; this policy does not authorize bypassing it.
