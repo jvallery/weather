@@ -186,3 +186,19 @@ without adding that unaccepted API stack to the web branch. It preserves the ear
 Workflow/head as historical evidence; local source checks do not replace the eventual exact-head
 required Fleet checks. Optional polling jitter is sampled once per request cycle, so one-second
 source-age renders cannot continually reset the interval. Today retains zero jitter by default.
+
+
+Strict-CSP qualification uses Zod's interpreted (`jitless`) path before schema construction. Its
+normal caught eval-capability probe still emits a CSP violation in browsers, so fallback after the
+probe is insufficient. The source regression blocks dynamic Function construction in a separate
+Node process and verifies zero probes. The browser matrix checks the untouched hydrated app's CSP
+before axe runs. Axe's own WebKit elements-from-point polyfill writes inline pointer-event styles;
+that tooling noise is separated after the pre-scan assertion while all WCAG rules and non-style CSP
+checks remain enabled. Production CSP is unchanged and allows neither inline scripts nor eval.
+
+Rendition changes retain the current loaded playhead; pending seeks survive additional switches
+while new metadata is loading. Initial viewport detection does not retain a stale zero snapshot
+when the automatic role is unchanged. Framework errors use bounded renderer metrics; the default
+React Router URL/stack logger is overridden so only the server's route-template/status/latency log
+is emitted. The first real three-engine fixture run and its failed result remain retained for
+comparison; a failed run is never treated as acceptance.
