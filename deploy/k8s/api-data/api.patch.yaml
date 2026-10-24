@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+spec:
+  template:
+    metadata:
+      labels:
+        weather.vallery.net/database-role: api
+    spec:
+      containers:
+      - name: api
+        env:
+        - name: WEATHER_API_DATA_ENABLED
+          value: 'true'
+        - name: WEATHER_API_STATION_ALIAS
+          value: Longmont
+        volumeMounts:
+        - name: database
+          mountPath: /var/run/weather-db
+          readOnly: true
+        - name: cursor
+          mountPath: /var/run/weather-api-cursor
+          readOnly: true
+        - name: data-policy
+          mountPath: /etc/weather
+          readOnly: true
+      volumes:
+      - name: database
+        projected:
+          defaultMode: 288
+          sources:
+          - secret:
+              name: weather-pg-api
+              items:
+              - key: username
+                path: username
+              - key: password
+                path: password
+          - secret:
+              name: weather-pg-ca
+              items:
+              - key: ca.crt
+                path: ca.crt
+      - name: cursor
+        secret:
+          secretName: weather-api-cursor
+          defaultMode: 288
+          items:
+          - key: CURSOR_HMAC_KEY
+            path: CURSOR_HMAC_KEY
+      - name: data-policy
+        configMap:
+          name: weather-data-policy
+          defaultMode: 288

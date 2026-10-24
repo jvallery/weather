@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduler
+  namespace: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      containers:
+      - name: scheduler
+        volumeMounts:
+        - name: data-policy
+          mountPath: /etc/weather
+          readOnly: true
+      volumes:
+      - name: data-policy
+        configMap:
+          name: weather-data-policy
+          defaultMode: 288

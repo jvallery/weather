@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+- ../scheduler
+configMapGenerator:
+- name: weather-data-policy
+  files:
+  - api-policy.json
+  - aggregate-policy.json
+patches:
+- path: api.patch.yaml
+- path: scheduler.patch.yaml

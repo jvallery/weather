@@ -20,7 +20,7 @@ from weather.db.public_connection import create_public_database_engine
 from weather.db.public_mapping import FreshnessPolicy
 from weather.db.public_source import PublicSqlSource
 
-from .aggregate_config import load_aggregate_configuration
+from .aggregate_config import AGGREGATE_POLICY_FILE, load_aggregate_configuration
 from .aggregate_source import AggregateSource
 from .cursors import CursorCodec, Snapshot
 from .metric_registry import REGISTRY, REGISTRY_REVISION, discovery
@@ -30,7 +30,6 @@ from .public_service import PublicWeatherService, SourcePage
 
 POLICY_FILE = Path("/etc/weather/api-policy.json")
 CURSOR_FILE = Path("/var/run/weather-api-cursor/CURSOR_HMAC_KEY")
-AGGREGATE_POLICY_FILE = Path("/etc/weather/aggregate-policy.json")
 
 
 class PublicRuntimeConfigurationError(ValueError):

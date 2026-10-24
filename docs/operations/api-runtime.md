@@ -43,7 +43,8 @@ refresh with a one-second bound and always disposes the pool under a separate th
 even if refresh cancellation fails. Metrics use the process registry and bounded labels; HTTP
 access logs remain disabled to keep raw queries out of logs.
 
-Current integration metadata composes immutable schema v1, telemetry v2 and publication v3.
+Current integration metadata composes immutable schema v1, telemetry v2, publication v3,
+qualification history v4 and aggregate revisions v5.
 Disposable integration cleanup preserves the camera seed, metric bindings and publication-clock
 singleton; production tables are never truncated by these helpers. Source and pure startup/cache
 tests do not prove real database permissions, export concurrency, saturation, outage recovery or
@@ -53,3 +54,19 @@ calculator, with one nonwaiting process slot, cooperative work accounting and ex
 they do not silently truncate inputs or change the statistic. Their signed continuation position
 binds the fixed UTC evaluation instant as well as the ordinal, and the publication watermark retains
 value/qualification membership. Retained closed-window revision-worker commissioning remains pending.
+
+## Disabled delivery component
+
+`deploy/k8s/api-data` is excluded from the root kustomization. Enabling that component later adds
+the hashed public policy ConfigMap, API-only database/CA/cursor mounts and database-role label, and
+one `Recreate` scheduler. API and scheduler sync at wave 2, after the wave-1 migration Job; the
+scheduler cannot overlap old/new calibration during a policy rollout. ConfigMap content hashes
+change both pod templates when policy files change. The prepared files intentionally contain empty
+uncommissioned metrics. Set measured policy values and verify the public alias `Longmont` against
+ingest before enabling the component.
+
+Commission only after accepted code/images, all required Secrets, migrations and real cluster
+database/browser checks are ready. Add `components: [api-data]` to the existing root kustomization
+in the digest-promotion change; do not hand-apply its patches or mount the cursor into another role.
+The current root render remains the health-only API/web skeleton. Component render/volume-ref and
+sync-wave checks have passed locally; nothing was applied to the cluster by those checks.

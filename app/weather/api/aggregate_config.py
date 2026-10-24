@@ -14,6 +14,8 @@ from typing import Any
 from .metric_registry import REGISTRY, REGISTRY_REVISION
 from .support_assembly import ASSEMBLY_REVISION, SupportPolicy
 
+AGGREGATE_POLICY_FILE = Path("/etc/weather/aggregate-policy.json")
+
 
 class AggregateConfigurationError(ValueError):
     pass
