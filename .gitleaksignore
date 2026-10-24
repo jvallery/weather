@@ -1,0 +1,19 @@
+# Reviewed hash/prose false positives from the original planning documents.
+docs/archive/planning-2026-10/contracts/aggregation-validation.json:generic-api-key:7
+docs/archive/planning-2026-10/contracts/aggregation-validation.json:generic-api-key:9
+docs/archive/planning-2026-10/contracts/aggregate-provenance-validation.json:generic-api-key:7
+docs/archive/planning-2026-10/contracts/aggregate-provenance-validation.json:generic-api-key:9
+docs/archive/planning-2026-10/contracts/analysis-execution-validation.json:generic-api-key:7
+docs/archive/planning-2026-10/contracts/analysis-execution-validation.json:generic-api-key:9
+docs/archive/planning-2026-10/contracts/editorial-validation-receipt.json:generic-api-key:5
+docs/archive/planning-2026-10/contracts/editorial-validation-receipt.json:generic-api-key:7
+docs/archive/planning-2026-10/contracts/editorial-validation-receipt.json:generic-api-key:8
+docs/archive/planning-2026-10/contracts/event-validation.json:generic-api-key:7
+docs/archive/planning-2026-10/contracts/event-validation.json:generic-api-key:9
+AGENTS.md:generic-api-key:21
+docs/archive/planning-2026-10/contracts/preview-policy-validation.json:generic-api-key:11
+docs/archive/planning-2026-10/contracts/narrative-validation-receipt.json:generic-api-key:10
+docs/archive/planning-2026-10/contracts/search-precision-validation.json:generic-api-key:7
+docs/archive/planning-2026-10/contracts/search-precision-validation.json:generic-api-key:9
+docs/archive/planning-2026-10/contracts/validation-receipt.json:generic-api-key:24
+docs/archive/planning-2026-10/contracts/validation-receipt.json:generic-api-key:27

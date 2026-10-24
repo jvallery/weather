@@ -10,7 +10,7 @@ State as of 2026-10-24: **planned, not deployed.** Fill in each row's health and
 | `weather` | Namespace (PSA restricted, quota, default-deny) | k3s `vallery` | WX-01 | Planned |
 | `weather` | Argo Application (source `deploy/k8s`) | agents catalog / AppProject `weather` | agents#5366, WX-01 | Planned |
 | `weather.vallery.net` | Hostname (backend + route owner) | IngressRoutes in `weather` via wildcard tunnel | WX-01, network-infra#775 | DNS wildcard resolves; returns Traefik 404 today |
-| `weather-app`, `weather-web` | Images, digest-pinned | `registry.vallery.net/jvallery/` | WX-02, WX-01 | Planned |
+| `weather-app`, `weather-web` | Images, digest-pinned | `registry.vallery.net/jvallery/` | WX-02, WX-01 | Reproducible recipes in WX-02; in-cluster build/runtime qualification remains WX-01 |
 | `weather-pg` | CNPG Cluster, 3 instances, `longhorn-v1-rwo` | `weather` | WX-05 | Planned |
 | CNPG archive | B2 bucket + ObjectStore + ScheduledBackup | B2 (storage-infra account) | storage-infra#1112, WX-05 | Planned |
 | `weather-media`, `weather-originals` | Garage buckets on garage-hdd + custody mirror | storage-infra pipeline | storage-infra#1107 | Planned |
