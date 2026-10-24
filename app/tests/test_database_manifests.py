@@ -15,6 +15,26 @@ spec.loader.exec_module(drill)
 
 
 class DatabaseManifestTests(unittest.TestCase):
+    def test_role_probe_has_only_the_five_logins_and_ca_without_api_access(self):
+        probe = yaml.safe_load((ROOT / "deploy/acceptance/restore/role-logins.yaml").read_text())
+        pod = probe["spec"]["template"]["spec"]
+        self.assertFalse(pod["automountServiceAccountToken"])
+        self.assertTrue(pod["securityContext"]["runAsNonRoot"])
+        projected = pod["volumes"][0]["projected"]
+        self.assertEqual(
+            {source["secret"]["name"] for source in projected["sources"]},
+            {
+                "weather-pg-" + role
+                for role in ("migrator", "ingest", "worker", "api", "editor", "ca")
+            },
+        )
+        container = pod["containers"][0]
+        self.assertTrue(container["securityContext"]["readOnlyRootFilesystem"])
+        self.assertEqual(container["securityContext"]["capabilities"]["drop"], ["ALL"])
+        self.assertEqual(
+            next(e["value"] for e in container["env"] if e["name"] == "PGSSLMODE"), "verify-full"
+        )
+
     def test_production_retention_and_authority(self):
         cluster = yaml.safe_load((ROOT / "deploy/k8s/database/cluster.yaml").read_text())
         store = yaml.safe_load((ROOT / "deploy/k8s/database/object-store.yaml").read_text())
