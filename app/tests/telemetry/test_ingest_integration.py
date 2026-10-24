@@ -448,6 +448,7 @@ def test_public_field_quality_is_typed_allowlist_and_private_tables_denied(tmp_p
     async def check() -> None:
         ingest = engine("weather_ingest")
         api = engine("weather_api")
+        worker = engine("weather_worker")
         spool = Spool(tmp_path / "spool", 1 << 20)
         try:
             append(spool, payload("obs_st", obs=[ST_ROW]))
@@ -463,6 +464,21 @@ def test_public_field_quality_is_typed_allowlist_and_private_tables_denied(tmp_p
                 assert "SYNTHETIC-ST" not in public and "192.0.2.1" not in public
                 assert 'reported"' not in public and "battery" not in row["values"]
                 assert row["field_quality"]["air_temperature"]["eligible"]
+                async with worker.connect() as worker_connection:
+                    exposed = (
+                        (
+                            await worker_connection.execute(
+                                text(
+                                    'SELECT "values",field_quality,quality '
+                                'FROM public_api.telemetry_observations'
+                                )
+                            )
+                        )
+                        .mappings()
+                        .one()
+                    )
+                    assert exposed["values"]["air_temperature"] == 20
+                    assert exposed["field_quality"]["air_temperature"]["eligible"]
                 malformed = {
                     "fields": {
                         "air_temperature": {
@@ -497,6 +513,7 @@ def test_public_field_quality_is_typed_allowlist_and_private_tables_denied(tmp_p
             spool.close()
             await ingest.dispose()
             await api.dispose()
+            await worker.dispose()
 
     asyncio.run(check())
 

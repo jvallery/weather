@@ -212,6 +212,8 @@ def statements() -> list[str]:
             "TO weather_api,weather_worker",
             "GRANT EXECUTE ON FUNCTION public_api.telemetry_field_quality(jsonb) "
             "TO weather_api,weather_worker",
+            "GRANT USAGE ON SCHEMA public_api TO weather_worker",
+            "GRANT EXECUTE ON FUNCTION public_api.public_metric_quality(jsonb) TO weather_worker",
             "GRANT SELECT ON public_api.telemetry_observations TO weather_api,weather_worker",
         ]
     )
