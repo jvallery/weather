@@ -295,13 +295,32 @@ class Collector:
         count = 0
         try:
             while not self.stop.is_set():
-                wait = (schedule.next_mono_ns - time.monotonic_ns()) / 1e9
+                deadline = schedule.next_mono_ns
+                if self.writer is not None:
+                    deadline = min(
+                        deadline,
+                        self.writer.started_mono_ns
+                        + self.writer.window_end_ns
+                        - self.writer.window_start_ns,
+                    )
+                wait = (deadline - time.monotonic_ns()) / 1e9
                 if wait > 0:
                     try:
                         await asyncio.wait_for(self.stop.wait(), wait)
                         break
                     except TimeoutError:
                         pass
+                if self.writer is not None and time.monotonic_ns() >= (
+                    self.writer.started_mono_ns
+                    + self.writer.window_end_ns
+                    - self.writer.window_start_ns
+                ):
+                    try:
+                        self._seal()
+                    except OSError:
+                        pass
+                if time.monotonic_ns() < schedule.next_mono_ns:
+                    continue
                 schedule.observe_clock(time.time_ns(), time.monotonic_ns())
                 slot = schedule.take()
                 await self._attempt(slot, schedule)

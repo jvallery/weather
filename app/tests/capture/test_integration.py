@@ -260,3 +260,32 @@ def test_auth_failure_cannot_trigger_rapid_relogins(tmp_path: Path) -> None:
 def test_decoder_fully_loads_original_native_bytes() -> None:
     original = jpeg()
     assert validate_jpeg(original, (32, 16), 16777216) == (32, 16)
+
+
+def test_chunk_deadline_seals_while_waiting_for_a_slower_capture_slot(tmp_path: Path) -> None:
+    import dataclasses
+
+    async def check() -> None:
+        camera = FakeCamera(jpeg())
+        async with camera.running():
+            config = dataclasses.replace(
+                camera.config(tmp_path),
+                cadence_ms=5000,
+                phase_ms=(time.time_ns() // 1_000_000 + 50) % 5000,
+                chunk_seconds=1,
+            )
+            collector = Collector(config)
+            # Existing negotiated nonce, so the test isolates sealing from cold authentication.
+            collector.client._digest.challenge(
+                'Digest realm="fake-camera", nonce="fixed-nonce", qop="auth", algorithm=MD5'
+            )
+            task = asyncio.create_task(collector.run())
+            await asyncio.sleep(1.5)
+            paths = list((tmp_path / "sealed").rglob("*.tar"))
+            assert len(paths) == 1 and not task.done()
+            assert read_chunk(paths[0])[1]["status"] == "captured"
+            assert len(camera.requests) == 1
+            collector.shutdown()
+            await task
+
+    asyncio.run(check())
