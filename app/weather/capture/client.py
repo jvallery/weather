@@ -3,8 +3,10 @@
 
 import asyncio
 import hashlib
+import ipaddress
 import re
 import secrets
+import socket
 import ssl
 import time
 from dataclasses import dataclass
@@ -138,6 +140,10 @@ class SnapshotClient:
                 ssl=context,
                 server_hostname=self.config.host if context else None,
                 limit=32768,
+                family=socket.AF_INET
+                if ipaddress.ip_address(self.config.host).version == 4
+                else socket.AF_INET6,
+                flags=socket.AI_NUMERICHOST,
             ),
             self.config.connect_seconds,
         )
