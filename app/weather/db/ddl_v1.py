@@ -131,18 +131,25 @@ def statements(table_names: list[str]) -> list[str]:
                       clock_timestamp(),clock_timestamp()+interval '1 day');
              RETURN new_revision;
            END $$""",
-        f"""CREATE FUNCTION public_api.public_metric_values(p_values jsonb) RETURNS jsonb
-            LANGUAGE sql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
-            SELECT coalesce(jsonb_object_agg(key,value),'{{}}'::jsonb)
-            FROM jsonb_each(p_values) WHERE key IN ({metrics})
-              AND jsonb_typeof(value) IN ('number','null') $$""",
-        """CREATE FUNCTION public_api.public_metric_quality(p_quality jsonb) RETURNS jsonb
+        # A value is public only when its row is valid and the field is not listed invalid;
+        # malformed quality fails closed to null.
+        f"""CREATE FUNCTION public_api.public_metric_values(p_values jsonb,p_quality jsonb)
+            RETURNS jsonb LANGUAGE sql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
+            SELECT coalesce(jsonb_object_agg(key,CASE
+              WHEN coalesce(p_quality->'valid'='true'::jsonb,false)
+               AND jsonb_typeof(p_quality->'invalid')='array'
+               AND NOT p_quality->'invalid' ? key
+               AND jsonb_typeof(value)='number' THEN value ELSE 'null'::jsonb END),'{{}}'::jsonb)
+            FROM jsonb_each(p_values) WHERE key IN ({metrics}) $$""",
+        f"""CREATE FUNCTION public_api.public_metric_quality(p_quality jsonb) RETURNS jsonb
            LANGUAGE sql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
            SELECT jsonb_build_object('valid',coalesce(p_quality->'valid'='true'::jsonb,false),
-             'reason',CASE WHEN p_quality->>'reason' IN
-               ('valid','missing','invalid','suspect','unknown','source_clock_invalid',
-                'source_time_missing','stale','unsupported','out_of_range','duplicate')
-               THEN p_quality->>'reason' ELSE 'unknown' END) $$""",
+             'reason',CASE WHEN p_quality->>'reason' IN ('valid','future_timestamp')
+               THEN p_quality->>'reason' ELSE 'unknown' END,
+             'invalid',coalesce((SELECT jsonb_agg(name ORDER BY name)
+               FROM jsonb_array_elements_text(CASE WHEN jsonb_typeof(p_quality->'invalid')='array'
+                 THEN p_quality->'invalid' ELSE '[]'::jsonb END) AS fields(name)
+               WHERE name IN ({metrics})),'[]'::jsonb)) $$""",
         """CREATE VIEW public_api.stations WITH (security_barrier=true) AS
            SELECT id,alias,site FROM weather.station""",
         """CREATE VIEW public_api.devices WITH (security_barrier=true) AS
@@ -221,7 +228,7 @@ def statements(table_names: list[str]) -> list[str]:
     unions = [
         f"""SELECT o.id,s.alias AS station_alias,d.alias AS device_alias,o.message_type,
             o.source_ts AS observed_at,r.received_at,o.row_idx,
-            public_api.public_metric_values(o."values") AS "values",
+            public_api.public_metric_values(o."values",o.quality) AS "values",
             public_api.public_metric_quality(o.quality) AS quality
             FROM weather.{family} o JOIN weather.device d ON d.id=o.device_id
             JOIN weather.station s ON s.id=d.station_id
@@ -251,7 +258,7 @@ def statements(table_names: list[str]) -> list[str]:
             "GRANT SELECT ON weather.editorial_revision,weather.editorial_target TO weather_worker",
             "GRANT EXECUTE ON FUNCTION weather.ensure_days(date,date,text) TO weather_worker",
             "GRANT SELECT ON ALL TABLES IN SCHEMA public_api TO weather_api",
-            "GRANT EXECUTE ON FUNCTION public_api.public_metric_values(jsonb),"
+            "GRANT EXECUTE ON FUNCTION public_api.public_metric_values(jsonb,jsonb),"
             "public_api.public_metric_quality(jsonb) TO weather_api",
             "GRANT EXECUTE ON FUNCTION public_api.append_editorial_revision"
             "(text,bigint,jsonb,text,text) TO weather_api,weather_worker",

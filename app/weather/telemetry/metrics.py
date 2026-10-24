@@ -13,6 +13,8 @@ from .drain import Drain
 from .parse import FAMILIES
 from .receiver import Receiver
 
+REJECTIONS = ("wrong_interface", "wrong_source", "wrong_identity", "malformed", "oversized")
+
 
 class Metrics:
     def __init__(self, receiver: Receiver, drain: Drain) -> None:
@@ -28,13 +30,14 @@ class Metrics:
             "spooled",
             "committed",
             "projected",
+            "unprojected",
             "quarantined",
+            "drain_quarantined",
             "capacity_loss",
             "kernel_overflow",
             "spool_write_uncertain",
             "drain_errors",
             "spool_ack_errors",
-            "integrity_incident_attempts",
         ):
             metric = CounterMetricFamily("weather_telemetry_" + name, "Telemetry " + name)
             metric.add_metric([], counts.get(name, 0))
@@ -42,12 +45,9 @@ class Metrics:
         rejected = CounterMetricFamily(
             "weather_telemetry_rejected", "Rejected datagrams", labels=["reason"]
         )
-        for reason in ("wrong_interface", "wrong_source", "wrong_identity", "truncated"):
+        for reason in REJECTIONS:
             rejected.add_metric([reason], counts.get("rejected_" + reason, 0))
         result.append(rejected)
-        truncated = CounterMetricFamily("weather_telemetry_truncated", "Truncated datagrams")
-        truncated.add_metric([], counts.get("rejected_truncated", 0))
-        result.append(truncated)
         ages = GaugeMetricFamily(
             "weather_telemetry_last_packet_age_seconds",
             "Original receive age; absent family has no sample",
@@ -60,12 +60,18 @@ class Metrics:
                 ages.add_metric([family], max(0, float(age)))
         result.append(ages)
         stats = self.receiver.spool.stats()
-        checkpoints = CounterMetricFamily(
-            "weather_telemetry_spool_checkpoint_errors",
-            "Post-commit checkpoint housekeeping errors",
-        )
-        checkpoints.add_metric([], stats["checkpoint_errors"])
-        result.append(checkpoints)
+        for name, key, help_text in (
+            ("spool_checkpoint_errors", "checkpoint_errors", "Post-commit checkpoint errors"),
+            ("spool_quarantined_rows", "quarantined_rows", "Undecodable spool rows set aside"),
+            (
+                "spool_unreadable_generations",
+                "unreadable_generations",
+                "Unreadable spool databases set aside",
+            ),
+        ):
+            counter = CounterMetricFamily("weather_telemetry_" + name, help_text)
+            counter.add_metric([], stats[key])
+            result.append(counter)
         for suffix, key in (
             ("spool_depth", "depth"),
             ("spool_bytes", "pending_bytes"),
@@ -78,16 +84,10 @@ class Metrics:
         lag = GaugeMetricFamily(
             "weather_telemetry_drain_lag_seconds", "Oldest original receipt age"
         )
-        batch = self.receiver.spool.batch(max_rows=1)
-        lag.add_metric([], max(0, (now - batch[0].receipt.received_ns) / 1e9) if batch else 0)
+        # Read-only: a scrape never decodes, quarantines or otherwise mutates the spool.
+        oldest = self.receiver.spool.oldest_received_ns()
+        lag.add_metric([], max(0, (now - oldest) / 1e9) if oldest is not None else 0)
         result.append(lag)
-        unknown = GaugeMetricFamily(
-            "weather_telemetry_loss_unknown", "Loss magnitude cannot be known"
-        )
-        unknown.add_metric(
-            [], int(stats["volatile_loss_unknown"] or stats["diagnostic_loss_unknown"])
-        )
-        result.append(unknown)
         return result
 
     def serve(self, port: int, receiver_thread: Thread) -> ThreadingHTTPServer:

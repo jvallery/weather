@@ -1,12 +1,18 @@
 {
-  "contract_version": 2,
-  "kind": "declarative_acceptance_vectors_not_test_results",
-  "decision": "../decisions/D05-telemetry-integrity.md",
+  "contract_version": 3,
+  "kind": "telemetry_acceptance_vectors",
+  "decision": "../decisions/2026-10-24-takeover-replan.md",
   "identity_policy": "All station and receiver identifiers in these fixtures are synthetic.",
+  "suites": {
+    "unit": "app/tests/telemetry/test_vectors.py (parser, admission, spool)",
+    "integration": "app/tests/telemetry/test_ingest_integration.py (PostgreSQL, fleet CI only)",
+    "aggregate": "read-side aggregation semantics owned by #14"
+  },
   "vectors": [
     {
       "id": "T01",
       "case": "one datagram delivered twice",
+      "suite": "integration",
       "input": {
         "packet": {
           "serial_number": "SYNTHETIC-ST",
@@ -22,40 +28,37 @@
       },
       "expect": {
         "raw_receipts": 2,
-        "canonical_observations": 1,
-        "provenance_links": 2
+        "canonical_observations": 1
       }
     },
     {
       "id": "T02",
       "case": "uncertain database acknowledgement",
+      "suite": "integration",
       "input": {
         "receipt_id": "00000000-0000-4000-8000-000000000002",
         "attempts": 3,
-        "identical_bytes_and_metadata": true
+        "packet": {
+          "serial_number": "SYNTHETIC-ST",
+          "type": "rapid_wind",
+          "hub_sn": "SYNTHETIC-HUB",
+          "ob": [
+            1700000000,
+            2.3,
+            128
+          ]
+        }
       },
       "expect": {
         "raw_receipts": 1,
-        "projection_work_items_for_parser_version": 1,
+        "canonical_observations": 1,
         "spool_deleted_only_after_database_commit_returns": true
-      }
-    },
-    {
-      "id": "T03",
-      "case": "receipt identity collision",
-      "input": {
-        "same_receipt_id": true,
-        "different_payloads": true
-      },
-      "expect": {
-        "overwrite_allowed": false,
-        "integrity_incident": true,
-        "both_payloads_retained_as_evidence": true
       }
     },
     {
       "id": "T04",
       "case": "all rows with invalid sibling",
+      "suite": "unit",
       "input": {
         "packet": {
           "serial_number": "SYNTHETIC-ST",
@@ -110,40 +113,44 @@
         }
       },
       "expect": {
-        "row_projections": 3,
-        "valid_observation_rows": 2,
-        "quarantined_rows": 1,
-        "unknown_fields_retained": true
+        "rows": 3,
+        "valid_rows": 2,
+        "quarantined_rows": 1
       }
     },
     {
       "id": "T05",
       "case": "duplicate JSON keys",
+      "suite": "unit",
       "input": {
         "utf8": "{\"type\":\"rapid_wind\",\"type\":\"obs_st\"}"
       },
       "expect": {
-        "exact_raw_retained": true,
-        "normalization_quarantined": true
+        "parse_state": "quarantined",
+        "reason": "duplicate_json_key",
+        "admitted": false
       }
     },
     {
       "id": "T06",
       "case": "malformed UTF-8",
+      "suite": "unit",
       "input": {
         "bytes_hex": "fffe00"
       },
       "expect": {
-        "exact_raw_retained": true,
-        "canonical_observations": 0,
-        "parse_error_recorded": true
+        "parse_state": "quarantined",
+        "reason": "malformed_utf8",
+        "admitted": false
       }
     },
     {
       "id": "T07",
       "case": "unknown future family",
+      "suite": "unit",
       "input": {
         "packet": {
+          "serial_number": "SYNTHETIC-HUB",
           "type": "synthetic_future_family",
           "values": [
             1,
@@ -153,61 +160,15 @@
         }
       },
       "expect": {
-        "exact_raw_retained": true,
-        "parsed_unknown_record_queryable": true,
-        "canonical_observations": 0
-      }
-    },
-    {
-      "id": "T08",
-      "case": "same timestamp conflicting temperature",
-      "input": {
-        "source_timestamp": 1700000000,
-        "temperature_variants_c": [
-          20,
-          23
-        ],
-        "matching_humidity_percent": 50
-      },
-      "expect": {
-        "temperature_qualified": false,
-        "humidity_may_remain_qualified": true,
-        "last_arrival_wins": false
-      }
-    },
-    {
-      "id": "T09",
-      "case": "ambiguous identical lightning events",
-      "input": {
-        "authoritative_interval_count": 2,
-        "evt_strike_deliveries": [
-          [
-            1700000000,
-            10,
-            100
-          ],
-          [
-            1700000000,
-            10,
-            100
-          ],
-          [
-            1700000000,
-            10,
-            100
-          ]
-        ]
-      },
-      "expect": {
-        "raw_event_receipts": 3,
-        "measured_strike_count": 2,
-        "event_multiplicity": "ambiguous",
-        "add_events_to_interval_count": false
+        "parse_state": "unsupported",
+        "rows": 0,
+        "admitted": true
       }
     },
     {
       "id": "T10",
       "case": "event packets without interval authority",
+      "suite": "aggregate",
       "input": {
         "evt_strike": [
           1700000000,
@@ -224,6 +185,7 @@
     {
       "id": "T11",
       "case": "replay does not freshen",
+      "suite": "aggregate",
       "input": {
         "source_epoch": 1700000000,
         "first_receive_epoch": 1700000001,
@@ -238,6 +200,7 @@
     {
       "id": "T12",
       "case": "support union",
+      "suite": "aggregate",
       "input": {
         "window_seconds": [
           0,
@@ -262,6 +225,7 @@
     {
       "id": "T13",
       "case": "conserved precipitation split",
+      "suite": "aggregate",
       "input": {
         "qualified_support_seconds": [
           0,
@@ -290,21 +254,53 @@
     },
     {
       "id": "T14",
-      "case": "report interval does not redefine rain support",
+      "case": "rain support is the minute ending at source time, independent of report interval",
+      "suite": "unit",
       "input": {
-        "source_epoch": 1700000000,
-        "report_interval_minutes": 5,
-        "rain_previous_minute_mm": 1
+        "packet": {
+          "serial_number": "SYNTHETIC-ST",
+          "hub_sn": "SYNTHETIC-HUB",
+          "type": "obs_st",
+          "obs": [
+            [
+              1700000000,
+              0.1,
+              0.2,
+              0.3,
+              90,
+              3,
+              1000,
+              20,
+              50,
+              100,
+              1,
+              50,
+              1,
+              1,
+              0,
+              0,
+              2.5,
+              5
+            ]
+          ]
+        }
       },
       "expect": {
-        "inferred_rain_support_seconds": 60,
-        "inferred_rain_support_from_report_interval": false,
-        "firmware_support_requires_qualification": true
+        "rain_mm": 1,
+        "rain_support_epochs": [
+          1699999940,
+          1700000000
+        ],
+        "wind_avg_support_epochs": [
+          1699999700,
+          1700000000
+        ]
       }
     },
     {
       "id": "T15",
       "case": "boundary lightning count",
+      "suite": "aggregate",
       "input": {
         "support_seconds": [
           0,
@@ -332,82 +328,55 @@
     {
       "id": "T16",
       "case": "SQLite FULL commit and uncertain database acknowledgement boundaries",
+      "suite": "unit",
       "input": {
-        "committed_receipts": [
-          {
-            "synthetic_id": "00000000-0000-4000-8000-000000000161",
-            "db_committed": true,
-            "local_delete_committed": false
-          },
-          {
-            "synthetic_id": "00000000-0000-4000-8000-000000000162",
-            "db_committed": false
-          }
-        ],
+        "committed_receipts": 2,
         "uncommitted_sqlite_insert": true,
-        "unreadable_generation": "retained intact separately"
+        "unreadable_generation": true
       },
       "expect": {
-        "replay_committed_receipt_ids": [
-          "00000000-0000-4000-8000-000000000161",
-          "00000000-0000-4000-8000-000000000162"
-        ],
-        "first_database_commit_idempotent": true,
+        "replayed_receipts": 2,
         "uncommitted_insert_visible": false,
-        "invent_tail_bytes_or_sequence": false,
-        "unreadable_generation_quarantined_intact": true,
-        "unknown_volatile_loss_reported": true
+        "unreadable_generation_quarantined_intact": true
       }
     },
     {
       "id": "T17",
       "case": "spool capacity exhaustion",
+      "suite": "unit",
       "input": {
         "usable_data_capacity_reached": true,
-        "new_receipts": 5,
-        "diagnostic_storage_healthy": true
+        "new_receipts": 5
       },
       "expect": {
         "old_unacknowledged_receipts_overwritten": false,
         "capacity_drop_count": 5,
-        "collection_health": "degraded"
+        "pressure": "warning"
       }
     },
     {
       "id": "T18",
       "case": "source clock reset and late pre-reset row",
+      "suite": "integration",
       "input": {
         "arrival_source_epochs": [
           1700000000,
           1699999900,
           1700000000
+        ]
+      },
+      "expect": {
+        "canonical_source_epochs": [
+          1699999900,
+          1700000000
         ],
-        "status_reset_between_first_two": true
-      },
-      "expect": {
-        "new_epoch_inferred_from_arrival_order": false,
-        "same_timestamp_variants_reconciled": true,
-        "older_row_replaces_current": false
-      }
-    },
-    {
-      "id": "T19",
-      "case": "late correction invalidates dependents",
-      "input": {
-        "aggregate_revision": 7,
-        "late_observation_changes_evidence": true,
-        "inference_available": false
-      },
-      "expect": {
-        "new_aggregate_revision": 8,
-        "outbox_recompute_enqueued": true,
-        "stale_synthesis_invalidated": true,
-        "measurements_available": true
+        "first_row_kept": true
       }
     },
     {
       "id": "T20",
       "case": "same values with later source time",
+      "suite": "integration",
       "input": {
         "samples": [
           [
@@ -423,8 +392,7 @@
         ]
       },
       "expect": {
-        "canonical_observations": 2,
-        "value_only_deduplication": false
+        "canonical_observations": 2
       }
     }
   ]

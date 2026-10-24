@@ -12,13 +12,15 @@ from weather.telemetry.config import load_config
 @pytest.fixture
 def mounted(tmp_path: Path) -> Path:
     (tmp_path / "receiver.json").write_text(json.dumps({"interface_name": "net1"}))
-    (tmp_path / "TEMPEST_HUB_SOURCE").write_text("192.0.2.1")
     (tmp_path / "TEMPEST_HUB_SERIAL").write_text("SYNTHETIC-HUB")
     (tmp_path / "TEMPEST_DEVICE_SERIALS").write_text(json.dumps(["SYNTHETIC-ST"]))
     return tmp_path
 
 
 def test_exact_issue5_keys_are_loaded_without_private_public_config(mounted: Path) -> None:
+    config = load_config(mounted)
+    assert config.hub_source_ip is None
+    (mounted / "TEMPEST_HUB_SOURCE").write_text("192.0.2.1")
     config = load_config(mounted)
     assert config.hub_source_ip == "192.0.2.1"
     assert config.hub_identity == "SYNTHETIC-HUB"
@@ -51,8 +53,8 @@ def test_malformed_or_misplaced_configuration_fails_without_values(
     assert str(error.value) == "Invalid mounted private receiver configuration"
 
 
-def test_missing_secret_field_does_not_fall_back_to_an_address(mounted: Path) -> None:
-    (mounted / "TEMPEST_HUB_SOURCE").unlink()
+def test_missing_secret_serial_fails_without_values(mounted: Path) -> None:
+    (mounted / "TEMPEST_HUB_SERIAL").unlink()
     with pytest.raises(ValueError, match="^Invalid mounted private receiver configuration$"):
         load_config(mounted)
 
@@ -84,3 +86,29 @@ def test_tempest_role_rejects_private_arguments_without_echo(
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err == "tempest-receiver accepts mounted configuration only\n"
+
+
+def test_reproject_role_requires_an_aware_since_and_dispatches_lazily(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from datetime import UTC, datetime
+
+    from weather import cli
+    from weather.telemetry import runtime
+
+    seen: list[datetime] = []
+
+    async def fake(since: datetime) -> tuple[int, int, int]:
+        seen.append(since)
+        return 3, 2, 1
+
+    monkeypatch.setattr(runtime, "run_reproject", fake)
+    argv = ["weather", "tempest-receiver", "reproject", "--since", "2026-10-01T00:00Z"]
+    monkeypatch.setattr(sys, "argv", argv)
+    cli.main()
+    assert seen == [datetime(2026, 10, 1, tzinfo=UTC)]
+    assert capsys.readouterr().out == "reprojected receipts=3 new_rows=2 unprojected_rows=1\n"
+    monkeypatch.setattr(sys, "argv", [*argv[:-1], "2026-10-01T00:00"])
+    with pytest.raises(SystemExit) as error:
+        cli.main()
+    assert error.value.code == 2 and len(seen) == 1

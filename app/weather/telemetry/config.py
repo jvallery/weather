@@ -11,9 +11,9 @@ from typing import Any
 @dataclass(frozen=True)
 class ReceiverConfig:
     interface_name: str
-    hub_source_ip: str = field(repr=False)
     hub_identity: str = field(repr=False)
     device_identities: frozenset[str] = field(repr=False)
+    hub_source_ip: str | None = field(default=None, repr=False)
     hub_source_port: int | None = field(default=None, repr=False)
     spool_directory: Path = Path("/var/lib/weather/telemetry")
     capacity_bytes: int = 1 << 30
@@ -40,9 +40,17 @@ def load_config(directory: Path) -> ReceiverConfig:
             raise ValueError
         if not _atom(data["interface_name"]):
             raise ValueError
-        source = _read(directory / "TEMPEST_HUB_SOURCE", 128)
         hub = _read(directory / "TEMPEST_HUB_SERIAL", 128)
-        if not _atom(source) or ipaddress.ip_address(source).version != 4 or not _atom(hub):
+        # Optional: admission is by interface plus well-formed Tempest identity (P4).
+        source = (
+            _read(directory / "TEMPEST_HUB_SOURCE", 128)
+            if (directory / "TEMPEST_HUB_SOURCE").exists()
+            else None
+        )
+        if not _atom(hub) or (
+            source is not None
+            and (not _atom(source) or ipaddress.ip_address(source).version != 4)
+        ):
             raise ValueError
         devices: Any = json.loads(
             _read(directory / "TEMPEST_DEVICE_SERIALS", 8192),
@@ -73,9 +81,9 @@ def load_config(directory: Path) -> ReceiverConfig:
             raise ValueError
         return ReceiverConfig(
             data["interface_name"],
-            source,
             hub,
             frozenset(devices),
+            source,
             data.get("hub_source_port"),
             spool,
             data.get("capacity_bytes", 1 << 30),

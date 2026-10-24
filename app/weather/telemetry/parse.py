@@ -4,7 +4,6 @@
 Primary protocol: https://weatherflow.github.io/Tempest/api/udp/v171/
 """
 
-import hashlib
 import json
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -30,7 +29,10 @@ class DuplicateKey(ValueError):
     pass
 
 
-MAX_DATAGRAM_BYTES = 65535
+# Real Tempest datagrams are 100-700 B; larger ones are rejected before the spool.
+MAX_DATAGRAM_BYTES = 4096
+# v171 obs_st/obs_sky rain is the amount over the minute ending at the source timestamp.
+RAIN_SUPPORT_SECONDS = 60
 Validity = Literal["valid", "null", "absent", "invalid"]
 
 
@@ -166,20 +168,6 @@ STATUS_FIELDS = {
         number("seq", "1", 0, integer=True),
     ),
 }
-SENSOR_FLAGS = {
-    0x1: "lightning_failed",
-    0x2: "lightning_noise",
-    0x4: "lightning_disturber",
-    0x8: "pressure_failed",
-    0x10: "temperature_failed",
-    0x20: "humidity_failed",
-    0x40: "wind_failed",
-    0x80: "precipitation_failed",
-    0x100: "light_uv_failed",
-    0x200: "power_booster_detected",
-    0x8000: "power_booster_depleted",
-    0x10000: "power_booster_shore_power",
-}
 
 
 @dataclass(frozen=True)
@@ -190,17 +178,6 @@ class FieldValue:
     reported_unit: str | None
     canonical_unit: str | None
     reason: str
-
-    def evidence(self) -> dict[str, Any]:
-        return {
-            "state": self.state,
-            "reported": self.reported,
-            "reported_unit": self.reported_unit,
-            "canonical_unit": self.canonical_unit,
-            "valid": self.state == "valid",
-            "reason": self.reason,
-            "range_policy": "v171-basic-domains-1",
-        }
 
 
 def _field(value: Any, spec: FieldSpec) -> FieldValue:
@@ -221,10 +198,12 @@ def _field(value: Any, spec: FieldSpec) -> FieldValue:
     if spec.text:
         if (
             isinstance(value, str)
+            and not any(ord(char) == 0 or 0xD800 <= ord(char) <= 0xDFFF for char in value)
             or isinstance(value, (int, Decimal))
             and not isinstance(value, bool)
             and Decimal(value).is_finite()
             and Decimal(value) == Decimal(value).to_integral_value()
+            and abs(Decimal(value).adjusted()) <= 127
         ):
             return result("valid", value, "valid")
         return result("invalid", None, "invalid_type")
@@ -264,69 +243,34 @@ class Row:
     ordinal: int
     source_ts: Decimal | None
     fields: dict[str, FieldValue]
-    raw_row: Any = field(repr=False)
-    extra: Any = field(repr=False)
     future: bool = False
     quarantine_reason: str | None = None
-    firmware_revision: Any = field(default=None, repr=False)
 
     @property
     def values(self) -> dict[str, Any]:
         return {name: value.canonical for name, value in self.fields.items()}
 
     @property
-    def fingerprint(self) -> str:
-        evidence = {"raw_row": self.raw_row, "firmware_revision": self.firmware_revision}
-        return hashlib.sha256(json_text(evidence).encode()).hexdigest()
-
-    @property
     def quality(self) -> dict[str, Any]:
-        interval = self.fields.get("report_interval")
-        report_seconds = (
-            Decimal(str(interval.canonical)) * 60
-            if interval is not None and interval.state == "valid"
-            else None
-        )
-        fields = {}
-        for name, value in self.fields.items():
-            item = value.evidence()
-            item["eligible"] = (
-                value.state == "valid" and not self.future and self.quarantine_reason is None
-            )
-            if self.future:
-                item["reason"] = "future_timestamp"
-            if name == "precip_accumulated":
-                item["support"] = {
-                    "kind": "preceding_minute",
-                    "reported_seconds": 60,
-                    "qualified": False,
-                    "policy": "v171-rain-firmware-unqualified-1",
-                }
-            elif name == "wind_avg":
-                item["support"] = {
-                    "kind": "reported_interval",
-                    "reported_seconds": report_seconds,
-                    "qualified": report_seconds is not None and report_seconds <= 86400,
-                    "policy": "v171-wind-report-interval-1",
-                }
-            else:
-                item["support"] = {
-                    "kind": "instantaneous",
-                    "qualified": False,
-                    "policy": "requires-source-time-hold-policy",
-                }
-            fields[name] = item
+        """Compact row status; units, ranges and support are fixed by this parser revision."""
         return {
             "valid": self.quarantine_reason is None and not self.future,
             "reason": self.quarantine_reason or ("future_timestamp" if self.future else "valid"),
-            "fields": fields,
-            "extra_fields": self.extra,
-            "parser_revision": PARSER_REVISION,
-            "row_fingerprint": self.fingerprint,
-            "source_time_eligible": self.source_ts is not None and not self.future,
-            "event_multiplicity": "single_report" if self.family == "evt_strike" else None,
-            "measured_lightning_authority_candidate": self.family in {"obs_st", "obs_air"},
+            "invalid": sorted(name for name, f in self.fields.items() if f.state == "invalid"),
         }
+
+    def support(self, name: str) -> tuple[Decimal, Decimal] | None:
+        """Reported support (start, end] in epoch seconds; None is an instantaneous sample."""
+        value = self.fields.get(name)
+        if self.source_ts is None or value is None or value.state != "valid":
+            return None
+        if name == "precip_accumulated":
+            seconds = Decimal(RAIN_SUPPORT_SECONDS)
+        elif name == "wind_avg" and self.fields["report_interval"].state == "valid":
+            seconds = Decimal(str(self.fields["report_interval"].canonical)) * 60
+        else:
+            return None
+        return self.source_ts - seconds, self.source_ts
 
 
 @dataclass(frozen=True)
@@ -408,17 +352,7 @@ def parse_packet(raw: bytes, received_epoch: Decimal, future_seconds: int = 120)
         if (is_status and not isinstance(raw_row, dict)) or (
             not is_status and not isinstance(raw_row, list)
         ):
-            rows.append(
-                Row(
-                    family,
-                    ordinal,
-                    None,
-                    {},
-                    None if raw_row is MISSING else raw_row,
-                    None,
-                    quarantine_reason="invalid_row",
-                )
-            )
+            rows.append(Row(family, ordinal, None, {}, quarantine_reason="invalid_row"))
             continue
         timestamp = (
             raw_row.get("timestamp", MISSING) if is_status else (raw_row[0] if raw_row else MISSING)
@@ -434,57 +368,28 @@ def parse_packet(raw: bytes, received_epoch: Decimal, future_seconds: int = 120)
             )
             for index, spec in enumerate(specs, 1)
         }
-        if is_status:
-            known = {s.name for s in specs} | {"type", "timestamp", "serial_number", "hub_sn"}
-            extra: Any = {key: val for key, val in raw_row.items() if key not in known}
-            if family == "hub_status":
-                radio = raw_row.get("radio_stats", [])
-                radio_specs = (
-                    number("radio_version", "1", 0, integer=True),
-                    number("radio_reboot_count", "1", 0, integer=True),
-                    number("radio_i2c_bus_error_count", "1", 0, integer=True),
-                    number("radio_status", "1", 0, integer=True),
-                    number("radio_network_id", None, 0, integer=True),
+        if family == "hub_status":
+            radio = raw_row.get("radio_stats", [])
+            radio_specs = (
+                number("radio_version", "1", 0, integer=True),
+                number("radio_reboot_count", "1", 0, integer=True),
+                number("radio_i2c_bus_error_count", "1", 0, integer=True),
+                number("radio_status", "1", 0, integer=True),
+                number("radio_network_id", None, 0, integer=True),
+            )
+            for index, spec in enumerate(radio_specs):
+                fields[spec.name] = _field(
+                    radio[index] if isinstance(radio, list) and index < len(radio) else MISSING,
+                    spec,
                 )
-                for index, spec in enumerate(radio_specs):
-                    fields[spec.name] = _field(
-                        radio[index] if isinstance(radio, list) and index < len(radio) else MISSING,
-                        spec,
-                    )
-            status = fields.get("sensor_status")
-            if status and status.state == "valid":
-                mask = int(status.canonical)
-                extra["sensor_flags"] = [name for bit, name in SENSOR_FLAGS.items() if mask & bit]
-                extra["unknown_sensor_bits"] = mask & ~sum(SENSOR_FLAGS)
-        else:
-            extra = {
-                "trailing_row_fields": raw_row[len(specs) + 1 :],
-                "envelope_fields": {
-                    key: val
-                    for key, val in envelope.items()
-                    if key
-                    not in {
-                        "type",
-                        "serial_number",
-                        "hub_sn",
-                        "obs",
-                        "ob",
-                        "evt",
-                        "firmware_revision",
-                    }
-                },
-            }
         rows.append(
             Row(
                 family,
                 ordinal,
                 source_ts,
                 fields,
-                raw_row,
-                extra,
                 future=source_ts is not None and source_ts > received_epoch + future_seconds,
                 quarantine_reason="invalid_source_time" if source_ts is None else None,
-                firmware_revision=envelope.get("firmware_revision"),
             )
         )
     return Packet(family, "parsed", envelope, tuple(rows))
