@@ -1,0 +1,22 @@
+{
+  "formula_revision": "almanac_calendar_records_v1",
+  "synthetic_only": true,
+  "calendar_days": [
+    {"date": "2026-03-08", "seconds": 82800},
+    {"date": "2026-11-01", "seconds": 90000},
+    {"date": "2026-03-09", "seconds": 86400}
+  ],
+  "records": [
+    {"date": "2026-01-01", "coverage": "0.90", "maximum": 99, "rank": null},
+    {"date": "2026-01-02", "coverage": "0.95", "maximum": 30, "rank": 1},
+    {"date": "2026-01-03", "coverage": "1.00", "maximum": 29, "rank": 3},
+    {"date": "2026-01-04", "coverage": "1.00", "maximum": 30, "rank": 1}
+  ],
+  "directional_edges": [
+    {"direction": 359, "speed": 0.5, "angle_start": 348.75, "angle_end": 11.25, "speed_min": 0.5, "speed_max": 2},
+    {"direction": 1, "speed": 2, "angle_start": 348.75, "angle_end": 11.25, "speed_min": 2, "speed_max": 5},
+    {"direction": 11.25, "speed": 5, "angle_start": 11.25, "angle_end": 33.75, "speed_min": 5, "speed_max": 10},
+    {"direction": 348.75, "speed": 10, "angle_start": 348.75, "angle_end": 11.25, "speed_min": 10, "speed_max": 20},
+    {"direction": 0, "speed": 20, "angle_start": 348.75, "angle_end": 11.25, "speed_min": 20, "speed_max": null}
+  ]
+}

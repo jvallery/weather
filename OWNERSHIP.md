@@ -40,3 +40,9 @@ prepared in agents PR #5469: generated once, SOPS sealed and independently
 restore-read on the operator Mac. It is not mounted or enabled here; only API
 pods consume it when WX-13 is commissioned. No credential value is stored in
 this repository.
+
+The repository also owns draft local-almanac calculation source
+`app/weather/products/almanac.py` and synthetic
+`docs/contracts/almanac-vectors.json` under #42. It reuses WX-13 typed aggregates
+and the shared time model; it creates no infrastructure or live route.
+Prerequisite and acceptance limits are in `docs/operations/almanac-calculations.md`.
