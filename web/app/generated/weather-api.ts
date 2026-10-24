@@ -442,7 +442,9 @@ export interface operations {
     readonly getCurrent: {
         readonly parameters: {
             readonly query?: never;
-            readonly header?: never;
+            readonly header?: {
+                readonly "If-None-Match"?: string | null;
+            };
             readonly path?: never;
             readonly cookie?: never;
         };
@@ -451,11 +453,26 @@ export interface operations {
             /** @description Successful Response */
             readonly 200: {
                 headers: {
+                    /** @description At most five seconds, bounded by remaining freshness. */
+                    readonly "Cache-Control"?: string;
+                    /** @description Weak validator of values, source timing, quality and data state. */
+                    readonly ETag?: string;
                     readonly [name: string]: unknown;
                 };
                 content: {
                     readonly "application/json": components["schemas"]["Current"];
                 };
+            };
+            /** @description Unchanged semantic current representation. */
+            readonly 304: {
+                headers: {
+                    /** @description At most five seconds, bounded by remaining freshness. */
+                    readonly "Cache-Control"?: string;
+                    /** @description Weak validator of values, source timing, quality and data state. */
+                    readonly ETag?: string;
+                    readonly [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Invalid bounded public request. */
             readonly 400: {

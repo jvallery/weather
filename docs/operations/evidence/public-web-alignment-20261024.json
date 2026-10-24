@@ -1,0 +1,220 @@
+{
+  "kind": "pure_serialization_boundary_audit",
+  "serialized_via": "real_shared_router_asgi",
+  "contract_base_source_revision": "ab637c70f94e4569ce89098352c08a3f21726171",
+  "router_sha256": "926f5bf8a999011ed2daa8f6294777a7a9449815951cc06008639f6e961e0443",
+  "models_sha256": "be5e5935d571e96bc102727c89ca41f1498c0781d7d51e5bd4da383490125919",
+  "service_sha256": "c1d698a9ed8d5702d1d1fd9e90623f7bafc66b9f7d54f9c15d9166d1738398ab",
+  "cursors_sha256": "e95f7e954dc5bdefcb2a612f8350fae96fc75593061ac8ab093330fe18bba65d",
+  "web_source": "26844aa75fc3af492d062bcaa9ceff33bf72dca9",
+  "parser_sha256": "c1b0b922af1af1852354b508fe4cf40e12f8b9c209c176a48880e24fe78b4732",
+  "node_version": "v24.22.1",
+  "browser_or_build_executed": false,
+  "cases": [
+    {
+      "case": "current_defaults",
+      "schema": "currentSchema",
+      "accepted": true,
+      "issues": []
+    },
+    {
+      "case": "cached_stale_source_times",
+      "schema": "currentSchema",
+      "accepted": true,
+      "issues": []
+    },
+    {
+      "case": "raw_history_zero_resolution",
+      "schema": "historySchema",
+      "accepted": false,
+      "issues": [
+        {
+          "path": [
+            "resolution_seconds"
+          ],
+          "code": "too_small"
+        }
+      ]
+    },
+    {
+      "case": "registry_with_conversions",
+      "schema": "metricRegistrySchema",
+      "accepted": false,
+      "issues": [
+        {
+          "path": [
+            "metrics",
+            0
+          ],
+          "code": "unrecognized_keys",
+          "keys": [
+            "conversions"
+          ]
+        },
+        {
+          "path": [
+            "metrics",
+            1
+          ],
+          "code": "unrecognized_keys",
+          "keys": [
+            "conversions"
+          ]
+        },
+        {
+          "path": [
+            "metrics",
+            2
+          ],
+          "code": "unrecognized_keys",
+          "keys": [
+            "conversions"
+          ]
+        },
+        {
+          "path": [
+            "metrics",
+            3
+          ],
+          "code": "unrecognized_keys",
+          "keys": [
+            "conversions"
+          ]
+        },
+        {
+          "path": [
+            "metrics",
+            4
+          ],
+          "code": "unrecognized_keys",
+          "keys": [
+            "conversions"
+          ]
+        },
+        {
+          "path": [
+            "metrics",
+            5
+          ],
+          "code": "unrecognized_keys",
+          "keys": [
+            "conversions"
+          ]
+        },
+        {
+          "path": [
+            "metrics",
+            6
+          ],
+          "code": "unrecognized_keys",
+          "keys": [
+            "conversions"
+          ]
+        },
+        {
+          "path": [
+            "metrics",
+            7
+          ],
+          "code": "unrecognized_keys",
+          "keys": [
+            "conversions"
+          ]
+        },
+        {
+          "path": [
+            "metrics",
+            8
+          ],
+          "code": "unrecognized_keys",
+          "keys": [
+            "conversions"
+          ]
+        },
+        {
+          "path": [
+            "metrics",
+            9
+          ],
+          "code": "unrecognized_keys",
+          "keys": [
+            "conversions"
+          ]
+        },
+        {
+          "path": [
+            "metrics",
+            10
+          ],
+          "code": "unrecognized_keys",
+          "keys": [
+            "conversions"
+          ]
+        },
+        {
+          "path": [
+            "metrics",
+            11
+          ],
+          "code": "unrecognized_keys",
+          "keys": [
+            "conversions"
+          ]
+        },
+        {
+          "path": [
+            "metrics",
+            12
+          ],
+          "code": "unrecognized_keys",
+          "keys": [
+            "conversions"
+          ]
+        },
+        {
+          "path": [
+            "metrics",
+            13
+          ],
+          "code": "unrecognized_keys",
+          "keys": [
+            "conversions"
+          ]
+        },
+        {
+          "path": [
+            "metrics",
+            14
+          ],
+          "code": "unrecognized_keys",
+          "keys": [
+            "conversions"
+          ]
+        },
+        {
+          "path": [
+            "metrics",
+            15
+          ],
+          "code": "unrecognized_keys",
+          "keys": [
+            "conversions"
+          ]
+        }
+      ]
+    },
+    {
+      "case": "diagnostic_history_positive_resolution",
+      "schema": "historySchema",
+      "accepted": true,
+      "issues": []
+    },
+    {
+      "case": "diagnostic_registry_without_conversions",
+      "schema": "metricRegistrySchema",
+      "accepted": true,
+      "issues": []
+    }
+  ],
+  "diagnostic_controls_are_not_production_payloads": true
+}

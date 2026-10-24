@@ -2,9 +2,9 @@
 
 `weather.api.public_models` and `metric_registry` are the code-first public boundary for WX-13.
 They contain no database access, credentials, collector logic or inference. `public_schema` builds
-an isolated metadata/test app; it is not registered by the runtime CLI. Its data handlers deliberately
-return sanitized 503 until the API owner installs real bounded readers. The discovery router can be
-included by that owner independently.
+an app from the real shared `public_routes.router`; it is not registered by the runtime CLI. Data
+routes return sanitized 503 until the API owner injects a service with real bounded readers and its
+existing signing key. The discovery route remains available with explicitly uncommissioned cadence.
 
 Generate reviewed artifacts with `bash scripts/ci.sh contracts --write`. The normal lint mode
 regenerates both OpenAPI and TypeScript in memory and rejects any difference. `contracts` without
@@ -46,3 +46,108 @@ When WX-20 adopts these contracts, add the required conversion recipes to its st
 allow raw history resolution 0, and correct its synthetic Current response timestamp to follow receipt
 time. The API's corresponding synthetic fixture uses 08:15:05Z rather than 08:15:00Z for a measurement
 received at 08:15:01Z. No real station location or identity appears in these fixtures.
+
+## Shared public service and runtime adoption
+
+`public_routes.router` now contains the real async route implementation, and `contract_app` installs
+that same router and exception handlers. There are no metadata-only data handlers. The production
+owner calls `install_public_api(app, service)`; without an injected service data routes return a
+sanitized 503 with no-store. This source preparation does not change `weather.api.app` or enable
+any deployment. There is no generated/default production HMAC key or environment-secret reader.
+
+Construct `PublicWeatherService` with a typed `PublicSource`, `CursorCodec(existing_key)`, a
+commissioned raw-window budget, and the actual source-read timeout. The default outer source deadline
+is five seconds; the DB adaptor still owns statement timeout, pool size and source qualification.
+Pass `PublicMetrics(prometheus_client.REGISTRY)` at runtime to expose metrics on the existing metrics
+listener; its default private registry isolates tests. Register the service once per process and
+explicitly start its background refresh with `await service.start()` in the configured runtime
+lifespan, then close it with `await service.aclose(timeout_seconds=1)` during shutdown. Construction
+and OpenAPI generation never start refreshes. The background loop uses the same five-second
+singleflight as HTTP calls, keeping the obs_st age signal current without public traffic. Shutdown
+cancels both loop and source flight; it reports a bounded timeout if cancellation is delayed and
+never publishes a late result after close. Root must still close the pool in a finally block. Source pools are owned and
+closed by the runtime adaptor. A source may raise PublicInputError with a reviewed constant message
+for bounded input rejection (400); never put driver/SQL/configuration text in that exception.
+Unexpected source exceptions remain sanitized 503s.
+
+Current cache refreshes are single-flight and shared for five monotonic seconds after completion.
+Caller cancellation cannot cancel that shared refresh. A healthy source response marking measurements
+unavailable/null replaces the old numbers; only actual read failure may replay cached evidence. A failed read is retried after the same bounded
+interval; it keeps original values/source/receipt/expiry times and changes data_state to cached. Expiry
+is reclassified on every response. A cold failure returns 503, including when If-None-Match is `*`; an empty unavailable placeholder
+cannot become cached measurements. A failed read with no measured cache also returns 503.
+The weak ETag excludes only generated_at and binds every other serialized field, including null versus
+zero, quality, reasons, original times, freshness and data_state. Matching strong or weak If-None-Match
+returns an empty 304 without Content-Length. Successful cache headers never exceed five seconds or the
+nearest fresh expiry; cached dependency failure forces max-age=0. Errors and export pages use no-store.
+
+`CurrentReading.newest_valid_obs_st_at` is an explicit adaptor input, never inferred from the newest
+public metric or rapid wind. Its SLO gauge is absent until supplied. That gauge and per-metric ages
+are computed at scrape time as now minus source time, with no zero/clamping/refresh-time substitution.
+HTTP latency, source latency/errors and cache hit/miss/coalesced/cached-error counters use bounded
+operation/route/status labels and never query strings, device identity, SQL or exception text.
+The API role disables Uvicorn raw URL/query access logs; runtime adoption must preserve that setting.
+
+The source returns `SourcePage[History|Aggregates]` with an atomically chosen publication watermark
+and optional next position. The watermark is canonical decimal text in 0..2^63−1, from the DB's
+publication boundary function. Position is at most 512 UTF-8 bytes and must encode the immutable
+source-time/message-type/observation-UUID/public-metric key, including metric as the final key for
+flattened points. The source receives a query with cursor=None and an already authenticated typed
+Snapshot; transport tokens never double as database positions. First reads choose watermark plus rows
+atomically; subsequent reads preserve that watermark and use publication_seq<=watermark, never max
+UUID/receipt time or value/eligibility filters. Empty pages still return their watermark. Actual SQL
+snapshot membership and late-row paging remain DB integration acceptance.
+
+Cursors authenticate canonical UTC bounds, sorted metrics, limit, operation, explicit aggregate
+resolution/statistic, schema and policy revision, watermark, position, issue time and expiry. Changing
+filters, endpoint, key or policy revision invalidates them. Total token size is at most 2,048 ASCII
+characters; HMAC-SHA256 is compared before decoding fields. Export expiry does not extend on subsequent
+pages. Keys are supplied explicitly (32–128 bytes), never logged, and policy revision defaults to the
+content-derived public registry identity. The commissioning owner must pass a combined qualified
+support/computation policy revision when aggregate recipes/configuration add meaning beyond that
+registry. Tokens provide integrity, not confidentiality: only public source positions belong in them.
+The service rejects source page overflows, wrong intervals/statistics, nonprogress, pre-signed source
+cursors and changed publication boundaries. It does not claim to prove database snapshot membership.
+
+## Frozen WX-20 boundary alignment
+
+A pure ASGI-to-Node serialization audit against untouched WX-20 head
+`26844aa75fc3af492d062bcaa9ceff33bf72dca9` is recorded in
+[evidence/public-web-alignment-20261024.json](evidence/public-web-alignment-20261024.json).
+It executes the actual shared router and existing Zod parsers with Node 24.22.1, without a build,
+browser, socket or database. Current defaults and cached/stale responses pass. Raw resolution=0 and
+registry conversion recipes fail the existing strict parsers; diagnostic controls isolate those two
+mismatches and are explicitly not production payloads. WX-20 source was not edited.
+
+Before joint adoption, preserve the following alignments:
+
+- Serialized defaults are present: Current.schema_version=1, MetricDefinition.public=true and
+  History.aggregation=observed. Do not enable response_model_exclude_defaults/unset/none globally.
+  Nullable fields remain explicit; especially expected_interval_seconds stays null until commissioned.
+- Permit resolution_seconds=0 in the History boundary and render it as unbinned source observations,
+  rather than a zero-second physical cadence. Add required rational affine conversions to the strict
+  discovery schema/fixtures and use them for display; existing hard-coded wind/pressure factors are
+  approximations and must not become a separate conversion policy.
+- Fix the synthetic Current generated_at to follow receipt time (08:15:05Z for receipt 08:15:01Z).
+  Canonical public IDs include station_pressure, irradiance, wind_avg and wind_direction; do not depend
+  on old internal pressure/solar_radiation/air_temperature/relative_humidity aliases. The registry gives
+  labels and units. Derived rain windows must not be described as new instantaneous measurements.
+- Keep discovery cadence consistent with commissioned Current policy. Static discovery remains null;
+  no source report interval or HTTP polling interval can silently supply physical cadence. The source
+  adaptor owns null lightning distance when no corresponding strike evidence exists.
+- Current-window derived IDs rain_last_hour/rain_today have no direct raw SourceBinding; their raw
+  observation requests return unsupported_statistic400 before reading. The adaptor keeps those
+  Current fields null with an explicit reason until qualified aggregate support is wired.
+- Raw API queries accept repeated `metrics` values; WX-20's single metric is compatible. API cursor
+  size is <=2,048 (within the browser's larger response bound); it signs API filters/limit, not display
+  units. Changing source filters must clear the cursor. Preserve numeric null versus observed zero.
+- Handle bounded application/problem+json 400/range suggestions as invalid input, distinct from 503
+  availability. The current generic browser read helper collapses both. Never silently retry an
+  over-range observation query with an aggregate statistic; selecting a statistic is explicit.
+- Current browser fetches do not send If-None-Match, so they receive 200 bodies; a future conditional
+  optimization must reuse its prior body on 304. Aggregates have a separate page shape/revision and
+  explicit positive resolution; do not feed them to the raw History parser.
+
+These are source/runtime alignment notes, not evidence of deployed API, SQL timeout/pool isolation,
+real station cadence/support, valid event authority or browser integration. Those remain with WX-13
+and the Slice-1 acceptance path.
