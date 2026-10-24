@@ -1,0 +1,518 @@
+{
+  "revision": "registry_v1_fcf897170ae1cd6503ef3950f5b7ada9be62e9ce3f84431e0ef261f29c43fe9b",
+  "metrics": [
+    {
+      "metric": "temperature",
+      "label": "Temperature",
+      "canonical_unit": "degC",
+      "display_units": [
+        "degC",
+        "degF"
+      ],
+      "conversions": [
+        {
+          "unit": "degC",
+          "scale_numerator": 1,
+          "scale_denominator": 1,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        },
+        {
+          "unit": "degF",
+          "scale_numerator": 9,
+          "scale_denominator": 5,
+          "offset_numerator": 32,
+          "offset_denominator": 1
+        }
+      ],
+      "statistics": [
+        "observed",
+        "mean",
+        "min",
+        "max"
+      ],
+      "expected_interval_seconds": null,
+      "public": true,
+      "revision": "metric_v1_49f17094253dc22a7136f9ba5b0d8e4cfcb54f83e4ef127fbdb1ff44b5db4b19"
+    },
+    {
+      "metric": "humidity",
+      "label": "Humidity",
+      "canonical_unit": "%",
+      "display_units": [
+        "%"
+      ],
+      "conversions": [
+        {
+          "unit": "%",
+          "scale_numerator": 1,
+          "scale_denominator": 1,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        }
+      ],
+      "statistics": [
+        "observed",
+        "mean",
+        "min",
+        "max"
+      ],
+      "expected_interval_seconds": null,
+      "public": true,
+      "revision": "metric_v1_41c3a471693f6ed79dbdaeedaeaceef6a198309e49c8e152130354fb3a1e3510"
+    },
+    {
+      "metric": "wind_lull",
+      "label": "Wind lull",
+      "canonical_unit": "m/s",
+      "display_units": [
+        "m/s",
+        "km/h",
+        "mph"
+      ],
+      "conversions": [
+        {
+          "unit": "m/s",
+          "scale_numerator": 1,
+          "scale_denominator": 1,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        },
+        {
+          "unit": "km/h",
+          "scale_numerator": 18,
+          "scale_denominator": 5,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        },
+        {
+          "unit": "mph",
+          "scale_numerator": 3125,
+          "scale_denominator": 1397,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        }
+      ],
+      "statistics": [
+        "observed",
+        "mean",
+        "min",
+        "max"
+      ],
+      "expected_interval_seconds": null,
+      "public": true,
+      "revision": "metric_v1_1f71f44fa1a7e5c4ead919b5cd36bb61b88e0146c4650d2201c37fd2dba0c3f6"
+    },
+    {
+      "metric": "wind_avg",
+      "label": "Mean reported wind speed",
+      "canonical_unit": "m/s",
+      "display_units": [
+        "m/s",
+        "km/h",
+        "mph"
+      ],
+      "conversions": [
+        {
+          "unit": "m/s",
+          "scale_numerator": 1,
+          "scale_denominator": 1,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        },
+        {
+          "unit": "km/h",
+          "scale_numerator": 18,
+          "scale_denominator": 5,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        },
+        {
+          "unit": "mph",
+          "scale_numerator": 3125,
+          "scale_denominator": 1397,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        }
+      ],
+      "statistics": [
+        "observed",
+        "mean",
+        "min",
+        "max"
+      ],
+      "expected_interval_seconds": null,
+      "public": true,
+      "revision": "metric_v1_bcab0c38a82fc44b751c9ea7afd49c69971f0a048f8d31f9398d9059a02dd207"
+    },
+    {
+      "metric": "wind_speed",
+      "label": "Rapid wind speed",
+      "canonical_unit": "m/s",
+      "display_units": [
+        "m/s",
+        "km/h",
+        "mph"
+      ],
+      "conversions": [
+        {
+          "unit": "m/s",
+          "scale_numerator": 1,
+          "scale_denominator": 1,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        },
+        {
+          "unit": "km/h",
+          "scale_numerator": 18,
+          "scale_denominator": 5,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        },
+        {
+          "unit": "mph",
+          "scale_numerator": 3125,
+          "scale_denominator": 1397,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        }
+      ],
+      "statistics": [
+        "observed",
+        "mean",
+        "min",
+        "max"
+      ],
+      "expected_interval_seconds": null,
+      "public": true,
+      "revision": "metric_v1_4e7bbb688f054ce2f1ee2d10cd3a049695b98a4d17ac92da91c513fe74a4191b"
+    },
+    {
+      "metric": "wind_gust",
+      "label": "Reported wind gust",
+      "canonical_unit": "m/s",
+      "display_units": [
+        "m/s",
+        "km/h",
+        "mph"
+      ],
+      "conversions": [
+        {
+          "unit": "m/s",
+          "scale_numerator": 1,
+          "scale_denominator": 1,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        },
+        {
+          "unit": "km/h",
+          "scale_numerator": 18,
+          "scale_denominator": 5,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        },
+        {
+          "unit": "mph",
+          "scale_numerator": 3125,
+          "scale_denominator": 1397,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        }
+      ],
+      "statistics": [
+        "observed",
+        "max"
+      ],
+      "expected_interval_seconds": null,
+      "public": true,
+      "revision": "metric_v1_ad5238d4aa4500c083e7e66141d89d2dff81253e58741216a9037a7f773dd434"
+    },
+    {
+      "metric": "wind_direction",
+      "label": "Wind from direction",
+      "canonical_unit": "deg",
+      "display_units": [
+        "deg"
+      ],
+      "conversions": [
+        {
+          "unit": "deg",
+          "scale_numerator": 1,
+          "scale_denominator": 1,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        }
+      ],
+      "statistics": [
+        "observed",
+        "vector_mean"
+      ],
+      "expected_interval_seconds": null,
+      "public": true,
+      "revision": "metric_v1_e2831ed8a3a987d36892c2ad37141db314350406dd1c85e53e1074b6d08ec27a"
+    },
+    {
+      "metric": "precipitation",
+      "label": "Observed precipitation amount",
+      "canonical_unit": "mm",
+      "display_units": [
+        "mm",
+        "in"
+      ],
+      "conversions": [
+        {
+          "unit": "mm",
+          "scale_numerator": 1,
+          "scale_denominator": 1,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        },
+        {
+          "unit": "in",
+          "scale_numerator": 5,
+          "scale_denominator": 127,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        }
+      ],
+      "statistics": [
+        "observed",
+        "observed_accumulation"
+      ],
+      "expected_interval_seconds": null,
+      "public": true,
+      "revision": "metric_v1_38a6b930a20203df479360a44a0bd744800c1f2a64e79091c33602b48763c9fd"
+    },
+    {
+      "metric": "rain_last_hour",
+      "label": "Observed precipitation, last hour",
+      "canonical_unit": "mm",
+      "display_units": [
+        "mm",
+        "in"
+      ],
+      "conversions": [
+        {
+          "unit": "mm",
+          "scale_numerator": 1,
+          "scale_denominator": 1,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        },
+        {
+          "unit": "in",
+          "scale_numerator": 5,
+          "scale_denominator": 127,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        }
+      ],
+      "statistics": [
+        "observed"
+      ],
+      "expected_interval_seconds": null,
+      "public": true,
+      "revision": "metric_v1_f9a6f63eca1d80e4d20c080578a0a40b9d6b7531fa0999699a7444636ef0006e"
+    },
+    {
+      "metric": "rain_today",
+      "label": "Observed precipitation, local weather day",
+      "canonical_unit": "mm",
+      "display_units": [
+        "mm",
+        "in"
+      ],
+      "conversions": [
+        {
+          "unit": "mm",
+          "scale_numerator": 1,
+          "scale_denominator": 1,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        },
+        {
+          "unit": "in",
+          "scale_numerator": 5,
+          "scale_denominator": 127,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        }
+      ],
+      "statistics": [
+        "observed"
+      ],
+      "expected_interval_seconds": null,
+      "public": true,
+      "revision": "metric_v1_53cc3153a7af70297da2c3ad8763f4622981007949d7ff940d8ef55402a954c2"
+    },
+    {
+      "metric": "station_pressure",
+      "label": "Station pressure",
+      "canonical_unit": "hPa",
+      "display_units": [
+        "hPa",
+        "inHg"
+      ],
+      "conversions": [
+        {
+          "unit": "hPa",
+          "scale_numerator": 1,
+          "scale_denominator": 1,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        },
+        {
+          "unit": "inHg",
+          "scale_numerator": 625000,
+          "scale_denominator": 21164929,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        }
+      ],
+      "statistics": [
+        "observed",
+        "mean",
+        "min",
+        "max",
+        "trend"
+      ],
+      "expected_interval_seconds": null,
+      "public": true,
+      "revision": "metric_v1_a7d92bbce008965ce19c27ec3dd36a67b3a61984e3811a1c6305de0d9c732e9c"
+    },
+    {
+      "metric": "illuminance",
+      "label": "Illuminance",
+      "canonical_unit": "lx",
+      "display_units": [
+        "lx"
+      ],
+      "conversions": [
+        {
+          "unit": "lx",
+          "scale_numerator": 1,
+          "scale_denominator": 1,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        }
+      ],
+      "statistics": [
+        "observed",
+        "mean",
+        "min",
+        "max"
+      ],
+      "expected_interval_seconds": null,
+      "public": true,
+      "revision": "metric_v1_3c7392cf0ba70c61bbeb7c7e151c469df617fe140310946ca76a11b81f088d03"
+    },
+    {
+      "metric": "uv",
+      "label": "UV index",
+      "canonical_unit": "index",
+      "display_units": [
+        "index"
+      ],
+      "conversions": [
+        {
+          "unit": "index",
+          "scale_numerator": 1,
+          "scale_denominator": 1,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        }
+      ],
+      "statistics": [
+        "observed",
+        "mean",
+        "min",
+        "max"
+      ],
+      "expected_interval_seconds": null,
+      "public": true,
+      "revision": "metric_v1_31379209e173406716547b0c8fe5e970bc8cec46cd0d805fb77993efed973764"
+    },
+    {
+      "metric": "irradiance",
+      "label": "Solar irradiance",
+      "canonical_unit": "W/m2",
+      "display_units": [
+        "W/m2"
+      ],
+      "conversions": [
+        {
+          "unit": "W/m2",
+          "scale_numerator": 1,
+          "scale_denominator": 1,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        }
+      ],
+      "statistics": [
+        "observed",
+        "mean",
+        "min",
+        "max",
+        "solar_energy"
+      ],
+      "expected_interval_seconds": null,
+      "public": true,
+      "revision": "metric_v1_d744f5a8f960c1aec35de143f6296f4c3704f33256c5ec1c74e0f5b93e90d4ee"
+    },
+    {
+      "metric": "lightning_count",
+      "label": "Reported lightning count",
+      "canonical_unit": "1",
+      "display_units": [
+        "1"
+      ],
+      "conversions": [
+        {
+          "unit": "1",
+          "scale_numerator": 1,
+          "scale_denominator": 1,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        }
+      ],
+      "statistics": [
+        "observed",
+        "count"
+      ],
+      "expected_interval_seconds": null,
+      "public": true,
+      "revision": "metric_v1_9c36d933e79fc1860a05d0011f1c07b3a165f79daf3368c062102beede8d1b6d"
+    },
+    {
+      "metric": "lightning_distance",
+      "label": "Reported average lightning distance",
+      "canonical_unit": "km",
+      "display_units": [
+        "km",
+        "mi"
+      ],
+      "conversions": [
+        {
+          "unit": "km",
+          "scale_numerator": 1,
+          "scale_denominator": 1,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        },
+        {
+          "unit": "mi",
+          "scale_numerator": 15625,
+          "scale_denominator": 25146,
+          "offset_numerator": 0,
+          "offset_denominator": 1
+        }
+      ],
+      "statistics": [
+        "observed"
+      ],
+      "expected_interval_seconds": null,
+      "public": true,
+      "revision": "metric_v1_397f573ca0add2dfeccc848313b1f690675e02bafac8ef15160e26cacb8982f4"
+    }
+  ]
+}

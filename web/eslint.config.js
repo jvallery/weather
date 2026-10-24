@@ -5,5 +5,5 @@ export default tseslint.config(
   { ignores: ["build/**", ".react-router/**", "node_modules/**"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  { files: ["*.mjs"], languageOptions: { globals: { process: "readonly" } } },
+  { files: ["**/*.mjs"], languageOptions: { globals: { process: "readonly", URL: "readonly", structuredClone: "readonly", Buffer: "readonly" } }, rules: { "no-unused-vars": ["error", { argsIgnorePattern: "^_" }], "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }] } },
 );

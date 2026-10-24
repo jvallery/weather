@@ -1,11 +1,18 @@
 # SPDX-License-Identifier: MIT
+# The commissioned predecessor is immutable; refresh this pin for each web promotion.
+FROM registry.vallery.net/jvallery/weather-web@sha256:0761f4ebf5f5cf73a4d261446b296fa77c1a3fb7e755585306c218a6e70764bd AS previous
 FROM registry.vallery.net/jvallery/weather-node-base@sha256:1304d2735b6d11efe11501456ef9e312b1f3141341feec72d61f194c2ab7fd1c AS build
 RUN npm install --global pnpm@12.15.0
 WORKDIR /app
 COPY web/package.json web/pnpm-lock.yaml web/.npmrc ./
 RUN pnpm install --frozen-lockfile --ignore-scripts
 COPY web/ ./
-RUN pnpm build && pnpm prune --prod --ignore-scripts
+COPY scripts/retain-web-assets.mjs /opt/retain-web-assets.mjs
+COPY --from=previous /app/build/client /previous-client
+# Only this original scaffold image predates asset inventories. Remove the exception on the next pin.
+RUN pnpm build \
+ && node /opt/retain-web-assets.mjs /app/build/client /previous-client --allow-legacy-baseline \
+ && pnpm prune --prod --ignore-scripts
 
 FROM registry.vallery.net/jvallery/weather-node-base@sha256:1304d2735b6d11efe11501456ef9e312b1f3141341feec72d61f194c2ab7fd1c
 ENV NODE_ENV=production PORT=3000 METRICS_PORT=9000
