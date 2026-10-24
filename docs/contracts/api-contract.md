@@ -6,6 +6,15 @@ Use [OpenAPI 3.1.1](https://spec.openapis.org/oas/v3.1.1.html) and [JSON Schema 
 
 Consumers: WX-08/13/17/19/20/24/25/26/36/37/38/39/40/41/42/43/44. The private [capture/index and seal contract](capture-contract.md) and [recovery envelopes](../archive/planning-2026-10/contracts/recovery-contract.md) are separate from public serializers. Deployment configuration, private hourly archival receipts and the central owner's detailed recovery-ledger integration remain outstanding Phase-1 artifacts. The private candidate [visual-model schema](visual-analysis.schema.json) implements §13.5's shape; its semantic checks are specified below.
 
+## Prepared code-first weather data schemas
+
+WX-13 weather Current, metric discovery, raw-history exports and aggregate shapes are prepared in
+`app/weather/api/public_models.py` and `metric_registry.py`. The generated
+[weather OpenAPI](weather.openapi.json) and frontend types are checked by `scripts/ci.sh contracts`.
+These four data paths have source-only metadata/test handlers; runtime database integration and
+commissioning remain separate. The archived sixteen-path schema remains reference input for other
+products. See [contract operations](../operations/api-contracts.md) for generation and limitations.
+
 ## Effective editorial content and analysis coverage
 
 `EditorialPublic.description` is the effective, currently eligible description, whether generated or human-edited; null means no eligible description. It is separate from immutable automated claims. `human_edited` and the effective revision label its provenance. An invalidated evidence binding cannot remain visible merely because this string still validates. Public sidecars, UI and lexical/semantic indexing must consume the same effective revision. Private notes and favorites remain excluded. The 8,000-character interface bound is a protective ceiling, not permission to bypass grounding.
