@@ -1,0 +1,576 @@
+{
+ "generated_at": "2026-10-31T18:00:00Z",
+ "product": "record",
+ "interval": {
+  "start": "2026-10-01T06:00:00Z",
+  "end": "2026-11-01T06:00:00Z"
+ },
+ "comparison_interval": null,
+ "history_interval": {
+  "start": "2026-10-03T15:12:00Z",
+  "end": "2026-10-31T18:00:00Z"
+ },
+ "timezone": "America/Denver",
+ "label": "Observed extremes within station history since 2026-10-03",
+ "derived": false,
+ "metric": "temperature",
+ "statistic": "max",
+ "unit": "degC",
+ "formula_revision": "almanac-v1",
+ "library_revision": "astral 3.2; tzdata 2026.5 (IANA 2026e)",
+ "evidence_count": 40032,
+ "evidence_hash": "4cba686fbf6a1b654c2f820506fef5dce770f0b291e71c99c1693084d85c8f09",
+ "coverage": {
+  "fraction": 0.896774,
+  "support_seconds": 2401920.0,
+  "expected_seconds": 2678400.0
+ },
+ "missing_reasons": [
+  "partial_coverage"
+ ],
+ "items": [
+  {
+   "product": "record",
+   "local_date": "2026-10-01",
+   "start": "2026-10-01T06:00:00Z",
+   "end": "2026-10-02T06:00:00Z",
+   "value": null,
+   "coverage": {
+    "fraction": 0.0,
+    "support_seconds": 0.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 0,
+   "evidence_hash": null,
+   "ranking_eligible": false,
+   "rank": null,
+   "missing_reasons": [
+    "before_history",
+    "no_observations"
+   ]
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-02",
+   "start": "2026-10-02T06:00:00Z",
+   "end": "2026-10-03T06:00:00Z",
+   "value": null,
+   "coverage": {
+    "fraction": 0.0,
+    "support_seconds": 0.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 0,
+   "evidence_hash": null,
+   "ranking_eligible": false,
+   "rank": null,
+   "missing_reasons": [
+    "before_history",
+    "no_observations"
+   ]
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-03",
+   "start": "2026-10-03T06:00:00Z",
+   "end": "2026-10-04T06:00:00Z",
+   "value": 11.0,
+   "coverage": {
+    "fraction": 0.4,
+    "support_seconds": 34560.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 576,
+   "evidence_hash": "0000000000000000000000000000000000000000000000000000000000000240",
+   "ranking_eligible": false,
+   "rank": null,
+   "missing_reasons": [
+    "partial_coverage",
+    "below_record_coverage"
+   ]
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-04",
+   "start": "2026-10-04T06:00:00Z",
+   "end": "2026-10-05T06:00:00Z",
+   "value": 18.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 9,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-05",
+   "start": "2026-10-05T06:00:00Z",
+   "end": "2026-10-06T06:00:00Z",
+   "value": 12.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 21,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-06",
+   "start": "2026-10-06T06:00:00Z",
+   "end": "2026-10-07T06:00:00Z",
+   "value": 19.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 7,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-07",
+   "start": "2026-10-07T06:00:00Z",
+   "end": "2026-10-08T06:00:00Z",
+   "value": 13.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 19,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-08",
+   "start": "2026-10-08T06:00:00Z",
+   "end": "2026-10-09T06:00:00Z",
+   "value": 20.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 5,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-09",
+   "start": "2026-10-09T06:00:00Z",
+   "end": "2026-10-10T06:00:00Z",
+   "value": 14.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 17,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-10",
+   "start": "2026-10-10T06:00:00Z",
+   "end": "2026-10-11T06:00:00Z",
+   "value": 21.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 3,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-11",
+   "start": "2026-10-11T06:00:00Z",
+   "end": "2026-10-12T06:00:00Z",
+   "value": 15.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 15,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-12",
+   "start": "2026-10-12T06:00:00Z",
+   "end": "2026-10-13T06:00:00Z",
+   "value": 22.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 1,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-13",
+   "start": "2026-10-13T06:00:00Z",
+   "end": "2026-10-14T06:00:00Z",
+   "value": 31.5,
+   "coverage": {
+    "fraction": 0.9,
+    "support_seconds": 77760.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1296,
+   "evidence_hash": "0000000000000000000000000000000000000000000000000000000000000510",
+   "ranking_eligible": false,
+   "rank": null,
+   "missing_reasons": [
+    "partial_coverage",
+    "below_record_coverage"
+   ]
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-14",
+   "start": "2026-10-14T06:00:00Z",
+   "end": "2026-10-15T06:00:00Z",
+   "value": 10.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 25,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-15",
+   "start": "2026-10-15T06:00:00Z",
+   "end": "2026-10-16T06:00:00Z",
+   "value": 17.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 12,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-16",
+   "start": "2026-10-16T06:00:00Z",
+   "end": "2026-10-17T06:00:00Z",
+   "value": 11.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 23,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-17",
+   "start": "2026-10-17T06:00:00Z",
+   "end": "2026-10-18T06:00:00Z",
+   "value": 18.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 9,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-18",
+   "start": "2026-10-18T06:00:00Z",
+   "end": "2026-10-19T06:00:00Z",
+   "value": 12.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 21,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-19",
+   "start": "2026-10-19T06:00:00Z",
+   "end": "2026-10-20T06:00:00Z",
+   "value": 19.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 7,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-20",
+   "start": "2026-10-20T06:00:00Z",
+   "end": "2026-10-21T06:00:00Z",
+   "value": 13.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 19,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-21",
+   "start": "2026-10-21T06:00:00Z",
+   "end": "2026-10-22T06:00:00Z",
+   "value": 20.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 5,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-22",
+   "start": "2026-10-22T06:00:00Z",
+   "end": "2026-10-23T06:00:00Z",
+   "value": 14.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 17,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-23",
+   "start": "2026-10-23T06:00:00Z",
+   "end": "2026-10-24T06:00:00Z",
+   "value": 21.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 3,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-24",
+   "start": "2026-10-24T06:00:00Z",
+   "end": "2026-10-25T06:00:00Z",
+   "value": 15.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 15,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-25",
+   "start": "2026-10-25T06:00:00Z",
+   "end": "2026-10-26T06:00:00Z",
+   "value": 22.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 1,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-26",
+   "start": "2026-10-26T06:00:00Z",
+   "end": "2026-10-27T06:00:00Z",
+   "value": 16.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 14,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-27",
+   "start": "2026-10-27T06:00:00Z",
+   "end": "2026-10-28T06:00:00Z",
+   "value": 10.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 25,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-28",
+   "start": "2026-10-28T06:00:00Z",
+   "end": "2026-10-29T06:00:00Z",
+   "value": 17.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 12,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-29",
+   "start": "2026-10-29T06:00:00Z",
+   "end": "2026-10-30T06:00:00Z",
+   "value": 11.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 23,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-30",
+   "start": "2026-10-30T06:00:00Z",
+   "end": "2026-10-31T06:00:00Z",
+   "value": 18.0,
+   "coverage": {
+    "fraction": 1.0,
+    "support_seconds": 86400.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 1440,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000005a0",
+   "ranking_eligible": true,
+   "rank": 9,
+   "missing_reasons": []
+  },
+  {
+   "product": "record",
+   "local_date": "2026-10-31",
+   "start": "2026-10-31T06:00:00Z",
+   "end": "2026-11-01T06:00:00Z",
+   "value": 12.0,
+   "coverage": {
+    "fraction": 0.5,
+    "support_seconds": 43200.0,
+    "expected_seconds": 86400.0
+   },
+   "evidence_count": 720,
+   "evidence_hash": "00000000000000000000000000000000000000000000000000000000000002d0",
+   "ranking_eligible": false,
+   "rank": null,
+   "missing_reasons": [
+    "partial_coverage",
+    "below_record_coverage"
+   ]
+  }
+ ],
+ "next_cursor": null
+}

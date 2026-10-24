@@ -1,6 +1,6 @@
 # Public Weather API
 
-The `api` Deployment (2 replicas, `weather` namespace) serves `/api/v1/weather/{current,metrics,observations,aggregates}` read-only from `weather-pg` as `weather_api`. Contract: [api-contract.md](../contracts/api-contract.md#weather-data-routes-implemented-14). Code: `app/weather/api/`.
+The `api` Deployment (2 replicas, `weather` namespace) serves `/api/v1/weather/{current,metrics,observations,aggregates,almanac}` read-only from `weather-pg` as `weather_api`. Contract: [api-contract.md](../contracts/api-contract.md#weather-data-routes-implemented-14). Code: `app/weather/api/`.
 
 ## How it works
 
@@ -11,6 +11,22 @@ The `api` Deployment (2 replicas, `weather` namespace) serves `/api/v1/weather/{
 - **Freshness defaults.** `obs_st` 60 s cadence, fresh for 150 s; `rapid_wind` 3 s, fresh for 15 s. Override with `WEATHER_API_OBS_ST_INTERVAL_SECONDS`, `WEATHER_API_OBS_ST_HOLD_SECONDS`, `WEATHER_API_RAPID_WIND_INTERVAL_SECONDS` and `WEATHER_API_RAPID_WIND_HOLD_SECONDS`.
 - **Cursors.** Signed with `CURSOR_HMAC_KEY` from Secret `weather-api-cursor` (mounted only into `api`). Rotating the key invalidates outstanding export cursors (clients get 400 `invalid_cursor` and restart the export); nothing else depends on it.
 - **Export snapshot.** The first page records the database clock minus 120 s; every page then reads only rows whose `inserted_at` (set by the database on insert, migration `0002_api`) is at or before it. A spool drain or `reproject` that lands old rows mid-export therefore never shifts the export. The newest two minutes of rows appear only in a new export. Rows that existed before `0002_api` read `inserted_at = -infinity`.
+
+## Almanac
+
+`GET /api/v1/weather/almanac` (#42) serves one `product` per request: `record`, `rain_day`, `wind_rose_bin`, `astronomy` or `comparison`. The web page is `/weather/almanac/`. Code: `WeatherService.almanac` and `app/weather/products/almanac.py`.
+
+- **Computed on read (C5).** Every product runs the same aggregate SQL as `/aggregates` (day bins for records, rain days and comparison missing days; one whole-interval bin for the rose and comparison values). Nothing is stored, so a corrected or late row changes the next read, and `evidence_count`/`evidence_hash` change with the inputs. There is no recompute job.
+- **Bounds.** Intervals start and end at America/Denver midnight and cover at most 366 local days (comparison windows likewise); misaligned or longer windows are 400s before any SQL runs. Records and comparisons use one-minute `obs_st` metrics only. A year-long window is one aggregate statement under the same 10 s timeout and two-per-pod queue as `/aggregates`; pages hold up to 400 items and use the signed export cursor.
+- **Records** rank only days with ≥95% metric-duration coverage (`almanac-v1`); ties share a rank. Lower-coverage days stay in the response with `below_record_coverage`. `history_interval` starts at the first valid `obs_st` report of any device at the site and ends at the read time.
+- **Astronomy** uses the private site from Secret `weather-site` (key `site.json`, the `load_site` JSON format; see [time model](time-model.md)), mounted optionally at `/var/run/weather-site`. Civil dawn/dusk, sunrise and sunset are exactly `solar_cycle`'s values (including any commissioned dawn/dusk offsets). Moon phase is Astral's value for the calendar date (evaluated at 00:00 UTC), named in eight equal sectors. Without the Secret, or with an invalid file (logged without values), astronomy items carry `site_not_configured` and only the moon phase. Coordinates and the site's `config_hash` never appear in a response. Creating or rotating the Secret is agents KSOPS work; restart `deploy/api` afterwards to load it.
+
+```sh
+curl -s 'https://weather.vallery.net/api/v1/weather/almanac?product=rain_day&start=2026-10-24T06:00:00Z&end=2026-10-25T06:00:00Z' \
+  | jq '{history_interval, coverage, evidence_count, items: [.items[] | {local_date, value, coverage: .coverage.fraction}]}'
+curl -s 'https://weather.vallery.net/api/v1/weather/almanac?product=astronomy&start=2026-10-24T06:00:00Z&end=2026-10-25T06:00:00Z' \
+  | jq '.missing_reasons, .items[0].sunrise'
+```
 
 ## Signals
 
@@ -45,4 +61,6 @@ kubectl --context vallery -n weather exec deploy/api -- python -c \
 | `data_state: cached` | Database reads failing while the cache is fresh | As above; values keep their original times and turn stale on schedule. |
 | `data_state: unavailable` and all metrics null | No telemetry yet (receiver not live) | Expected before #5; not an API fault. |
 | Aggregates 503 | 10 s statement timeout or queueing | Narrow the window or coarsen the resolution; watch `weather_api_db_errors_total{operation="aggregates"}`. |
+| Almanac 503 | Same timeout or queue on a long window | Use a shorter local-date window; watch `weather_api_db_errors_total{operation="almanac"}`. |
+| Almanac sun times null with `site_not_configured` | Secret `weather-site` absent or invalid | Check the Secret exists with key `site.json` and restart `deploy/api`; the API log says when the file is invalid. |
 | `invalid_cursor` on a running export | Cursor idle > 1 h, export > 24 h, changed filters or rotated key | Restart the export from its first page. |

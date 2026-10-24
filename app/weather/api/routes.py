@@ -14,6 +14,8 @@ from fastapi.responses import JSONResponse
 from .models import (
     AggregateQuery,
     Aggregates,
+    Almanac,
+    AlmanacQuery,
     Current,
     MetricRegistry,
     ObservationQuery,
@@ -32,6 +34,7 @@ ROUTES = {
     "/api/v1/weather/metrics": "metrics",
     "/api/v1/weather/observations": "observations",
     "/api/v1/weather/aggregates": "aggregates",
+    "/api/v1/weather/almanac": "almanac",
 }
 router = APIRouter()
 
@@ -113,6 +116,20 @@ async def get_aggregates(
     request: Request, response: Response, query: Annotated[AggregateQuery, Query()]
 ) -> Aggregates:
     result = await _service(request).aggregates(query)
+    response.headers["Cache-Control"] = "public, max-age=60"
+    return result
+
+
+@router.get(
+    "/api/v1/weather/almanac",
+    response_model=Almanac,
+    operation_id="getAlmanac",
+    responses=ERRORS,
+)
+async def get_almanac(
+    request: Request, response: Response, query: Annotated[AlmanacQuery, Query()]
+) -> Almanac:
+    result = await _service(request).almanac(query)
     response.headers["Cache-Control"] = "public, max-age=60"
     return result
 

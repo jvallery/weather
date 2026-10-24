@@ -64,6 +64,10 @@ LEFT JOIN s ON s.ts > w.ws
 GROUP BY w.name"""
 
 STATION_SQL = "SELECT alias FROM public_api.station ORDER BY alias LIMIT 1"
+# Station history starts at the first valid report; the source_ts btree answers it without a scan.
+# Every device at the site counts, so a replaced station continues the same history (P20).
+HISTORY_SQL = """SELECT observed_at AS first FROM public_api.obs_st
+WHERE valid AND observed_at < :now ORDER BY observed_at LIMIT 1"""
 SNAPSHOT_SQL = f"SELECT now() - interval '{SNAPSHOT_MARGIN_SECONDS} seconds' AS snapshot"
 
 
@@ -256,6 +260,10 @@ class WeatherReader:
             rain={row["name"]: row for row in rain},
             at=now,
         )
+
+    async def history_start(self, now: datetime) -> datetime | None:
+        rows = (await self._run([(HISTORY_SQL, {"now": now})], self._statement_ms))[0]
+        return rows[0]["first"] if rows else None
 
     async def observations(
         self,

@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
-from .models import ObservationQuery, utc_instant, utc_text
+from .models import AlmanacQuery, ObservationQuery, utc_instant, utc_text
 from .registry import PublicError
 
 SLIDING_SECONDS = 3600
@@ -45,13 +45,12 @@ def invalid_cursor() -> PublicError:
     return PublicError("invalid_cursor", "Invalid, expired or mismatched export cursor.")
 
 
-def filters_digest(query: ObservationQuery) -> str:
-    data = {
-        "start": utc_text(query.start),
-        "end": utc_text(query.end),
-        "metrics": query.metrics,
-        "limit": query.limit,
-    }
+# Almanac pages reuse the same signed token: after_id carries the next item offset.
+Query = ObservationQuery | AlmanacQuery
+
+
+def filters_digest(query: Query) -> str:
+    data = query.cursor_filters()
     return hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
 
 
@@ -73,7 +72,7 @@ class CursorCodec:
 
     def encode(
         self,
-        query: ObservationQuery,
+        query: Query,
         *,
         snapshot: datetime,
         after_time: datetime,
@@ -98,7 +97,7 @@ class CursorCodec:
         ).encode()
         return _b64(payload) + "." + _b64(self._sign(payload))
 
-    def decode(self, token: str, query: ObservationQuery, *, now: datetime) -> Position:
+    def decode(self, token: str, query: Query, *, now: datetime) -> Position:
         try:
             encoded, mac = token.split(".")
             payload, signature = _unb64(encoded), _unb64(mac)

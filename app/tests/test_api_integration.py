@@ -19,7 +19,7 @@ from prometheus_client import CollectorRegistry
 from sqlalchemy import make_url, text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, create_async_engine
 from weather.api.cursors import CursorCodec
-from weather.api.models import AggregateQuery, ObservationQuery
+from weather.api.models import AggregateQuery, AlmanacQuery, ObservationQuery
 from weather.api.registry import PublicError
 from weather.api.service import WeatherService
 from weather.api.source import SourceUnavailable, WeatherReader, latest_sql, observations_sql
@@ -91,6 +91,7 @@ async def insert(
     received: datetime | None = None,
     inserted: datetime | None = None,
     quality: str = VALID,
+    row_idx: int = 0,
 ) -> None:
     """Family rows; inserted_at defaults to the database clock, like real ingest."""
     ids = [uuid4() for _ in rows]
@@ -106,7 +107,7 @@ async def insert(
     await c.execute(
         text(f"""INSERT INTO weather.{family}(device_id,receipt_id,source_ts,row_idx,
                   "values",quality,inserted_at)
-                SELECT :device,rid,ts,0,CAST(v AS jsonb),CAST(:quality AS jsonb),
+                SELECT :device,rid,ts,:row_idx,CAST(v AS jsonb),CAST(:quality AS jsonb),
                   coalesce(CAST(:inserted AS timestamptz),clock_timestamp())
                 FROM unnest(CAST(:ids AS uuid[]),CAST(:ts AS timestamptz[]),
                   CAST(:vals AS text[])) AS t(rid,ts,v)"""),
@@ -117,6 +118,7 @@ async def insert(
             "vals": [json.dumps(values) for _, values in rows],
             "quality": quality,
             "inserted": inserted,
+            "row_idx": row_idx,
         },
     )
 
@@ -297,9 +299,15 @@ def test_aggregation_vectors(case: dict[str, Any]) -> None:
     async def check(admin: AsyncEngine, api: AsyncEngine, device: UUID) -> None:
         async with admin.begin() as c:
             for family in ("obs_st", "rapid_wind"):
-                rows = [(utc(r["at"]), r["values"]) for r in case["rows"] if r["family"] == family]
-                if rows:
-                    await insert(c, device, family, rows)
+                # row_idx > 0 repeats a source time, like a duplicated packet row.
+                for row_idx in sorted({r.get("row_idx", 0) for r in case["rows"]}):
+                    rows = [
+                        (utc(r["at"]), r["values"])
+                        for r in case["rows"]
+                        if r["family"] == family and r.get("row_idx", 0) == row_idx
+                    ]
+                    if rows:
+                        await insert(c, device, family, rows, row_idx=row_idx)
         weather = service(api)
         query = AggregateQuery.model_validate(case["query"])
         if "expected_error" in case:
@@ -344,6 +352,73 @@ def test_aggregation_vectors(case: dict[str, Any]) -> None:
             daily = sum(item.value or 0 for item in result.items)
             assert total == pytest.approx(case["conserved_total"])
             assert daily == pytest.approx(case["conserved_total"])
+
+    database(check)
+
+
+def test_almanac_records_history_and_corrections_are_read_from_the_database() -> None:
+    async def check(admin: AsyncEngine, api: AsyncEngine, device: UUID) -> None:
+        first = utc("2026-01-01T07:00:00Z")  # local midnight, MST
+        second = first + timedelta(days=1)
+        async with admin.begin() as c:
+            # Day 1: every minute, highest 15. Day 2: only 90% covered, but reaching 20.
+            await insert(
+                c,
+                device,
+                "obs_st",
+                [
+                    (first + timedelta(minutes=n), {"air_temperature": 15 if n == 600 else 10})
+                    for n in range(1440)
+                ]
+                + [
+                    (second + timedelta(minutes=n), {"air_temperature": 20 if n == 60 else 5})
+                    for n in range(1296)
+                ],
+            )
+        weather = service(api)
+        query = AlmanacQuery.model_validate(
+            {
+                "product": "record",
+                "metric": "temperature",
+                "statistic": "max",
+                "start": "2026-01-01T07:00:00Z",
+                "end": "2026-01-03T07:00:00Z",
+            }
+        )
+        result = await weather.almanac(query)
+        assert result.history_interval is not None
+        assert result.history_interval.start == first
+        assert result.label == "Observed extremes within station history since 2026-01-01"
+        top, thin = result.items
+        assert (top.value, top.rank, top.coverage.fraction) == (15, 1, 1)
+        assert thin.value == 20 and thin.rank is None and not thin.ranking_eligible
+        assert thin.coverage.fraction == pytest.approx((1295 * 60 + 120) / 86400, abs=1e-6)
+        assert "below_record_coverage" in thin.missing_reasons
+        # A corrected value changes the next read; a late row changes the evidence hash.
+        async with admin.begin() as c:
+            await c.execute(
+                text("""UPDATE weather.obs_st SET "values"=CAST(:values AS jsonb)
+                        WHERE source_ts=:at"""),
+                {"values": '{"air_temperature": 12}', "at": first + timedelta(minutes=600)},
+            )
+        corrected = await weather.almanac(query)
+        assert corrected.items[0].value == 12 and corrected.items[0].rank == 1
+        async with admin.begin() as c:
+            late_row = (second + timedelta(hours=23), {"air_temperature": 5})
+            await insert(c, device, "obs_st", [late_row])
+        late = await weather.almanac(query)
+        assert late.items[1].evidence_count == thin.evidence_count + 1
+        assert late.evidence_hash != corrected.evidence_hash
+        rain = await weather.almanac(
+            AlmanacQuery.model_validate(
+                {"product": "rain_day", "start": "2025-12-31T07:00:00Z", "end": query.end}
+            )
+        )
+        assert [item.missing_reasons for item in rain.items] == [
+            ["before_history", "no_observations"],
+            ["no_observations"],
+            ["no_observations"],
+        ]
 
     database(check)
 

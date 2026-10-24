@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from prometheus_client import REGISTRY, CollectorRegistry
 
 from weather.config import Settings
+from weather.timemodel import ScheduleError, SiteConfig, load_site
 
 from .cursors import CursorCodec
 from .registry import cadences
@@ -19,6 +20,8 @@ from .service import WeatherService
 from .source import WeatherReader
 
 CURSOR_KEY = Path("/var/run/weather-api-cursor/CURSOR_HMAC_KEY")
+# Private site position for derived astronomy (#42), from the optional weather-site Secret.
+SITE_FILE = Path("/var/run/weather-site/site.json")
 # Four connections per pod, no overflow: two replicas plus a surge pod stay far below the
 # weather_api role's limit of 40, and a saturated API pool cannot starve other roles.
 POOL_SIZE = 4
@@ -30,6 +33,18 @@ def read_cursor_key(path: Path = CURSOR_KEY) -> bytes:
     if len(key) < 32:
         raise ValueError("Cursor signing key is too short")
     return key
+
+
+def read_site(path: Path = SITE_FILE) -> SiteConfig | None:
+    """Astronomy is reported unavailable, never guessed, while the site is absent or invalid."""
+    if not path.is_file():
+        return None
+    try:
+        return load_site(path)
+    except ScheduleError:
+        # The message names no field values.
+        log.warning("Private site configuration is invalid; astronomy is unavailable")
+        return None
 
 
 def build_app(service: WeatherService | None = None) -> FastAPI:
@@ -71,7 +86,7 @@ def create_app(settings: Settings, registry: CollectorRegistry = REGISTRY) -> Fa
     )
     service = WeatherService(
         WeatherReader(engine), CursorCodec(read_cursor_key()), cadences=cadences(settings),
-        registry=registry,
+        registry=registry, site=read_site(),
     )
 
     @asynccontextmanager
