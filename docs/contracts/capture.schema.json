@@ -1,200 +1,143 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://weather.vallery.net/contracts/capture-v1.schema.json",
-  "title": "Private capture, atomic chunk and segment seal records",
-  "oneOf": [
-    {
-      "$ref": "#/$defs/CaptureAttempt"
-    },
-    {
-      "$ref": "#/$defs/ChunkBinding"
-    },
-    {
-      "$ref": "#/$defs/SegmentManifest"
-    },
-    {
-      "$ref": "#/$defs/SelectionRow"
-    }
-  ],
   "$defs": {
-    "Id": {
-      "type": "string",
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
-    },
-    "Hash": {
-      "type": "string",
-      "pattern": "^[a-f0-9]{64}$"
-    },
-    "UTC": {
-      "type": "string",
-      "format": "date-time",
-      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$"
-    },
-    "Camera": {
-      "enum": [
-        "skycam_east",
-        "skycam_west",
-        "frontyard_1"
-      ]
-    },
-    "Interval": {
-      "type": "object",
+    "Attempt": {
       "additionalProperties": false,
       "properties": {
-        "start": {
-          "$ref": "#/$defs/UTC"
-        },
-        "end": {
-          "$ref": "#/$defs/UTC"
-        }
-      },
-      "required": [
-        "start",
-        "end"
-      ]
-    },
-    "MonotonicNS": {
-      "type": "string",
-      "pattern": "^(0|[1-9][0-9]{0,19})$"
-    },
-    "FileBinding": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "bytes": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 9007199254740991
-        },
-        "sha256": {
-          "$ref": "#/$defs/Hash"
-        }
-      },
-      "required": [
-        "bytes",
-        "sha256"
-      ]
-    },
-    "Gap": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "interval": {
-          "$ref": "#/$defs/Interval"
-        },
-        "reason": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 512
-        }
-      },
-      "required": [
-        "interval",
-        "reason"
-      ]
-    },
-    "CadenceEpoch": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "epoch_id": {
-          "$ref": "#/$defs/Id"
-        },
-        "interval": {
-          "$ref": "#/$defs/Interval"
-        },
-        "interval_seconds": {
-          "type": "number",
-          "exclusiveMinimum": 0
-        }
-      },
-      "required": [
-        "epoch_id",
-        "interval",
-        "interval_seconds"
-      ]
-    },
-    "ClockDiscontinuity": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "clock_epoch_before": {
-          "$ref": "#/$defs/Id"
-        },
-        "clock_epoch_after": {
-          "$ref": "#/$defs/Id"
-        },
-        "detected_at": {
-          "$ref": "#/$defs/UTC"
-        },
-        "reason": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 512
-        }
-      },
-      "required": [
-        "clock_epoch_before",
-        "clock_epoch_after",
-        "detected_at",
-        "reason"
-      ]
-    },
-    "CaptureAttempt": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "schema_version": {
-          "const": 1
-        },
-        "record_type": {
-          "const": "capture_attempt"
-        },
         "attempt_id": {
-          "$ref": "#/$defs/AttemptId"
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,88}$",
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "calibration_revision": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,88}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Calibration Revision"
         },
         "camera": {
-          "$ref": "#/$defs/Camera"
+          "enum": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "title": "Camera",
+          "type": "string"
         },
-        "writer_epoch": {
-          "$ref": "#/$defs/Id"
+        "capture_upper_bound": {
+          "anyOf": [
+            {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Capture Upper Bound"
+        },
+        "clock_discontinuity": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Clock Discontinuity"
         },
         "clock_epoch": {
-          "$ref": "#/$defs/Id"
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,88}$",
+          "title": "Clock Epoch",
+          "type": "string"
         },
-        "cadence_epoch_id": {
-          "$ref": "#/$defs/Id"
-        },
-        "slot_id": {
-          "$ref": "#/$defs/Id"
-        },
-        "slot_at_utc": {
-          "$ref": "#/$defs/UTC"
-        },
-        "request_started_at_utc": {
+        "duplicate_hash": {
           "anyOf": [
             {
-              "$ref": "#/$defs/UTC"
+              "type": "boolean"
             },
             {
               "type": "null"
             }
-          ]
+          ],
+          "default": null,
+          "title": "Duplicate Hash"
         },
-        "response_completed_at_utc": {
+        "failure_class": {
           "anyOf": [
             {
-              "$ref": "#/$defs/UTC"
+              "enum": [
+                "timeout",
+                "transport",
+                "protocol",
+                "authentication",
+                "redirect",
+                "http_status",
+                "content_type",
+                "oversized",
+                "truncated",
+                "jpeg_markers",
+                "geometry",
+                "decode_error",
+                "overdue",
+                "backoff",
+                "staging_full",
+                "persist_failed",
+                "shutdown"
+              ],
+              "type": "string"
             },
             {
               "type": "null"
             }
-          ]
+          ],
+          "title": "Failure Class"
         },
-        "monotonic_started_ns": {
+        "freshness": {
           "anyOf": [
             {
-              "$ref": "#/$defs/MonotonicNS"
+              "enum": [
+                "verified",
+                "plausible",
+                "suspected_stale",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Freshness"
+        },
+        "http_status": {
+          "anyOf": [
+            {
+              "maximum": 599,
+              "minimum": 100,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Http Status"
+        },
+        "member": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Member"
             },
             {
               "type": "null"
@@ -204,632 +147,621 @@
         "monotonic_completed_ns": {
           "anyOf": [
             {
-              "$ref": "#/$defs/MonotonicNS"
+              "pattern": "^(0|[1-9][0-9]{0,19})$",
+              "type": "string"
             },
             {
               "type": "null"
             }
-          ]
+          ],
+          "default": null,
+          "title": "Monotonic Completed Ns"
         },
-        "outcome": {
-          "enum": [
-            "captured",
-            "request_failed",
-            "skipped"
-          ]
-        },
-        "reason": {
+        "monotonic_started_ns": {
           "anyOf": [
             {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 512
+              "pattern": "^(0|[1-9][0-9]{0,19})$",
+              "type": "string"
             },
             {
               "type": "null"
             }
-          ]
+          ],
+          "default": null,
+          "title": "Monotonic Started Ns"
+        },
+        "record_type": {
+          "const": "capture_attempt",
+          "title": "Record Type",
+          "type": "string"
+        },
+        "request_started_at_utc": {
+          "anyOf": [
+            {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Request Started At Utc"
+        },
+        "response_completed_at_utc": {
+          "anyOf": [
+            {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Response Completed At Utc"
+        },
+        "slot_at_utc": {
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$",
+          "title": "Slot At Utc",
+          "type": "string"
+        },
+        "slot_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,88}$",
+          "title": "Slot Id",
+          "type": "string"
         },
         "source_at_utc": {
           "anyOf": [
             {
-              "$ref": "#/$defs/UTC"
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$",
+              "type": "string"
             },
             {
               "type": "null"
             }
-          ]
+          ],
+          "default": null,
+          "title": "Source At Utc"
+        },
+        "source_lower_bound": {
+          "anyOf": [
+            {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Lower Bound"
         },
         "source_time_basis": {
           "anyOf": [
             {
               "enum": [
-                "verified_camera_timestamp",
+                "request_midpoint",
                 "calibrated_request_midpoint"
-              ]
+              ],
+              "type": "string"
             },
             {
               "type": "null"
             }
-          ]
+          ],
+          "default": null,
+          "title": "Source Time Basis"
+        },
+        "status": {
+          "enum": [
+            "captured",
+            "skipped",
+            "request_failed"
+          ],
+          "title": "Status",
+          "type": "string"
         },
         "uncertainty_ms": {
           "anyOf": [
             {
-              "type": "number",
-              "minimum": 0
+              "minimum": 0,
+              "type": "number"
             },
             {
               "type": "null"
             }
-          ]
-        },
-        "exposure_upper_bound": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/UTC"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "freshness": {
-          "enum": [
-            "verified",
-            "plausible",
-            "suspected_stale",
-            "unknown"
-          ]
-        },
-        "freshness_evidence_id": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Id"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "quality_flags": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Id"
-          },
-          "maxItems": 64
-        },
-        "member": {
-          "anyOf": [
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "name": {
-                  "type": "string",
-                  "pattern": "^frames/[A-Za-z0-9][A-Za-z0-9_-]{0,88}\\.jpg$"
-                },
-                "data_offset_bytes": {
-                  "type": "integer",
-                  "minimum": 512,
-                  "maximum": 9007199254740991,
-                  "multipleOf": 512
-                },
-                "length_bytes": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 9007199254740991
-                },
-                "sha256": {
-                  "$ref": "#/$defs/Hash"
-                },
-                "width": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 9007199254740991
-                },
-                "height": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 9007199254740991
-                }
-              },
-              "required": [
-                "name",
-                "data_offset_bytes",
-                "length_bytes",
-                "sha256",
-                "width",
-                "height"
-              ]
-            },
-            {
-              "type": "null"
-            }
-          ]
+          ],
+          "default": null,
+          "title": "Uncertainty Ms"
         }
       },
       "required": [
-        "schema_version",
         "record_type",
         "attempt_id",
-        "camera",
-        "writer_epoch",
-        "clock_epoch",
-        "cadence_epoch_id",
         "slot_id",
         "slot_at_utc",
-        "request_started_at_utc",
-        "response_completed_at_utc",
-        "monotonic_started_ns",
-        "monotonic_completed_ns",
-        "outcome",
-        "reason",
-        "source_at_utc",
-        "source_time_basis",
-        "uncertainty_ms",
-        "exposure_upper_bound",
-        "freshness",
-        "freshness_evidence_id",
-        "quality_flags",
+        "clock_epoch",
+        "camera",
+        "status",
+        "failure_class",
         "member"
       ],
-      "allOf": [
-        {
-          "if": {
-            "properties": {
-              "outcome": {
-                "const": "captured"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "member": {
-                "type": "object"
-              },
-              "request_started_at_utc": {
-                "$ref": "#/$defs/UTC"
-              },
-              "response_completed_at_utc": {
-                "$ref": "#/$defs/UTC"
-              },
-              "monotonic_started_ns": {
-                "$ref": "#/$defs/MonotonicNS"
-              },
-              "monotonic_completed_ns": {
-                "$ref": "#/$defs/MonotonicNS"
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "outcome": {
-                "enum": [
-                  "request_failed",
-                  "skipped"
-                ]
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "member": {
-                "type": "null"
-              },
-              "reason": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 512
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "uncertainty_ms": {
-                "type": "null"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "exposure_upper_bound": {
-                "type": "null"
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "freshness": {
-                "enum": [
-                  "verified",
-                  "plausible"
-                ]
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "freshness_evidence_id": {
-                "$ref": "#/$defs/Id"
-              }
-            }
-          }
-        }
-      ]
+      "title": "Attempt",
+      "type": "object"
     },
-    "ChunkBinding": {
-      "type": "object",
+    "Header": {
       "additionalProperties": false,
       "properties": {
-        "schema_version": {
-          "const": 1
-        },
-        "record_type": {
-          "const": "chunk_binding"
-        },
-        "chunk_id": {
-          "$ref": "#/$defs/Id"
-        },
         "camera": {
-          "$ref": "#/$defs/Camera"
+          "enum": [
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "title": "Camera",
+          "type": "string"
         },
-        "writer_epoch": {
-          "$ref": "#/$defs/Id"
+        "config_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Config Hash",
+          "type": "string"
         },
-        "slot_interval": {
-          "$ref": "#/$defs/Interval"
+        "incarnation": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,88}$",
+          "title": "Incarnation",
+          "type": "string"
         },
-        "sealed_at": {
-          "$ref": "#/$defs/UTC"
-        },
-        "tar": {
-          "$ref": "#/$defs/FileBinding"
-        },
-        "index": {
-          "$ref": "#/$defs/FileBinding"
-        },
-        "attempt_count": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        },
-        "jpeg_member_count": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        },
-        "collector_build": {
-          "$ref": "#/$defs/Id"
-        },
-        "checkpoint_policy_revision": {
-          "$ref": "#/$defs/Id"
-        },
-        "storage_durability_policy_revision": {
-          "$ref": "#/$defs/Id"
-        },
-        "scheduled_segment_id": {
-          "$ref": "#/$defs/Id"
-        }
-      },
-      "required": [
-        "schema_version",
-        "record_type",
-        "chunk_id",
-        "camera",
-        "writer_epoch",
-        "scheduled_segment_id",
-        "slot_interval",
-        "sealed_at",
-        "tar",
-        "index",
-        "attempt_count",
-        "jpeg_member_count",
-        "collector_build",
-        "checkpoint_policy_revision",
-        "storage_durability_policy_revision"
-      ]
-    },
-    "ChunkReference": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "chunk_id": {
-          "$ref": "#/$defs/Id"
-        },
-        "writer_epoch": {
-          "$ref": "#/$defs/Id"
-        },
-        "binding_sha256": {
-          "$ref": "#/$defs/Hash"
-        },
-        "tar_sha256": {
-          "$ref": "#/$defs/Hash"
-        },
-        "index_sha256": {
-          "$ref": "#/$defs/Hash"
-        }
-      },
-      "required": [
-        "chunk_id",
-        "writer_epoch",
-        "binding_sha256",
-        "tar_sha256",
-        "index_sha256"
-      ]
-    },
-    "SegmentManifest": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "schema_version": {
-          "const": 1
+        "pod_uid": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,88}$",
+          "title": "Pod Uid",
+          "type": "string"
         },
         "record_type": {
-          "const": "segment_manifest"
+          "const": "chunk_header",
+          "title": "Record Type",
+          "type": "string"
         },
-        "segment_id": {
-          "$ref": "#/$defs/Id"
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
         },
-        "manifest_revision": {
-          "type": "integer",
+        "sequence": {
+          "minimum": 0,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "settings": {
+          "$ref": "#/$defs/Settings"
+        },
+        "slot_window_end_utc": {
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$",
+          "title": "Slot Window End Utc",
+          "type": "string"
+        },
+        "slot_window_start_utc": {
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$",
+          "title": "Slot Window Start Utc",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_type",
+        "schema_version",
+        "camera",
+        "pod_uid",
+        "incarnation",
+        "sequence",
+        "config_hash",
+        "slot_window_start_utc",
+        "slot_window_end_utc",
+        "settings"
+      ],
+      "title": "Header",
+      "type": "object"
+    },
+    "LossRange": {
+      "additionalProperties": false,
+      "properties": {
+        "attempt_count": {
           "minimum": 1,
-          "maximum": 9007199254740991
+          "title": "Attempt Count",
+          "type": "integer"
         },
-        "supersedes_sha256": {
+        "failure_class": {
+          "const": "persist_failed",
+          "title": "Failure Class",
+          "type": "string"
+        },
+        "first_slot_at_utc": {
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$",
+          "title": "First Slot At Utc",
+          "type": "string"
+        },
+        "first_slot_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,88}$",
+          "title": "First Slot Id",
+          "type": "string"
+        },
+        "individual_details_lost": {
+          "const": true,
+          "title": "Individual Details Lost",
+          "type": "boolean"
+        },
+        "last_slot_at_utc": {
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$",
+          "title": "Last Slot At Utc",
+          "type": "string"
+        },
+        "last_slot_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,88}$",
+          "title": "Last Slot Id",
+          "type": "string"
+        },
+        "record_type": {
+          "const": "loss_range",
+          "title": "Record Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_type",
+        "failure_class",
+        "first_slot_id",
+        "last_slot_id",
+        "first_slot_at_utc",
+        "last_slot_at_utc",
+        "attempt_count",
+        "individual_details_lost"
+      ],
+      "title": "LossRange",
+      "type": "object"
+    },
+    "Member": {
+      "additionalProperties": false,
+      "properties": {
+        "bytes": {
+          "exclusiveMinimum": 0,
+          "maximum": 16777216,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "height": {
+          "maximum": 16384,
+          "minimum": 1,
+          "title": "Height",
+          "type": "integer"
+        },
+        "name": {
+          "pattern": "^frames/[A-Za-z0-9][A-Za-z0-9_-]{0,88}\\.jpg$",
+          "title": "Name",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "width": {
+          "maximum": 16384,
+          "minimum": 1,
+          "title": "Width",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "bytes",
+        "sha256",
+        "width",
+        "height"
+      ],
+      "title": "Member",
+      "type": "object"
+    },
+    "Settings": {
+      "additionalProperties": false,
+      "properties": {
+        "cache_allowance_ms": {
           "anyOf": [
             {
-              "$ref": "#/$defs/Hash"
+              "minimum": 0,
+              "type": "integer"
             },
             {
               "type": "null"
             }
-          ]
+          ],
+          "default": null,
+          "title": "Cache Allowance Ms"
+        },
+        "cadence_ms": {
+          "maximum": 3600000,
+          "minimum": 1000,
+          "title": "Cadence Ms",
+          "type": "integer"
+        },
+        "calibration_revision": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,88}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Calibration Revision"
         },
         "camera": {
-          "$ref": "#/$defs/Camera"
-        },
-        "cycle_date": {
-          "type": "string",
-          "format": "date"
-        },
-        "segment": {
           "enum": [
-            "daytime",
-            "overnight"
-          ]
+            "skycam_east",
+            "skycam_west",
+            "frontyard_1"
+          ],
+          "title": "Camera",
+          "type": "string"
         },
-        "source_interval": {
-          "$ref": "#/$defs/Interval"
-        },
-        "schedule_revision": {
-          "$ref": "#/$defs/Id"
-        },
-        "timezone": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 64
-        },
-        "twilight_model_revision": {
-          "$ref": "#/$defs/Id"
-        },
-        "private_site_config_revision": {
-          "$ref": "#/$defs/Id"
-        },
-        "sealed_at": {
-          "$ref": "#/$defs/UTC"
-        },
-        "boundary_grace_seconds": {
-          "type": "number",
-          "minimum": 0
-        },
-        "allocated_frames": {
-          "type": "integer",
+        "chunk_seconds": {
+          "maximum": 300,
           "minimum": 1,
-          "maximum": 9007199254740991
+          "title": "Chunk Seconds",
+          "type": "integer"
         },
-        "fps": {
-          "const": {
-            "numerator": 60,
-            "denominator": 1
-          }
+        "connect_seconds": {
+          "exclusiveMinimum": 0,
+          "maximum": 5,
+          "title": "Connect Seconds",
+          "type": "number"
         },
-        "expected_slots": {
-          "type": "integer",
+        "geometry": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "maximum": 16384,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "maximum": 16384,
+              "minimum": 1,
+              "type": "integer"
+            }
+          ],
+          "title": "Geometry",
+          "type": "array"
+        },
+        "max_bytes": {
+          "maximum": 16777216,
+          "minimum": 1,
+          "title": "Max Bytes",
+          "type": "integer"
+        },
+        "phase_ms": {
           "minimum": 0,
-          "maximum": 9007199254740991
+          "title": "Phase Ms",
+          "type": "integer"
         },
-        "attempt_count": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
+        "read_seconds": {
+          "exclusiveMinimum": 0,
+          "maximum": 5,
+          "title": "Read Seconds",
+          "type": "number"
         },
-        "accepted_unique_samples": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        },
-        "cadence_epochs": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/CadenceEpoch"
-          },
-          "maxItems": 100
-        },
-        "clock_discontinuities": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/ClockDiscontinuity"
-          },
-          "maxItems": 100
-        },
-        "coverage_intervals": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Interval"
-          },
-          "maxItems": 10000
-        },
-        "gaps": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Gap"
-          },
-          "maxItems": 10000
-        },
-        "chunks": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/ChunkReference"
-          },
-          "maxItems": 10000
-        },
-        "selection_index": {
-          "$ref": "#/$defs/FileBinding"
-        },
-        "selection_policy_revision": {
-          "$ref": "#/$defs/Id"
-        },
-        "coordinator_build": {
-          "$ref": "#/$defs/Id"
+        "total_seconds": {
+          "exclusiveMinimum": 0,
+          "maximum": 5,
+          "title": "Total Seconds",
+          "type": "number"
         }
       },
       "required": [
-        "schema_version",
-        "record_type",
-        "segment_id",
-        "manifest_revision",
-        "supersedes_sha256",
         "camera",
-        "cycle_date",
-        "segment",
-        "source_interval",
-        "schedule_revision",
-        "timezone",
-        "twilight_model_revision",
-        "private_site_config_revision",
-        "sealed_at",
-        "boundary_grace_seconds",
-        "allocated_frames",
-        "fps",
-        "expected_slots",
-        "attempt_count",
-        "accepted_unique_samples",
-        "cadence_epochs",
-        "clock_discontinuities",
-        "coverage_intervals",
-        "gaps",
-        "chunks",
-        "selection_index",
-        "selection_policy_revision",
-        "coordinator_build"
-      ]
+        "geometry",
+        "cadence_ms",
+        "phase_ms",
+        "chunk_seconds",
+        "connect_seconds",
+        "read_seconds",
+        "total_seconds",
+        "max_bytes"
+      ],
+      "title": "Settings",
+      "type": "object"
     },
-    "SelectionRow": {
-      "type": "object",
+    "SkippedRange": {
       "additionalProperties": false,
       "properties": {
-        "schema_version": {
-          "const": 1
+        "clock_epoch": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,88}$",
+          "title": "Clock Epoch",
+          "type": "string"
+        },
+        "failure_class": {
+          "const": "overdue",
+          "title": "Failure Class",
+          "type": "string"
+        },
+        "first_slot_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,88}$",
+          "title": "First Slot Id",
+          "type": "string"
+        },
+        "last_slot_at_utc": {
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$",
+          "title": "Last Slot At Utc",
+          "type": "string"
+        },
+        "last_slot_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,88}$",
+          "title": "Last Slot Id",
+          "type": "string"
+        },
+        "member": {
+          "title": "Member",
+          "type": "null"
         },
         "record_type": {
-          "const": "selection_row"
+          "const": "skipped_range",
+          "title": "Record Type",
+          "type": "string"
         },
-        "attempt_id": {
-          "$ref": "#/$defs/AttemptId"
+        "slot_at_utc": {
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$",
+          "title": "Slot At Utc",
+          "type": "string"
         },
-        "chunk_id": {
-          "$ref": "#/$defs/Id"
+        "slot_count": {
+          "minimum": 1,
+          "title": "Slot Count",
+          "type": "integer"
         },
         "slot_id": {
-          "$ref": "#/$defs/Id"
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,88}$",
+          "title": "Slot Id",
+          "type": "string"
         },
-        "disposition": {
-          "enum": [
-            "accepted",
-            "rejected"
-          ]
-        },
-        "reason": {
-          "anyOf": [
-            {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 512
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "source_interval": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Interval"
-            },
-            {
-              "type": "null"
-            }
-          ]
+        "status": {
+          "const": "skipped",
+          "title": "Status",
+          "type": "string"
         }
       },
       "required": [
-        "schema_version",
         "record_type",
-        "attempt_id",
-        "chunk_id",
+        "failure_class",
+        "first_slot_id",
+        "last_slot_id",
         "slot_id",
-        "disposition",
-        "reason",
-        "source_interval"
+        "slot_at_utc",
+        "last_slot_at_utc",
+        "slot_count",
+        "clock_epoch",
+        "status",
+        "member"
       ],
-      "allOf": [
-        {
-          "if": {
-            "properties": {
-              "disposition": {
-                "const": "rejected"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "reason": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 512
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "disposition": {
-                "const": "accepted"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "source_interval": {
-                "$ref": "#/$defs/Interval"
-              }
-            }
-          }
-        }
-      ]
+      "title": "SkippedRange",
+      "type": "object"
     },
-    "AttemptId": {
-      "type": "string",
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,88}$",
-      "description": "ASCII capture identity limited so frames/<id>.jpg fits the 100-byte USTAR name field without extensions or prefix splitting"
+    "UncertainRange": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Candidate Id"
+        },
+        "classification": {
+          "enum": [
+            "unsealed_uncertain",
+            "seal_uncertain"
+          ],
+          "title": "Classification",
+          "type": "string"
+        },
+        "end_at_utc": {
+          "anyOf": [
+            {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End At Utc"
+        },
+        "individual_details_lost": {
+          "title": "Individual Details Lost",
+          "type": "boolean"
+        },
+        "inventory_overflow_count": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inventory Overflow Count"
+        },
+        "reconciliation": {
+          "maxLength": 256,
+          "title": "Reconciliation",
+          "type": "string"
+        },
+        "record_type": {
+          "const": "unsealed_range",
+          "title": "Record Type",
+          "type": "string"
+        },
+        "start_at_utc": {
+          "anyOf": [
+            {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?Z$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Start At Utc"
+        }
+      },
+      "required": [
+        "record_type",
+        "classification",
+        "individual_details_lost",
+        "reconciliation"
+      ],
+      "title": "UncertainRange",
+      "type": "object"
     }
-  }
+  },
+  "$id": "https://weather.vallery.net/contracts/capture-v2.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "discriminator": {
+    "mapping": {
+      "capture_attempt": "#/$defs/Attempt",
+      "chunk_header": "#/$defs/Header",
+      "loss_range": "#/$defs/LossRange",
+      "skipped_range": "#/$defs/SkippedRange",
+      "unsealed_range": "#/$defs/UncertainRange"
+    },
+    "propertyName": "record_type"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Header"
+    },
+    {
+      "$ref": "#/$defs/Attempt"
+    },
+    {
+      "$ref": "#/$defs/LossRange"
+    },
+    {
+      "$ref": "#/$defs/UncertainRange"
+    },
+    {
+      "$ref": "#/$defs/SkippedRange"
+    }
+  ],
+  "title": "Private single-USTAR capture manifest v2"
 }

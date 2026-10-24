@@ -21,3 +21,13 @@ State as of 2026-10-24: **planned, not deployed.** Fill in each row's health and
 | Secrets (camera, B2, Garage, Cortex, DB) | KSOPS | agents `secrets-ksops/weather` | owner issues above | Planned |
 
 Adjacent items this repo consumes but does not own: Tempest hub (homeassistant), cameras (sentinel), Cortex routes (cortex-ai-compute), `ak-forwardauth` (network-infra), vallery.net homepage (VerdifyConsultancy/wordpress).
+
+## Snapshot collector source (WX-10)
+
+`app/weather/capture` owns the isolated channel-1 snapshot client, absolute timer,
+strict native-JPEG validation, single-USTAR writer/reader and capture metrics. Its
+private manifest v2 is generated from code and follows the simplified P2 contract;
+there is no coordinator, writer fencing or database dependency in this role.
+Source preparation and small pure checks do not commission cameras or storage.
+Real workloads, private egress rules and cadence remain WX-03; fake-camera
+latency/decode integration runs only in fleet CI. See [capture operations](docs/operations/capture.md).
