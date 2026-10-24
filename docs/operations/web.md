@@ -7,8 +7,8 @@ persistent browser cache for weather data.
 
 The read-only server consumes only the fixed `API_ORIGIN=http://api` Service on port 80. It forwards no
 cookies or authorization headers, follows no redirects, allows only the listed public API paths, and
-bounds each request to 6 seconds and 4 MiB. At most eight upstream requests run at once: two per
-document, because Today reads current conditions and the metric registry concurrently. API-backed
+bounds each request to 6 seconds and 4 MiB. At most twelve upstream requests run at once: three per
+document, because Today reads current conditions, the metric registry and recent events concurrently. API-backed
 document/data responses have four slots and a 15-second absolute deadline, matching the initial
 512 MiB web memory limit. Static files, process health, the loader-less About and Search pages and the
 lazy route manifest (`/__manifest`) do not consume those slots. Overload is reported as "Weather is

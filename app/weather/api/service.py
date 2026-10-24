@@ -17,7 +17,8 @@ from prometheus_client.registry import Collector
 from weather.products import almanac
 from weather.timemodel import SiteConfig, WeatherDay, day_for, weather_day
 
-from .cursors import CursorCodec, Position
+from . import events as feed
+from .cursors import CursorCodec, EventPosition, Position
 from .models import (
     MAX_POINTS,
     Aggregate,
@@ -31,6 +32,9 @@ from .models import (
     Coverage,
     Current,
     DirectionState,
+    Event,
+    EventQuery,
+    Events,
     Interval,
     Metric,
     MetricDefinition,
@@ -237,7 +241,7 @@ class ApiMetrics:
         )
         for result in ("live", "cached", "unavailable"):
             self.cache.labels(result)
-        for operation in ("current", "observations", "aggregates", "almanac"):
+        for operation in ("current", "observations", "aggregates", "almanac", "events"):
             self.db_errors.labels(operation)
 
 
@@ -425,6 +429,59 @@ class WeatherService:
             points=points,
             next_cursor=cursor,
         )
+
+    # Events (#41) ------------------------------------------------------------------------
+
+    async def events(self, query: EventQuery) -> Events:
+        now = self.now()
+        position: EventPosition | None = (
+            self.cursors.decode_events(query.cursor, query, now=now) if query.cursor else None
+        )
+        sql = feed.events_sql(query.order)
+        parameters = feed.parameters(
+            query,
+            snapshot=position.snapshot if position else None,
+            after=(position.after_start, position.after_id) if position else None,
+            rows=query.limit + 1,
+        )
+        try:
+            rows = await self.reader.events(sql, parameters)
+        except SourceUnavailable:
+            self.metrics.db_errors.labels("events").inc()
+            raise unavailable() from None
+        page = rows[: query.limit]
+        cursor = None
+        if len(rows) > query.limit:
+            last = page[-1]
+            cursor = self.cursors.encode_events(
+                query,
+                snapshot=str(last["snapshot"]),
+                after_start=last["starts_at"],
+                after_id=last["id"],
+                now=now,
+                previous=position,
+            )
+        # Published segments arrive with slice-2 media (#18); until then every link is
+        # explicitly unavailable rather than fabricated.
+        return Events(generated_at=now, items=self._built(page), next_cursor=cursor)
+
+    async def event(self, event_id: UUID) -> Event | None:
+        """The current public revision of one stable logical event, or None (withdrawn/private)."""
+        parameters = feed.parameters(None, snapshot=None, after=None, rows=1, event_id=event_id)
+        try:
+            rows = await self.reader.events(feed.events_sql("asc"), parameters)
+        except SourceUnavailable:
+            self.metrics.db_errors.labels("events").inc()
+            raise unavailable() from None
+        return self._built(rows)[0] if rows else None
+
+    def _built(self, rows: list[Row]) -> list[Event]:
+        try:
+            return [feed.build_event(row) for row in rows]
+        except ValueError:
+            # The database constraints make this unreachable; fail closed, never half a page.
+            self.metrics.db_errors.labels("events").inc()
+            raise unavailable() from None
 
     # Aggregates --------------------------------------------------------------------------
 

@@ -2,9 +2,30 @@
 import { useEffect, useRef, useState } from "react";
 import type { Video } from "../lib/contracts";
 
-export function VideoPlayer({ video }: { video: Video }) {
+/** Player seconds for a UTC source instant through the recording's source-time map, or null. */
+export function seekSeconds(video: Video, instant: string): number | null {
+  const at = Date.parse(instant);
+  if (!Number.isFinite(at) || at < Date.parse(video.source_interval.start) || at >= Date.parse(video.source_interval.end)) return null;
+  for (const entry of video.time_map) {
+    const start = Date.parse(entry.source_interval.start), end = Date.parse(entry.source_interval.end);
+    if (at < start || at >= end || entry.frame_end <= entry.frame_start) continue;
+    const frame = entry.frame_start + Math.floor((at - start) * (entry.frame_end - entry.frame_start) / (end - start));
+    return frame * video.fps.denominator / video.fps.numerator;
+  }
+  return null;
+}
+
+export function VideoPlayer({ video, seekTo = null }: { video: Video; seekTo?: number | null }) {
   const player = useRef<HTMLVideoElement>(null);
   const resume = useRef<{ time: number; playing: boolean } | null>(null);
+  // A bookmark (?t=) seeks once metadata is known; a later bookmark seeks the loaded player.
+  const pendingSeek = useRef<number | null>(seekTo);
+  useEffect(() => {
+    if (seekTo === null) return;
+    const element = player.current;
+    if (element && element.readyState >= 1) { element.currentTime = Math.min(seekTo, Math.max(0, element.duration - 0.001)); pendingSeek.current = null; }
+    else pendingSeek.current = seekTo;
+  }, [seekTo]);
   const [quality, setQuality] = useState("auto");
   const [autoRole, setAutoRole] = useState("web");
   const previousAutoRole = useRef("web");
@@ -35,6 +56,10 @@ export function VideoPlayer({ video }: { video: Video }) {
       onPlay={(event) => { document.querySelectorAll("video").forEach((other) => { if (other !== event.currentTarget) other.pause(); }); }}
       onLoadedMetadata={() => {
         const element = player.current;
+        if (element && pendingSeek.current !== null && !resume.current) {
+          element.currentTime = Math.min(pendingSeek.current, Math.max(0, element.duration - 0.001));
+          pendingSeek.current = null;
+        }
         if (element && resume.current) {
           element.currentTime = Math.min(resume.current.time, Math.max(0, element.duration - 0.001));
           if (resume.current.playing) void element.play().catch(() => setResumeMessage("Press Play to resume at the same point."));

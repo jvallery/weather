@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 async function syntheticMedia(page: Page) {
   await page.route(/^http:\/\/localhost:4173\/(?:media|downloads)\//, async (route) => route.fulfill({ response: await route.fetch({ url: `http://localhost:4174${new URL(route.request().url()).pathname}` }) }));
 }
-const paths = ["/", "/about/", "/archive/?month=2026-10", "/archive/2026/10/", "/day/2026-10-31/", "/timelapses/skycam_east/2026-10-31/daytime/", "/weather/history/", "/weather/almanac/", "/search/"];
+const paths = ["/", "/about/", "/archive/?month=2026-10", "/archive/2026/10/", "/day/2026-10-31/", "/timelapses/skycam_east/2026-10-31/daytime/", "/weather/history/", "/weather/almanac/", "/events/", "/search/"];
 test.beforeEach(async ({ request, page }) => {
   await syntheticMedia(page);
   await page.addInitScript(() => { const violations: string[] = []; (window as Window & { cspViolations?: string[] }).cspViolations = violations; document.addEventListener("securitypolicyviolation", (event) => violations.push(event.effectiveDirective)); }); await request.post("http://localhost:4174/__control", { data: {} }); });
@@ -92,6 +92,52 @@ test("placeholders, About topics, repeated hour, source-only network and reduced
   for (const topic of [/Tempest/, /east sky/, /west sky/, /front yard/, /6°/, /7,200/, /not measurements/, /private notes/, /no forecast/]) await expect(page.getByText(topic).first()).toBeVisible();
   await page.goto("/weather/history/"); await expect(page.getByText(/GMT-06:00/).first()).toBeVisible(); await expect(page.getByText(/GMT-07:00/).first()).toBeVisible();
   expect(unexpected).toEqual([]);
+});
+test("event bookmarks seek via ?t=, day and video strips, feed provenance and recent events", async ({ page }) => {
+  await page.goto("/timelapses/skycam_east/2026-10-31/daytime/");
+  const strip = page.getByRole("region", { name: "Weather events in this recording" });
+  // Station-wide events plus this camera's; the west-sky and front-yard events are not here.
+  await expect(strip.getByRole("listitem")).toHaveCount(3);
+  await expect(strip.getByText("Clouds clearing")).toHaveCount(0);
+  const video = page.locator("video");
+  await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.readyState)).toBeGreaterThanOrEqual(1);
+  expect(await video.evaluate((element: HTMLVideoElement) => element.currentTime)).toBe(0);
+  // 15:20Z is 10,200 s into the 45,000 s source interval: frame 816 of 3,600 at 60 fps.
+  await strip.getByRole("link", { name: /^Seek video to precipitation onset/ }).click();
+  await expect(page).toHaveURL(/\?t=2026-10-31T15%3A20%3A00\.000Z$/);
+  await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime)).toBeCloseTo(13.6, 1);
+  expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
+  // A shared bookmark URL seeks on load: 00:40:12Z maps to frame 3,504.
+  await page.goto("/timelapses/skycam_east/2026-10-31/daytime/?t=2026-11-01T00:40:12.000Z");
+  await expect.poll(() => page.locator("video").evaluate((element: HTMLVideoElement) => element.currentTime)).toBeCloseTo(58.4, 1);
+  await expect(page.getByText("a report, not a visible flash", { exact: false }).first()).toBeVisible();
+  // Out-of-recording times start at the beginning and say so; malformed times are rejected.
+  await page.goto("/timelapses/skycam_east/2026-10-31/daytime/?t=2026-10-30T00:00:00Z");
+  await expect(page.getByText(/outside this recording/)).toBeVisible();
+  expect((await page.request.get("/timelapses/skycam_east/2026-10-31/daytime/?t=yesterday")).status()).toBe(400);
+
+  await page.goto("/day/2026-10-31/");
+  const day = page.getByRole("region", { name: "Weather events · calendar day 2026-10-31" });
+  await expect(day.getByRole("listitem")).toHaveCount(5);
+  await expect(day.getByText("14.2 m/s · 31.8 mph observed maximum", { exact: false })).toBeVisible();
+
+  await page.goto("/events/");
+  for (const badge of ["Measured · station instrument", "Visual · AI from recorded video", "Manual · human annotation"]) await expect(page.getByText(badge).first()).toBeVisible();
+  await expect(page.locator(".badge")).toHaveCount(5);
+  await page.getByLabel("Origin").selectOption("manual");
+  await page.getByRole("button", { name: "Apply filters" }).click();
+  await expect(page).toHaveURL(/origin=manual/);
+  await expect(page.locator("li.event")).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "Hail on the deck" })).toBeVisible();
+  await page.goto("/events/");
+  await page.getByRole("link", { name: "East sky · daytime video at this time" }).click();
+  await expect(page).toHaveURL(/\/timelapses\/skycam_east\/2026-10-31\/daytime\/\?t=2026-10-31T15%3A20%3A00Z$/);
+  await expect.poll(() => page.locator("video").evaluate((element: HTMLVideoElement) => element.currentTime)).toBeCloseTo(13.6, 1);
+
+  await page.goto("/");
+  const recent = page.getByRole("region", { name: "Recent weather events" });
+  await expect(recent.getByRole("listitem")).toHaveCount(5);
+  await expect(recent.getByRole("heading", { level: 3 }).first()).toHaveText("Lightning strike reported");
 });
 test("safe interpretation text, lifecycle states and quality preservation", async ({ page, request }) => {
   await request.post("http://localhost:4174/__control", { data: { description: "<script>window.SYNTHETIC_XSS=1</script>" } });

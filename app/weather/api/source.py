@@ -302,6 +302,11 @@ class WeatherReader:
         )
         return result, snapshot
 
+    async def events(self, sql: str, parameters: dict[str, Any]) -> list[Row]:
+        """One event page, read in a single statement (its snapshot is in each row)."""
+        (rows,) = await self._run([(sql, parameters)], self._statement_ms)
+        return rows
+
     async def aggregates(
         self, source: Source, bins: BinSpec, *, cap: timedelta, wind: bool, rose: bool
     ) -> tuple[list[Row], list[Row]]:

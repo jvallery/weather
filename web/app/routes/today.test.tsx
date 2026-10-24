@@ -7,6 +7,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import Today, { loader } from "./today";
 import current from "../fixtures/current.json";
 import registry from "../fixtures/metric-registry.json";
+import events from "../fixtures/events.json";
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 test("the Today loader issues its API reads concurrently", async () => {
@@ -14,10 +15,11 @@ test("the Today loader issues its API reads concurrently", async () => {
   const pending: Array<[string, (response: Response) => void]> = [];
   vi.stubGlobal("fetch", vi.fn((url: URL) => new Promise<Response>((resolve) => pending.push([url.pathname, resolve]))));
   const result = loader({ request: new Request("https://weather.example/"), params: {}, context: {} } as Parameters<typeof loader>[0]);
-  await vi.waitFor(() => expect(pending.map(([path]) => path).sort()).toEqual(["/api/v1/weather/current", "/api/v1/weather/metrics"]));
-  for (const [path, resolve] of pending) resolve(new Response(JSON.stringify(path.endsWith("current") ? current : registry)));
+  await vi.waitFor(() => expect(pending.map(([path]) => path).sort()).toEqual(["/api/v1/events", "/api/v1/weather/current", "/api/v1/weather/metrics"]));
+  for (const [path, resolve] of pending) resolve(new Response(JSON.stringify(path.endsWith("current") ? current : path.endsWith("events") ? events : registry)));
   const data = await result;
   expect(data.apiUnavailable).toBe(false); expect(data.registry).not.toBeNull();
+  expect(data.recent?.map((event) => event.kind)).toEqual(events.items.map((event) => event.kind));
 });
 
 test("before the API serves data, Today says API unavailable and fabricates no values", async () => {

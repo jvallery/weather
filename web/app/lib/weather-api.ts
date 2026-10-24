@@ -29,6 +29,9 @@ export type ComparisonWindow = Schemas["ComparisonWindow"];
 // The archive month page renders only these fields of each /api/v1/timelapses entry.
 export type ArchiveEntry = Pick<Schemas["Timelapse"], "video_id" | "camera" | "cycle_date" | "segment" | "state" | "reason">;
 export type ArchivePage = { items: ArchiveEntry[]; next_cursor: string | null };
+export type WeatherEvent = Schemas["Event"];
+export type Events = Schemas["Events"];
+export type EventVideo = Schemas["EventVideo"];
 
 const text = z.string();
 // A new server enum value degrades that one field instead of rejecting the whole response.
@@ -102,6 +105,23 @@ const archiveEntry = z.object({
 });
 const archive = z.object({ items: z.array(archiveEntry), next_cursor: text.nullable() });
 
+const camera = z.enum(["skycam_east", "skycam_west", "frontyard_1"]);
+const video = z.object({
+  camera, state: lenient(["available", "unavailable"], "unavailable"), video_id: text.nullable().default(null),
+  cycle_date: text.nullable().default(null), segment: z.enum(["daytime", "overnight"]).nullable().default(null).catch(null),
+  seek: z.object({ start_seconds: z.number(), end_seconds: z.number(), source_interval: interval }).nullable().default(null),
+});
+// An unknown kind or origin is shown with the most cautious label, never as a measurement.
+const weatherEvent = z.object({
+  id: text, revision: z.number(), label: text, human_edited: z.boolean(), rule_revision: text,
+  kind: lenient(["precipitation_onset", "daily_gust_max", "lightning_strike", "lightning_interval", "visual", "synthesis", "manual"], "synthesis"),
+  origin: lenient(["measured", "visual", "synthesis", "manual"], "synthesis"), basis: lenient(["instrument", "visual", "inference"], "inference"),
+  precision: lenient(["second", "interval", "clip"], "clip"), source_interval: interval, camera: camera.nullable().catch(null),
+  local_dates: z.array(text), evidence_ids: z.array(text), gust_mps: number.default(null), strikes: number.default(null),
+  distance_km: number.default(null), coverage: coverage.nullable().default(null), videos: z.array(video).default([]), updated_at: text,
+});
+const events = z.object({ generated_at: text, items: z.array(weatherEvent), next_cursor: text.nullable().default(null) });
+
 // The parsed shapes must stay assignable to the generated types; tsc fails on drift.
 const checks: [
   (value: z.infer<typeof current>) => Current,
@@ -109,7 +129,8 @@ const checks: [
   (value: z.infer<typeof aggregates>) => Aggregates,
   (value: z.infer<typeof almanac>) => Almanac,
   (value: z.infer<typeof archive>) => ArchivePage,
-] = [(value) => value, (value) => value, (value) => value, (value) => value, (value) => value];
+  (value: z.infer<typeof events>) => Events,
+] = [(value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value];
 void checks;
 
 export type Parser<T> = (value: unknown) => T | null;
@@ -121,3 +142,4 @@ export const parseRegistry: Parser<MetricRegistry> = parser(registry);
 export const parseAggregates: Parser<Aggregates> = parser(aggregates);
 export const parseAlmanac: Parser<Almanac> = parser(almanac);
 export const parseArchive: Parser<ArchivePage> = parser(archive);
+export const parseEvents: Parser<Events> = parser(events);

@@ -125,9 +125,9 @@ def test_baseline_head_roles_and_least_privilege() -> None:
             async with admin.begin() as connection:
                 assert await scalar(
                     connection, "SELECT version_num FROM public.alembic_version"
-                ) == ("0004_search")
+                ) == ("0005_events")
                 # Slice-1 relations, the observations view, the API's views (0002), the
-                # publication catalog (0003) and search (0004).
+                # publication catalog (0003), search (0004) and events (0005).
                 relations = (
                     await connection.execute(
                         text("""
@@ -159,6 +159,13 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     ),
                     "public_api.assets",
                     "public_api.videos",
+                    # 0005_events (#41)
+                    "weather.weather_event",
+                    "weather.weather_event_revision",
+                    "weather.weather_event_day",
+                    "public_api.event_revisions",
+                    "public_api.event_revision_markers",
+                    "public_api.event_days",
                 }
                 options = await scalar(
                     connection,
@@ -490,12 +497,17 @@ def test_tick_is_idempotent_fills_days_ahead_and_prunes_finished_work() -> None:
             async with db.begin() as connection:
                 await tick(connection, now)
                 await tick(connection, now)
-                assert await scalar(connection, "SELECT count(*) FROM weather.job") == 1
+                # One days job and one events job (#41) for the current slot; the events job is
+                # not yet due.
+                assert await scalar(connection, "SELECT count(*) FROM weather.job") == 2
                 job = await jobs.claim(connection, kinds=registry.kinds())
             assert job is not None and job.kind == "days"
             await _run_job(db, registry, job)
             async with db.begin() as connection:
-                assert await scalar(connection, "SELECT status FROM weather.job") == "succeeded"
+                assert (
+                    await scalar(connection, "SELECT status FROM weather.job WHERE kind='days'")
+                    == "succeeded"
+                )
                 assert await scalar(connection, "SELECT count(*) FROM weather.weather_day") == 8
                 finished = await scalar(
                     connection,
@@ -522,9 +534,9 @@ def test_tick_is_idempotent_fills_days_ahead_and_prunes_finished_work() -> None:
                     )
                     == "quarantined"
                 )
-                assert await scalar(connection, "SELECT count(*) FROM weather.job") == 1
+                assert await scalar(connection, "SELECT count(*) FROM weather.job") == 2
                 await tick(connection, now)
-                assert await scalar(connection, "SELECT count(*) FROM weather.job") == 1
+                assert await scalar(connection, "SELECT count(*) FROM weather.job") == 2
         finally:
             await db.dispose()
 
@@ -548,7 +560,10 @@ def test_concurrent_ticks_enqueue_one_days_job() -> None:
                 await asyncio.wait_for(waiting, 10)
                 await second.commit()
             async with db.begin() as connection:
-                assert await scalar(connection, "SELECT count(*) FROM weather.job") == 1
+                assert (
+                    await scalar(connection, "SELECT count(*) FROM weather.job WHERE kind='days'")
+                    == 1
+                )
         finally:
             await db.dispose()
 
