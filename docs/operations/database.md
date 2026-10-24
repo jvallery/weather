@@ -192,6 +192,10 @@ the dated Debian main, updates and security snapshots. Their package notices
 remain in `/opt/weather-browser-tools`, and browser distribution notices remain
 in `/opt/ms-playwright`. Runtime checks use that readable shared browser path;
 they never run apt or install browsers in an unprivileged validation container.
+The recipe copies `/opt/ffmpeg` from the qualified digest-pinned application
+image, retaining its licenses. Its final UID 1001 build step verifies FFmpeg
+9.0.2 and libx264 on Debian 13, PostgreSQL 16.15, and all browser executable
+paths. Browser launch and fixture qualification remain in fleet browser tests.
 It is a fleet validation image, not an application runtime or another database
 service. Build it through the registry-owned `weather-ci` repo-build profile,
 pin its actual returned digest in the agents validation profile, and run the

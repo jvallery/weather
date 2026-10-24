@@ -22,7 +22,8 @@ Chromium, Firefox and WebKit distributions and their notices in
 `ci/browser/pnpm-lock.yaml`; those tools are not distributed in weather-web.
 
 FFmpeg 9.0.2 with libx264 is GPL, not MIT. Its licenses are included under
-`/opt/ffmpeg/share/licenses` in weather-app; see `docs/operations/ffmpeg.md` for the exact source
+`/opt/ffmpeg/share/licenses` in weather-app and the copied weather-ci toolchain;
+see `docs/operations/ffmpeg.md` for the exact source
 archive, checksum, configuration and corresponding-source distribution obligations.
 
 No third-party application source, fonts or design assets have been imported by the scaffold.
