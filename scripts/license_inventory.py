@@ -19,6 +19,7 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 ALLOW = {
     "MIT",
+    "MIT-0",
     "ISC",
     "BSD-2-Clause",
     "BSD-3-Clause",

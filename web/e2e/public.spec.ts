@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 const paths = ["/", "/about/", "/archive/?month=2026-10", "/archive/2026/10/", "/day/2026-10-31/", "/timelapses/skycam_east/2026-10-31/daytime/", "/weather/history/", "/search/"];
 test.beforeEach(async ({ request, page }) => {
   await page.addInitScript(() => { const violations: string[] = []; (window as Window & { cspViolations?: string[] }).cspViolations = violations; document.addEventListener("securitypolicyviolation", (event) => violations.push(event.effectiveDirective)); }); await request.post("http://localhost:4174/__control", { data: {} }); });
@@ -69,4 +71,28 @@ test("concurrent SSR requests have isolated query state and expose no private up
   const rendered = bodies.map((body) => /<h3>Temperature<\/h3><strong>([^<]+)<\/strong>/.exec(body)?.[1]);
   expect(rendered.every(Boolean)).toBe(true); expect(new Set(rendered).size).toBe(4);
   expect(bodies.every((body) => !body.includes("http://api") && !body.includes("localhost:4174"))).toBe(true);
+});
+
+test("About is complete without JavaScript and font notices match approved bytes", async ({ browser, request }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage(); await page.goto("http://localhost:4173/about/");
+  for (const topic of [/Tempest/, /east sky/, /west sky/, /front yard/, /Measured values/, /Derived values/, /AI descriptions/, /Human-edited/, /6°/, /7,200/, /not measurements/, /private notes/, /at least 10 minutes/, /no forecast/, /person identification/]) await expect(page.getByText(topic).first()).toBeVisible();
+  await context.close();
+  const provenance = JSON.parse(readFileSync(new URL("../../docs/research/font-provenance.json", import.meta.url), "utf8"));
+  for (const font of provenance.packages) {
+    for (const [name, digest] of [[font.font_member.split("/").at(-1), font.font_sha256], [font.name.includes("sans") ? "OFL-sans.txt" : "OFL-mono.txt", font.license_sha256]]) {
+      const response = await request.get(`/fonts/${name}`); expect(response.ok()).toBe(true);
+      expect(createHash("sha256").update(await response.body()).digest("hex")).toBe(digest);
+    }
+  }
+});
+test("public client assets contain no private upstream or source maps", async ({ page, request }) => {
+  await page.goto("/");
+  const urls = await page.evaluate(() => [...new Set([...performance.getEntriesByType("resource").map((entry) => entry.name)])].filter((url) => new URL(url).pathname.startsWith("/assets/") && /\.(js|css)$/.test(new URL(url).pathname)));
+  expect(urls.length).toBeGreaterThan(0);
+  for (const url of urls) {
+    const response = await request.get(url); expect(response.ok()).toBe(true);
+    expect(await response.text()).not.toMatch(/http:\/\/(?:api(?::8000)?|localhost:4174)|API_ORIGIN|sourceMappingURL=/);
+    expect((await request.get(`${url}.map`)).status()).toBe(404);
+  }
 });

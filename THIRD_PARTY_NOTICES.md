@@ -12,7 +12,7 @@ FFmpeg 9.0.2 with libx264 is GPL, not MIT. Its licenses are included under
 `/opt/ffmpeg/share/licenses` in weather-app; see `docs/operations/ffmpeg.md` for the exact source
 archive, checksum, configuration and corresponding-source distribution obligations.
 
-Self-hosted DM Sans and JetBrains Mono variable fonts use the SIL Open Font License 1.1.
+Self-hosted IBM Plex Sans Variable and IBM Plex Mono fonts use the SIL Open Font License 1.1.
 Their original notices are distributed at `/fonts/OFL-sans.txt` and `/fonts/OFL-mono.txt`;
 exact approved font and notice hashes are recorded in `docs/research/font-provenance.json`.
 Build/check dependencies with MPL-2.0 retain their notices; their source is not incorporated into
