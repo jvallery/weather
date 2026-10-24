@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: weather-database-policy
+  namespace: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '-6'
+data:
+  recovery.pitr_window_days: '30'
+  recovery.b2_hide_after_days: '33'
+  recovery.b2_delete_hidden_after_days: '7'
+  recovery.media_gc_grace_days: '90'
