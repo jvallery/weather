@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Check an inventory covering every version in both lockfiles, including optional platforms.
+"""Check every runtime/contract-tool lock version, including optional platforms.
 
 Regenerate with --update after reviewing changed upstream license metadata.
 --manifest checks a standalone synthetic license policy fixture.
@@ -50,10 +50,11 @@ def closure() -> set[tuple[str, str, str]]:
         for x in lock["package"]
         if "registry" in x.get("source", {})
     }
-    for doc in yaml.safe_load_all((ROOT / "web/pnpm-lock.yaml").read_text()):
-        for key in doc.get("packages", {}):
-            name, version = key.rsplit("@", 1)
-            result.add(("npm", name, version))
+    for relative in ("web/pnpm-lock.yaml", "web/contract-tools/pnpm-lock.yaml"):
+        for doc in yaml.safe_load_all((ROOT / relative).read_text()):
+            for key in doc.get("packages", {}):
+                name, version = key.rsplit("@", 1)
+                result.add(("npm", name, version))
     return result
 
 

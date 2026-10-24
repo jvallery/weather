@@ -1,0 +1,1500 @@
+{
+  "components": {
+    "schemas": {
+      "Aggregate": {
+        "additionalProperties": false,
+        "properties": {
+          "algorithm_revision": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "title": "Algorithm Revision",
+            "type": "string"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          },
+          "evidence_ids": {
+            "items": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "evidence_revision": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "title": "Evidence Revision",
+            "type": "string"
+          },
+          "interval": {
+            "$ref": "#/components/schemas/Interval"
+          },
+          "metric": {
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Metric",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "statistic": {
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Statistic",
+            "type": "string"
+          },
+          "unit": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "metric",
+          "statistic",
+          "value",
+          "unit",
+          "interval",
+          "coverage",
+          "evidence_ids",
+          "evidence_revision",
+          "algorithm_revision",
+          "reason"
+        ],
+        "title": "Aggregate",
+        "type": "object"
+      },
+      "Aggregates": {
+        "additionalProperties": false,
+        "properties": {
+          "generated_at": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "interval": {
+            "$ref": "#/components/schemas/Interval"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Aggregate"
+            },
+            "maxItems": 5000,
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_.-]{1,2048}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "resolution_seconds": {
+            "exclusiveMinimum": 0.0,
+            "title": "Resolution Seconds",
+            "type": "integer"
+          },
+          "revision": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "title": "Revision",
+            "type": "string"
+          },
+          "statistic": {
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Statistic",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision",
+          "generated_at",
+          "interval",
+          "resolution_seconds",
+          "statistic",
+          "items",
+          "next_cursor"
+        ],
+        "title": "Aggregates",
+        "type": "object"
+      },
+      "Conversion": {
+        "additionalProperties": false,
+        "description": "display = canonical * scale_numerator / scale_denominator + offset ratio.",
+        "properties": {
+          "offset_denominator": {
+            "exclusiveMinimum": 0.0,
+            "title": "Offset Denominator",
+            "type": "integer"
+          },
+          "offset_numerator": {
+            "title": "Offset Numerator",
+            "type": "integer"
+          },
+          "scale_denominator": {
+            "exclusiveMinimum": 0.0,
+            "title": "Scale Denominator",
+            "type": "integer"
+          },
+          "scale_numerator": {
+            "title": "Scale Numerator",
+            "type": "integer"
+          },
+          "unit": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "unit",
+          "scale_numerator",
+          "scale_denominator",
+          "offset_numerator",
+          "offset_denominator"
+        ],
+        "title": "Conversion",
+        "type": "object"
+      },
+      "Coverage": {
+        "additionalProperties": false,
+        "properties": {
+          "algorithm_revision": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "title": "Algorithm Revision",
+            "type": "string"
+          },
+          "expected_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "gt": 0,
+            "title": "Expected Seconds"
+          },
+          "fraction": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "ge": 0,
+            "le": 1,
+            "title": "Fraction"
+          },
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/Interval"
+            },
+            "maxItems": 1000,
+            "title": "Gaps",
+            "type": "array"
+          },
+          "support_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "ge": 0,
+            "title": "Support Seconds"
+          }
+        },
+        "required": [
+          "fraction",
+          "support_seconds",
+          "expected_seconds",
+          "algorithm_revision",
+          "gaps"
+        ],
+        "title": "Coverage",
+        "type": "object"
+      },
+      "Current": {
+        "additionalProperties": false,
+        "properties": {
+          "data_state": {
+            "enum": [
+              "live",
+              "cached",
+              "unavailable"
+            ],
+            "title": "Data State",
+            "type": "string"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/Metric"
+            },
+            "maxItems": 128,
+            "title": "Metrics",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "station_alias": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Station Alias",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "generated_at",
+          "station_alias",
+          "data_state",
+          "metrics"
+        ],
+        "title": "Current",
+        "type": "object"
+      },
+      "History": {
+        "additionalProperties": false,
+        "properties": {
+          "aggregation": {
+            "const": "observed",
+            "default": "observed",
+            "title": "Aggregation",
+            "type": "string"
+          },
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/Interval"
+            },
+            "maxItems": 1000,
+            "title": "Gaps",
+            "type": "array"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "interval": {
+            "$ref": "#/components/schemas/Interval"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_.-]{1,2048}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryPoint"
+            },
+            "maxItems": 5000,
+            "title": "Points",
+            "type": "array"
+          },
+          "resolution_seconds": {
+            "minimum": 0.0,
+            "title": "Resolution Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "generated_at",
+          "interval",
+          "resolution_seconds",
+          "aggregation",
+          "points",
+          "gaps",
+          "next_cursor"
+        ],
+        "title": "History",
+        "type": "object"
+      },
+      "HistoryPoint": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "metric": {
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Metric",
+            "type": "string"
+          },
+          "observed_at": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "Observed At",
+            "type": "string"
+          },
+          "quality": {
+            "enum": [
+              "valid",
+              "suspect",
+              "missing",
+              "invalid"
+            ],
+            "title": "Quality",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "received_at": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "Received At",
+            "type": "string"
+          },
+          "support_interval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Interval"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unit": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "observed_at",
+          "received_at",
+          "metric",
+          "value",
+          "unit",
+          "quality",
+          "evidence_id",
+          "reason",
+          "support_interval"
+        ],
+        "title": "HistoryPoint",
+        "type": "object"
+      },
+      "Interval": {
+        "additionalProperties": false,
+        "description": "Inclusive start, exclusive end, preserving microsecond ordering.",
+        "properties": {
+          "end": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "End",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "Interval",
+        "type": "object"
+      },
+      "Lightning": {
+        "additionalProperties": false,
+        "properties": {
+          "aggregate_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "title": "Aggregate Id",
+            "type": "string"
+          },
+          "algorithm_revision": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "title": "Algorithm Revision",
+            "type": "string"
+          },
+          "authority": {
+            "enum": [
+              "obs_st",
+              "obs_air"
+            ],
+            "title": "Authority",
+            "type": "string"
+          },
+          "boundary_uncertain_count": {
+            "minimum": 0,
+            "title": "Boundary Uncertain Count",
+            "type": "integer"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          },
+          "evidence_ids": {
+            "items": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "evidence_revision": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "title": "Evidence Revision",
+            "type": "string"
+          },
+          "observed_subtotal": {
+            "minimum": 0,
+            "title": "Observed Subtotal",
+            "type": "integer"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "value",
+          "observed_subtotal",
+          "boundary_uncertain_count",
+          "coverage",
+          "reason",
+          "authority",
+          "algorithm_revision",
+          "evidence_revision",
+          "evidence_ids",
+          "aggregate_id"
+        ],
+        "title": "Lightning",
+        "type": "object"
+      },
+      "Metric": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_interval_seconds": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "gt": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Interval Seconds"
+          },
+          "freshness": {
+            "enum": [
+              "fresh",
+              "stale",
+              "unavailable"
+            ],
+            "title": "Freshness",
+            "type": "string"
+          },
+          "metric": {
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Metric",
+            "type": "string"
+          },
+          "observed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed At"
+          },
+          "quality": {
+            "enum": [
+              "valid",
+              "suspect",
+              "missing",
+              "invalid"
+            ],
+            "title": "Quality",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "received_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Received At"
+          },
+          "unit": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Unit",
+            "type": "string"
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Until"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "metric",
+          "value",
+          "unit",
+          "observed_at",
+          "received_at",
+          "expected_interval_seconds",
+          "valid_until",
+          "quality",
+          "freshness",
+          "reason"
+        ],
+        "title": "Metric",
+        "type": "object"
+      },
+      "MetricDefinition": {
+        "additionalProperties": false,
+        "properties": {
+          "canonical_unit": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Canonical Unit",
+            "type": "string"
+          },
+          "conversions": {
+            "items": {
+              "$ref": "#/components/schemas/Conversion"
+            },
+            "maxItems": 16,
+            "minItems": 1,
+            "title": "Conversions",
+            "type": "array"
+          },
+          "display_units": {
+            "items": {
+              "maxLength": 32,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 16,
+            "minItems": 1,
+            "title": "Display Units",
+            "type": "array"
+          },
+          "expected_interval_seconds": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "gt": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Interval Seconds"
+          },
+          "label": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "metric": {
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Metric",
+            "type": "string"
+          },
+          "public": {
+            "const": true,
+            "default": true,
+            "title": "Public",
+            "type": "boolean"
+          },
+          "revision": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "title": "Revision",
+            "type": "string"
+          },
+          "statistics": {
+            "items": {
+              "pattern": "^[a-z][a-z0-9_]{0,63}$",
+              "type": "string"
+            },
+            "maxItems": 16,
+            "minItems": 1,
+            "title": "Statistics",
+            "type": "array"
+          }
+        },
+        "required": [
+          "metric",
+          "label",
+          "canonical_unit",
+          "display_units",
+          "conversions",
+          "statistics",
+          "expected_interval_seconds",
+          "public",
+          "revision"
+        ],
+        "title": "MetricDefinition",
+        "type": "object"
+      },
+      "MetricRegistry": {
+        "additionalProperties": false,
+        "properties": {
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/MetricDefinition"
+            },
+            "maxItems": 256,
+            "title": "Metrics",
+            "type": "array"
+          },
+          "revision": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "title": "Revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision",
+          "metrics"
+        ],
+        "title": "MetricRegistry",
+        "type": "object"
+      },
+      "Problem": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "suggested_resolution_seconds": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Resolution Seconds"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "request_id",
+          "suggested_resolution_seconds"
+        ],
+        "title": "Problem",
+        "type": "object"
+      },
+      "Wind": {
+        "additionalProperties": false,
+        "description": "Canonical m/s speeds, from-direction degrees and distinct duration coverage.",
+        "properties": {
+          "aggregate_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "title": "Aggregate Id",
+            "type": "string"
+          },
+          "algorithm_revision": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "title": "Algorithm Revision",
+            "type": "string"
+          },
+          "direction_coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          },
+          "direction_degrees": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "ge": 0,
+                "lt": 360
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direction Degrees"
+          },
+          "direction_state": {
+            "enum": [
+              "directional",
+              "variable",
+              "calm",
+              "unavailable"
+            ],
+            "title": "Direction State",
+            "type": "string"
+          },
+          "evidence_ids": {
+            "items": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "evidence_revision": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$",
+            "title": "Evidence Revision",
+            "type": "string"
+          },
+          "maximum_gust": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "ge": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maximum Gust"
+          },
+          "mean_speed": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "ge": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean Speed"
+          },
+          "resultant": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "ge": 0,
+                "le": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultant"
+          },
+          "rose": {
+            "items": {
+              "$ref": "#/components/schemas/WindRoseBin"
+            },
+            "maxItems": 83,
+            "minItems": 1,
+            "title": "Rose",
+            "type": "array"
+          },
+          "speed_coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          }
+        },
+        "required": [
+          "mean_speed",
+          "maximum_gust",
+          "direction_degrees",
+          "direction_state",
+          "resultant",
+          "speed_coverage",
+          "direction_coverage",
+          "rose",
+          "algorithm_revision",
+          "evidence_revision",
+          "evidence_ids",
+          "aggregate_id"
+        ],
+        "title": "Wind",
+        "type": "object"
+      },
+      "WindRoseBin": {
+        "additionalProperties": false,
+        "description": "Angles are meteorological-from degrees; speed bounds are canonical m/s.",
+        "properties": {
+          "angle_end": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "ge": 0,
+                "lt": 360
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Angle End"
+          },
+          "angle_start": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "ge": 0,
+                "lt": 360
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Angle Start"
+          },
+          "category": {
+            "enum": [
+              "directional",
+              "calm",
+              "variable",
+              "missing"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "denominator_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "gt": 0,
+            "title": "Denominator Seconds"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "ge": 0,
+            "title": "Duration Seconds"
+          },
+          "speed_max": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "gt": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speed Max"
+          },
+          "speed_min": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "ge": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speed Min"
+          }
+        },
+        "required": [
+          "category",
+          "angle_start",
+          "angle_end",
+          "speed_min",
+          "speed_max",
+          "duration_seconds",
+          "denominator_seconds"
+        ],
+        "title": "WindRoseBin",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Weather public API",
+    "version": "1"
+  },
+  "openapi": "3.1.1",
+  "paths": {
+    "/api/v1/weather/aggregates": {
+      "get": {
+        "operationId": "getAggregates",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "start",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+              "title": "Start",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "end",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+              "title": "End",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "metrics",
+            "required": true,
+            "schema": {
+              "items": {
+                "pattern": "^[a-z][a-z0-9_]{0,63}$",
+                "type": "string"
+              },
+              "maxItems": 32,
+              "minItems": 1,
+              "title": "Metrics",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 1000,
+              "maximum": 5000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[A-Za-z0-9_.-]{1,2048}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "resolution_seconds",
+            "required": true,
+            "schema": {
+              "exclusiveMinimum": 0,
+              "maximum": 2147483647,
+              "title": "Resolution Seconds",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "statistic",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-z][a-z0-9_]{0,63}$",
+              "title": "Statistic",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Aggregates"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Invalid bounded public request."
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Public data is unavailable."
+          }
+        },
+        "summary": "Aggregates"
+      }
+    },
+    "/api/v1/weather/current": {
+      "get": {
+        "operationId": "getCurrent",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "If-None-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 4096,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-None-Match"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Current"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "Cache-Control": {
+                "description": "At most five seconds, bounded by remaining freshness.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of values, source timing, quality and data state.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Unchanged semantic current representation.",
+            "headers": {
+              "Cache-Control": {
+                "description": "At most five seconds, bounded by remaining freshness.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "description": "Weak validator of values, source timing, quality and data state.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Invalid bounded public request."
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Public data is unavailable."
+          }
+        },
+        "summary": "Current"
+      }
+    },
+    "/api/v1/weather/metrics": {
+      "get": {
+        "operationId": "getMetricRegistry",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricRegistry"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Metric Registry"
+      }
+    },
+    "/api/v1/weather/observations": {
+      "get": {
+        "operationId": "getObservations",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "start",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+              "title": "Start",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "end",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+              "title": "End",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "metrics",
+            "required": true,
+            "schema": {
+              "items": {
+                "pattern": "^[a-z][a-z0-9_]{0,63}$",
+                "type": "string"
+              },
+              "maxItems": 32,
+              "minItems": 1,
+              "title": "Metrics",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 1000,
+              "maximum": 5000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[A-Za-z0-9_.-]{1,2048}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/History"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Invalid bounded public request."
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Public data is unavailable."
+          }
+        },
+        "summary": "Observations"
+      }
+    }
+  }
+}

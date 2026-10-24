@@ -27,7 +27,7 @@ def main() -> None:
         from prometheus_client import start_http_server
 
         start_http_server(settings.metrics_port)
-        uvicorn.run("weather.api:app", host="0.0.0.0", port=settings.port)
+        uvicorn.run("weather.api:app", host="0.0.0.0", port=settings.port, access_log=False)
     elif args.role == "scheduler":
         from weather.scheduler.runner import main as run_scheduler
 

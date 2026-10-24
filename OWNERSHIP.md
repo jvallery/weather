@@ -21,7 +21,7 @@ State as of 2026-10-24: namespace guardrails are deployed at `bed09184608c947dc0
 | api, web | Workloads (2 replicas each) | `weather` | WX-01 | Running; point-in-time public/metrics/isolation and tokenless checks passed; continuous edge reliability pending; no station data yet |
 | Collectors ×3, receiver, pipelines ×3, scheduler, intel | Workloads | `weather` | Slice issues | Planned |
 | Weather monitoring | Scrape, probes, rules, dashboards | monitoring-stack | monitoring-stack#1072 + slice launches | Planned |
-| Secrets (camera, B2, Garage, Cortex, DB) | KSOPS | agents `secrets-ksops/weather` | owner issues above | Planned |
+| Secrets (camera, B2, Garage, Cortex, DB, API cursor) | KSOPS | agents `secrets-ksops/weather` | owner issues above | Planned |
 
 Adjacent items this repo consumes but does not own: Tempest hub (homeassistant), cameras (sentinel), Cortex routes (cortex-ai-compute), `ak-forwardauth` (network-infra), vallery.net homepage (VerdifyConsultancy/wordpress).
 
@@ -48,3 +48,9 @@ latency/decode integration runs only in fleet CI. See [capture operations](docs/
 These namespace-rendered application objects inherit the central `namespace:weather`
 ownership declaration. Fleet validation/profile declarations and the CI image digest
 pin are agents-owned; source/tests, schema and runtime image contents remain here.
+
+The WX-13 cursor integrity Secret `weather-api-cursor` (`CURSOR_HMAC_KEY`) is
+prepared in agents PR #5469: generated once, SOPS sealed and independently
+restore-read on the operator Mac. It is not mounted or enabled here; only API
+pods consume it when WX-13 is commissioned. No credential value is stored in
+this repository.
