@@ -18,6 +18,28 @@ class Settings(BaseModel):
     api_obs_st_hold_seconds: float = Field(default=150, gt=0, le=86400)
     api_rapid_wind_interval_seconds: float = Field(default=3, gt=0, le=3600)
     api_rapid_wind_hold_seconds: float = Field(default=15, gt=0, le=86400)
+    # Search (#25): Cortex OpenAI-compatible base URL; unset keeps search lexical/numeric.
+    cortex_base_url: HttpUrl | None = None
+    search_profile: str = "embed-main-2560-v1"
+
+    @field_validator("cortex_base_url")
+    @classmethod
+    def cortex_https(cls, value: HttpUrl | None) -> HttpUrl | None:
+        if value is not None and (
+            value.scheme != "https" or value.username or value.password or value.query
+            or value.fragment
+        ):
+            raise ValueError("requires an HTTPS base URL without credentials")
+        return value
+
+    @field_validator("search_profile")
+    @classmethod
+    def known_profile(cls, value: str) -> str:
+        from weather.search.cortex import PROFILES
+
+        if value not in PROFILES:
+            raise ValueError("unknown embedding profile")
+        return value
 
     @field_validator("public_origin")
     @classmethod

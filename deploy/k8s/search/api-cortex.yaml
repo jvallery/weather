@@ -1,0 +1,28 @@
+# The scoped Weather Cortex key (agents KSOPS), read-only and only in the api.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: weather
+spec:
+  template:
+    spec:
+      containers:
+      - name: api
+        env:
+        - name: WEATHER_CORTEX_BASE_URL
+          value: https://cortex.vallery.net/v1
+        volumeMounts:
+        - name: cortex
+          mountPath: /var/run/weather-cortex
+          readOnly: true
+      volumes:
+      - name: cortex
+        secret:
+          secretName: weather-cortex
+          # A missing key leaves search lexical/numeric; it never blocks the pod from starting.
+          optional: true
+          defaultMode: 288
+          items:
+          - key: api_key.txt
+            path: api_key.txt

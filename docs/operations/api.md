@@ -1,6 +1,6 @@
 # Public Weather API
 
-The `api` Deployment (2 replicas, `weather` namespace) serves `/api/v1/weather/{current,metrics,observations,aggregates,almanac}` read-only from `weather-pg` as `weather_api`. Contract: [api-contract.md](../contracts/api-contract.md#weather-data-routes-implemented-14). Code: `app/weather/api/`.
+The `api` Deployment (2 replicas, `weather` namespace) serves `/api/v1/weather/{current,metrics,observations,aggregates,almanac}` and `POST /api/v1/search` ([search operations](search.md)) read-only from `weather-pg` as `weather_api`. Contract: [api-contract.md](../contracts/api-contract.md#weather-data-routes-implemented-14). Code: `app/weather/api/`.
 
 ## How it works
 

@@ -1,6 +1,23 @@
 // SPDX-License-Identifier: MIT
 // Generated from code-first Pydantic OpenAPI; run scripts/ci.sh contracts --write.
 export interface paths {
+    readonly "/api/v1/search": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly get?: never;
+        readonly put?: never;
+        /** Search */
+        readonly post: operations["search"];
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
     readonly "/api/v1/timelapses": {
         readonly parameters: {
             readonly query?: never;
@@ -387,6 +404,26 @@ export interface components {
             /** Station Alias */
             readonly station_alias: string;
         };
+        /**
+         * MatchedMeasurement
+         * @description A whole-video aggregate that satisfied a predicate; never a clip-time event.
+         */
+        readonly MatchedMeasurement: {
+            readonly coverage: components["schemas"]["Coverage"];
+            /** Evidence Count */
+            readonly evidence_count: number;
+            /** Evidence Hash */
+            readonly evidence_hash: string | null;
+            readonly interval: components["schemas"]["weather__api__models__Interval"];
+            /** Metric */
+            readonly metric: string;
+            /** Statistic */
+            readonly statistic: string;
+            /** Unit */
+            readonly unit: string;
+            /** Value */
+            readonly value: number;
+        };
         /** Metric */
         readonly Metric: {
             /** Coverage */
@@ -487,6 +524,33 @@ export interface components {
              * Format: date-time
              */
             readonly start: string;
+        };
+        /** Predicate */
+        readonly Predicate: {
+            /**
+             * Metric
+             * @enum {string}
+             */
+            readonly metric: "precipitation" | "wind_gust" | "temperature";
+            /**
+             * Min Coverage
+             * @default 0.95
+             */
+            readonly min_coverage: number;
+            /**
+             * Op
+             * @enum {string}
+             */
+            readonly op: "<" | "<=" | "=" | ">=" | ">";
+            /**
+             * Statistic
+             * @enum {string}
+             */
+            readonly statistic: "sum" | "max" | "min" | "mean";
+            /** Unit */
+            readonly unit: string;
+            /** Value */
+            readonly value: number;
         };
         /** Problem */
         readonly Problem: {
@@ -602,6 +666,115 @@ export interface components {
             readonly speed_max: number | null;
             /** Speed Min */
             readonly speed_min: number | null;
+        };
+        /** SearchHit */
+        readonly SearchHit: {
+            /** Analysis Mode */
+            readonly analysis_mode: string;
+            /** Camera Id */
+            readonly camera_id: string;
+            /** Document Id */
+            readonly document_id: string;
+            /**
+             * Evidence Precision
+             * @enum {string}
+             */
+            readonly evidence_precision: "frame" | "interval" | "clip" | "segment";
+            /** Matched Measurements */
+            readonly matched_measurements: readonly components["schemas"]["MatchedMeasurement"][];
+            /** Media Revision */
+            readonly media_revision: number;
+            /** Poster Asset Id */
+            readonly poster_asset_id: string | null;
+            /** Rank */
+            readonly rank: number;
+            readonly seek: components["schemas"]["Seek"] | null;
+            /**
+             * Segment
+             * @enum {string}
+             */
+            readonly segment: "daytime" | "overnight";
+            /** Snippet */
+            readonly snippet: string;
+            readonly source_interval: components["schemas"]["weather__api__models__Interval"];
+            /** Video Id */
+            readonly video_id: string;
+            readonly video_interval: components["schemas"]["weather__api__models__Interval"];
+        };
+        /**
+         * SearchRequest
+         * @description Explicit UTC bounds; empty or whitespace-only text browses newest first (numeric).
+         */
+        readonly SearchRequest: {
+            /**
+             * Cameras
+             * @default []
+             */
+            readonly cameras: readonly string[];
+            /**
+             * End
+             * Format: date-time
+             */
+            readonly end: string;
+            /**
+             * Predicates
+             * @default []
+             */
+            readonly predicates: readonly components["schemas"]["Predicate"][];
+            /**
+             * Query
+             * @default
+             */
+            readonly query: string;
+            /**
+             * Segments
+             * @default []
+             */
+            readonly segments: readonly ("daytime" | "overnight")[];
+            /**
+             * Start
+             * Format: date-time
+             */
+            readonly start: string;
+            /**
+             * Top K
+             * @default 10
+             */
+            readonly top_k: number;
+        };
+        /** SearchResults */
+        readonly SearchResults: {
+            /** Count */
+            readonly count: number;
+            /** Degraded Reason */
+            readonly degraded_reason: ("embedding_unavailable" | "embedding_busy" | "lexical_no_terms") | null;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            readonly generated_at: string;
+            /** Hits */
+            readonly hits: readonly components["schemas"]["SearchHit"][];
+            /**
+             * Mode
+             * @enum {string}
+             */
+            readonly mode: "hybrid_exact" | "lexical" | "numeric";
+            /** Profile Id */
+            readonly profile_id: string | null;
+        };
+        /**
+         * Seek
+         * @description A playback offset inside the hit's cited media interval and its source instant.
+         */
+        readonly Seek: {
+            /** Media Seconds */
+            readonly media_seconds: number;
+            /**
+             * Source At
+             * Format: date-time
+             */
+            readonly source_at: string;
         };
         /** Timelapse */
         readonly Timelapse: {
@@ -738,6 +911,57 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    readonly search: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody: {
+            readonly content: {
+                readonly "application/json": components["schemas"]["SearchRequest"];
+            };
+        };
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["SearchResults"];
+                };
+            };
+            /** @description Invalid request. */
+            readonly 400: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Search is busy; retry after Retry-After. */
+            readonly 429: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Weather data is temporarily unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     readonly listTimelapses: {
         readonly parameters: {
             readonly query?: {

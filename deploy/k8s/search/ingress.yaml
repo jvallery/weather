@@ -1,0 +1,58 @@
+# Search has its own per-client budget on top of the api's in-process semaphore (P10, C7):
+# requests per minute and concurrent requests, both keyed on the visitor's address.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: weather-search-rate-limit
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  rateLimit:
+    average: 30
+    period: 1m
+    burst: 10
+    sourceCriterion:
+      requestHeaderName: Cf-Connecting-Ip
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: weather-search-in-flight
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  inFlightReq:
+    amount: 2
+    sourceCriterion:
+      requestHeaderName: Cf-Connecting-Ip
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: weather-search
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - match: Host(`weather.vallery.net`) && Path(`/api/v1/search`)
+    priority: 110
+    kind: Rule
+    middlewares:
+    - name: weather-search-rate-limit
+    - name: weather-search-in-flight
+    - name: weather-security-headers
+    services:
+    - name: api
+      port: 80
+  tls: {}

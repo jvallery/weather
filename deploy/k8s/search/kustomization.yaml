@@ -1,0 +1,13 @@
+# Search wiring (#25): Cortex query embedding for the api and the search edge limits.
+# Enabled from the root kustomization by the deploy commit that pins an app digest carrying
+# weather.search; the older image rejects the WEATHER_CORTEX_BASE_URL setting.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+- cortex-egress.yaml
+- ingress.yaml
+patches:
+- path: api-cortex.yaml
+  target:
+    kind: Deployment
+    name: api
