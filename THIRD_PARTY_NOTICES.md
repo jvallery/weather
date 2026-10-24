@@ -14,5 +14,5 @@ archive, checksum, configuration and corresponding-source distribution obligatio
 
 No third-party application source, fonts or design assets have been imported by the scaffold.
 Build/check dependencies with MPL-2.0 retain their notices; their source is not incorporated into
-Weather's original source. The web image currently includes development dependencies with their
-license files so the complete lock closure remains inspectable; reducing it is a later build refinement.
+Weather's original source. The web build prunes development dependencies after the SSR build; production packages retain their
+license files. The source inventory includes the complete build and development closure.

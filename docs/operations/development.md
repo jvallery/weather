@@ -1,6 +1,6 @@
 # Development and checks
 
-Toolchains: CPython 3.14.9, uv 0.13.5, Node 24.22.1, pnpm 12.15.0, gitleaks 8.30.1.
+Toolchains: CPython 3.14.9, uv 0.13.5, Node 24.22.1, pnpm 12.15.0, gitleaks 8.30.1, Syft 1.55.0 (image evidence only).
 Install these through the existing operator/toolbox paths. Run `uv sync --frozen`, then
 `cd web && pnpm install --frozen-lockfile --ignore-scripts`.
 
@@ -27,8 +27,9 @@ The web image starts `node server.mjs`, HTTP on 3000 and metrics on 9000.
 Both images run UID/GID 10001, need no service-account token, and support a read-only root filesystem.
 Runtime assets and React scripts are served locally; no CDN or remote font is configured.
 
-Mirror the Dockerfile's exact upstream Python/Node digests into `registry.vallery.net/library/` through
-the approved in-cluster registry path before WX-01 builds. Digest copying must preserve the manifest.
+Import the Dockerfile's exact upstream Python/Node digests through the approved `weather-python-base`
+and `weather-node-base` registry profiles before WX-01 builds, using `images/upstream-imports/`.
+Final app/web bases use the resulting verified `registry.vallery.net/jvallery/weather-*-base` digests.
 
 TypeScript 7.0.2 is installed as `@typescript/native` and owns the `tsc` executable; `tsc --noEmit --singleThreaded`
 checks the app. ESLint uses the JavaScript API from `@typescript/typescript6` 6.0.2 via the `typescript` alias,
@@ -38,3 +39,13 @@ This preserves the selected native compiler while supporting API-based tooling.
 `mypy-extensions` 1.1.0 omits license metadata. Its distributed wheel LICENSE was reviewed as MIT;
 SHA-256 of that LICENSE: `a50450da1d53cd777b80ced77c58ff96abe0ccd879706bd142c3ec20e245f0b4`.
 The inventory generator has an exact name/version exception for this reviewed release.
+
+The isolated Hatchling build backend and its complete dependency closure are pinned with uv build constraints
+and included in the development lock and license inventory. Production requirements exclude build-only tools.
+
+`hatchling` 1.29.0 also omits upstream metadata. Its wheel LICENSE.txt was reviewed as MIT;
+SHA-256: `7f143a8127ad4873862d70854b5bd2abd0085aa73e64fd2b08704a3b9f5c07fc`.
+The inventory generator restricts this exception to that exact release.
+
+The image scan writes `artifacts/sbom-app.json` or `artifacts/sbom-web.json` and its SHA-256 sidecar.
+WX-01 owns artifact custody and the evidence producer; the scaffold does not submit a separate scan workflow.

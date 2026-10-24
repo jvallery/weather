@@ -49,7 +49,12 @@ while (( $# )); do
         [[ "${WEATHER_CI_IN_CLUSTER:-}" == "1" ]] || { echo 'Image SBOM requires fleet CI in-cluster' >&2; exit 2; }
         shift; image="$1"; shift
         mkdir -p artifacts
-        syft "$image" -o cyclonedx-json=artifacts/image.cdx.json
+        image_name="${image##*/}"
+        image_name="${image_name%%[@:]*}"
+        [[ "$image_name" =~ ^[A-Za-z0-9._-]+$ ]] || exit 2
+        image_name="${image_name#weather-}"
+        syft "registry:$image" -o "cyclonedx-json=artifacts/sbom-$image_name.json"
+        sha256sum "artifacts/sbom-$image_name.json" > "artifacts/sbom-$image_name.json.sha256"
       fi
       ;;
     all)

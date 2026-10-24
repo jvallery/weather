@@ -81,7 +81,8 @@ def metadata(item: tuple[str, str, str]) -> dict[str, str]:
         if isinstance(license_id, dict):
             license_id = license_id.get("type", "UNKNOWN")
     # This release omits license metadata; its wheel LICENSE was reviewed by hash.
-    if ecosystem == "pypi" and name == "mypy-extensions" and version == "1.1.0":
+    reviewed_mit = {("mypy-extensions", "1.1.0"), ("hatchling", "1.29.0")}
+    if ecosystem == "pypi" and (name, version) in reviewed_mit:
         license_id = "MIT"
     return dict(ecosystem=ecosystem, name=name, version=version, license=license_id, source=url)
 
@@ -105,8 +106,17 @@ def main() -> None:
     target = ROOT / "supply-chain/licenses.json"
     expected = closure() if not args.manifest else None
     if args.update:
+        previous = json.loads(target.read_text()) if target.exists() else []
+        cached = {
+            (x["ecosystem"], x["name"], x["version"]): x
+            for x in previous
+            if x.get("license") != "UNKNOWN"
+        }
+        pending = sorted((expected or set()) - set(cached))
         with ThreadPoolExecutor(max_workers=6) as pool:
-            rows = list(pool.map(metadata, sorted(expected or set())))
+            fetched = list(pool.map(metadata, pending))
+        cached.update({(x["ecosystem"], x["name"], x["version"]): x for x in fetched})
+        rows = [cached[key] for key in sorted(expected or set())]
         target.parent.mkdir(exist_ok=True)
         target.write_text(json.dumps(rows, indent=2) + "\n")
     rows = json.loads((args.manifest or target).read_text())

@@ -59,3 +59,17 @@ if not (root / "gitleaks").exists():
     assert member is not None
     (root / "gitleaks").write_bytes(member.read())
     (root / "gitleaks").chmod(0o755)
+
+if not (root / "syft").exists():
+    archive = tarfile.open(
+        fileobj=io.BytesIO(
+            download(
+                "https://github.com/anchore/syft/releases/download/v1.55.0/syft_1.55.0_linux_amd64.tar.gz",
+                "bb65249542db5fedeeb4d3f9b018b75e7264dbfbbb10486f044581a92f90490d",
+            )
+        )
+    )
+    member = archive.extractfile("syft")
+    assert member is not None
+    (root / "syft").write_bytes(member.read())
+    (root / "syft").chmod(0o755)

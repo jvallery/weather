@@ -11,7 +11,20 @@ for directory in ("app", "scripts", "web"):
             part in {"node_modules", "build", ".react-router", "__pycache__"} for part in file.parts
         ):
             continue
-        if file.suffix in {".py", ".sh", ".js", ".mjs", ".ts", ".tsx"}:
+        if not file.is_file():
+            continue
+        if file.name == "weather" or file.suffix in {
+            ".py",
+            ".sh",
+            ".js",
+            ".mjs",
+            ".ts",
+            ".tsx",
+            ".jsx",
+            ".css",
+            ".sql",
+            ".html",
+        }:
             assert "SPDX-License-Identifier: MIT" in file.read_text()[:200], f"Missing SPDX: {file}"
 for name in ("Dockerfile.app", "Dockerfile.web"):
     body = (ROOT / name).read_text()
