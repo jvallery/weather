@@ -29,10 +29,38 @@ def computation():
 
 def test_store_identity_binds_station_scope_policy_and_exact_values():
     value = computation()
-    first = prepare("Fixture A", value, boundary="1", policy_revision="policy_1")
-    verified_later = prepare("Fixture A", value, boundary="2", policy_revision="policy_1")
-    other_station = prepare("Fixture B", value, boundary="1", policy_revision="policy_1")
-    new_policy = prepare("Fixture A", value, boundary="1", policy_revision="policy_2")
+    first = prepare(
+        "Fixture A",
+        value,
+        boundary="1",
+        policy_revision="policy_1",
+        evaluated_at=START,
+        policy_document={},
+    )
+    verified_later = prepare(
+        "Fixture A",
+        value,
+        boundary="2",
+        policy_revision="policy_1",
+        evaluated_at=START,
+        policy_document={},
+    )
+    other_station = prepare(
+        "Fixture B",
+        value,
+        boundary="1",
+        policy_revision="policy_1",
+        evaluated_at=START,
+        policy_document={},
+    )
+    new_policy = prepare(
+        "Fixture A",
+        value,
+        boundary="1",
+        policy_revision="policy_2",
+        evaluated_at=START,
+        policy_document={},
+    )
     assert first.id == verified_later.id != other_station.id
     assert first.id != new_policy.id
     assert first.parameters["numerator"] == "1"
@@ -44,7 +72,14 @@ def test_no_public_projection_can_overwrite_its_exact_evidence():
     value = computation()
     wrong = replace(value, aggregate=value.aggregate.model_copy(update={"value": 0}))
     with pytest.raises(ValueError, match="projection"):
-        prepare("Fixture", wrong, boundary="1", policy_revision="policy_1")
+        prepare(
+            "Fixture",
+            wrong,
+            boundary="1",
+            policy_revision="policy_1",
+            evaluated_at=START,
+            policy_document={},
+        )
 
 
 @pytest.mark.parametrize(
@@ -57,4 +92,11 @@ def test_no_public_projection_can_overwrite_its_exact_evidence():
 )
 def test_invalid_persistence_coordinates_are_rejected_without_values(station, boundary, policy):
     with pytest.raises(ValueError):
-        prepare(station, computation(), boundary=boundary, policy_revision=policy)
+        prepare(
+            station,
+            computation(),
+            boundary=boundary,
+            policy_revision=policy,
+            evaluated_at=START,
+            policy_document={},
+        )

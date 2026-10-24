@@ -71,7 +71,14 @@ def value(number=Fraction(1, 3), revision="evidence_1", boundary="1"):
         },
         evidence_revision=revision,
     )
-    return prepare("Synthetic fixture", result, boundary=boundary, policy_revision="policy_1")
+    return prepare(
+        "Synthetic fixture",
+        result,
+        boundary=boundary,
+        policy_revision="policy_1",
+        evaluated_at=START + timedelta(hours=1),
+        policy_document={},
+    )
 
 
 async def context(db, key):
@@ -202,9 +209,10 @@ def test_public_reader_only_gets_whitelisted_projection_and_revisions_are_append
                 await connection.execute(
                     text("""INSERT INTO weather.aggregate_revision
                   (id,scope_key,station_alias,starts_at,ends_at,metric,statistic,policy_revision,
-                   watermark,document,exact_numerator,exact_denominator,details)
+                   watermark,evaluated_at,policy_document,document,
+                   exact_numerator,exact_denominator,details)
                   SELECT 'synthetic_privacy_fixture',scope_key,station_alias,starts_at,ends_at,
-                    metric,statistic,policy_revision,watermark,
+                    metric,statistic,policy_revision,watermark,evaluated_at,policy_document,
                     jsonb_set(document,'{coverage,private_extra}','"synthetic_private_marker"'),
                     exact_numerator,exact_denominator,details
                   FROM weather.aggregate_revision LIMIT 1""")

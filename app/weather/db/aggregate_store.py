@@ -5,6 +5,7 @@ import hashlib
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import datetime
 from types import MappingProxyType
 from typing import Any, Literal
 
@@ -13,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from weather.api.aggregate_adapter import Computation, public_coverage
 from weather.api.cursors import watermark
+from weather.api.public_common import utc_instant
 from weather.api.public_models import Aggregate
 from weather.products.aggregate import ID
 
@@ -30,6 +32,8 @@ def prepare(
     *,
     boundary: str,
     policy_revision: str,
+    evaluated_at: datetime,
+    policy_document: Mapping[str, Any],
 ) -> StoredComputation:
     if (
         not 1 <= len(station_alias) <= 64
@@ -39,6 +43,12 @@ def prepare(
     ):
         raise ValueError("Invalid aggregate persistence identity")
     aggregate = Aggregate.model_validate(value.aggregate.model_dump())
+    evaluated = utc_instant(evaluated_at)
+    policy_json = json.dumps(
+        dict(policy_document), sort_keys=True, separators=(",", ":"), allow_nan=False
+    )
+    if len(policy_json.encode()) > 65536:
+        raise ValueError("Aggregate policy snapshot exceeded persistence budget")
     interval = aggregate.interval.model_dump(mode="json")
     scope = hashlib.sha256(
         json.dumps(
@@ -116,6 +126,8 @@ def prepare(
         "statistic": aggregate.statistic,
         "policy": policy_revision,
         "watermark": int(watermark(boundary)),
+        "evaluated": evaluated,
+        "policy_document": policy_json,
         "document": aggregate.model_dump_json(),
         "numerator": numerator,
         "denominator": denominator,
@@ -153,8 +165,10 @@ async def persist(
     await connection.execute(
         text("""INSERT INTO weather.aggregate_revision
         (id,scope_key,station_alias,starts_at,ends_at,metric,statistic,policy_revision,watermark,
+         evaluated_at,policy_document,
          document,exact_numerator,exact_denominator,details)
         VALUES(:id,:scope,:station,:start,:end,:metric,:statistic,:policy,:watermark,
+               :evaluated,CAST(:policy_document AS jsonb),
                CAST(:document AS jsonb),:numerator,:denominator,CAST(:details AS jsonb))
         ON CONFLICT(id) DO NOTHING"""),
         params,
@@ -162,7 +176,7 @@ async def persist(
     existing = (
         (
             await connection.execute(
-                text("""SELECT scope_key,document,policy_revision,
+                text("""SELECT scope_key,document,policy_revision,policy_document,
         exact_numerator,exact_denominator,details FROM weather.aggregate_revision WHERE id=:id"""),
                 params,
             )
@@ -174,6 +188,7 @@ async def persist(
         existing["scope_key"] != value.scope
         or existing["document"] != json.loads(params["document"])
         or existing["policy_revision"] != params["policy"]
+        or existing["policy_document"] != json.loads(params["policy_document"])
         or existing["exact_numerator"] != params["numerator"]
         or existing["exact_denominator"] != params["denominator"]
         or existing["details"] != (json.loads(params["details"]) if params["details"] else None)

@@ -31,6 +31,8 @@ def extend_metadata(metadata: MetaData) -> None:
         Column("statistic", String(64), nullable=False),
         Column("policy_revision", String(128), nullable=False),
         Column("watermark", BigInteger, nullable=False),
+        Column("evaluated_at", DateTime(timezone=True), nullable=False),
+        Column("policy_document", JSONB, nullable=False),
         Column("document", JSONB, nullable=False),
         Column("exact_numerator", Text),
         Column("exact_denominator", Text),
@@ -42,6 +44,10 @@ def extend_metadata(metadata: MetaData) -> None:
             server_default=text("clock_timestamp()"),
         ),
         CheckConstraint("starts_at < ends_at AND watermark>=0", name="interval_watermark"),
+        CheckConstraint(
+            "jsonb_typeof(policy_document)='object' AND octet_length(policy_document::text)<=65536",
+            name="policy_snapshot",
+        ),
         CheckConstraint(
             "id ~ '^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$' AND scope_key ~ '^[0-9a-f]{64}$'",
             name="identity",

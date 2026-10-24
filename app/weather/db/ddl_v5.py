@@ -16,7 +16,7 @@ def statements() -> list[str]:
         "GRANT SELECT,INSERT,UPDATE ON weather.aggregate_head TO weather_worker",
         """CREATE VIEW public_api.aggregate_revisions WITH(security_barrier=true) AS
         SELECT id,scope_key,station_alias,starts_at,ends_at,metric,statistic,policy_revision,
-          watermark,created_at,jsonb_build_object(
+          watermark,evaluated_at,created_at,jsonb_build_object(
             'metric',metric,'statistic',statistic,'value',document->'value',
             'unit',CASE statistic WHEN 'solar_energy' THEN 'Wh/m2' WHEN 'trend' THEN 'hPa/h'
               ELSE (SELECT canonical_unit FROM weather.metric_binding b
