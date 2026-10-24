@@ -1,5 +1,7 @@
 # D14 — Public media transport and withdrawal
 
+> **Historical.** Binding rules live in [docs/architecture.md](../architecture.md) and the 2026-10-24 [simplification](2026-10-24-simplification.md) and [takeover](2026-10-24-takeover-replan.md) records; where this file conflicts, those win.
+
 > **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): P8: request-time authorization per GET/HEAD/range; mid-stream leases **withdrawn**. Cloudflare caching (WX-27) is closed as not planned and remains a possible future optimization. #20 drops the 304/412 precondition rules below, since media is `no-store`; the [range policy](../contracts/api-contract.md#range-policy) is what the origin implements. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
 
 Status: Cloudflare Tunnel selected by Jason for public pages, API, video playback and native downloads; implementation qualification remains. Requirements §§11.3–11.5, 12.3–12.5 and 18.2; R11/R18/R25/R27/R37. Consumers WX-19 and conditional WX-27; network prerequisite OWN-EDGE (#775). This decision does not authorize production routing or a provider purchase.

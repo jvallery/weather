@@ -1,5 +1,7 @@
 # D13 — UI, theme and editorial boundaries
 
+> **Historical.** Binding rules live in [docs/architecture.md](../architecture.md) and the 2026-10-24 [simplification](2026-10-24-simplification.md) and [takeover](2026-10-24-takeover-replan.md) records; where this file conflicts, those win.
+
 > **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): P11/P12: editor behind Authentik forward-auth (in-app OIDC withdrawn); code-first API contracts. React Router SSR, wireframes, theme and card placement are unchanged. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
 
 Status: owner-approved React/TypeScript framework/layout and theme policy selected; direct frontend pins selected, full lock/image/build qualification, identity integration and implemented responsive/browser behavior remain open; static wireframes are rendered; exact font provenance is resolved by the separate review. Requirements R14/R24/R25/R30–R37, §§12.1–12.8; consumers WX-20/26/39/40/41/43/44 and integration WX-33. This is design collateral, not an application implementation or evidence of a deployed Weather UI.

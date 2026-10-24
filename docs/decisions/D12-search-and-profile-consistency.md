@@ -1,5 +1,7 @@
 # D12 — Evidence-current hybrid search and embedding profiles
 
+> **Historical.** Binding rules live in [docs/architecture.md](../architecture.md) and the 2026-10-24 [simplification](2026-10-24-simplification.md) and [takeover](2026-10-24-takeover-replan.md) records; where this file conflicts, those win.
+
 > **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): P10: video-level embeddings with exact cosine, FTS for window matches, profile_id re-embedding, Traefik rate limits. Shadow generations, vector cache and distributed admission are **withdrawn**. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
 
 Status: retrieval/revision protocol selected; live embedding profile and resource/relevance qualification remain open. Implements requirements §§12.7, 13.7 and 14.1–14.5; consumers WX-23/24/25/42/43 and recovery WX-32. OWN-MODELS qualifies the route; D06/OWN-DB qualify storage. This is a design, not an embedding request or database implementation.

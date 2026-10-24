@@ -1,5 +1,7 @@
 # D16 — Service measurements, product deadlines and pressure policy
 
+> **Historical.** Binding rules live in [docs/architecture.md](../architecture.md) and the 2026-10-24 [simplification](2026-10-24-simplification.md) and [takeover](2026-10-24-takeover-replan.md) records; where this file conflicts, those win.
+
 > **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): P15/O3: four SLOs (publish ≤2 h, current age ≤90 s, availability ≥99.5%, DB offsite ≤30 min), Tier 2 service, per-slice launches. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
 
 Status: measurement definitions and initial operational policies selected; achievable numeric SLOs and resource grants remain unqualified. Requirements R07/R15/R16/R26/R28–R37, §§6.8–6.11, 15.5–15.6 and 18.1–18.2. Consumers WX-18/31/33/35/36/37/38. No production policy, monitoring rule, deletion or workload is enabled by this document.

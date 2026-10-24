@@ -1,5 +1,7 @@
 # D15 — central custody and independent application recovery
 
+> **Historical.** Binding rules live in [docs/architecture.md](../architecture.md) and the 2026-10-24 [simplification](2026-10-24-simplification.md) and [takeover](2026-10-24-takeover-replan.md) records; where this file conflicts, those win.
+
 > **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): O1/P7: Barman directly to B2, custody mirrors for media, GC grace ≥ max(PITR window, B2 versions)+7 d, post-restore reconcile. The joint checkpoint, closure shards, canonicalization and verifier ledger are **withdrawn**. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
 
 Status: **protocol and integration target selected; material research still open**. This is not a completed ADR or production acceptance. Requirements R14/R16/R17/R19/R22/R23/R26/R29–R36; implementation WX-28/29/30/32/34; external prerequisite [OWN-CUSTODY](https://github.com/jvallery/storage-infra/issues/1109).

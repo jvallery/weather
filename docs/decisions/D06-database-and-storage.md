@@ -1,5 +1,7 @@
 # D06 — dedicated PostgreSQL, native partitions and explicit durability
 
+> **Historical.** Binding rules live in [docs/architecture.md](../architecture.md) and the 2026-10-24 [simplification](2026-10-24-simplification.md) and [takeover](2026-10-24-takeover-replan.md) records; where this file conflicts, those win.
+
 > **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): P5: copy the options-pg pattern (longhorn-v1-rwo, sync 1/1, host anti-affinity); no partitions in v1; Alembic migrations. `dataDurability: required`, failover-quorum work and R1 admission are **withdrawn**. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
 
 Status: **database architecture selected; storage/capacity and failover qualification pending**. Requirements R14/R16/R20/R22/R23/R28/R30; WX-05/08/11/28/32. Storage admission is [OWN-DB](https://github.com/jvallery/storage-infra/issues/1112); the existing snapshot NFS prerequisite does not cover database volumes or telemetry spools.

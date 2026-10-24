@@ -1,5 +1,7 @@
 # D08 — role-scoped object gateway and independent archive access
 
+> **Historical.** Binding rules live in [docs/architecture.md](../architecture.md) and the 2026-10-24 [simplification](2026-10-24-simplification.md) and [takeover](2026-10-24-takeover-replan.md) records; where this file conflicts, those win.
+
 > **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): **Superseded in full by O1.** No shared bucket and no custom S3 gateway: native per-bucket Garage keys plus CNPG archives direct to B2 meet R18. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
 
 Status: **boundary and operation policy selected; owner implementation/admission and Barman qualification pending**. Requirements R17/R18/R23/R27/R30/R31; WX-07/17/19/28/32/37/38. Owner prerequisite: [OWN-GATEWAY](https://github.com/jvallery/storage-infra/issues/1108). No credentials, gateway or bucket changed during this planning work.

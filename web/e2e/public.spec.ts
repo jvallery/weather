@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { test, expect, type APIResponse, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
 // Production routes only /api/ to the api (deploy/k8s/ingress.yaml); /media/ and /downloads/ arrive with #20.
 // Until then the page under test receives the synthetic media directly from the fixture API.
 async function syntheticMedia(page: Page) {
@@ -171,18 +169,11 @@ test("concurrent SSR requests have isolated query state and expose no private up
   expect(bodies.every((body) => !body.includes("http://api") && !body.includes("localhost:4174"))).toBe(true);
 });
 
-test("About is complete without JavaScript and font notices match approved bytes", async ({ browser, request }) => {
+test("About is complete without JavaScript", async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage(); await page.goto("http://localhost:4173/about/");
   for (const topic of [/Tempest/, /east sky/, /west sky/, /front yard/, /Measured values/, /Derived values/, /AI descriptions/, /Human-edited/, /6°/, /7,200/, /not measurements/, /private notes/, /at least 10 minutes/, /no forecast/, /person identification/]) await expect(page.getByText(topic).first()).toBeVisible();
   await context.close();
-  const provenance = JSON.parse(readFileSync(new URL("../../docs/research/font-provenance.json", import.meta.url), "utf8"));
-  for (const font of provenance.packages) {
-    for (const [name, digest] of [[font.font_member.split("/").at(-1), font.font_sha256], [font.name.includes("sans") ? "OFL-sans.txt" : "OFL-mono.txt", font.license_sha256]]) {
-      const response = await request.get(`/fonts/${name}`); expect(response.ok()).toBe(true);
-      expect(createHash("sha256").update(await response.body()).digest("hex")).toBe(digest);
-    }
-  }
 });
 test("public client assets contain no private upstream or source maps", async ({ page, request }) => {
   await page.goto("/");

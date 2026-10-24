@@ -158,7 +158,7 @@ If a capability cannot be tested without implementing a new component, Phase 1 m
 
 ### 2.3 Required research artifacts
 
-Publish sanitized requirements, ADRs, contracts, `docs/implementation/backlog.md`, a machine-readable dependency graph, and a generated Mermaid dependency view in `weather`. Keep live IPs, GPU UUIDs, internal names, secret references that expose deployment structure, exact coordinates, private source excerpts and raw probe receipts in the existing private evidence/deployment system. Public ADRs should reference opaque evidence IDs and summarize findings without copying private content.
+Publish sanitized requirements, ADRs and contracts in `weather`; the backlog and its dependency graph are GitHub issues with native blocked-by links. Keep live IPs, GPU UUIDs, internal names, secret references that expose deployment structure, exact coordinates, private source excerpts and raw probe receipts in the existing private evidence/deployment system. Public ADRs should reference opaque evidence IDs and summarize findings without copying private content.
 
 Each decision record includes: requirements covered; examined public source URLs; private evidence IDs; source revision and observation timestamp; alternatives; chosen approach; cost/capacity/failure implications; verification performed; remaining implementation tests; responsible owner; and affected issue keys. Record “unknown” when a fact cannot be established.
 

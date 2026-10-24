@@ -1,5 +1,7 @@
 # D11 — Bounded video analysis, uncertainty and publication
 
+> **Historical.** Binding rules live in [docs/architecture.md](../architecture.md) and the 2026-10-24 [simplification](2026-10-24-simplification.md) and [takeover](2026-10-24-takeover-replan.md) records; where this file conflicts, those win.
+
 > **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): P9: sampled frames plus keogram through the proven image path, advisory-lock concurrency 1, timeout plus bounded nightly retry, raw-response TTL table. The call-ownership state machine and native-video gate are **withdrawn**. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
 
 Status: job/slot/publication protocol selected; actual native-video capability and backend termination remain material OWN-MODELS qualification. Requirements §§13.1–13.7, 12.7 and 14.2; consumers WX-21/22/24/31/33/40/43. This design introduces no live model request or server setting.
@@ -64,6 +66,6 @@ Acceptance must distinguish complete retained body, `expired`, `lost`, `omitted_
 
 ## Acceptance and unresolved closure
 
-[Execution vectors](../contracts/analysis-execution-vectors.json) are required synthetic/integration scenarios, not executed tests. WX-21 proves actual native-video and server-termination behavior; WX-22 implements budgets, recovery and CAS; WX-31 observes pending, uncertain occupancy, deadline/queue overflow and partial coverage distinctly. WX-33/40/43 verify public states and evidence/editorial races.
+[Execution vectors](../archive/planning-2026-10/contracts/analysis-execution-vectors.json) are required synthetic/integration scenarios, not executed tests. WX-21 proves actual native-video and server-termination behavior; WX-22 implements budgets, recovery and CAS; WX-31 observes pending, uncertain occupancy, deadline/queue overflow and partial coverage distinctly. WX-33/40/43 verify public states and evidence/editorial races.
 
 Remaining: actual route/model/backend/request provenance, scoped Weather access, observed termination mechanism, admitted resource/token/deadline limits, qualification of the selected debounce/diagnostic bounds, event taxonomy/continuity integration and real temporal controls. Keep D11 open; do not resolve these by claiming safe fallback meets native-video acceptance or by tuning shared servers during planning.

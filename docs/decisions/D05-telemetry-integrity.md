@@ -1,5 +1,7 @@
 # D05 — receipt durability, canonical measurements and coverage
 
+> **Historical.** Binding rules live in [docs/architecture.md](../architecture.md) and the 2026-10-24 [simplification](2026-10-24-simplification.md) and [takeover](2026-10-24-takeover-replan.md) records; where this file conflicts, those win.
+
 Status: selected under [P4](2026-10-24-simplification.md). Source implementation is WX-11 (#12); database integration and live commissioning remain separate acceptance gates. This decision replaces the earlier dual receiver, custom framed WAL, variant registry and fencing design. Historical text is available in Git.
 
 ## Custody and admission
