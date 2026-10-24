@@ -8,6 +8,8 @@ metadata:
     app.kubernetes.io/component: scheduler
     app.kubernetes.io/name: scheduler
     weather.vallery.net/database-role: worker
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
 spec:
   replicas: 0
   revisionHistoryLimit: 3
@@ -88,6 +90,10 @@ kind: NetworkPolicy
 metadata:
   name: scheduler
   namespace: weather
+  labels:
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+    app.kubernetes.io/part-of: weather
 spec:
   podSelector:
     matchLabels:

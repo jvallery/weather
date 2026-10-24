@@ -8,6 +8,8 @@ metadata:
     app.kubernetes.io/component: migrate
     app.kubernetes.io/name: migrate
     weather.vallery.net/database-role: migrator
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
   annotations:
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/sync-wave: '1'
@@ -89,6 +91,10 @@ kind: NetworkPolicy
 metadata:
   name: migrate
   namespace: weather
+  labels:
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+    app.kubernetes.io/part-of: weather
 spec:
   podSelector:
     matchLabels:
