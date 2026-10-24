@@ -59,6 +59,16 @@ PostgreSQL numeric text; counts never pass through floating point. A newer
 invalid or disputed field yields a healthy null/reason DTO, so the service
 replaces prior numbers rather than treating bad measurements as a DB outage.
 Future source/receive clocks cannot produce fresh values or negative age.
+Lightning distance additionally requires a qualified positive integer strike
+count from the same observation and family. Missing, zero, corrupt or disputed
+companion counts produce a constant null reason; a real zero distance with a
+positive qualified count remains valid, and zero counts remain valid counts.
+Current joins the safe observation by its ID and family, never the independent
+current count pointer. Raw/history and aggregate evidence extract the companion
+from the same safe row (the same immutable revision at W for aggregates). Only
+safe numeric/kind/field-quality companion columns enter the internal mapper;
+they are absent from public DTOs. Unavailable distance has no exact support
+value, and its evidence quality hash binds the safe companion qualification.
 
 Freshness is commissioned separately for each metric: explicit expected
 interval and hold cap, or neither. It never comes from `report_interval`.

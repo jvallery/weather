@@ -40,8 +40,16 @@ CURRENT_SQL = text("""WITH latest AS MATERIALIZED (
 )
 SELECT c.station_alias,c.metric,c.unit,c.observed_at,c.received_at,
   c.value::text AS value_text,jsonb_typeof(c.value) AS value_kind,
-  c.field_quality,c.quality,latest.newest_valid_obs_st_at
+  c.field_quality,c.quality,latest.newest_valid_obs_st_at,
+  CASE WHEN c.metric='lightning_distance' THEN
+    p."values"->>'lightning_strike_count' END AS companion_value_text,
+  CASE WHEN c.metric='lightning_distance' THEN
+    jsonb_typeof(p."values"->'lightning_strike_count') END AS companion_value_kind,
+  CASE WHEN c.metric='lightning_distance' THEN
+    p.field_quality->'lightning_strike_count' END AS companion_field_quality
 FROM latest LEFT JOIN public_api.metric_current c ON c.station_alias=:station
+LEFT JOIN public_api.telemetry_publications p
+  ON p.id=c.observation_id AND p.message_type=c.message_type AND p.station_alias=c.station_alias
 ORDER BY c.metric COLLATE "C"
 """)
 
@@ -54,7 +62,13 @@ OBSERVATIONS_SQL = text("""WITH boundary AS MATERIALIZED (
 ), page AS MATERIALIZED (
   SELECT p.id,p.message_type,p.observed_at,p.received_at,b.metric,b.unit,
     p."values"->>b.field AS value_text,jsonb_typeof(p."values"->b.field) AS value_kind,
-    p.field_quality->b.field AS field_quality,p.quality
+    p.field_quality->b.field AS field_quality,p.quality,
+    CASE WHEN b.metric='lightning_distance' THEN
+      p."values"->>'lightning_strike_count' END AS companion_value_text,
+    CASE WHEN b.metric='lightning_distance' THEN
+      jsonb_typeof(p."values"->'lightning_strike_count') END AS companion_value_kind,
+    CASE WHEN b.metric='lightning_distance' THEN
+      p.field_quality->'lightning_strike_count' END AS companion_field_quality
   FROM public_api.telemetry_publications p JOIN bindings b ON b.family=p.message_type
   CROSS JOIN boundary
   WHERE p.publication_seq<=boundary.watermark AND p.station_alias=:station

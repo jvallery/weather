@@ -238,3 +238,34 @@ def test_coarse_aggregate_opt_out_keeps_exact_input_budget_and_strict_boolean() 
         assert calls[-1]["fetch_limit"] == 2
 
     asyncio.run(check())
+
+
+def test_distance_without_strike_companion_has_no_exact_support_value() -> None:
+    async def check() -> None:
+        source = PublicSqlSource(
+            object(), station_alias="public-station", maximum_raw_seconds=86400, clock=lambda: AT
+        )
+        value = row(
+            "lightning_distance",
+            unit="km",
+            publication_seq=1,
+            device_alias="public-device",
+            source_time_eligible=True,
+        )
+
+        async def rows(statement: Any, parameters: dict[str, Any]) -> list[dict[str, Any]]:
+            return [{"watermark": 1, **value}]
+
+        source._rows = rows
+        result = await read_evidence_window(
+            source,
+            Interval(start=AT, end=AT + timedelta(seconds=1)),
+            ["lightning_distance"],
+            preceding_hold_seconds=0,
+            following_report_seconds=0,
+        )
+        assert result.rows[0].point.value is None and result.rows[0].exact_value is None
+        changed = {**value, "companion_field_quality": {"valid": False, "eligible": False}}
+        assert quality_revision(changed) != quality_revision(value)
+
+    asyncio.run(check())

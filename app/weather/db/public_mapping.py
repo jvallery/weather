@@ -107,6 +107,18 @@ def _qualified(
         and field.get("eligible") is True
         and quality.get("valid") is True
     ):
+        if metric == "lightning_distance":
+            companion = _object(row.get("companion_field_quality"))
+            count = public_number(
+                row.get("companion_value_text"), row.get("companion_value_kind"), "lightning_count"
+            )
+            if (
+                count is None
+                or count <= 0
+                or companion.get("valid") is not True
+                or companion.get("eligible") is not True
+            ):
+                return None, "invalid", "No qualified strike count accompanies this distance."
         return number, "valid", None
     state = field.get("state")
     reason = _REASONS.get(str(field.get("reason")), "The source measurement is unavailable.")

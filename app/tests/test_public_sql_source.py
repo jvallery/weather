@@ -85,6 +85,52 @@ def test_exact_integer_lightning_and_zero_never_pass_through_float() -> None:
     assert public_number("0", "number", "temperature") == 0
 
 
+@pytest.mark.parametrize(
+    ("count", "kind", "valid", "eligible", "expected"),
+    [
+        (None, None, True, True, None),
+        ("0", "number", True, True, None),
+        ("-1", "number", True, True, None),
+        ("0.5", "number", True, True, None),
+        ("NaN", "number", True, True, None),
+        ("true", "boolean", True, True, None),
+        ("1", "string", True, True, None),
+        ("1", "number", False, True, None),
+        ("1", "number", True, False, None),
+        ("1", "number", True, True, 0),
+        ("9007199254740993", "number", True, True, 0),
+    ],
+)
+def test_distance_zero_requires_qualified_positive_integer_companion(
+    count: str | None, kind: str | None, valid: bool, eligible: bool, expected: int | None
+) -> None:
+    distance = row(
+        "lightning_distance",
+        unit="km",
+        companion_value_text=count,
+        companion_value_kind=kind,
+        companion_field_quality={"valid": valid, "eligible": eligible, "reason": "private text"},
+    )
+    point = history_point(distance, AT)
+    current = current_dto([distance], "public-station", {}, AT)
+    metric = next(m for m in current.metrics if m.metric == "lightning_distance")
+    assert point.value == metric.value == expected
+    if expected is None:
+        assert point.reason == "No qualified strike count accompanies this distance."
+        assert "private text" not in current.model_dump_json()
+
+
+def test_positive_count_from_another_current_row_never_qualifies_distance() -> None:
+    distance = row("lightning_distance", unit="km")  # No same-source companion.
+    other = row("lightning_count", unit="1", id=UUID(int=99), value_text="5")
+    current = current_dto([distance, other], "public-station", {}, AT)
+    metrics = {m.metric: m for m in current.metrics}
+    assert metrics["lightning_count"].value == 5
+    assert metrics["lightning_distance"].value is None
+    zero_count = history_point(row("lightning_count", unit="1"), AT)
+    assert zero_count.value == 0 and zero_count.quality == "valid"
+
+
 def test_explicit_freshness_policy_preserves_original_times_and_never_uses_report_interval() -> (
     None
 ):
