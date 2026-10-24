@@ -45,20 +45,19 @@ ALTER DATABASE weather_ci OWNER TO weather_migrator;
 SQL
 wx_vector="$(psql -h "$wx_pg_root/socket" -U postgres -d weather_ci -Atqc "SELECT extversion FROM pg_extension WHERE extname='vector'")"
 [[ "$wx_vector" == 0.8.6 ]] || { echo 'Integration requires production pgvector 0.8.6' >&2; exit 2; }
+createdb -h "$wx_pg_root/socket" -U postgres weather_ci_empty
+psql -h "$wx_pg_root/socket" -U postgres -d weather_ci_empty -v ON_ERROR_STOP=1 -q <<'SQL'
+CREATE EXTENSION vector;
+ALTER DATABASE weather_ci_empty OWNER TO weather_migrator;
+SQL
+export WEATHER_CI_DATABASE_URL="postgresql+asyncpg://weather_migrator@/weather_ci_empty?host=$wx_pg_root/socket"
+uv run --frozen python -m alembic upgrade head
+uv run --frozen python -m alembic check
+uv run --frozen python -m alembic current --check-heads
 echo "PostgreSQL timezone package: $(dpkg-query -W -f='${Version}' tzdata)"
 uv run --frozen python - <<'PY'
-import importlib.util
-try:
-    available = importlib.util.find_spec('weather.timemodel.calendar')
-except ModuleNotFoundError as error:
-    if error.name != 'weather.timemodel':
-        raise
-    available = None
-if available is None:
-    print('Python timezone parity pending time-model implementation')
-else:
-    from weather.timemodel.site import IANA_VERSION, TZDATA_VERSION
-    print(f'Python timezone package: tzdata {TZDATA_VERSION}, IANA {IANA_VERSION}')
+from weather.timemodel.site import IANA_VERSION, TZDATA_VERSION
+print(f'Python timezone package: tzdata {TZDATA_VERSION}, IANA {IANA_VERSION}')
 PY
 export WEATHER_CI_DATABASE_URL="postgresql+asyncpg://weather_migrator@/weather_ci?host=$wx_pg_root/socket"
 export WEATHER_CI_ADMIN_DATABASE_URL="postgresql+asyncpg://postgres@/weather_ci?host=$wx_pg_root/socket"
