@@ -110,7 +110,7 @@ def statements(table_names: list[str]) -> list[str]:
              IF p_expected IS NULL OR p_expected < 0 OR p_target IS NULL
                 OR length(p_target) NOT BETWEEN 1 AND 256
                 OR p_changes IS NULL OR jsonb_typeof(p_changes)<>'object'
-                OR octet_length(p_changes::text)>16384
+                OR octet_length(p_changes::text)>65536
                 OR p_reason IS NULL OR length(p_reason) NOT BETWEEN 1 AND 2000 THEN
                RAISE EXCEPTION 'invalid editorial request' USING ERRCODE='22023';
              END IF;
@@ -138,7 +138,7 @@ def statements(table_names: list[str]) -> list[str]:
               AND jsonb_typeof(value) IN ('number','null') $$""",
         """CREATE FUNCTION public_api.public_metric_quality(p_quality jsonb) RETURNS jsonb
            LANGUAGE sql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
-           SELECT jsonb_build_object('valid',p_quality->'valid'='true'::jsonb,
+           SELECT jsonb_build_object('valid',coalesce(p_quality->'valid'='true'::jsonb,false),
              'reason',CASE WHEN p_quality->>'reason' IN
                ('valid','missing','invalid','suspect','unknown','source_clock_invalid',
                 'source_time_missing','stale','unsupported','out_of_range','duplicate')
