@@ -11,7 +11,7 @@ export function Coverage({ fraction, support, expected }: { fraction: number; su
   return <span>Coverage {(fraction * 100).toFixed(1)}% · {Math.round(support).toLocaleString("en-US")} of {Math.round(expected).toLocaleString("en-US")} source seconds supported</span>;
 }
 export function UnitForm({ units, children }: { units: string; children?: ReactNode }) {
-  return <Form method="get" className="unit-form"><label htmlFor="units">Display units</label><select id="units" name="units" defaultValue={units}><option value="us">US customary</option><option value="metric">Metric</option></select>{children}<button type="submit">Apply units</button></Form>;
+  return <Form method="get" className="unit-form"><label htmlFor="units">Display units</label><select key={units} id="units" name="units" defaultValue={units}><option value="us">US customary</option><option value="metric">Metric</option></select>{children}<button type="submit">Apply units</button></Form>;
 }
 export function VideoLink({ video }: { video: Video }) {
   return <Link to={`/timelapses/${video.camera}/${video.cycle_date}/${video.segment}/`}>{CAMERA_LABELS[video.camera]} · {video.cycle_date}{video.segment === "overnight" ? ` → ${dateShift(video.cycle_date, 1)}` : ""} · {video.segment === "daytime" ? "Daytime" : "Overnight"}</Link>;

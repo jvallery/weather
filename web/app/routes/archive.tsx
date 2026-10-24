@@ -18,12 +18,16 @@ export default function Archive() {
   const days = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const previous = new Date(Date.UTC(year, month - 2, 1)).toISOString().slice(0, 7);
   const next = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 7);
+  const monthLink = (month: string) => {
+    const query = new URLSearchParams(filters); query.delete("cursor");
+    return `/archive/${month.replace("-", "/")}/${query.size ? `?${query}` : ""}`;
+  };
   const pageLink = new URLSearchParams(filters);
   if (catalog?.next_cursor) pageLink.set("cursor", catalog.next_cursor);
   pageLink.set("month", selectedMonth);
   return <><h1>Explore the archive</h1><p>Browse solar cycles. Overnight recordings show both calendar dates.</p>
-    <Form method="get" className="filters"><label>Calendar month<input name="month" type="month" defaultValue={selectedMonth} required /></label><label>Camera<select name="camera" defaultValue={filters.camera || ""}><option value="">All cameras</option>{Object.entries(CAMERA_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Segment<select name="segment" defaultValue={filters.segment || ""}><option value="">Both segments</option><option value="daytime">Daytime</option><option value="overnight">Overnight</option></select></label><label>State<select name="state" defaultValue={filters.state || ""}><option value="">All states</option>{["capturing", "queued", "processing", "published", "partial", "unavailable", "expired"].map((state) => <option value={state} key={state}>{state}</option>)}</select></label><button type="submit">Apply filters</button></Form>
-    <nav aria-label="Archive months" className="actions"><Link className="button-link" to={`/archive/${previous.replace("-", "/")}/`}>Previous month · {previous}</Link><Link className="button-link" to={`/archive/${next.replace("-", "/")}/`}>Next month · {next}</Link></nav>
+    <Form key={JSON.stringify([selectedMonth, filters.camera, filters.segment, filters.state])} method="get" className="filters"><label>Calendar month<input name="month" type="month" defaultValue={selectedMonth} required /></label><label>Camera<select name="camera" defaultValue={filters.camera || ""}><option value="">All cameras</option>{Object.entries(CAMERA_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Segment<select name="segment" defaultValue={filters.segment || ""}><option value="">Both segments</option><option value="daytime">Daytime</option><option value="overnight">Overnight</option></select></label><label>State<select name="state" defaultValue={filters.state || ""}><option value="">All states</option>{["capturing", "queued", "processing", "published", "partial", "unavailable", "expired"].map((state) => <option value={state} key={state}>{state}</option>)}</select></label><button type="submit">Apply filters</button></Form>
+    <nav aria-label="Archive months" className="actions"><Link className="button-link" to={monthLink(previous)}>Previous month · {previous}</Link><Link className="button-link" to={monthLink(next)}>Next month · {next}</Link></nav>
     <h2>Solar-cycle calendar · {selectedMonth}</h2><div className="calendar">{Array.from({ length: days }, (_, index) => {
       const date = `${selectedMonth}-${String(index + 1).padStart(2, "0")}`;
       return <Link key={date} to={`/day/${date}/`} aria-label={`Open solar cycle ${date}`}><span>{index + 1}</span><small>Open day</small></Link>;
