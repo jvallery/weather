@@ -139,6 +139,7 @@ async def read_evidence_window(
     following_report_seconds: int,
     snapshot_watermark: str | None = None,
     evaluated_at: datetime | None = None,
+    enforce_raw_range: bool = True,
     maximum_points: int = 5000,
 ) -> EvidenceWindow:
     """Return a whole bounded window plus per-stream preceding hold boundary.
@@ -149,6 +150,8 @@ async def read_evidence_window(
     (device alias,family,metric) before start within the supplied hold span.
     A caller-bound UTC evaluation instant freezes clock qualification across
     continuation reads; it cannot be later than the current reader clock.
+    Aggregate callers may explicitly bypass the raw-export range limit; exact
+    input-count and database read budgets still apply.
     Field-invalid/null boundaries remain included. Oversize reads fail instead
     of returning a paged subset. Root owns authority, support math and revisions.
     """
@@ -159,6 +162,7 @@ async def read_evidence_window(
         )
         or type(maximum_points) is not int
         or not 1 <= maximum_points <= 50000
+        or type(enforce_raw_range) is not bool
     ):
         raise ValueError("Invalid bounded evidence read budgets")
     current = instant(reader._clock())
@@ -174,7 +178,8 @@ async def read_evidence_window(
         except ValueError, OverflowError:
             raise ValueError("Invalid bounded evidence evaluation instant") from None
     query = ObservationQuery(start=window.start, end=window.end, metrics=list(metrics), limit=1)
-    enforce_raw_window(query, maximum_seconds=reader._raw_seconds)
+    if enforce_raw_range:
+        enforce_raw_window(query, maximum_seconds=reader._raw_seconds)
     parameters = observation_parameters(query, None, reader._station)
     parameters.update(
         watermark=int(watermark(snapshot_watermark)) if snapshot_watermark is not None else None,

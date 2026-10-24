@@ -182,3 +182,59 @@ def test_quality_revision_binds_all_safe_state_without_private_metadata() -> Non
         "field_quality": {**original["field_quality"], "range_policy": "unknown"},
     }
     assert quality_revision(changed) != first
+
+
+def test_coarse_aggregate_opt_out_keeps_exact_input_budget_and_strict_boolean() -> None:
+    async def check() -> None:
+        source = PublicSqlSource(
+            object(),
+            station_alias="public-station",
+            maximum_raw_seconds=86400,
+            clock=lambda: AT + timedelta(days=365),
+        )
+        calls = []
+        members: list[dict[str, Any]] = [{"watermark": 7, "id": None}]
+
+        async def rows(statement: Any, parameters: dict[str, Any]) -> list[dict[str, Any]]:
+            calls.append(parameters)
+            return members
+
+        source._rows = rows
+        window = Interval(start=AT, end=AT + timedelta(days=365))
+        kwargs = {"preceding_hold_seconds": 0, "following_report_seconds": 0}
+        with pytest.raises(PublicInputError):
+            await read_evidence_window(source, window, ["temperature"], **kwargs)
+        assert calls == []
+        result = await read_evidence_window(
+            source,
+            window,
+            ["temperature"],
+            enforce_raw_range=False,
+            **kwargs,
+        )
+        assert result.watermark == "7" and result.rows == ()
+        assert calls[0]["upper"] == window.end
+        for invalid in (0, 1, None, "false"):
+            with pytest.raises(ValueError, match="^Invalid bounded evidence read budgets$"):
+                await read_evidence_window(
+                    source,
+                    window,
+                    ["temperature"],
+                    enforce_raw_range=invalid,
+                    **kwargs,
+                )
+        assert len(calls) == 1
+        members[:] = [{"watermark": 7, **row()}, {"watermark": 7, **row()}]
+        with pytest.raises(PublicInputError) as failure:
+            await read_evidence_window(
+                source,
+                window,
+                ["temperature"],
+                enforce_raw_range=False,
+                maximum_points=1,
+                **kwargs,
+            )
+        assert failure.value.code == "range_too_large"
+        assert calls[-1]["fetch_limit"] == 2
+
+    asyncio.run(check())

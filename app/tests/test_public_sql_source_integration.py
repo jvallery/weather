@@ -446,3 +446,40 @@ def test_evidence_snapshot_evaluation_keeps_tolerated_future_sample_ineligible()
             await db.dispose()
 
     asyncio.run(check())
+
+
+def test_coarse_aggregate_evidence_read_keeps_empty_watermark_and_exact_overflow() -> None:
+    async def check() -> None:
+        db = engine()
+        budget = PublicDatabaseBudget(pool_size=2)
+        api = await api_engine(budget)
+        try:
+            async with db.begin() as connection:
+                d, alias = await station(connection)
+            reader = source(api, alias, budget)
+            window = Interval(start=SOURCE - timedelta(days=180), end=SOURCE + timedelta(days=185))
+            kwargs = {"preceding_hold_seconds": 0, "following_report_seconds": 0}
+            with pytest.raises(PublicInputError):
+                await read_evidence_window(reader, window, ["temperature"], **kwargs)
+            empty = await read_evidence_window(
+                reader, window, ["temperature"], enforce_raw_range=False, **kwargs
+            )
+            assert empty.watermark == "0" and empty.rows == ()
+            async with db.begin() as connection:
+                await observation(connection, d)
+                await observation(connection, d, source=SOURCE + timedelta(seconds=1))
+            with pytest.raises(PublicInputError) as failure:
+                await read_evidence_window(
+                    reader,
+                    window,
+                    ["temperature"],
+                    enforce_raw_range=False,
+                    maximum_points=1,
+                    **kwargs,
+                )
+            assert failure.value.code == "range_too_large"
+        finally:
+            await api.dispose()
+            await db.dispose()
+
+    asyncio.run(check())
