@@ -7,3 +7,14 @@
 time{font-family:"IBM Plex Mono",monospace;font-size:.9em}
 
 p,li,dd,h1,h2,h3{overflow-wrap:anywhere}
+
+/* Embed card (/embed/weather/) */
+.embed-weather{max-width:100%;min-width:0;padding:1rem;overflow-wrap:anywhere;color:var(--ink);background:var(--field)}
+.embed-weather header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem 1rem}
+.embed-weather h1{font-size:1.35rem;line-height:1.3;margin:0}
+.embed-weather header a{min-height:44px}
+.embed-weather-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,12rem),1fr));gap:.75rem;margin-block:1rem}
+.embed-weather-metrics article{min-width:0;padding:.75rem;border:1px solid var(--line);border-radius:.625rem;background:white}
+.embed-weather-metrics h2{font-size:1rem;margin:0;font-weight:400}
+.embed-weather-metrics strong{display:block;font-size:1.5rem;line-height:1.3;margin-block:.4rem}
+.embed-weather-metrics p,.embed-weather-note{font-size:.875rem;margin-block:.35rem}

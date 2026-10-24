@@ -5,6 +5,7 @@ import { clearTimeout, setTimeout } from "node:timers";
 import express from "express";
 import { createRequestHandler } from "@react-router/express";
 import { collectDefaultMetrics, register, Histogram, Gauge, Counter } from "prom-client";
+import { securityHeaders } from "./security-headers.mjs";
 
 const app = express();
 app.disable("x-powered-by");
@@ -15,12 +16,12 @@ function routeName(path) {
   if (/^\/day\/\d{4}-\d\d-\d\d\/?$/.test(path)) return "/day/:date/";
   if (/^\/timelapses\/[^/]+\/[^/]+\/[^/]+\/?$/.test(path)) return "/timelapses/:camera/:date/:segment/";
   if (/^\/archive\/\d{4}\/\d\d\/?$/.test(path)) return "/archive/:year/:month/";
-  return ["/", "/about/", "/archive/", "/weather/history/", "/search/", "/healthz", "/readyz"].includes(path) ? path : "/other";
+  return ["/", "/about/", "/archive/", "/weather/history/", "/search/", "/embed/weather/", "/healthz", "/readyz"].includes(path) ? path : "/other";
 }
 app.use((req, res, next) => {
   const nonce = randomBytes(24).toString("base64");
   req.headers["x-weather-csp-nonce"] = nonce;
-  res.set({ "Content-Security-Policy": `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self'; font-src 'self'; img-src 'self'; media-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`, "X-Frame-Options": "DENY", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer", "Cache-Control": "no-store" });
+  res.set(securityHeaders(req.path, nonce));
   const started = performance.now();
   res.on("finish", () => {
     const duration = (performance.now() - started) / 1000;
