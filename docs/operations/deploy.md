@@ -14,9 +14,11 @@ review and re-push a same-repository branch.
 
 Build both `weather-app` and `weather-web` at an immutable source revision.
 Retain the terminal workflow results and image-ref/digest outputs. Verify each
-output against registry manifest metadata. Run `scripts/ci.sh supply-chain
---image <ref>` in fleet CI for each image and retain `sbom-app.json`,
-`sbom-web.json` and `licenses.json` with the build evidence.
+output against registry manifest metadata. After both digest pins are committed while the application is still disabled,
+register the fixed `supply-chain-evidence` profile. It runs
+`scripts/ci-evidence.sh` against trusted read-only OCI inputs and archives
+`sbom-app.json`, `sbom-web.json` and `licenses.json`. Verify independent readback
+before enabling runtime workloads. Generic candidates have no registry credentials.
 
 A `deploy:` commit sets both entries in the root kustomization's `images`
 list to the verified `registry.vallery.net/jvallery/weather-*` digests.
