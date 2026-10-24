@@ -51,6 +51,10 @@ one untrusted pod in Weather and one metrics probe in `observability`, with a
 no private addresses. Retain it before closing WX-01. PSA root rejection and
 API internet-egress denial are separate commissioning checks.
 
+API and web disable Kubernetes Service environment injection with
+`enableServiceLinks: false`. This keeps later `WEATHER_PG_*` service variables
+out of the strict `WEATHER_*` application settings; clients use Service DNS.
+
 The API requires `WEATHER_PUBLIC_ORIGIN=https://weather.vallery.net`; `PORT`
 and `METRICS_PORT` default to 8000 and 9000 and must differ. Unknown
 `WEATHER_*` runtime configuration keys, missing origins, placeholder origins

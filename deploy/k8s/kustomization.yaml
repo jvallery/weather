@@ -6,3 +6,12 @@ resources:
 - guardrails.yaml
 - serviceaccounts.yaml
 - network-policy.yaml
+- application.yaml
+- ingress.yaml
+images:
+- name: weather-app
+  newName: registry.vallery.net/jvallery/weather-app
+  digest: sha256:30adc5315ae33e453adde6591054df938291813e1d1f39173fd0a5d8d7f0c4d2
+- name: weather-web
+  newName: registry.vallery.net/jvallery/weather-web
+  digest: sha256:0761f4ebf5f5cf73a4d261446b296fa77c1a3fb7e755585306c218a6e70764bd

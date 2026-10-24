@@ -1,0 +1,97 @@
+{
+  "image": "registry.vallery.net/jvallery/weather-web@sha256:0761f4ebf5f5cf73a4d261446b296fa77c1a3fb7e755585306c218a6e70764bd",
+  "manifest_sha256_verified": true,
+  "config_sha256_verified": true,
+  "config_digest": "sha256:497d156ea07888ec501ce86e519dd02351025795bf7156ce3d025e26376adbb1",
+  "os": "linux",
+  "architecture": "amd64",
+  "user": "10001:10001",
+  "workdir": "/app",
+  "cmd": [
+    "node",
+    "server.mjs"
+  ],
+  "node_version": "24.22.1",
+  "closure_bounds": {
+    "root_manifest_bytes": 1888,
+    "selected_manifest_bytes": 1888,
+    "selected_manifest_digest": "sha256:0761f4ebf5f5cf73a4d261446b296fa77c1a3fb7e755585306c218a6e70764bd",
+    "config_bytes": 7931,
+    "compressed_layer_bytes": 87756654,
+    "largest_layer_bytes": 51077605,
+    "largest_blob_bytes": 51077605,
+    "metadata_bytes_unique": 9819,
+    "total_unique_payload_bytes": 87766473,
+    "content_bytes_by_digest": {
+      "sha256:0761f4ebf5f5cf73a4d261446b296fa77c1a3fb7e755585306c218a6e70764bd": 1888,
+      "sha256:497d156ea07888ec501ce86e519dd02351025795bf7156ce3d025e26376adbb1": 7931,
+      "sha256:11422d7ca1a44390a32bd8d8d9dc5946b4d053b3bbd9507d682e35584ba84a26": 28247935,
+      "sha256:47e82ed2c7200e6bb57827745085027ba425376a5ed4ba4a8e295a4e3b5d1b40": 3310,
+      "sha256:c0e48fd1aa256850e18f180365b8fa3e55ae2197e85461fd3392cfb5c4c8e5e7": 51077605,
+      "sha256:f2b8e65232e105b573ea2f37c4a2ec56bcf0b63687ae2bbe329cf4252f30bc1d": 1713084,
+      "sha256:6d793208473aa7d9ccc02b9de99aee40e4d6e73065d5307d076fad3ba554d580": 450,
+      "sha256:841ac89000f80c4bb7464d49b2175263ac57f278a0e5120b4b17fd47c864e20d": 251,
+      "sha256:a140ff2783999c524028ca24c38dd20f0b8f084802e8c20d778e1905c2cd59b7": 6575111,
+      "sha256:4eba385cdbac876756db854260bb6b79b97585d5dc3f2dcc708a96b323759fc1": 135818,
+      "sha256:b6ccbe1b04c24073ff18c44b7866bb32f8dae45b20a9d7ca32de4810062b16e0": 1303,
+      "sha256:51d41496c9d714b06657d74c1d1557f98012b0e5f9eb43881440243f2b8447d2": 1787
+    },
+    "layers": [
+      {
+        "digest": "sha256:11422d7ca1a44390a32bd8d8d9dc5946b4d053b3bbd9507d682e35584ba84a26",
+        "compressed_bytes": 28247935,
+        "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip"
+      },
+      {
+        "digest": "sha256:47e82ed2c7200e6bb57827745085027ba425376a5ed4ba4a8e295a4e3b5d1b40",
+        "compressed_bytes": 3310,
+        "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip"
+      },
+      {
+        "digest": "sha256:c0e48fd1aa256850e18f180365b8fa3e55ae2197e85461fd3392cfb5c4c8e5e7",
+        "compressed_bytes": 51077605,
+        "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip"
+      },
+      {
+        "digest": "sha256:f2b8e65232e105b573ea2f37c4a2ec56bcf0b63687ae2bbe329cf4252f30bc1d",
+        "compressed_bytes": 1713084,
+        "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip"
+      },
+      {
+        "digest": "sha256:6d793208473aa7d9ccc02b9de99aee40e4d6e73065d5307d076fad3ba554d580",
+        "compressed_bytes": 450,
+        "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip"
+      },
+      {
+        "digest": "sha256:841ac89000f80c4bb7464d49b2175263ac57f278a0e5120b4b17fd47c864e20d",
+        "compressed_bytes": 251,
+        "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip"
+      },
+      {
+        "digest": "sha256:a140ff2783999c524028ca24c38dd20f0b8f084802e8c20d778e1905c2cd59b7",
+        "compressed_bytes": 6575111,
+        "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip"
+      },
+      {
+        "digest": "sha256:4eba385cdbac876756db854260bb6b79b97585d5dc3f2dcc708a96b323759fc1",
+        "compressed_bytes": 135818,
+        "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip"
+      },
+      {
+        "digest": "sha256:b6ccbe1b04c24073ff18c44b7866bb32f8dae45b20a9d7ca32de4810062b16e0",
+        "compressed_bytes": 1303,
+        "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip"
+      },
+      {
+        "digest": "sha256:51d41496c9d714b06657d74c1d1557f98012b0e5f9eb43881440243f2b8447d2",
+        "compressed_bytes": 1787,
+        "media_type": "application/vnd.docker.image.rootfs.diff.tar.gzip"
+      }
+    ],
+    "layer_payload_downloaded": false
+  },
+  "labels": {
+    "org.opencontainers.image.revision": "bed09184608c947dc0b95a784d8ca7f2facde28f",
+    "org.opencontainers.image.source": "https://github.com/jvallery/weather"
+  }
+}

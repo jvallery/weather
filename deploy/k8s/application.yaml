@@ -8,7 +8,7 @@ metadata:
     agent-fleet.vallery.net/owner: jvallery
     agent-fleet.vallery.net/project: weather
 spec:
-  replicas: 0
+  replicas: 2
   revisionHistoryLimit: 3
   selector:
     matchLabels: &id001
@@ -20,6 +20,7 @@ spec:
       labels: *id001
     spec:
       serviceAccountName: api
+      enableServiceLinks: false
       automountServiceAccountToken: false
       imagePullSecrets:
       - name: zot-origin-cluster-pull
@@ -143,7 +144,7 @@ metadata:
     agent-fleet.vallery.net/owner: jvallery
     agent-fleet.vallery.net/project: weather
 spec:
-  replicas: 0
+  replicas: 2
   revisionHistoryLimit: 3
   selector:
     matchLabels: &id001
@@ -155,6 +156,7 @@ spec:
       labels: *id001
     spec:
       serviceAccountName: web
+      enableServiceLinks: false
       automountServiceAccountToken: false
       imagePullSecrets:
       - name: zot-origin-cluster-pull
