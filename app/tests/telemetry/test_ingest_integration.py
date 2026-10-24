@@ -148,6 +148,7 @@ async def postgres_vector(vector: dict[str, Any], tmp_path: Path) -> None:
             receipt = append(spool, raw, receipt_id=uuid.UUID(data["receipt_id"]))
             # Commit returned, but the local acknowledgement was lost: replay the same ID.
             async with db.begin() as c:
+                await seed(c, HUB, DEVICES)
                 await drain._receipt(c, receipt)
             for _ in range(data["attempts"] - 1):
                 assert spool.stats()["depth"] >= 1
