@@ -42,6 +42,7 @@ def public_coverage(value: engine.Coverage) -> Coverage:
 class Computation:
     aggregate: Aggregate
     aggregate_id: str
+    exact: engine.Scalar
     # Retain the complete wind/strike/endpoint evidence for downstream summaries.
     details: engine.Wind | engine.Lightning | engine.PressureTrend | None = None
 
@@ -169,5 +170,6 @@ def compute(
             reason=reason,
         ),
         aggregate_id=identity,
+        exact=result,
         details=details,
     )

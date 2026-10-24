@@ -116,6 +116,25 @@ def test_pressure_requires_effective_endpoint_policy() -> None:
     assert result.aggregate.coverage.fraction == pytest.approx(1 / 3)
 
 
+def test_downstream_ranks_can_use_exact_values_before_public_projection() -> None:
+    first = Fraction(10**18 + 1, 10**18)
+    second = Fraction(10**18 + 2, 10**18)
+    computed = [
+        compute(
+            span(0, 60),
+            "temperature",
+            "max",
+            {
+                "temperature": [Support(span(0, 60), value, "measured")],
+            },
+            evidence_revision="r1",
+        )
+        for value in (first, second)
+    ]
+    assert computed[0].aggregate.value == computed[1].aggregate.value
+    assert computed[0].exact.value < computed[1].exact.value
+
+
 @pytest.mark.parametrize(
     "metric,statistic",
     [
