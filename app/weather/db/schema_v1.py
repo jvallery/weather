@@ -701,13 +701,19 @@ def build_metadata() -> MetaData:
         Column("subject", String(256), nullable=False),
         UniqueConstraint("target", "subject"),
     )
-    table(
+    profile = table(
         "embedding_profile",
         Column("id", String(64), primary_key=True),
         Column("model", String(128), nullable=False),
         Column("dimensions", Integer, nullable=False, server_default=text("2560")),
         Column("active", Boolean, nullable=False, server_default=text("false")),
         CheckConstraint("dimensions=2560", name="dimensions"),
+    )
+    Index(
+        "uq_embedding_profile_active",
+        profile.c.active,
+        unique=True,
+        postgresql_where=profile.c.active.is_(True),
     )
     table(
         "search_document",
