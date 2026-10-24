@@ -30,7 +30,7 @@ test("visitor parameters become one explicit, bounded almanac request", () => {
     comparison_start: "2026-03-07T07:00:00Z", comparison_end: "2026-03-08T07:00:00Z",
   });
   const records = almanacSelection(new URL("https://weather.example/weather/almanac/"), NOW).params;
-  expect([records.get("product"), records.get("metric"), records.get("statistic"), records.get("end")]).toEqual(["record", "temperature", "max", "2026-11-02T07:00:00Z"]);
+  expect([records.get("product"), records.get("metric"), records.get("statistic"), records.get("start"), records.get("end")]).toEqual(["record", "temperature", "max", "2026-08-04T06:00:00Z", "2026-11-02T07:00:00Z"]);
   expect(records.has("comparison_start")).toBe(false);
   for (const query of ["product=normals", "record=hottest", "from=2026-02-30", "from=2025-01-01&to=2026-01-02", "from=2026-03-09&to=2026-03-08"]) {
     expect(() => almanacSelection(new URL(`https://weather.example/weather/almanac/?${query}`), NOW), query).toThrow(Response);

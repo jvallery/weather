@@ -82,7 +82,7 @@ function Rose({ almanac, units, registry }: View) {
       {["N", "E", "S", "W"].map((name, index) => <text key={name} className="rose-label" x={[0, 150, 0, -150][index]} y={[-146, 5, 156, 5][index]} textAnchor="middle">{name}</text>)}
     </svg>
     <ul className="rose-legend">{speeds.map((value, index) => { const sample = bins.find((b) => b.category === "directional" && b.speed_min === value); return sample ? <li key={index}><span className={`rose-key rose-speed-${index}`} aria-hidden="true" />{label(sample)}</li> : null; })}</ul>
-    <p>Calm: {share(other("calm"))} · Variable: {share(other("variable"))} · Missing: {share(other("missing"))}</p>
+    <p>The outer ring marks {share(largest)} of the selected time in one direction. Calm: {share(other("calm"))} · Variable: {share(other("variable"))} · Missing: {share(other("missing"))}</p>
     <div className="table-wrap" tabIndex={0} role="region" aria-label="Wind rose table"><table><caption>Share of the selected time by direction and speed (text alternative to the rose)</caption>
       <thead><tr><th scope="col">From</th>{speeds.map((value, index) => { const sample = bins.find((b) => b.category === "directional" && b.speed_min === value); return <th scope="col" key={index}>{sample ? label(sample) : ""}</th>; })}<th scope="col">All speeds</th></tr></thead>
       <tbody>{SECTORS.map((name, sector) => <tr key={name}><th scope="row">{name}</th>{directional(sector).map((b, index) => <td key={index}>{share(b.duration_seconds)}</td>)}<td>{share(totals[sector])}</td></tr>)}
@@ -143,7 +143,7 @@ export default function AlmanacPage() {
     <p className="prose">Records, rain, wind and comparisons from this station’s own observations, computed when the page loads. They are observed values within the station’s history, not climate normals. Sun and moon times are derived, not measured.</p>
     <nav aria-label="Almanac sections" className="actions">{PRODUCTS.map((item) => <Link key={item.id} to={`?product=${item.id}&units=${units}`} aria-current={item.id === selection.product ? "page" : undefined}>{item.label}</Link>)}</nav>
     <Filters selection={selection} units={units} />
-    <UnitForm units={units}><input type="hidden" name="product" value={selection.product} /><input type="hidden" name="from" value={selection.from} /><input type="hidden" name="to" value={selection.to} /></UnitForm>
+    <UnitForm units={units}>{Object.entries({ product: selection.product, from: selection.from, to: selection.to, ...(selection.product === "record" ? { record: selection.record } : {}), ...(selection.product === "comparison" ? { compare: selection.compare, compare_from: selection.compareFrom, compare_to: selection.compareTo } : {}) }).map(([name, value]) => <input key={name} type="hidden" name={name} value={value} />)}</UnitForm>
     {rejected ? <p className="fault">The API rejected this almanac selection. Choose whole local dates within 366 days.</p>
       : !almanac ? <p className="fault">Almanac API unavailable. No substitute values are displayed.</p>
       : <>

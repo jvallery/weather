@@ -397,9 +397,9 @@ def test_almanac_records_history_and_corrections_are_read_from_the_database() ->
         # A corrected value changes the next read; a late row changes the evidence hash.
         async with admin.begin() as c:
             await c.execute(
-                text("""UPDATE weather.obs_st SET "values"='{"air_temperature":12}'::jsonb
+                text("""UPDATE weather.obs_st SET "values"=CAST(:values AS jsonb)
                         WHERE source_ts=:at"""),
-                {"at": first + timedelta(minutes=600)},
+                {"values": '{"air_temperature": 12}', "at": first + timedelta(minutes=600)},
             )
         corrected = await weather.almanac(query)
         assert corrected.items[0].value == 12 and corrected.items[0].rank == 1

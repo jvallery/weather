@@ -41,9 +41,9 @@ export function dayCount(first: string, last: string): number {
   return Math.round((Date.parse(`${last}T12:00:00Z`) - Date.parse(`${first}T12:00:00Z`)) / 86_400_000) + 1;
 }
 type Window = { from: string; to: string };
-/** Default local-date windows; `to` is inclusive. */
+/** Default local-date windows; `to` is inclusive. Records default to about one #14 aggregate window (90 days) so the common view stays cheap; up to 366 days is a request away. */
 export function defaultWindow(product: Product, today: string): Window {
-  if (product === "record") return { from: dateShift(today, -364), to: today };
+  if (product === "record") return { from: dateShift(today, -89), to: today };
   if (product === "astronomy") return { from: today, to: dateShift(today, 6) };
   if (product === "comparison") return { from: dateShift(today, -6), to: today };
   return { from: dateShift(today, -29), to: today };
