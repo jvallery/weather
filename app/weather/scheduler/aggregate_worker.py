@@ -13,13 +13,13 @@ from typing import Any, Literal
 from uuid import UUID
 
 from prometheus_client import Counter
+from pydantic import ValidationError
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from weather.api.aggregate_config import support_binding
 from weather.api.aggregate_source import (
     _PROCESS_SLOT,
-    MAX_EVIDENCE_REFERENCES,
     _Budget,
     _index,
     _inputs_for,
@@ -44,6 +44,9 @@ from weather.scheduler.registry import JobContext, Registry
 from weather.timemodel.calendar import day_for, slot_for
 
 WORKER_REVISION = "closed_aggregate_worker_v1"
+MAX_PREPARED_BYTES = 16 * 1024 * 1024
+MAX_COMPUTATION_REFERENCES = 50000
+MAX_COMPUTATION_GAPS = 1000
 PUBLIC_FAMILIES = {"obs_st", "rapid_wind", "evt_precip", "evt_strike", "obs_air", "obs_sky"}
 SKIPPED = Counter("weather_aggregate_worker_skipped_total", "Bounded aggregate skips", ["reason"])
 _REASONS = {"uncommissioned", "pressure_uncommissioned", "wind_uncommissioned", "expired", "budget"}
@@ -73,6 +76,23 @@ def _station(value: object) -> str:
     ):
         raise ValueError("Invalid public station alias")
     return value
+
+
+def _prepared_size(value: aggregate_store.StoredComputation) -> int:
+    def timestamp(item: Any) -> str:
+        if not isinstance(item, datetime):
+            raise TypeError("Unexpected aggregate persistence value")
+        return _stamp(item)
+
+    return len(
+        json.dumps(
+            dict(value.parameters),
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+            default=timestamp,
+        ).encode()
+    )
 
 
 @dataclass(frozen=True)
@@ -232,12 +252,15 @@ class AggregateRevisionWorker:
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
         maximum_inputs: int = 50000,
         maximum_work: int = 1_000_000,
+        maximum_prepared_bytes: int = MAX_PREPARED_BYTES,
     ) -> None:
         if (
             type(maximum_inputs) is not int
             or not 1 <= maximum_inputs <= 50000
             or type(maximum_work) is not int
             or not 1 <= maximum_work <= 1_000_000
+            or type(maximum_prepared_bytes) is not int
+            or not 1 <= maximum_prepared_bytes <= MAX_PREPARED_BYTES
             or any(not isinstance(value, SupportPolicy) for value in policies.values())
         ):
             raise ValueError("Invalid aggregate worker policy or budgets")
@@ -270,6 +293,7 @@ class AggregateRevisionWorker:
         self.policy_revision = "aggregate_policy_v1_" + _hash(expected)
         self.endpoint, self.minimum = pressure_endpoint_seconds, pressure_minimum_fraction
         self.clock, self.maximum_inputs, self.maximum_work = clock, maximum_inputs, maximum_work
+        self.maximum_prepared_bytes = maximum_prepared_bytes
 
     def register(self, registry: Registry) -> None:
         registry.register("aggregate.changed", self.changed, topics=("telemetry.changed",))
@@ -361,6 +385,83 @@ class AggregateRevisionWorker:
         await context.commit(result=result)
         return result
 
+    async def _prepare_group(
+        self,
+        reader: PublicSqlSource,
+        target: Target,
+        roles: tuple[str, ...],
+        recipes: tuple[tuple[str, str], ...],
+        *,
+        boundary: str,
+        evaluated_at: datetime,
+        station: str,
+        remaining_bytes: int,
+    ) -> tuple[list[aggregate_store.StoredComputation], int]:
+        """The coroutine frame owns one group's evidence/index and releases both on return."""
+        policies = {name: self.policies[name] for name in roles if name in self.policies}
+        spans = required_read_spans(policies)
+        evidence = await read_evidence_window(
+            reader,
+            PublicInterval(start=target.start, end=target.end),
+            roles,
+            preceding_hold_seconds=spans.preceding_hold_seconds,
+            following_report_seconds=spans.following_report_seconds,
+            snapshot_watermark=boundary,
+            evaluated_at=evaluated_at,
+            enforce_raw_range=False,
+            maximum_points=self.maximum_inputs,
+        )
+        if len(evidence.rows) > self.maximum_inputs:
+            raise PublicInputError("range_too_large", "Aggregate evidence exceeds group budget")
+        index = await _index(evidence, _Budget(self.maximum_work))
+        prepared = []
+        prepared_bytes = 0
+        window = Interval(target.start, target.end)
+        for metric, statistic in recipes:
+            await asyncio.sleep(0)
+            # One admitted recipe does not spend another recipe's CPU allowance.
+            budget = _Budget(self.maximum_work)
+            selected = await _inputs_for(window, roles, policies, index, boundary, budget)
+            await budget.charge(len(selected.rows))
+            assembled = assemble(window, selected, policies)
+            await _preflight_compute(assembled, statistic, budget)
+            try:
+                computation = compute_window(
+                    assembled,
+                    metric,
+                    statistic,
+                    pressure_endpoint_seconds=self.endpoint,
+                    pressure_minimum_fraction=self.minimum,
+                )
+            except ValidationError as error:
+                if any(issue["type"] == "too_long" for issue in error.errors(include_input=False)):
+                    raise PublicInputError(
+                        "range_too_large", "Aggregate item exceeds result budget"
+                    ) from None
+                raise
+            if (
+                len(computation.aggregate.evidence_ids) > MAX_COMPUTATION_REFERENCES
+                or len(computation.aggregate.coverage.gaps) > MAX_COMPUTATION_GAPS
+            ):
+                raise PublicInputError("range_too_large", "Aggregate item exceeds result budget")
+            item = aggregate_store.prepare(
+                station,
+                computation,
+                boundary=boundary,
+                policy_revision=self.policy_revision,
+                evaluated_at=evaluated_at,
+                policy_document=self.document,
+            )
+            # Include a conservative separator byte per item; the caller also
+            # reserves the surrounding JSON array brackets.
+            prepared_bytes += _prepared_size(item) + 1
+            if prepared_bytes > remaining_bytes:
+                raise PublicInputError(
+                    "range_too_large", "Aggregate prepared output exceeds byte budget"
+                )
+            prepared.append(item)
+        return prepared, prepared_bytes
+
     async def recompute(self, context: JobContext) -> Mapping[str, Any]:
         payload = context.job.payload
         if (
@@ -403,62 +504,26 @@ class AggregateRevisionWorker:
                         raise ValueError("Aggregate event watermark is not committed")
                 else:
                     boundary = latest
-                roles = tuple(sorted({role for m, s in recipes for role in _roles(m, s)}))
-                policies = {name: self.policies[name] for name in roles if name in self.policies}
-                spans = required_read_spans(policies)
-                evidence = await read_evidence_window(
-                    reader,
-                    PublicInterval(start=target.start, end=target.end),
-                    roles,
-                    preceding_hold_seconds=spans.preceding_hold_seconds,
-                    following_report_seconds=spans.following_report_seconds,
-                    snapshot_watermark=boundary,
-                    evaluated_at=now,
-                    enforce_raw_range=False,
-                    maximum_points=self.maximum_inputs,
-                )
-                if len(evidence.rows) > self.maximum_inputs:
-                    raise PublicInputError(
-                        "range_too_large", "Aggregate evidence exceeds worker budget"
-                    )
-                budget = _Budget(self.maximum_work)
-                index = await _index(evidence, budget)
-                references = 0
-                window = Interval(target.start, target.end)
+                groups: dict[tuple[str, ...], list[tuple[str, str]]] = {}
                 for metric, statistic in recipes:
-                    await asyncio.sleep(0)
-                    selected_roles = _roles(metric, statistic)
-                    selected_policies = {
-                        name: policies[name] for name in selected_roles if name in policies
-                    }
-                    selected = await _inputs_for(
-                        window, selected_roles, selected_policies, index, boundary, budget
+                    groups.setdefault(_roles(metric, statistic), []).append((metric, statistic))
+                prepared_bytes = 2
+                for roles, grouped_recipes in groups.items():
+                    group_values, size = await self._prepare_group(
+                        reader,
+                        target,
+                        roles,
+                        tuple(grouped_recipes),
+                        boundary=boundary,
+                        evaluated_at=now,
+                        station=station,
+                        remaining_bytes=self.maximum_prepared_bytes - prepared_bytes,
                     )
-                    await budget.charge(len(selected.rows))
-                    assembled = assemble(window, selected, selected_policies)
-                    await _preflight_compute(assembled, statistic, budget)
-                    computation = compute_window(
-                        assembled,
-                        metric,
-                        statistic,
-                        pressure_endpoint_seconds=self.endpoint,
-                        pressure_minimum_fraction=self.minimum,
-                    )
-                    references += len(computation.aggregate.evidence_ids)
-                    if references > MAX_EVIDENCE_REFERENCES:
-                        raise PublicInputError(
-                            "range_too_large", "Aggregate result exceeds worker budget"
-                        )
-                    prepared.append(
-                        aggregate_store.prepare(
-                            station,
-                            computation,
-                            boundary=boundary,
-                            policy_revision=self.policy_revision,
-                            evaluated_at=now,
-                            policy_document=self.document,
-                        )
-                    )
+                    prepared.extend(group_values)
+                    prepared_bytes += size
+                    # Only serialized persistence parameters cross group boundaries;
+                    # no evidence window or index is retained from a completed group.
+                    del group_values
             result: dict[str, Any] = {
                 "results": len(prepared),
                 "watermark": boundary,
