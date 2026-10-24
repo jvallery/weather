@@ -48,6 +48,15 @@ observability on 9187 and same-cluster replication. Instance HTTPS egress covers
 the Kubernetes API and B2; native NetworkPolicy cannot select a B2 FQDN. The
 bucket key and generated CNPG Kubernetes RBAC restrict authority.
 
+`deploy/acceptance/restore/role-logins.yaml` is an excluded, bounded acceptance
+Job template. Render a unique operation and future UTC expiry after all five
+Secrets and the CA exist. It mounts only those basic-auth Secrets plus the CA,
+has no ServiceAccount token, and logs only role names and privilege booleans.
+Every login verifies TLS and proves actual password authentication without
+superuser/createdb/createrole; a migration's ability to `SET ROLE` is not that
+proof. Retain terminal Job output and remove the exact disposable Job after
+verification. Never print a password or place it in a command argument/URI.
+
 The Cluster and ObjectStore carry `Prune=false,Delete=false`; the namespace and
 production PVC protection must remain in place. Never delete a production
 Cluster/PVC/namespace to redeploy. CNPG's primary PDB is an inherited disclosed
