@@ -30,6 +30,14 @@ class DatabaseManifestTests(unittest.TestCase):
             cluster["spec"]["affinity"]["topologyKey"], "topology.vallery.net/proxmox-host"
         )
         self.assertEqual(cluster["spec"]["postgresql"]["parameters"]["archive_timeout"], "300s")
+        parameters = cluster["spec"]["postgresql"]["parameters"]
+        self.assertEqual(parameters["log_error_verbosity"], "terse")
+        self.assertEqual(parameters["log_parameter_max_length"], "0")
+        self.assertEqual(parameters["log_parameter_max_length_on_error"], "0")
+        self.assertEqual(parameters["log_statement"], "none")
+        self.assertEqual(parameters["log_min_error_statement"], "panic")
+        self.assertEqual(parameters["log_min_duration_statement"], "-1")
+        self.assertEqual(parameters["log_duration"], "off")
         self.assertNotIn("retentionPolicy", store["spec"])
         self.assertEqual(
             {r["name"] for r in store["spec"]["configuration"]["s3Credentials"].values()},
