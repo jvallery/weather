@@ -1,0 +1,61 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: weather-rate-limit
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  rateLimit:
+    average: 30
+    burst: 60
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: weather-security-headers
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  headers:
+    stsSeconds: 31536000
+    contentTypeNosniff: true
+    referrerPolicy: strict-origin-when-cross-origin
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: weather
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - match: Host(`weather.vallery.net`) && PathPrefix(`/api/`)
+    priority: 100
+    kind: Rule
+    middlewares:
+    - name: weather-rate-limit
+    - name: weather-security-headers
+    services:
+    - name: api
+      port: 8000
+  - match: Host(`weather.vallery.net`)
+    priority: 1
+    kind: Rule
+    middlewares:
+    - name: weather-rate-limit
+    - name: weather-security-headers
+    services:
+    - name: web
+      port: 3000
+  tls: {}
