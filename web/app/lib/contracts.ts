@@ -124,7 +124,8 @@ export const videoSchema = z.strictObject({
   input_manifest_hash: z.string().regex(/^[0-9a-f]{64}$/), recipe_revision: id, build_identity: id, publication_generation: integer.min(1),
 }).superRefine((video, context) => {
   const roles = new Set(video.renditions.map((item) => item.role));
-  if (video.state === "published" && (roles.size !== 3 || !video.poster || !video.native_download_url)) context.addIssue({ code: "custom", message: "Published products require three renditions, poster and native download" });
+  // Partial-coverage products are playable too (C6); both carry the full media set.
+  if (["published", "partial"].includes(video.state) && (roles.size !== 3 || !video.poster || !video.native_download_url)) context.addIssue({ code: "custom", message: "Published and partial products require three renditions, poster and native download" });
   if (roles.size !== video.renditions.length) context.addIssue({ code: "custom", message: "Duplicate rendition roles" });
   if (!["published", "partial"].includes(video.state) && (video.renditions.length || video.poster || video.native_download_url)) {
     context.addIssue({ code: "custom", message: "Unavailable media cannot expose assets" });
