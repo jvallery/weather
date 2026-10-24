@@ -59,7 +59,7 @@ def statements() -> list[str]:
     result = [
         f"""CREATE FUNCTION weather.qualify_telemetry_conflict(p_incident uuid)
         RETURNS void LANGUAGE plpgsql SECURITY DEFINER
-        SET search_path=pg_catalog,weather AS $$
+        SET search_path=pg_catalog,weather,pg_temp AS $$
         DECLARE incident weather.observation_conflict; item text; q jsonb;
                 changed boolean := false;
         BEGIN
@@ -94,7 +94,7 @@ def statements() -> list[str]:
         END $$""",
         """CREATE FUNCTION weather.mark_strike_multiplicity(p_observation uuid)
         RETURNS void LANGUAGE plpgsql SECURITY DEFINER
-        SET search_path=pg_catalog,weather AS $$
+        SET search_path=pg_catalog,weather,pg_temp AS $$
         BEGIN
           IF (SELECT count(*) FROM weather.receipt_row_provenance
               WHERE family='evt_strike' AND observation_id=p_observation)>1 THEN

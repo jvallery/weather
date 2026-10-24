@@ -63,9 +63,12 @@ def isolated_telemetry() -> None:
         try:
             await guard(db)
             async with db.begin() as c:
-                await c.execute(text("TRUNCATE weather.station,weather.telemetry_receipt CASCADE"))
-                await c.execute(text("DELETE FROM weather.outbox WHERE topic='telemetry.conflict'"))
-                await c.execute(text("TRUNCATE weather.telemetry_loss_snapshot"))
+                from weather.db.models import metadata
+
+                tables = ",".join(
+                    "weather." + t.name for t in metadata.sorted_tables if t.name != "camera"
+                )
+                await c.execute(text("TRUNCATE TABLE " + tables + " CASCADE"))
                 station = (
                     await c.execute(
                         text("""
