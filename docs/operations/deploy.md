@@ -36,8 +36,9 @@ commit or completed build alone does not prove deployment.
 Probe the public root and `/api/healthz`, including HSTS. Public `/metrics`
 must return 404. From `observability`, verify API/web port 9000 returns
 Prometheus text and the API Service on port 80 serves `/readyz` (container
-port 8000). Check PSA rejects a
-root pod, all Weather pods are tokenless, and the label-restricted network
+port 8000). The web Service also exposes HTTP port 80, targeting container
+port 3000, matching its forward-auth provider's internal address.
+Check PSA rejects a root pod, all Weather pods are tokenless, and the label-restricted network
 paths deny an unrelated pod access to the API and deny API internet egress.
 Use disposable, bounded probe pods and remove them after retaining evidence.
 

@@ -57,5 +57,5 @@ spec:
     - name: weather-security-headers
     services:
     - name: web
-      port: 3000
+      port: 80
   tls: {}

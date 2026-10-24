@@ -242,7 +242,7 @@ spec:
     app.kubernetes.io/component: web
   ports:
   - name: http
-    port: 3000
+    port: 80
     targetPort: http
   - name: metrics
     port: 9000
