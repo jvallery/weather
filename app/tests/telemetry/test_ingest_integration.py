@@ -239,6 +239,7 @@ def test_t04_t05_t06_t07_all_rows_and_raw_quarantine(tmp_path: Path) -> None:
 def test_t08_t09_conflict_fields_and_ambiguous_events(tmp_path: Path) -> None:
     async def check() -> None:
         db = engine("weather_ingest")
+        admin = engine()
         spool = Spool(tmp_path / "spool", 1 << 20)
         try:
             alternate = list(ST_ROW)
@@ -261,6 +262,7 @@ def test_t08_t09_conflict_fields_and_ambiguous_events(tmp_path: Path) -> None:
                 """)
                     )
                 ).scalar_one() == "ambiguous"
+            async with admin.connect() as c:
                 assert (
                     await c.execute(
                         text("""
@@ -271,6 +273,7 @@ def test_t08_t09_conflict_fields_and_ambiguous_events(tmp_path: Path) -> None:
         finally:
             spool.close()
             await db.dispose()
+            await admin.dispose()
 
     asyncio.run(check())
 
