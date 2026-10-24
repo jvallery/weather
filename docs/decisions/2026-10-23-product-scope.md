@@ -2,7 +2,7 @@
 
 **Status:** owner decisions accepted; incorporated into [requirements v4.0](../requirements.md).  
 **Source:** the owner's answers to Q01–Q16 in the [open-source landscape review](../research/open-source-landscape.md#7-questions-for-the-owner).  
-**Implementation state:** requirements and candidate backlog only; Codex's first assignment remains investigation, decision records, repository configuration, and filing the real implementation issues with verified dependencies.
+**Implementation state:** planning audit in progress; 46 work issues and 14 owner prerequisites are filed. The [filed graph](../implementation/backlog.json) is authoritative; the candidate backlog is historical. Application implementation has not begun.
 
 This record supersedes the research report's recommendations wherever the owner selected a different option. The application stays independent. The reviewed projects are implementation references; no application fork or mandatory fork experiment is selected. Existing cluster decisions D01–D16 remain research work, and the earlier camera, time, storage, privacy, telemetry, GPU, recovery and deployment contracts remain in force.
 
@@ -24,7 +24,7 @@ This record supersedes the research report's recommendations wherever the owner 
 | Q12 | Local observations and local astronomical calculations only. No external radar, forecast or alert source. | R24; §1.3, §10.6. |
 | Q13 | Responsive website plus a small embeddable weather card for `vallery.net`. Kiosk/offline/PWA modes are not initial requirements. | R37; WX-44. |
 | Q14 | **Fleet-first** implementation with documented customization. No general multi-site or multi-tenant product requirement. | R02, R24; D01, D13; WX-34. |
-| Q15 | Codex proposes the project license and reuse policy in Phase 1; record the owner's final choice before importing upstream code. | D01; §20.1. |
+| Q15 | Subsequently resolved by Jason: MIT for original code, compatible permissive reuse, separate review before importing copyleft code. | D01; §20.1. |
 | Q16 | Current conditions refresh approximately **every 15 seconds**. Archive all received telemetry independently of the UI cadence. | R14, R15; WX-13, WX-20. |
 
 ## Selected defaults and interpretations
@@ -47,8 +47,30 @@ The database needs a real local-calendar-day identity in addition to `solar_cycl
 
 Codex must investigate current cluster capability rather than ask the owner to decide implementation details that can be established from evidence. In particular, the preview/keogram worker design, per-camera keogram region, hourly-selection tolerance, schema/partition strategy, public/private API authorization, almanac formulas and coverage, reusable components, GPU co-tenancy and layout for the later composite belong in the Phase-1 design records and the filed issues.
 
-The [candidate graph](../implementation/backlog-candidate.json) preserves the original WX-01–WX-35 keys, adds WX-36–WX-46, and distinguishes initial work from conditional GPU/CDN work and deferred follow-ons. Codex must file those selected outcomes as real issues after research, including WX-45 and the reserved WX-46 investigation, and verify that deferred work cannot become an accidental prerequisite of the initial rollout.
+The historical [candidate graph](../implementation/backlog-candidate.json) preserves the original proposal. The [filed graph](../implementation/backlog.json) now records WX-01–WX-46 and the owner prerequisites, distinguishing initial work from conditional GPU/CDN work and deferred follow-ons. WX-45 and the reserved WX-46 investigation are filed and excluded from the required initial-release closure. Final issue consolidation and dependency verification remain part of the audit.
 
 ## Subsequent owner-approved frontend decision
 
-Jason asked to reconsider Astro against SPA frameworks and then explicitly instructed: “Agree, refactor the design against React + TypeScript”. D13 now selects React + TypeScript with React Router Framework Mode (SSR initial public pages plus client navigation), scoped TanStack Query polling, CSS variables/Modules and the separate Python API/workers. This replaces the earlier D13 Astro choice; it does not remove no-JavaScript archive reading, privacy, accessibility, local-runtime independence or any selected product. Requirements v4's framework alternatives remain original candidate context. Package pins, responsive wireframes and implementation qualification remain outstanding.
+Jason asked to reconsider Astro against SPA frameworks and then explicitly instructed: “Agree, refactor the design against React + TypeScript”. D13 now selects React + TypeScript with React Router Framework Mode (SSR initial public pages plus client navigation), scoped TanStack Query polling, CSS variables/Modules and the separate Python API/workers. This replaces the earlier D13 Astro choice; it does not remove no-JavaScript archive reading, privacy, accessibility, local-runtime independence or any selected product. Requirements v4's framework alternatives remain original candidate context. Direct frontend/backend pins and responsive wireframes are recorded in D13. Complete transitive lock/image and runtime qualification remain implementation work.
+
+## Subsequent owner-approved transport and license decisions
+
+Jason selected MIT for original code with compatible permissive reuse and separate review before copying copyleft code. This resolves Q15; do not ask for the license choice again.
+
+Jason selected the existing Cloudflare Tunnel for public delivery, including video playback and downloads, citing successful Frigate streaming and declining further Cloudflare investigation. D14 records this choice. Do not reopen direct-HTTPS or paid-video alternatives. Scoped route configuration and Weather-specific browser/range/download validation remain engineering work.
+
+## Remaining owner input and decisions not to reopen
+
+The earlier conversational seven-question list overstated the remaining owner decisions. Reconcile it against the normative requirements as follows:
+
+| Topic | Current disposition | Remaining action |
+|---|---|---|
+| Public camera masks | All three cameras' delayed previews, per-camera timelapses, keograms and sanitized still derivatives are selected. Native originals stay private. The exact public privacy mask is not yet approved. | Review camera scenes and present concrete proposed masks privately; ask Jason only to resolve sensitive regions that cannot be inferred safely. Do not ask whether to drop an already selected camera/product. Keogram strip selection is engineering work and is distinct from privacy approval. |
+| Location disclosure | Requirements §5.1 already prohibits publishing exact coordinates, camera addresses, station serials and credentials. Private coordinates supply local astronomical calculations. | Preserve that boundary; no exact-versus-approximate coordinate questionnaire is needed. Any public area label must avoid disclosing the protected configuration. |
+| Main-site card placement | The card and apex-only parent integration are selected. Exact placement/sizing is not recorded. | Obtain the preferred location or propose a concrete placement through OWN-EMBED after inspecting the existing page. This is a layout preference, not a blocker for producing WX-44's child card. |
+| Interpolation and compute cost | R09 requires high interpolation, exposure processing, exact timing and tested CPU fallback. | Codex must design/qualify the resource envelope. Do not replace the requirement with a lower-quality first release by default. Escalate only an evidenced incompatibility with a concrete tradeoff. |
+| AI at launch | R21/R22 and Q08–Q10 select descriptions, text embeddings and semantic/measured search initially. | Preserve scope and inference-outage isolation. No question about deferring these features is pending. |
+| Recovery objectives | Existing provisional targets are DB offsite age <30 minutes and media/joint age <36 hours; these are not measured guarantees. RTO remains unqualified. | Derive a feasible recovery estimate from the selected custody and capacity design. Ask about a tighter business tolerance only if it would change that concrete design; no new arbitrary owner target is needed to continue planning. |
+| Third media copy | Estate copy/failure-domain requirements still apply; only two durable media copies are currently named in D15. | Investigate a supported central-owner disposition and quantify capacity/cost. Do not request a speculative purchase or blanket backup exception. If the compliant option requires a new expense or an exception, present that concrete choice to Jason. |
+
+No answer is inferred from silence. The genuine privacy and placement inputs remain unresolved; engineering analysis may proceed independently. These are not additional approval gates, and this record does not authorize publication of an unreviewed sensitive camera region. All other architecture gaps retain their existing owner and acceptance obligations in the planning-closure inventory.
