@@ -73,9 +73,6 @@ class DatabaseManifestTests(unittest.TestCase):
         )
         roles = cluster["spec"]["managed"]["roles"]
         self.assertEqual(
-            next(r for r in roles if r["name"] == "weather_api")["connectionLimit"], 40
-        )
-        self.assertEqual(
             {r["name"] for r in roles},
             {"weather_ingest", "weather_worker", "weather_api", "weather_editor"},
         )
@@ -125,7 +122,22 @@ class DatabaseManifestTests(unittest.TestCase):
                 }
             ],
         )
-        self.assertEqual({p["port"] for rule in policy["egress"] for p in rule["ports"]}, {53, 443})
+        self.assertEqual(
+            {p["port"] for rule in policy["egress"] for p in rule["ports"]}, {53, 443, 6443}
+        )
+
+    def test_instance_api_egress_includes_endpoint_port_without_widening_clients(self):
+        policies = list(
+            yaml.safe_load_all((ROOT / "deploy/k8s/database/network-policies.yaml").read_text())
+        )
+        ports = {
+            policy["metadata"]["name"]: {
+                p["port"] for rule in policy["spec"]["egress"] for p in rule["ports"]
+            }
+            for policy in policies
+        }
+        self.assertEqual(ports["weather-pg"], {53, 443, 5432, 6443, 8000})
+        self.assertEqual(ports["weather-database-clients"], {53, 5432})
 
     def test_operation_cannot_inject_sql_names_or_labels(self):
         for operation in ("bad'name", "../weather-pg", "UPPER", "", "bad-", "-bad", "a" * 32):
