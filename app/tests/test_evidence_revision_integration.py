@@ -106,7 +106,20 @@ def test_initial_publication_reuses_sequence_and_outbox_exposes_only_safe_fields
             async with api.begin() as connection:
                 boundary = await watermark(connection)
                 rows = await history(connection, boundary)
+                published = {
+                    row["id"]: dict(row)
+                    for row in (
+                        await connection.execute(
+                            text("SELECT * FROM public_api.telemetry_publications")
+                        )
+                    ).mappings()
+                }
             assert boundary == len(rows) == 6
+            assert all(
+                published[row["id"]]
+                == {key: value for key, value in row.items() if key != "revision_seq"}
+                for row in rows
+            )
             assert {row["message_type"] for row in rows} == {name for name, _ in families}
             assert all(row["revision_seq"] == row["publication_seq"] for row in rows)
             assert "fixture-private" not in json.dumps(rows, default=str)

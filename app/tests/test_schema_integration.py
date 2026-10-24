@@ -1180,6 +1180,8 @@ def test_telemetry_exact_receipts_dedupe_privacy_and_no_retention() -> None:
                 assert rows[0]["station_alias"] == "test-station"
                 assert rows[0]["device_alias"] == "test-device"
             async with admin.begin() as connection:
+                # Later revisions add publication and immutability triggers;
+                # retain the v1 guarantee against deletion or unexpected hooks.
                 assert (
                     await connection.execute(
                         text("""
@@ -1188,6 +1190,10 @@ def test_telemetry_exact_receipts_dedupe_privacy_and_no_retention() -> None:
                     WHERE n.nspname='weather' AND c.relname IN
                     ('telemetry_receipt','obs_st','rapid_wind','evt_precip','evt_strike',
                      'device_status','hub_status','obs_air','obs_sky') AND NOT t.tgisinternal
+                      AND ((t.tgtype & 8) <> 0 OR t.tgname NOT IN
+                        ('telemetry_publication_lock','canonical_telemetry_immutable',
+                         'telemetry_published','current_telemetry_quality',
+                         'telemetry_revision_published','telemetry_revision_quality'))
                 """)
                     )
                 ).scalar_one() == 0

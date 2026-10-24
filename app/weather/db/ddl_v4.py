@@ -33,14 +33,32 @@ def backfill_statement() -> str:
 
 
 def statements() -> list[str]:
+    families = ",".join("'" + family + "'" for family in PUBLIC_FAMILIES)
     result = [
-        """CREATE FUNCTION weather.append_telemetry_evidence
+        f"""CREATE FUNCTION weather.append_telemetry_evidence
         (p_publication_seq bigint,p_revision_seq bigint) RETURNS void
         LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-        DECLARE projection record; instant timestamptz;
+        DECLARE projection record; source record; instant timestamptz;
         BEGIN
-          SELECT * INTO STRICT projection FROM public_api.telemetry_publications
-            WHERE publication_seq=p_publication_seq;
+          SELECT family,observation_id INTO STRICT source
+            FROM weather.telemetry_publication WHERE publication_seq=p_publication_seq;
+          IF source.family NOT IN ({families}) THEN
+            RAISE EXCEPTION 'unsupported public observation family';
+          END IF;
+          -- Resolve the indexed canonical row before sanitizing it. Looking up
+          -- a publication through the security-barrier UNION view repeatedly
+          -- evaluates unrelated history during bulk inserts.
+          EXECUTE format('SELECT $1 AS publication_seq,o.id,s.alias AS station_alias,'
+            'd.alias AS device_alias,o.message_type,o.source_ts AS observed_at,'
+            'r.received_at,o.row_idx,'
+            'public_api.telemetry_metric_values(o."values",o.quality) AS "values",'
+            'public_api.telemetry_field_quality(o.quality) AS field_quality,'
+            'public_api.public_metric_quality(o.quality) AS quality '
+            'FROM weather.%I o JOIN weather.device d ON d.id=o.device_id '
+            'JOIN weather.station s ON s.id=d.station_id '
+            'JOIN weather.telemetry_receipt r ON r.id=o.receipt_id WHERE o.id=$2',
+            source.family) INTO STRICT projection
+            USING p_publication_seq,source.observation_id;
           INSERT INTO weather.telemetry_evidence_revision
             (revision_seq,publication_seq,id,station_alias,device_alias,message_type,
              observed_at,received_at,row_idx,"values",field_quality,quality)

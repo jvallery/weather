@@ -530,8 +530,8 @@ def test_qualification_locks_clock_before_canonical_row_and_retries_do_not_revis
                     await waits_on_lock(admin, pid)
                     # A qualifier that locked the canonical row first would deadlock here.
                     await asyncio.wait_for(first.execute(sql, {"id": conflict}), timeout=5)
-                    before = await current(first)
                     await t1.commit()
+                    before = await current(admin)
                     await asyncio.wait_for(waiting, timeout=5)
                     await t2.commit()
                 finally:
