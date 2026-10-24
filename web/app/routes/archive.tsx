@@ -33,7 +33,7 @@ export default function Archive() {
       return <Link key={date} to={`/day/${date}/`} aria-label={`Open solar cycle ${date}`}><span>{index + 1}</span><small>Open day</small></Link>;
     })}</div>
     <h2>Recording catalog</h2><p className="small">The calendar selects a day. The bounded catalog below uses the camera, segment and state filters; continue through pages for older products.</p>
-    {!catalog ? <p className="fault">Archive API unavailable. Camera products are coming soon in the timelapse slice.</p> : catalog.items.length === 0 ? <p>No recordings yet for these filters. Nothing has been replaced with a sample image.</p> : <div className="grid two">{catalog.items.map((video) => <article className="card" key={video.video_id}><h3><VideoLink video={video} /></h3><Status state={video.state} reason={video.reason} /><p>Solar cycle · {video.cycle_date}</p><Link to={`/day/${video.cycle_date}/`}>Open this day and all three cameras</Link></article>)}</div>}
+    {!catalog ? <p className="fault">Archive API unavailable. Camera products are coming soon.</p> : catalog.items.length === 0 ? <p>No recordings yet for these filters. Nothing has been replaced with a sample image.</p> : <div className="grid two">{catalog.items.map((video) => <article className="card" key={video.video_id}><h3><VideoLink video={video} /></h3><Status state={video.state} reason={video.reason} /><p>Solar cycle · {video.cycle_date}</p><Link to={`/day/${video.cycle_date}/`}>Open this day and all three cameras</Link></article>)}</div>}
     {catalog?.next_cursor && <Link className="button-link" to={`?${pageLink}`}>Next catalog page</Link>}
   </>;
 }
