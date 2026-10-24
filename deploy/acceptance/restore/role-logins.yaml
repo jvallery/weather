@@ -20,6 +20,8 @@ spec:
         weather.vallery.net/role-probe: '__OPERATION__'
         weather.vallery.net/database-role: api
     spec:
+      imagePullSecrets:
+        - name: zot-origin-cluster-pull
       automountServiceAccountToken: false
       enableServiceLinks: false
       restartPolicy: Never
@@ -33,10 +35,13 @@ spec:
           type: RuntimeDefault
       containers:
         - name: logins
-          image: registry.vallery.net/jvallery/mirror-ghcr-io-cloudnative-pg-postgresql-777ad6774e00fff6@sha256:d66df406385b9f3c43c47e94fe3a0002278ef56d21b82a8c9d3a22f91aa9c3f0
+          image: registry.vallery.net/jvallery/mirror-ghcr-io-cloudnative-pg-postgresql-777ad6774e00fff6:16.15@sha256:d66df406385b9f3c43c47e94fe3a0002278ef56d21b82a8c9d3a22f91aa9c3f0
           command: [sh, -eu, -c]
           args:
             - |
+              # kube-router programs a new pod's NetworkPolicy rules a few
+              # seconds after start; wait (bounded) before the first login.
+              i=0; until pg_isready -q -t 2; do i=$((i+1)); test "$i" -lt 30; sleep 2; done
               for role in migrator ingest worker api editor; do
                 username="$(cat "/auth/$role/username")"
                 test "$username" = "weather_$role"

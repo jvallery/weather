@@ -8,10 +8,11 @@ resources:
 - network-policy.yaml
 - application.yaml
 - ingress.yaml
+- database
 images:
 - name: weather-app
   newName: registry.vallery.net/jvallery/weather-app
   digest: sha256:b31d9d54d737d6cc1607618f4aa0ba99f8c6a4c8e256a5b931d825f8984342a1
 - name: weather-web
   newName: registry.vallery.net/jvallery/weather-web
-  digest: sha256:0761f4ebf5f5cf73a4d261446b296fa77c1a3fb7e755585306c218a6e70764bd
+  digest: sha256:7ff8819af3890a77e3ec9dbacbc111ca6a1dba21fe57097d364f5a545ada09d9
