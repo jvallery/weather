@@ -136,7 +136,8 @@ The `api` streams published media itself (#20); code in `app/weather/media/`
   upstream chunk in flight per stream, a client that stops reading for 60 s is
   cut off, and a disconnect closes the Garage read at once. A Garage error
   before the headers is 503 `Retry-After: 5`; after them the connection is cut
-  short of its Content-Length.
+  short of its Content-Length, and uvicorn logs one line, "ASGI callable
+  returned without completing response." (also for stalled clients).
 
 ```sh
 id=<asset_id>

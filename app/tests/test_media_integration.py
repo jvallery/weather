@@ -696,8 +696,9 @@ def test_mid_stream_store_failure_aborts_without_appending(tmp_path: Path) -> No
                     await writer.drain()
                     sent += len(chunk)
             task.cancel()
-            for each in (writer, up_writer):
-                each.transport.abort()
+            # A FIN to the origin, so it reads what was sent and then a short body.
+            up_writer.transport.abort()
+            writer.close()
 
         server = await asyncio.start_server(handle, "127.0.0.1", 0)
         running.extra["proxy"] = server
