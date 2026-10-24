@@ -35,7 +35,7 @@ const captured = new Map();
 function remaining() { const value = deadline - Date.now(); if (value <= 0) throw new Error("Rollout qualification deadline expired"); return Math.min(30_000, value); }
 function assetUrl(value) {
   const url = new URL(value, target);
-  if (url.origin !== target.origin || !/^\/assets\/[A-Za-z0-9_./-]+$/.test(url.pathname) || url.href.length > 512) throw new Error(`Unexpected non-public asset identity: ${url.origin === target.origin ? url.pathname.slice(0, 120) : "foreign origin"}`);
+  if (url.origin !== target.origin || !/^\/assets\/[A-Za-z0-9_./-]+$/.test(url.pathname) || url.href.length > 512) throw new Error(`Unexpected non-public asset identity: ${url.origin === target.origin ? url.pathname.slice(0, 120) : `foreign origin ${url.origin.replace(/[0-9]/g, "#").slice(0, 120)}`}`);
   url.search = ""; url.hash = ""; return url;
 }
 async function assetProof(request, asset, phase) {
