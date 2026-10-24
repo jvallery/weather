@@ -30,6 +30,9 @@ def files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     key.write_bytes(b"synthetic-test-key-" + b"a" * 45)
     monkeypatch.setattr(runtime, "POLICY_FILE", policy)
     monkeypatch.setattr(runtime, "CURSOR_FILE", key)
+    aggregation = tmp_path / "aggregate-policy.json"
+    aggregation.write_text('{"version":1,"metrics":{}}')
+    monkeypatch.setattr(runtime, "AGGREGATE_POLICY_FILE", aggregation)
 
 
 class FakePool:

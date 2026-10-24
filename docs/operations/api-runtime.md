@@ -12,6 +12,13 @@ URL-safe value; missing/invalid files fail startup with value-free diagnostics. 
 fallback key or put it in an environment variable, manifest, command or log. Database username,
 password and CA come from `/var/run/weather-db`, through the bounded verify-full reader factory.
 
+It also reads `/etc/weather/aggregate-policy.json`, with `version:1`, a `metrics` object and optional
+`pressure` endpoint policy. Each metric uses an explicit versioned `forward_hold` or approved
+`reported_interval` policy. Amounts/counts require one declared source authority. The shared loader
+rejects unknown fields, unqualified reported support and implicit defaults, preserves exact decimal
+caps, and emits the same normalized public policy document for worker persistence. An empty metrics
+object makes no support claim. Include both configuration files before opting into data routes.
+
 The public policy has the shape `{"version":1,"metrics":{}}`. Each commissioned metric entry has
 exactly `expected_interval_seconds` and `hold_seconds`, both positive and bounded by one day when
 specified. An explicit pair of nulls also represents an uncommissioned policy.
@@ -41,5 +48,8 @@ Disposable integration cleanup preserves the camera seed, metric bindings and pu
 singleton; production tables are never truncated by these helpers. Source and pure startup/cache
 tests do not prove real database permissions, export concurrency, saturation, outage recovery or
 aggregate-revision handling. Those require the qualified in-cluster CI image and actual database
-tests before WX-13 deployment. Aggregate reads remain unavailable until the full-window source and
-retained revision worker are integrated.
+tests before WX-13 deployment. Aggregate requests now use the complete as-of source and bounded
+calculator, with one nonwaiting process slot, cooperative work accounting and explicit overflow;
+they do not silently truncate inputs or change the statistic. Their signed continuation position
+binds the fixed UTC evaluation instant as well as the ordinal, and the publication watermark retains
+value/qualification membership. Retained closed-window revision-worker commissioning remains pending.

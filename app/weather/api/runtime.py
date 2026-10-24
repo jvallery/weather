@@ -8,6 +8,7 @@ import re
 from collections.abc import AsyncIterator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import asdict
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -19,13 +20,17 @@ from weather.db.public_connection import create_public_database_engine
 from weather.db.public_mapping import FreshnessPolicy
 from weather.db.public_source import PublicSqlSource
 
-from .cursors import CursorCodec
+from .aggregate_config import load_aggregate_configuration
+from .aggregate_source import AggregateSource
+from .cursors import CursorCodec, Snapshot
 from .metric_registry import REGISTRY, REGISTRY_REVISION, discovery
 from .public_metrics import PublicMetrics
-from .public_service import PublicWeatherService
+from .public_models import AggregateQuery, Aggregates
+from .public_service import PublicWeatherService, SourcePage
 
 POLICY_FILE = Path("/etc/weather/api-policy.json")
 CURSOR_FILE = Path("/var/run/weather-api-cursor/CURSOR_HMAC_KEY")
+AGGREGATE_POLICY_FILE = Path("/etc/weather/aggregate-policy.json")
 
 
 class PublicRuntimeConfigurationError(ValueError):
@@ -85,8 +90,14 @@ def load_cursor_key(path: Path) -> bytes:
         raise PublicRuntimeConfigurationError("Invalid API cursor key file") from None
 
 
-def policy_revision(policies: dict[str, FreshnessPolicy]) -> str:
-    data = [REGISTRY_REVISION, {name: asdict(value) for name, value in policies.items()}]
+def policy_revision(
+    policies: dict[str, FreshnessPolicy], aggregate_revision: str | None = None
+) -> str:
+    data = [
+        REGISTRY_REVISION,
+        {name: asdict(value) for name, value in policies.items()},
+        aggregate_revision,
+    ]
     return (
         "api_policy_v1_"
         + hashlib.sha256(
@@ -108,18 +119,36 @@ def public_lifespan(
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # Key/policy failure happens before allocating a pool; no secret defaults exist.
         policies, key = load_policies(POLICY_FILE), load_cursor_key(CURSOR_FILE)
+        calibration = load_aggregate_configuration(AGGREGATE_POLICY_FILE)
         engine = create_public_database_engine()
         service = None
+        aggregate = None
         try:
+
+            async def read_aggregates(
+                query: AggregateQuery, snapshot: Snapshot | None
+            ) -> SourcePage[Aggregates]:
+                if aggregate is None:
+                    raise RuntimeError("Aggregate runtime is not configured")
+                return await aggregate(query, snapshot)
+
             source = PublicSqlSource(
                 engine,
                 station_alias=settings.api_station_alias or "",
                 maximum_raw_seconds=settings.api_raw_window_seconds,
                 policies=policies,
+                aggregate_source=read_aggregates,
+            )
+            aggregate = AggregateSource(
+                source,
+                calibration.policies,
+                clock=lambda: datetime.now(UTC),
+                pressure_endpoint_seconds=calibration.pressure_endpoint_seconds,
+                pressure_minimum_fraction=calibration.pressure_minimum_fraction,
             )
             service = PublicWeatherService(
                 source,
-                CursorCodec(key, policy_revision=policy_revision(policies)),
+                CursorCodec(key, policy_revision=policy_revision(policies, calibration.revision)),
                 maximum_raw_seconds=settings.api_raw_window_seconds,
                 metrics=PublicMetrics(registry),
                 metric_registry=discovery(
@@ -138,8 +167,12 @@ def public_lifespan(
                 if service is not None:
                     await service.aclose(timeout_seconds=1)
             finally:
-                # Even cancellation failure in a source flight cannot skip pool disposal.
-                async with asyncio.timeout(3):
-                    await engine.dispose()
+                try:
+                    if aggregate is not None:
+                        await aggregate.aclose(timeout_seconds=1)
+                finally:
+                    # Even cancellation failure cannot skip pool disposal.
+                    async with asyncio.timeout(3):
+                        await engine.dispose()
 
     return lifespan
