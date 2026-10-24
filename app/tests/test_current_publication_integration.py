@@ -154,6 +154,7 @@ async def observation(
     identity: UUID | None = None,
     family: str = "obs_st",
     receipt_id: UUID | None = None,
+    row_idx: int = 0,
 ) -> tuple[UUID, UUID]:
     assert family in ALL_FAMILIES
     identity = identity or uuid4()
@@ -162,7 +163,7 @@ async def observation(
     await connection.execute(
         text(f"""INSERT INTO weather.{family}
         (id,device_id,receipt_id,message_type,source_ts,row_idx,"values",quality)
-        VALUES(:id,:device,:receipt,:family,:source,0,
+        VALUES(:id,:device,:receipt,:family,:source,:idx,
                CAST(:values AS jsonb),CAST(:quality AS jsonb))
         ON CONFLICT(device_id,message_type,source_ts,row_idx) DO NOTHING"""),
         {
@@ -171,6 +172,7 @@ async def observation(
             "receipt": receipt_id,
             "family": family,
             "source": source,
+            "idx": row_idx,
             "values": json.dumps(values),
             "quality": json.dumps(quality(values, source_eligible=source_eligible)),
         },

@@ -81,6 +81,7 @@ def test_exact_integer_lightning_and_zero_never_pass_through_float() -> None:
     assert public_number("-1", "number", "lightning_count") is None
     assert public_number("true", "boolean", "temperature") is None
     assert public_number("NaN", "number", "temperature") is None
+    assert public_number("1e-400", "number", "temperature") is None
     assert public_number("0", "number", "temperature") == 0
 
 
@@ -149,6 +150,7 @@ def test_support_requires_explicit_qualification_and_evidence_survives_invalidat
                 "kind": "reported_interval",
                 "qualified": True,
                 "reported_seconds": 60,
+                "policy": "v171-wind-report-interval-1",
             },
         }
     )

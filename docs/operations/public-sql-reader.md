@@ -98,6 +98,48 @@ awaitable; without one it raises a sanitized unavailable error until root
 integrates the real aggregate source/handler. The reader implements no duplicate
 aggregate math.
 
+### Complete-window evidence
+
+`weather.db.public_evidence.read_evidence_window(reader, window, metrics, *,
+preceding_hold_seconds, following_report_seconds, snapshot_watermark=None,
+maximum_points=5000)` is an internal complete read, never a raw page subset.
+Spans are explicit calibrated integers from zero through 86400 seconds and must
+cover every forward hold and preceding-report interval the caller accepts.
+
+It atomically reads/binds W, all selected rows from start through the inclusive
+end-plus-report span, and all ties at the latest source-time-eligible timestamp
+before start per public device/family/metric within the hold span. It never
+chooses authority by UUID or drops field-invalid/null boundaries. Bad source
+times do not replace valid preceding boundaries; inside-window rows retain their
+explicit source-time flag.
+For canonical v2 rows, top-level safe `quality.valid` represents source-time
+eligibility: quarantine/invalid source precision never produces a canonical row,
+and a future source clock clears it. Measurement/sensor/null/conflict validity
+stays per-field; qualification changes only those fields. Thus a field-invalid
+but source-time-valid sample remains a hold-breaking boundary.
+
+`EvidenceWindow` contains `watermark` and `rows`. Each frozen `SupportEvidence`
+contains a safe `HistoryPoint`, qualified `exact_value: Decimal|None`, opaque
+`quality_revision` hash over only the complete normalized safe field/row quality,
+observation UUID, public family/device alias, publication sequence,
+`source_time_eligible`, and normalized reported-support kind/policy/qualification/
+seconds. Exact values come only from already-safe numeric text when the point
+is qualified; disputed/future/invalid values remain unavailable. Public float
+underflow cannot turn a nonzero source measurement into zero. Unknown and
+explicitly unqualified policies do not create support; the current v2 qualified
+reported policy is `v171-wind-report-interval-1`.
+
+The complete-window budget is explicit (maximum 50000 internal points). Above
+it, the read fails instead of returning partial input; split worker windows when
+needed. The caller owns authority, calibrated hold assembly, overlap/coverage/
+statistic math, resource bounds and publication fencing. Qualification does not
+advance W, so its input hash must include current exact/null/quality/support and
+calibration state, not W alone. No connection remains held after return.
+The separately prepared 0004 immutable qualification ledger requires a followup
+adapter selecting the latest safe revision at or below W per publication for
+aggregate evidence. Raw observation pages retain their live-eligibility view so
+later disputes return null/reason without dropping snapshot members.
+
 ## Failure handling and proof limits
 
 Pool exhaustion, statement timeout, disconnect and unexpected mapping failures
@@ -112,18 +154,21 @@ and ownership, CA chain/hostname, role readiness, CNPG health and pool/statement
 budgets. Never print credential files or exception/URL parameters. Restore the
 declarative configuration; do not weaken verification or borrow a stronger role.
 
-Eight focused pure tests cover numeric/clock/quality mapping, commissioned
+Eleven focused pure tests cover numeric/clock/quality mapping, commissioned
 expiry, support qualification, canonical positions, bound query parameters,
-strict TLS configuration, pool bounds, empty-page shape and error sanitization.
+strict TLS configuration, pool bounds, empty-page shape, complete-window bounds,
+exact decimals, unknown-support exclusion, explicit budget failure and sanitization.
 They open no socket and execute no SQL. They were checked against exact service
 source `c70ffa0138fe85383f31f33c4fe9dfca533ba738` through a temporary dependency
 overlay; that service's files are not duplicated in this commit.
 
-Three additional guarded integration cases are **unrun**: real API-role
+Four additional guarded integration cases are **unrun**: real API-role
 current/observation reads including zero and large integer counts plus explicit
 `obs_st` authority; a 30-day flattened export with late rows and same-transaction
 conflict invalidation plus empty boundaries; and API pool saturation/statement
-timeout while ingest commits independently and subsequent reads remain read-only.
+timeout while ingest commits independently and subsequent reads remain read-only;
+and complete-window reads preserving invalid tied bookends, following reported
+support and the frozen boundary.
 They reuse the socket/version/marker guard and reference-seed cleanup from the
 v3 migration tests. TLS negotiation against live CNPG remains a commissioning
 check; the disposable socket fixture does not pretend to prove it.

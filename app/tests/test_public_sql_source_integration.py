@@ -2,6 +2,7 @@
 """UNRUN SQL-reader proofs; only the guarded fleet PostgreSQL socket fixture."""
 
 import asyncio
+import json
 import time
 from datetime import timedelta
 from typing import Any
@@ -19,8 +20,10 @@ from test_current_publication_integration import (
 )
 from test_current_publication_integration import disposable_database as disposable_database
 from weather.api.cursors import Snapshot
-from weather.api.public_models import ObservationQuery
+from weather.api.metric_registry import PublicInputError
+from weather.api.public_models import Interval, ObservationQuery
 from weather.db.public_connection import PublicDatabaseBudget
+from weather.db.public_evidence import read_evidence_window
 from weather.db.public_mapping import FreshnessPolicy
 from weather.db.public_source import PublicReadUnavailable, PublicSqlSource
 
@@ -240,6 +243,114 @@ def test_api_pool_saturation_and_timeout_do_not_block_ingest_or_leak_driver_text
         finally:
             for connection in held:
                 await connection.close()
+            await api.dispose()
+            await ingest.dispose()
+            await db.dispose()
+
+    asyncio.run(check())
+
+
+def test_full_window_keeps_invalid_preceding_ties_and_following_report_support() -> None:
+    async def check() -> None:
+        db, ingest = engine(), engine("weather_ingest")
+        budget = PublicDatabaseBudget(pool_size=2)
+        api = await api_engine(budget)
+        try:
+            async with db.begin() as connection:
+                d, alias = await station(connection)
+                await observation(connection, d, source=SOURCE - timedelta(seconds=120))
+                first, _ = await observation(
+                    connection,
+                    d,
+                    source=SOURCE - timedelta(seconds=30),
+                    values={"air_temperature": None, "wind_avg": None},
+                )
+                tied, _ = await observation(
+                    connection,
+                    d,
+                    source=SOURCE - timedelta(seconds=30),
+                    values={"air_temperature": 17, "wind_avg": None},
+                    row_idx=1,
+                )
+                await observation(
+                    connection,
+                    d,
+                    source=SOURCE + timedelta(seconds=10),
+                    values={"air_temperature": 20, "wind_avg": 2},
+                )
+                reported, _ = await observation(
+                    connection,
+                    d,
+                    source=SOURCE + timedelta(seconds=90),
+                    values={"air_temperature": 21, "wind_avg": 3},
+                )
+                await connection.execute(
+                    text("""UPDATE weather.obs_st SET quality=jsonb_set(
+                    quality,'{fields,wind_avg,support}',CAST(:support AS jsonb)) WHERE id=:id"""),
+                    {
+                        "id": reported,
+                        "support": json.dumps(
+                            {
+                                "kind": "reported_interval",
+                                "qualified": True,
+                                "reported_seconds": 60,
+                                "policy": "v171-wind-report-interval-1",
+                            }
+                        ),
+                    },
+                )
+                await observation(
+                    connection,
+                    d,
+                    source=SOURCE - timedelta(seconds=5),
+                    values={"air_temperature": 999},
+                    source_eligible=False,
+                )
+            reader = source(api, alias, budget, seconds=300)
+            window = Interval(start=SOURCE, end=SOURCE + timedelta(seconds=60))
+            result = await read_evidence_window(
+                reader,
+                window,
+                ["temperature", "wind_avg"],
+                preceding_hold_seconds=90,
+                following_report_seconds=60,
+            )
+            previous = [
+                r
+                for r in result.rows
+                if r.point.observed_at < window.start and r.point.metric == "temperature"
+            ]
+            assert {r.observation_id for r in previous} == {first, tied}
+            assert any(r.point.value is None and r.source_time_eligible for r in previous)
+            following = next(
+                r
+                for r in result.rows
+                if r.observation_id == reported and r.point.metric == "wind_avg"
+            )
+            assert following.point.support_interval.start == SOURCE + timedelta(seconds=30)
+            assert following.point.support_interval.end == SOURCE + timedelta(seconds=90)
+            async with ingest.begin() as connection:
+                late, _ = await observation(connection, d, source=SOURCE + timedelta(seconds=20))
+            repeated = await read_evidence_window(
+                reader,
+                window,
+                ["temperature", "wind_avg"],
+                preceding_hold_seconds=90,
+                following_report_seconds=60,
+                snapshot_watermark=result.watermark,
+            )
+            assert all(r.observation_id != late for r in repeated.rows)
+            with pytest.raises(PublicInputError) as failure:
+                await read_evidence_window(
+                    reader,
+                    window,
+                    ["temperature", "wind_avg"],
+                    preceding_hold_seconds=90,
+                    following_report_seconds=60,
+                    maximum_points=1,
+                )
+            assert failure.value.code == "range_too_large"
+        finally:
             await api.dispose()
             await ingest.dispose()
             await db.dispose()
