@@ -15,17 +15,24 @@ wx_pg_root="$(mktemp -d "${TMPDIR:-/tmp}/weather-schema-ci.XXXXXX")"
 wx_pg_started=0
 cleanup() {
   if [[ "$wx_pg_started" == 1 ]]; then
-    pg_ctl -D "$wx_pg_root/data" -m immediate -w -t 20 stop >/dev/null 2>&1 || true
+    if ! pg_ctl -D "$wx_pg_root/data" -m immediate -w -t 20 stop >/dev/null 2>&1; then
+      if pg_ctl -D "$wx_pg_root/data" status >/dev/null 2>&1; then
+        echo 'Disposable PostgreSQL still running; preserving its temporary directory' >&2
+        return 1
+      fi
+    fi
   fi
   rm -rf -- "$wx_pg_root"
 }
-trap cleanup EXIT INT TERM
+trap 'wx_exit_status=$?; cleanup || wx_exit_status=1; exit "$wx_exit_status"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 mkdir "$wx_pg_root/socket"
 initdb -D "$wx_pg_root/data" --username=postgres --auth-local=trust --auth-host=reject \
   --encoding=UTF8 --no-locale >/dev/null
+wx_pg_started=1
 pg_ctl -D "$wx_pg_root/data" -l "$wx_pg_root/server.log" -w -t 30 \
   -o "-k $wx_pg_root/socket -c listen_addresses='' -c max_connections=30 -c shared_buffers=64MB -c weather.integration_test=on" start >/dev/null
-wx_pg_started=1
 createdb -h "$wx_pg_root/socket" -U postgres weather_ci
 psql -h "$wx_pg_root/socket" -U postgres -d weather_ci -v ON_ERROR_STOP=1 -q <<'SQL'
 CREATE ROLE weather_migrator LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE;
