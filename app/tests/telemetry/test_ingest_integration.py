@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 import uuid
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -149,7 +150,7 @@ async def postgres_vector(vector: dict[str, Any], tmp_path: Path) -> None:
             # Commit returned, but the local acknowledgement was lost: replay the same ID.
             async with db.begin() as c:
                 await seed(c, HUB, DEVICES)
-                await drain._receipt(c, receipt)
+                await drain._receipt(c, receipt, Counter())
             for _ in range(data["attempts"] - 1):
                 assert spool.stats()["depth"] >= 1
                 assert await drain.once() >= 1, drain.last_error_code

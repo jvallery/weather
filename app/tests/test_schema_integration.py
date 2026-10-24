@@ -1204,7 +1204,16 @@ def test_telemetry_exact_receipts_dedupe_privacy_and_no_retention() -> None:
                     WHERE n.nspname='weather' AND a.amname='brin'
                 """)
                     )
-                ).scalar_one() == 9
+                ).scalar_one() == 8
+                # Receipts use a (received_at, id) btree so reproject keyset pages stay bounded.
+                assert (
+                    await connection.execute(
+                        text("""
+                    SELECT indexdef FROM pg_indexes
+                    WHERE schemaname='weather' AND indexname='ix_telemetry_receipt_received_id'
+                """)
+                    )
+                ).scalar_one().endswith("USING btree (received_at, id)")
         finally:
             await api.dispose()
             await ingest.dispose()
