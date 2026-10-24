@@ -354,3 +354,13 @@ def test_mounted_secret_fields_and_camera_phase_are_not_arguments(tmp_path: Path
     loaded = CaptureConfig.load("skycam_west", config_dir, secret_dir)
     assert loaded.phase_ms == 333 and loaded.password == " synthetic-password "
     assert "synthetic-password" not in repr(loaded)
+
+
+def test_argument_errors_never_echo_a_mistaken_secret(capsys: pytest.CaptureFixture[str]) -> None:
+    from weather.capture.cli import main
+
+    with pytest.raises(SystemExit) as error:
+        main(["collect", "--camera", "skycam_east", "--password", "synthetic-private-value"])
+    assert error.value.code == 2
+    output = capsys.readouterr()
+    assert "synthetic-private-value" not in output.out + output.err

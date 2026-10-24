@@ -45,7 +45,7 @@ Failure = Literal[
 
 
 class Record(BaseModel):
-    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False, strict=True)
 
 
 class Settings(Record):
@@ -222,6 +222,6 @@ ADAPTER = TypeAdapter(CaptureRecord)
 
 def validate_record(record: object) -> None:
     try:
-        ADAPTER.validate_python(record)
-    except ValueError:
+        ADAPTER.validate_json(json.dumps(record, allow_nan=False))
+    except ValueError, TypeError:
         raise ValueError("Invalid private capture manifest record") from None

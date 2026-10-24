@@ -3,13 +3,20 @@
 
 import argparse
 from pathlib import Path
+from typing import NoReturn
 
 from .collector import collect
 from .config import CAMERAS
 
 
+class CaptureArgumentParser(argparse.ArgumentParser):
+    def error(self, message: str) -> NoReturn:
+        # argparse normally echoes unknown argument values, which could be a mistaken secret.
+        self.exit(2, "Invalid capture arguments; connection secrets must be mounted\n")
+
+
 def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(prog="weather capture")
+    parser = CaptureArgumentParser(prog="weather capture")
     sub = parser.add_subparsers(dest="action", required=True)
     command = sub.add_parser("collect")
     command.add_argument("--camera", required=True, choices=sorted(CAMERAS))
