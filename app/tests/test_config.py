@@ -36,7 +36,11 @@ def test_settings_reject_missing_placeholder_and_invalid_values(
 
 def test_runtime_environment_is_not_an_extra_configuration_key() -> None:
     settings = load_settings(
-        {"WEATHER_PUBLIC_ORIGIN": "https://weather.vallery.net", "PATH": "/bin"}
+        {
+            "WEATHER_PUBLIC_ORIGIN": "https://weather.vallery.net",
+            "PATH": "/bin",
+            "WEATHER_CI_TOOLS": "/tmp/weather-ci-tools",
+        }
     )
     assert settings.port == 8000
     assert settings.metrics_port == 9000

@@ -54,7 +54,7 @@ and `METRICS_PORT` default to 8000 and 9000 and must differ. Unknown
 `WEATHER_*` runtime configuration keys, missing origins, placeholder origins
 and invalid ports fail before either server binds. Startup errors name only
 the fields; do not print Pydantic's raw validation errors or environment.
-`WEATHER_CI_IN_CLUSTER` is reserved for the check runner.
+The `WEATHER_CI_` prefix is reserved for the check runner and its pinned tools.
 
 ## Capacity envelope
 

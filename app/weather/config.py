@@ -41,7 +41,7 @@ def load_settings(environment: Mapping[str, str] | None = None) -> Settings:
     values: dict[str, str] = {
         key.removeprefix("WEATHER_").lower(): value
         for key, value in env.items()
-        if key.startswith("WEATHER_") and key != "WEATHER_CI_IN_CLUSTER"
+        if key.startswith("WEATHER_") and not key.startswith("WEATHER_CI_")
     }
     for key in ("PORT", "METRICS_PORT"):
         if key in env:
