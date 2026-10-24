@@ -683,8 +683,9 @@ def test_preview_embargo_trust_and_expiry_are_enforced() -> None:
                     INSERT INTO weather.camera_preview(camera_id,generation,bytes,width,height,
                       captured_lower,captured_upper,path,sha256,public_not_before,expires_at,
                       first_published_at,timing_trusted)
-                    VALUES('frontyard_1',:generation,100,100,100,:lower,:upper,
-                           'previews/frontyard_1/'||CAST(:generation AS text)||'.jpg',
+                    VALUES('frontyard_1',CAST(:generation AS bigint),100,100,100,:lower,:upper,
+                           'previews/frontyard_1/'||
+                           CAST(CAST(:generation AS bigint) AS text)||'.jpg',
                            :sha,:eligible,:expires,:first,:trusted)
                     RETURNING id
                 """
