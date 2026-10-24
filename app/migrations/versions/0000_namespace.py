@@ -2,7 +2,6 @@
 """Bootstrap the namespace and retained station/device identities."""
 
 from alembic import op
-
 from weather.db.schema_v1 import build_metadata
 
 revision = "0000_namespace"

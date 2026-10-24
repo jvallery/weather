@@ -3,7 +3,6 @@
 
 from alembic import op
 from sqlalchemy import text
-
 from weather.db.ddl_v1 import statements
 from weather.db.schema_v1 import build_metadata
 

@@ -19,7 +19,6 @@ import pytest
 from sqlalchemy import insert, make_url, select, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, create_async_engine
-
 from weather.db import jobs
 from weather.db.days import ensure_days
 from weather.db.models import metadata
@@ -337,7 +336,8 @@ def test_still_relationships_active_uniqueness_and_retention() -> None:
                     await connection.execute(
                         text(
                             "SELECT id FROM weather.archival_still "
-                            "WHERE camera_id='frontyard_1' AND hour_slot_id=:slot AND state='active'"
+                            "WHERE camera_id='frontyard_1' AND hour_slot_id=:slot "
+                            "AND state='active'"
                         ),
                         {"slot": graph["slot"]},
                     )
@@ -641,7 +641,8 @@ def test_withdrawal_cascades_through_public_views_without_deleting_originals() -
                 for role in ("native", "derivative", "keogram"):
                     await connection.execute(
                         text("""
-                        UPDATE weather.media_asset SET withdrawn=true,withdrawn_at=clock_timestamp(),
+                        UPDATE weather.media_asset SET withdrawn=true,
+                          withdrawn_at=clock_timestamp(),
                           withdraw_reason='test' WHERE id=:id
                     """),
                         {"id": assets[role]},
@@ -694,7 +695,8 @@ def test_preview_embargo_trust_and_expiry_are_enforced() -> None:
                       captured_lower,captured_upper,path,sha256,public_not_before,expires_at,
                       first_published_at,timing_trusted)
                     VALUES('frontyard_1',:generation,100,100,100,:lower,:upper,
-                           'previews/frontyard_1/'||CAST(:generation AS text)||'.jpg',:sha,:eligible,:expires,:first,:trusted)
+                           'previews/frontyard_1/'||CAST(:generation AS text)||'.jpg',
+                           :sha,:eligible,:expires,:first,:trusted)
                     RETURNING id
                 """
                 await rejects(
@@ -1115,9 +1117,12 @@ def test_telemetry_exact_receipts_dedupe_privacy_and_no_retention() -> None:
                         (
                             await connection.execute(
                                 text("""
-                        INSERT INTO weather.obs_st(device_id,receipt_id,source_ts,row_idx,"values",quality)
-                        VALUES(:device,:receipt,:ts,0,CAST(:values AS jsonb),CAST(:quality AS jsonb))
-                        ON CONFLICT(device_id,message_type,source_ts,row_idx) DO NOTHING RETURNING id
+                        INSERT INTO weather.obs_st(device_id,receipt_id,source_ts,row_idx,
+                                                   "values",quality)
+                        VALUES(:device,:receipt,:ts,0,CAST(:values AS jsonb),
+                               CAST(:quality AS jsonb))
+                        ON CONFLICT(device_id,message_type,source_ts,row_idx) DO NOTHING
+                        RETURNING id
                     """),
                                 {
                                     "device": device,
