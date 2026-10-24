@@ -7,7 +7,7 @@ const paths = ["/", "/about/", "/archive/?month=2026-10", "/archive/2026/10/", "
 test.beforeEach(async ({ request, page }) => {
   await page.addInitScript(() => { const violations: string[] = []; (window as Window & { cspViolations?: string[] }).cspViolations = violations; document.addEventListener("securitypolicyviolation", (event) => violations.push(event.effectiveDirective)); }); await request.post("http://localhost:4174/__control", { data: {} }); });
 for (const width of [320, 768, 1440]) for (const path of paths) {
-  test(`${path} · ${width}px · WCAG 2.2 AA`, async ({ page }) => {
+  test(`${path} · ${width}px · WCAG 2.2 AA`, async ({ page, browserName }) => {
     await page.setViewportSize({ width, height: 900 });
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
@@ -17,7 +17,12 @@ for (const width of [320, 768, 1440]) for (const path of paths) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.waitForLoadState("networkidle");
     // Measure the unmodified application before axe mutates the document.
-    expect(await page.evaluate(() => (window as Window & { cspViolations?: string[] }).cspViolations)).toEqual([]);
+    expect(await page.locator("[style]").count()).toBe(0);
+    // WebKit 27.2 creates one forbidden inline style inside each native select's
+    // user-agent shadow tree (upstream327212/PW43497). The control below verifies
+    // this exact engine defect and a real injected-style negative control.
+    const nativeSelectCount = browserName === "webkit" ? await page.locator("select").count() : 0;
+    expect(await page.evaluate(() => (window as Window & { cspViolations?: string[] }).cspViolations)).toEqual(Array(nativeSelectCount).fill("style-src-attr"));
     const result = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
     expect(result.violations).toEqual([]);
     expect(errors).toEqual([]);
@@ -29,6 +34,22 @@ for (const width of [320, 768, 1440]) for (const path of paths) {
     if (["/", "/about/", "/weather/history/"].includes(path)) await page.screenshot({ path: `../artifacts/synthetic-${path === "/" ? "today" : path.includes("history") ? "history" : "about"}-${width}-${test.info().project.name}.png`, fullPage: true });
   });
 }
+test("native select CSP control and real inline-style negative control", async ({ page, browserName }) => {
+  const csp = "default-src 'self'; script-src 'self'; style-src 'self'";
+  await page.route("**/__csp-control/*", async (route) => {
+    const name = new URL(route.request().url()).pathname.split("/").at(-1);
+    const select = name === "empty" ? "" : "<select aria-label='Native control'><option>One</option></select>";
+    const injection = name === "injected" ? "<p style='color:red'>Forbidden application style</p>" : "";
+    await route.fulfill({ contentType: "text/html", headers: { "Content-Security-Policy": csp }, body: `<!doctype html><html lang="en"><head><title>CSP control</title></head><body>${select}${injection}</body></html>` });
+  });
+  for (const name of ["empty", "native", "injected"]) {
+    await page.goto(`/__csp-control/${name}`);
+    await page.waitForLoadState("networkidle");
+    const native = browserName === "webkit" && name !== "empty" ? 1 : 0;
+    const expected = native + (name === "injected" ? 1 : 0);
+    expect(await page.evaluate(() => (window as Window & { cspViolations?: string[] }).cspViolations)).toEqual(Array(expected).fill("style-src-attr"));
+  }
+});
 test("without JavaScript: archive to day to video, times, text and native download", async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage(); await page.goto("http://localhost:4173/archive/?month=2026-10");
