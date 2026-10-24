@@ -186,6 +186,12 @@ token or RBAC.
 
 `Dockerfile.ci` derives from the exact production PostgreSQL 16.15 / pgvector
 0.8.6 mirror, adds a named UID/GID 1001 and checksum-pinned Python/uv tooling.
+Its pinned Node stage and separate `ci/browser/` lock install Playwright 1.64.1
+and all three browser families at image build time. Browser dependencies use
+the dated Debian main, updates and security snapshots. Their package notices
+remain in `/opt/weather-browser-tools`, and browser distribution notices remain
+in `/opt/ms-playwright`. Runtime checks use that readable shared browser path;
+they never run apt or install browsers in an unprivileged validation container.
 It is a fleet validation image, not an application runtime or another database
 service. Build it through the registry-owned `weather-ci` repo-build profile,
 pin its actual returned digest in the agents validation profile, and run the
@@ -193,8 +199,9 @@ normal bootstrap plus `scripts/ci.sh all` in that image.
 
 `ci.sh integration` delegates `scripts/ci_integration.sh`. The script refuses
 non-Linux, root or non-fleet execution; it creates an isolated temporary
-socket-only PostgreSQL, creates test roles/extension, upgrades through the
-predecessor with a retained seed, checks the Alembic diff, and runs real
+socket-only PostgreSQL, creates test roles/extension, upgrades one empty
+database directly to head and another through the predecessor with a retained
+seed, checks both Alembic diffs, and runs real
 constraints/privacy/concurrency tests. It checks exact PG/extension versions
 and the integration marker before destructive **test-only** truncation. A trap
 stops the disposable server and removes only its unique temporary directory.

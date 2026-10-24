@@ -33,7 +33,7 @@ for directory in ("app", "scripts", "web"):
             ".html",
         }:
             assert has_spdx(file), f"Missing SPDX header: {file}"
-for name in ("Dockerfile.app", "Dockerfile.web"):
+for name in ("Dockerfile.app", "Dockerfile.web", "Dockerfile.ci"):
     body = (ROOT / name).read_text()
     for image in re.findall(r"^FROM (\S+)", body, re.M):
         assert re.fullmatch(r"registry\.vallery\.net/.+@sha256:[0-9a-f]{64}", image), image
