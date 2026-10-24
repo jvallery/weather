@@ -1,0 +1,134 @@
+{
+  "scope": "All 47 Weather issue bodies inspected for superseded selected-design instructions; targeted corrections only, not final semantic or dependency qualification",
+  "observed_at": "2026-10-24T00:04:22.819331+00:00",
+  "issues_inspected": 47,
+  "changed": [
+    {
+      "issue": 45,
+      "before_sha256": "d82ae10598edb080bcaa1089f641741d11df5cb6c4a8aea21b1832d592d6cbb8",
+      "after_sha256": "e4b85d2f0f38245988dd8b621246a506fd44494655952b10bc5611b4bc6c0fed",
+      "exact_readback": true
+    },
+    {
+      "issue": 44,
+      "before_sha256": "f9df50febb782a8cdca3b63f9b98cf7f4fb5b66d60861817909c864d012ff678",
+      "after_sha256": "0c9b9c41a776fa9827f4811f834b3f4abf5bd6f42fa76eb61da26cc1fbaa6048",
+      "exact_readback": true
+    },
+    {
+      "issue": 43,
+      "before_sha256": "41536fd866268e3859d85244f796e97d54eb12f52662be362875d26f0c3a75d1",
+      "after_sha256": "843e2ef20fac704a815a9a280181e981762c12bd9a2f08478f84bd9d18129565",
+      "exact_readback": true
+    },
+    {
+      "issue": 42,
+      "before_sha256": "fb2786d4c81cb06fe15c66d77a643a103e387a9136177e8978a3a43d35626f6c",
+      "after_sha256": "16a06c156d630909608a22d49f9e840d3558ca17cfdc468e764f0608503e535e",
+      "exact_readback": true
+    },
+    {
+      "issue": 41,
+      "before_sha256": "b2c8b38eb9584c62eea254aea461bcc4a0fdb785fe0b174809d3f97739beee6c",
+      "after_sha256": "61170dfdb3ed1cd986a3c7f906838b63655721b11a7d21680aaaefcd94e4850c",
+      "exact_readback": true
+    },
+    {
+      "issue": 40,
+      "before_sha256": "f454a9aa02418c1acfdc8e2caddd7099c8f7f099319eff2c4fb735ec4f5c80c9",
+      "after_sha256": "f1713a608857858ff805b095102c4223d798da1d4a02e3c49a4d96db63e3df9f",
+      "exact_readback": true
+    },
+    {
+      "issue": 39,
+      "before_sha256": "1ffa7a05ab7ac39de30716496ddc3e2d4664901fb7e973610f225fb5eae5111d",
+      "after_sha256": "4432de5b550e5da06eda080b0346fbdd2b8b38df68452f15c26b132e06eb7f98",
+      "exact_readback": true
+    },
+    {
+      "issue": 38,
+      "before_sha256": "6f6adf5f57a076386128bf8b1012d4263ec7c6515d924e0d2f2238bf158718f6",
+      "after_sha256": "61077383c4769ac52acce5ef4ca7457b8deb70dd12dd452783be07c432137422",
+      "exact_readback": true
+    },
+    {
+      "issue": 37,
+      "before_sha256": "523ac1601b3a3bd14ef859ed6ea5ede7a49bba93460312e5dd32a94f851d145d",
+      "after_sha256": "36717808b384412eeaa8912327a87965fbe6573546c9f6024287211beff2d270",
+      "exact_readback": true
+    },
+    {
+      "issue": 34,
+      "before_sha256": "ed474a2f0e531c3402658e93b2dd0469f86f8cb4a150c48f8453fc6b3d0b69fd",
+      "after_sha256": "13bf069785d7f8da6d316d5d44b5f6e040ce828020541a91ae15d2596a5ddbb6",
+      "exact_readback": true
+    },
+    {
+      "issue": 31,
+      "before_sha256": "bf589f553c145684aefa3d1d8ac812cce27092d0e559da5a9ccbb3635cd08831",
+      "after_sha256": "6aad84157589ba2a48d4227d7738bb657a4b0ae26043ca309b831450b5847035",
+      "exact_readback": true
+    },
+    {
+      "issue": 28,
+      "before_sha256": "0db0b6c2ce3cbf5bb3a7265a26e96aef5d3f5d50b80793cababd472ca3f554ea",
+      "after_sha256": "d11807f3b92612d3efb34e58d3441629c09c155ba914e2efb66a6395725f04eb",
+      "exact_readback": true
+    },
+    {
+      "issue": 27,
+      "before_sha256": "f0e62d186972dba641bf838482221f2bb8a7cbcc4780d49fdff8d39bb74c53c8",
+      "after_sha256": "691c2a10db5b6aa2479801b8f977a53b0b3a871504fa0719c9d967d034a1355e",
+      "exact_readback": true
+    },
+    {
+      "issue": 21,
+      "before_sha256": "41870b947d278618ef1f9634a4e8bbbd1a143a793e2fd804570fe0bbe7628daf",
+      "after_sha256": "486d8176acbd173f8b87e514d5e4222675c934e034cb0c30d03e73de8ce17490",
+      "exact_readback": true
+    },
+    {
+      "issue": 18,
+      "before_sha256": "abbb06082dc4c2fbefd392d53829d02ab728beda3dcfff648e1a449119cdfafc",
+      "after_sha256": "3376cd30fb1ff4e4e84e016af936c41f7d1a4ea973c96238f55bfee03a977e96",
+      "exact_readback": true
+    },
+    {
+      "issue": 14,
+      "before_sha256": "06004ebc443acbfc578a674edbc11aac4a0ae84cd2479089b97e0565f2ab2119",
+      "after_sha256": "8635dfe1d1d3d749ff8943c13542a40f746d5aa3ce3e43d951f4b9005d51d1b4",
+      "exact_readback": true
+    },
+    {
+      "issue": 11,
+      "before_sha256": "5a6f0e0a0c3b3dacc1b2c09402926314db94d8415c1c5c40ab3c5f6a6820ed8d",
+      "after_sha256": "7f6706ff456bbaa5b90000b5739e93709c500ee74b606cc43b092375d40753ee",
+      "exact_readback": true
+    },
+    {
+      "issue": 4,
+      "before_sha256": "240cf84644ce4b5fb98743676e3db54a2bfbb36450f7ece439ae3e9cce9fbe29",
+      "after_sha256": "27f4abb473563a5f25b932717ad0bd1a59aba34ee18978845eccb388bddb5313",
+      "exact_readback": true
+    },
+    {
+      "issue": 1,
+      "before_sha256": "8e99076731862c29174b3c9bc4d74f62f9e9f838afa2032a8cc943a577e33a7e",
+      "after_sha256": "635494a08f6edf9496c3efd4c29e97b33e907afbfacc10fe17e6787bda78c816",
+      "exact_readback": true
+    }
+  ],
+  "preserved": "All prior URLs, requirement IDs and standard IDs; native graph unchanged",
+  "decisions": [
+    "React + TypeScript retained",
+    "Cloudflare Tunnel selected",
+    "Initial no-store media and five-second origin leases selected",
+    "Homepage placement approved",
+    "Historical camera graph count labeled historical"
+  ],
+  "limitations": [
+    "No application runtime tests",
+    "No new native-edge verification",
+    "Other issue consolidation and P1-P7 architecture work remain"
+  ]
+}
