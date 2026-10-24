@@ -364,3 +364,14 @@ def test_argument_errors_never_echo_a_mistaken_secret(capsys: pytest.CaptureFixt
     assert error.value.code == 2
     output = capsys.readouterr()
     assert "synthetic-private-value" not in output.out + output.err
+
+
+def test_shutdown_flushes_pending_loss_without_fabricating_another_capture(tmp_path: Path) -> None:
+    collector = Collector(config(tmp_path))
+    collector.pending.add(attempt())
+    collector._finish()
+    paths = list((tmp_path / "sealed").rglob("*.tar"))
+    assert len(paths) == 1
+    records = read_chunk(paths[0])
+    assert [row["record_type"] for row in records] == ["chunk_header", "loss_range"]
+    assert records[1]["attempt_count"] == 1 and collector.pending.record is None
