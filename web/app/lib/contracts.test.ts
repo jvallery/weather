@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { expect, test } from "vitest";
-import { catalogSchema, currentSchema, historySchema, intervalSchema } from "./contracts";
+import { catalogSchema, currentSchema, historySchema, intervalSchema, metricRegistrySchema } from "./contracts";
 import current from "../fixtures/current.json";
 import history from "../fixtures/history.json";
 import catalog from "../fixtures/catalog.json";
@@ -46,4 +46,12 @@ test("source age keeps aging and plot gaps stay null", () => {
   const data = historySeries(historySchema.parse(history), "temperature");
   expect(data[1]).toContain(0);
   expect(data[1].filter((value) => value === null).length).toBeGreaterThanOrEqual(2);
+});
+
+test("uncommissioned source cadence is explicit null, never a guessed polling interval", () => {
+  const value = currentSchema.parse(current); value.metrics[0].expected_interval_seconds = null;
+  expect(currentSchema.parse(value).metrics[0].expected_interval_seconds).toBeNull();
+  const registry = { revision: "synthetic-registry", metrics: [{ metric: "temperature", label: "Temperature", canonical_unit: "degC", display_units: ["degC", "degF"], statistics: ["observed"], expected_interval_seconds: null, public: true, revision: "synthetic-metric" }] };
+  expect(metricRegistrySchema.parse(registry).metrics[0].expected_interval_seconds).toBeNull();
+  expect(metricRegistrySchema.safeParse({ ...registry, metrics: [{ ...registry.metrics[0], public: false }] }).success).toBe(false);
 });

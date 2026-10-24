@@ -16,9 +16,11 @@ test("native controls never autoplay, one player, quality change preserves the p
   Object.defineProperty(element, "paused", { configurable: true, value: true });
   element.currentTime = 12.5;
   fireEvent.change(screen.getByLabelText("Playback quality"), { target: { value: "mobile" } });
-  element.currentTime = 0; fireEvent.loadedMetadata(element);
+  element.currentTime = 0;
+  fireEvent.change(screen.getByLabelText("Playback quality"), { target: { value: "native" } });
+  fireEvent.loadedMetadata(element);
   expect(element.currentTime).toBe(12.5);
-  expect(element.src).toContain("mobile"); expect(screen.getByRole("link", { name: /Download native/ }).getAttribute("href")).toContain("/native");
+  expect(element.src).toContain("native"); expect(screen.getByRole("link", { name: /Download native/ }).getAttribute("href")).toContain("/native");
 });
 test.each(["partial", "unavailable", "expired"] as const)("%s exposes no player or poster", (state) => {
   const video = catalogSchema.parse(catalog).items[0];

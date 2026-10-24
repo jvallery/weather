@@ -41,8 +41,11 @@ The fixture source contains synthetic timestamps/measurements only and is never 
 route. Tests and fixture API code are excluded from the runtime image.
 
 Lightweight verification: `pnpm --dir web typecheck`, `pnpm --dir web lint`, and `pnpm --dir web test`.
-Builds, Playwright, browser installation and synthetic media generation run only through approved
-in-cluster fleet CI. WX-20 is not complete until the three-engine responsive/axe/JS-off/rollout checks
+Builds, Playwright and synthetic media generation run only through approved
+in-cluster fleet CI. The shared Weather CI tooling image bakes PostgreSQL, exact Playwright 1.64.1
+browsers and system libraries, and qualified FFmpeg 9.0.2; `bootstrap-browser.sh` only verifies the
+readable `/opt/ms-playwright` closure and generates synthetic fixtures as UID1001. It never runs apt
+or installs system libraries at validation runtime. WX-20 is not complete until the three-engine responsive/axe/JS-off/rollout checks
 and live pinned web image have passed. Source tests alone do not establish those outcomes.
 
 ## Operator rolling-deployment qualification

@@ -40,7 +40,7 @@ export function VideoPlayer({ video }: { video: Video }) {
     </video>
     <div className="filters"><label htmlFor="quality">Playback quality<select id="quality" value={quality} onChange={(event) => {
       const element = player.current;
-      resume.current = { time: element?.currentTime || 0, playing: !!element && !element.paused };
+      resume.current ||= { time: element?.currentTime || 0, playing: !!element && !element.paused };
       setQuality(event.target.value);
     }}><option value="auto">Auto ({autoRole === "mobile" ? "Mobile" : "Web"})</option><option value="web">Web</option><option value="mobile">Mobile</option><option value="native">Native</option></select></label></div>
     {resumeMessage && <p>{resumeMessage}</p>}

@@ -35,7 +35,7 @@ export const coverageSchema = z.strictObject({
 });
 export const metricSchema = z.strictObject({
   metric: z.string().min(1).max(64), value: number.nullable(), unit: z.string().min(1).max(32),
-  observed_at: utc.nullable(), received_at: utc.nullable(), expected_interval_seconds: number.positive(),
+  observed_at: utc.nullable(), received_at: utc.nullable(), expected_interval_seconds: number.positive().nullable(),
   valid_until: utc.nullable(), quality: z.enum(["valid", "suspect", "missing", "invalid"]),
   freshness: z.enum(["fresh", "stale", "unavailable"]), reason,
 }).superRefine((metric, context) => {
@@ -120,7 +120,7 @@ export const catalogSchema = z.strictObject({ generated_at: utc, revision: id, i
 export const metricRegistrySchema = z.strictObject({ revision: id, metrics: z.array(z.strictObject({
   metric: z.string().min(1).max(64), label: z.string().min(1).max(128), canonical_unit: z.string().min(1).max(32),
   display_units: z.array(z.string().min(1).max(32)).max(16), statistics: z.array(z.string().min(1).max(64)).max(16),
-  expected_interval_seconds: number.positive(), public: z.literal(true), revision: id,
+  expected_interval_seconds: number.positive().nullable(), public: z.literal(true), revision: id,
 })).max(256) });
 export type Current = z.infer<typeof currentSchema>;
 export type Metric = z.infer<typeof metricSchema>;

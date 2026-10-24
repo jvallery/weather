@@ -3,13 +3,13 @@
 set -euo pipefail
 [[ "${WEATHER_CI_IN_CLUSTER:-}" == 1 && "$(uname -s)" == Linux ]] || { echo 'Browser/media checks require approved in-cluster fleet CI' >&2; exit 2; }
 cd "$(dirname "$0")/.."
-pnpm --dir web exec playwright install --with-deps chromium webkit firefox
+# The shared Weather CI image bakes the exact locked browser closure and OS libraries.
+# repo-validate runs as UID1001; it never installs system packages or elevates privileges.
+pnpm --dir web exec node e2e/verify-browser-tools.mjs
 if [[ "${1:-}" == --browsers-only ]]; then exit 0; fi
-if ! command -v ffmpeg >/dev/null; then
-  command -v apt-get >/dev/null || { echo 'The CI image lacks the supported fixture encoder installation path' >&2; exit 2; }
-  apt-get update
-  apt-get install -y --no-install-recommends ffmpeg
-fi
+command -v ffmpeg >/dev/null || { echo 'The qualified Weather CI image lacks FFmpeg' >&2; exit 2; }
+ffmpeg_version="$(ffmpeg -version)"
+[[ "$ffmpeg_version" == "ffmpeg version 9.0.2"* ]] || { echo 'Use the qualified FFmpeg 9.0.2 tooling binary' >&2; exit 2; }
 mkdir -p web/.test-media
 # Synthetic green frames only; this is a browser transport fixture, never a camera/media qualification.
 ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=0x0e5a43:s=320x180:r=60 -t 60 -c:v libx264 -threads 1 -preset ultrafast -pix_fmt yuv420p -movflags +faststart -y web/.test-media/clip.mp4
