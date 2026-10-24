@@ -107,6 +107,7 @@ def oci_inputs(base: Path, refs: dict[str, str], revision: str) -> dict[str, Pat
                 for item in root.get("manifests", [])
                 if item.get("platform", {}).get("os") == "linux"
                 and item.get("platform", {}).get("architecture") == "amd64"
+                and "variant" not in item.get("platform", {})
             ]
             if len(matches) != 1 or matches[0].get("digest") != selected:
                 raise ValueError("OCI root does not bind one Linux amd64 manifest")

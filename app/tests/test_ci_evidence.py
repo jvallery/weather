@@ -79,7 +79,17 @@ def fixture_inputs(base: Path, *, multiarch: bool = False) -> tuple[dict[str, st
         )
         selected = {"digest": manifest, "platform": {"os": "linux", "architecture": "amd64"}}
         index = {"schemaVersion": 2, "manifests": [selected]}
-        root = blob(json.dumps(index).encode()) if multiarch else manifest
+        root_index = {
+            **index,
+            "manifests": [
+                selected,
+                {
+                    "digest": manifest,
+                    "platform": {"os": "linux", "architecture": "amd64", "variant": "v3"},
+                },
+            ],
+        }
+        root = blob(json.dumps(root_index).encode()) if multiarch else manifest
         refs[role] = f"registry.vallery.net/jvallery/weather-{role}@{root}"
         images[role] = {
             "reference": refs[role],
