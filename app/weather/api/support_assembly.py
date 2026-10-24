@@ -332,7 +332,8 @@ def assemble(
             "assembly": ASSEMBLY_REVISION,
             "registry": REGISTRY_REVISION,
             "window": [window.start.isoformat(), window.end.isoformat()],
-            "watermark": evidence.watermark,
+            # The boundary selects complete inputs; unrelated newer publications
+            # must not invent a revision of an unchanged historical computation.
             "policies": policy_binding,
             "rows": [bindings[identity] for identity in sorted(bindings)],
         },

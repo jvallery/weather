@@ -205,7 +205,7 @@ class Aggregate(PublicModel):
     unit: Unit
     interval: Interval
     coverage: Coverage
-    evidence_ids: Annotated[tuple[OpaqueID, ...], Field(max_length=1000)]
+    evidence_ids: Annotated[tuple[OpaqueID, ...], Field(max_length=50000)]
     evidence_revision: OpaqueID
     algorithm_revision: OpaqueID
     reason: Reason | None
@@ -282,7 +282,7 @@ class Wind(PublicModel):
     rose: Annotated[tuple[WindRoseBin, ...], Field(min_length=1, max_length=83)]
     algorithm_revision: OpaqueID
     evidence_revision: OpaqueID
-    evidence_ids: Annotated[tuple[OpaqueID, ...], Field(max_length=1000)]
+    evidence_ids: Annotated[tuple[OpaqueID, ...], Field(max_length=50000)]
     aggregate_id: OpaqueID
 
     @model_validator(mode="after")
@@ -310,7 +310,7 @@ class Lightning(PublicModel):
     authority: Literal["obs_st", "obs_air"]
     algorithm_revision: OpaqueID
     evidence_revision: OpaqueID
-    evidence_ids: Annotated[tuple[OpaqueID, ...], Field(max_length=1000)]
+    evidence_ids: Annotated[tuple[OpaqueID, ...], Field(max_length=50000)]
     aggregate_id: OpaqueID
 
     @model_validator(mode="after")
