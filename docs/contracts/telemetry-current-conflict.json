@@ -1,0 +1,39 @@
+{
+  "contract_version": 1,
+  "kind": "declarative_integration_assertions_not_test_results",
+  "owner": "WX-13 (#14) current projection trigger; WX-11 (#12) conflict qualification producer",
+  "identity_policy": "Use only configured synthetic station/device rows in the guarded disposable PostgreSQL fixture.",
+  "normalized_metric_keys": ["air_temperature", "relative_humidity"],
+  "execution": {
+    "same_database_connection_and_open_transaction": true,
+    "assert_before_commit_returns": true,
+    "scheduler_or_outbox_dispatch_invoked": false,
+    "cache_sleep_or_polling_used_as_evidence": false
+  },
+  "cases": [
+    {
+      "id": "current-conflict-synchronous",
+      "steps": [
+        {"insert": {"source_epoch": 1700000000, "air_temperature": 20, "relative_humidity": 50}},
+        {"assert_current": {"air_temperature": 20, "relative_humidity": 50}},
+        {"ingest_conflicting_new_receipt": {"same_device_family_row": true, "source_epoch": 1700000000, "air_temperature": 23, "relative_humidity": 50}},
+        {"assert_canonical_first_values": {"air_temperature": 20, "relative_humidity": 50}},
+        {"assert_current_before_commit": {"air_temperature": {"value": null, "eligible": false, "reason": "payload_conflict", "source_epoch": 1700000000}, "relative_humidity": {"value": 50, "eligible": true, "source_epoch": 1700000000}}},
+        {"assert_safe_history_view": {"air_temperature": null, "relative_humidity": 50}},
+        {"assert_outbox": {"topic": "telemetry.conflict", "fields": ["air_temperature"]}}
+      ]
+    },
+    {
+      "id": "older-conflict-preserves-newer-current",
+      "steps": [
+        {"insert": {"source_epoch": 1700000000, "air_temperature": 20, "relative_humidity": 50}},
+        {"insert": {"source_epoch": 1700000060, "air_temperature": 21, "relative_humidity": 51}},
+        {"ingest_conflicting_new_receipt": {"same_device_family_row": true, "source_epoch": 1700000000, "air_temperature": 23, "relative_humidity": 50}},
+        {"assert_current_before_commit": {"air_temperature": {"value": 21, "eligible": true, "source_epoch": 1700000060}, "relative_humidity": {"value": 51, "eligible": true, "source_epoch": 1700000060}}},
+        {"assert_old_safe_history_view": {"air_temperature": null, "relative_humidity": 50}},
+        {"retry_identical_receipt_uuid_bytes_and_metadata": 3},
+        {"assert_no_extra_receipt_or_current_revision_from_retry": true}
+      ]
+    }
+  ]
+}
