@@ -1,5 +1,7 @@
 # D09 — CPU baseline and bounded GPU qualification
 
+> **Historical.** Binding rules live in [docs/architecture.md](../architecture.md) and the 2026-10-24 [simplification](2026-10-24-simplification.md) and [takeover](2026-10-24-takeover-replan.md) records; where this file conflicts, those win.
+
 > **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): O2/P18: the census stands; GPU use is deferred. WX-15 is now the interpolation A/B pilot and cortex-ai-compute#403 is closed. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
 
 Status: **all-nine-device census verified; no Weather GPU or CPU workload admitted**. Requirements R09/R10/R28 and §8; consumers WX-14/15/31/33. Compute owner: [OWN-GPU](https://github.com/jvallery/cortex-ai-compute/issues/403). CPU performance qualification remains D10 with OWN-CI/host capacity admission. No resource, model or deployment changed during this investigation.

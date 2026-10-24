@@ -2,7 +2,7 @@
 
 **Status:** accepted; amended by the [takeover re-plan](2026-10-24-takeover-replan.md) (C1–C16), which wins where they conflict. Jason chose O1–O4 below on 2026-10-24, after an adversarial audit traced the plan to live estate evidence. The planner simplifications P1–P20 follow from those choices or replace mechanisms that only the planner had introduced. Where this record conflicts with [requirements v4.0](../requirements.md) §§3–18, the ADRs D01–D16 or the contracts, **this record wins**. Product scope Q01–Q16 is unchanged, apart from the R09/R10/R17/R18/R23 amendments listed here.
 
-The authoritative design summary is [architecture.md](../architecture.md). The backlog and native dependency graph are on GitHub; [backlog.md](../implementation/backlog.md) is generated from them.
+The authoritative design summary is [architecture.md](../architecture.md). The backlog and native dependency graph are on GitHub.
 
 ## Why the plan changed
 

@@ -1,5 +1,7 @@
 # D07 — Canonical object storage, durability and cleanup eligibility
 
+> **Historical.** Binding rules live in [docs/architecture.md](../architecture.md) and the 2026-10-24 [simplification](2026-10-24-simplification.md) and [takeover](2026-10-24-takeover-replan.md) records; where this file conflicts, those win.
+
 > **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): O1/P6: `weather-media` and `weather-originals` on garage-hdd with custody mirrors. The owner local-durability receipt as a cleanup gate is **withdrawn**; cleanup requires content-verified readback plus a committed catalog row. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
 
 Status: capacity-tier selection and receipt/cleanup protocol selected; accepted local-loss window, actual durability mechanism and owner capacity remain material decisions. Requirements §§6.8–6.9, 11.1–11.4 and 15; consumers WX-06/17/18/28/29/30/32/37/38. OWN-OBJECT supplies storage admission; D08 enforces access and D15 qualifies independent recovery. This ADR makes no provider change.

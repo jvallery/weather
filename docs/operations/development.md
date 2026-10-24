@@ -1,6 +1,6 @@
 # Development and checks
 
-Toolchains: CPython 3.14.9, uv 0.13.5, Node 24.22.1, pnpm 12.15.0, gitleaks 8.30.1, Syft 1.55.0 (image evidence only).
+Toolchains: CPython 3.14.9, uv 0.13.5, Node 24.22.1, pnpm 12.15.0, gitleaks 8.30.1, Syft 1.55.0 (image SBOMs only).
 Install these through the existing operator/toolbox paths. Run `uv sync --frozen`, then
 `cd web && pnpm install --frozen-lockfile --ignore-scripts`.
 
@@ -31,10 +31,8 @@ Import the Dockerfile's exact upstream Python/Node digests through the approved 
 and `weather-node-base` registry profiles before WX-01 builds, using `images/upstream-imports/`.
 Final app/web bases use the resulting verified `registry.vallery.net/jvallery/weather-*-base` digests.
 
-TypeScript 7.0.2 is installed as `@typescript/native` and owns the `tsc` executable; `tsc --noEmit --singleThreaded`
-checks the app. ESLint uses the JavaScript API from `@typescript/typescript6` 6.0.2 via the `typescript` alias,
-following [Microsoft's side-by-side recipe](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6.0).
-This preserves the selected native compiler while supporting API-based tooling.
+One TypeScript, 6.0.3, serves both `tsc --noEmit` (the typecheck) and ESLint's typescript-eslint, whose
+supported range stops below 6.1; move to TypeScript 7 when typescript-eslint supports it.
 
 `mypy-extensions` 1.1.0 omits license metadata. Its distributed wheel LICENSE was reviewed as MIT;
 SHA-256 of that LICENSE: `a50450da1d53cd777b80ced77c58ff96abe0ccd879706bd142c3ec20e245f0b4`.
@@ -48,8 +46,7 @@ SHA-256: `7f143a8127ad4873862d70854b5bd2abd0085aa73e64fd2b08704a3b9f5c07fc`.
 The inventory generator restricts this exception to that exact release.
 
 The image scan writes `artifacts/sbom-app.json` or `artifacts/sbom-web.json` and its SHA-256 sidecar.
-WX-01 owns artifact custody and the evidence producer; the scaffold does not submit a separate scan workflow.
+The SBOM stays with that fleet CI run's artifacts; there is no separate scan workflow.
 
-The completed runtime import receipts are in `base-imports.json`: Python3.14.9 and Node24.22.1 were
-imported by the fixed in-cluster profiles, then both registry manifest/config SHA-256 identities and
-Linux amd64/runtime metadata were read back independently. Application startup remains WX-01.
+The Python 3.14.9 and Node 24.22.1 runtime bases are imported by the fixed in-cluster profiles and
+pinned by digest in the Dockerfiles.

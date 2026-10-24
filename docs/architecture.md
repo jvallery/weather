@@ -71,6 +71,47 @@ R18 holds natively: browsers never see S3, the media origin serves only committe
 - Golden vectors: [`docs/contracts/time-model-vectors.json`](contracts/time-model-vectors.json).
 - Public images become eligible at `capture_upper_bound + 600 s + skew_margin`.
 
+## Rules carried from ADRs
+
+The ADRs D01–D16 are historical. These are the rules from them that still bind; the issue acceptance lists hold the test cases.
+
+**Cameras and source time (D02).**
+
+- Each collector polls its own camera's channel-1 snapshot endpoint (Digest auth, no redirects, fixed private destination) at the commissioned cadence, 1 Hz target. One request in flight per camera, bounded connect/read/total deadlines, staggered phases and a 16 MiB payload ceiling. An overdue slot is skipped: no overlapping requests and no catch-up burst. Never use Frigate's latest frame, recorded video or a persistent RTSP decoder as the source.
+- HTTP `Date`, arrival time and equal JPEG hashes do not establish exposure time or staleness. Each capture carries source-time bounds; unknown or implausible bounds are never publicly eligible.
+- A capture belongs to exactly one half-open segment by source time, independent of its request slot. No render context crosses a segment boundary because two captures share a chunk.
+- All three cameras publish full views with an explicit, versioned `none` mask policy (Jason, 2026-10-23). No crops, blur or redaction; originals stay private and public derivatives strip EXIF/XMP/GPS.
+
+**Rendering (D10, observed-exposure profile).**
+
+- Shutter angle θ defaults to 180°. Output frame k's intended exposure is centered on its source time with width `step × θ/360`. A capture's support reaches toward each neighbour only to the midpoint and at most half the expected capture interval, clipped to the segment.
+- Exposure coverage is the union of valid support inside the shutter divided by the intended shutter width. At ≥ 0.90 (inclusive) the frame is accumulated in linear light and normalized by valid support weight; below 0.90 it gets the versioned "capture unavailable" treatment at its original PTS. The actual coverage is retained.
+- Slot coverage per segment: ≥ 99 % normal, 90–99 % partial, < 90 % partial with an obvious label, < 50 % an unavailable catalog record. Slot coverage never overrides a failed shutter. No gap compresses time, changes the frame count or borrows another segment's captures.
+- Keograms: 1,440 equal elapsed-UTC bins per segment, at most 512 px spatial, the valid capture nearest each bin midpoint (ties: earlier time, then capture ID); missing bins stay visible.
+- Changing θ, the coverage threshold, the support rule or any normalization, encode or overlay setting creates a new recipe version, chosen on comparison clips. Each output records the recipe version it was rendered with.
+
+**Web UI and framing (D13).**
+
+- React Router SSR with client navigation. Archive links, video detail, timestamps, descriptions and downloads work without JavaScript. The Node server reads only the public API; it has no database, camera, model, Garage or identity authority.
+- Current conditions poll about every 15 s with one request in flight, bounded backoff and a pause while hidden; no retry bursts or extra focus/reconnect polling. Polling never resets `observed_at`, `received_at` or `valid_until`. API state is never persisted in localStorage, IndexedDB or a service worker.
+- Private editor data is fetched by authenticated same-origin calls and never serialized into SSR hydration. Narrative and editorial text render as escaped text; no model HTML. Scripts, fonts, icons and player assets are self-hosted under a restrictive CSP without `unsafe-inline` or eval.
+- Theme: the vallery.net palette with semantic roles (ink `#112231`, muted `#626b76`, forest `#0e5a43` for links, buttons and focus; mint and gold only as accents with ink text). Focus is a 2 px forest outline with a 2 px white separation; targets are at least 44 px; the shell is at most 80 rem with 1 rem mobile gutters. Charts use labels/patterns and gaps, never colour alone.
+- Product cards label capturing, queued, processing, published, partial, unavailable or expired, with analysis state labelled separately. One active video player; no autoplay.
+- `/embed/weather/` alone sends `frame-ancestors https://vallery.net` and omits `X-Frame-Options`; every other route denies framing. The card uses no privileged cookies, parent DOM access or postMessage. Its homepage placement is the full-width section after "What I am doing now" (wordpress#242).
+
+**Media transport and caches (D14, with P8).**
+
+- One browser origin for pages, API, playback and downloads through the Cloudflare Tunnel. Browsers never get object-store URLs or redirects. Each GET, HEAD and range request is authorized at request time against the committed publication row, including `public_not_before`; there are no mid-stream leases.
+- Media bytes, posters, aliases, downloads, preview pointers and their errors are `Cache-Control: no-store` and bypass shared edge caches. Media has a strong ETag for If-Range only: no 304, 412 or Last-Modified (#20), and no validator bypasses authorization. Hashed JS/CSS may use long immutable caching. Current-weather JSON keeps its own short `max-age` (≤ 5 s).
+- One byte range per request: multiple ranges return 400, a valid unsatisfiable range 416, and HEAD ignores Range ([range policy](contracts/api-contract.md#range-policy)). No transformation or compression of media bytes. A mid-stream failure terminates the transfer; an error page is never appended to media bytes.
+- Enabling edge media caching later needs a replacement design with a finite exposure bound and invalidation of every alias.
+
+**Search request ceilings (D12).**
+
+- Query at most 512 Unicode scalars with no control characters, at most 8 measured predicates, `top_k` 1–20 and an explicit UTC interval; nothing is silently truncated or widened.
+- Search responses and errors are `no-store`, with no application result cache.
+- 400 for invalid input, 429 with `Retry-After` for admission or rate rejection, 503 for unavailable SQL or deadline. An embedding failure alone yields a labelled lexical fallback, never an empty success.
+
 ## Repository layout (target)
 
 ```text

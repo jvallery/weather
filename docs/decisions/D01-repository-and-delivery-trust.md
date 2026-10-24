@@ -1,5 +1,7 @@
 # D01 — Independent repository and delivery trust boundaries
 
+> **Historical.** Binding rules live in [docs/architecture.md](../architecture.md) and the 2026-10-24 [simplification](2026-10-24-simplification.md) and [takeover](2026-10-24-takeover-replan.md) records; where this file conflicts, those win.
+
 > **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): P1/O4: onboarding uses the options-tracker ci-only pattern (agents#5366); fork pull requests never execute in fleet CI, so the E11 untrusted-execution design is withdrawn. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
 
 Status: repository/license and delivery architecture selected; private placement is selected under E12; fleet enrollment and isolated untrusted execution still require OWN-CI implementation/admission. Requirements §§4.1–4.3, 16.1–16.3 and 18.2; consumers WX-01/02/34. No workflow, registry enrollment, namespace, repo cell or deployment is created by this ADR.

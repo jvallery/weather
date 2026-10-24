@@ -13,12 +13,11 @@ Source for **[weather.vallery.net](https://weather.vallery.net)**: a public weat
 
 The authoritative set is the files above, plus:
 
-- **ADRs:** [docs/decisions/](docs/decisions) D01–D16. Each carries a 2026-10-24 amendment banner.
 - **Contracts and golden vectors:** [docs/contracts/](docs/contracts).
 - **Wireframes:** [docs/design/wireframes/](docs/design/wireframes).
 - **Research references:** [docs/research/](docs/research).
 
-Planning-era audits, receipts and superseded contracts live in [docs/archive/planning-2026-10/](docs/archive/planning-2026-10). They are history, not instructions.
+The ADRs in [docs/decisions/](docs/decisions) (D01–D16) are historical; the rules that still bind are copied into [architecture.md](docs/architecture.md#rules-carried-from-adrs). Planning-era audits, receipts and superseded contracts live in [docs/archive/planning-2026-10/](docs/archive/planning-2026-10). They are history, not instructions.
 
 ## Product (initial release)
 

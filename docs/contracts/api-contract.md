@@ -1,10 +1,8 @@
 # HTTP and schema contract
 
-Status: machine-readable design draft for Phase 1; not deployed and not yet a completed full-contract audit. [OpenAPI](../archive/planning-2026-10/contracts/openapi.json) describes 16 paths; [JSON Schema](../archive/planning-2026-10/contracts/api.schema.json) defines public and private operator representations. Schemas describe allowed shapes, not authorization. Publicly publishing a private-response schema does not authorize serving its data anonymously.
+Status: the semantic HTTP contract (P12). Implemented routes are code-first: the Pydantic models generate [weather.openapi.json](weather.openapi.json), which is the shape authority. Sections for routes not yet built describe the intended semantics; the issue that builds a route owns its tests. The hand-written planning [OpenAPI](../archive/planning-2026-10/contracts/openapi.json) and [JSON Schema](../archive/planning-2026-10/contracts/api.schema.json) are reference input only. Schemas describe allowed shapes, not authorization.
 
-Use [OpenAPI 3.1.1](https://spec.openapis.org/oas/v3.1.1.html) and [JSON Schema 2020-12](https://json-schema.org/draft/2020-12/json-schema-core), reviewed 2026-10-23. Validation must enable date/time format assertion and resolve references locally; production must not fetch schema URLs on requests. Schema URLs identify versions, not required runtime network dependencies.
-
-Consumers: WX-08/13/17/19/20/24/25/26/36/37/38/39/40/41/42/43/44. The private [capture/index and seal contract](capture-contract.md) and [recovery envelopes](../archive/planning-2026-10/contracts/recovery-contract.md) are separate from public serializers. Deployment configuration, private hourly archival receipts and the central owner's detailed recovery-ledger integration remain outstanding Phase-1 artifacts. The private candidate [visual-model schema](visual-analysis.schema.json) implements §13.5's shape; its semantic checks are specified below.
+The private [capture contract](capture-contract.md) is separate from public serializers. The private candidate [visual-model schema](visual-analysis.schema.json) implements §13.5's shape; its semantic checks are specified below.
 
 ## Weather data routes (implemented, #14)
 
@@ -43,11 +41,11 @@ The response has `mode` (`hybrid_exact`, `lexical`, `numeric`), `degraded_reason
 
 ## Private visual-model candidate boundary
 
-[visual-analysis.schema.json](visual-analysis.schema.json) enforces the exact category/assessment/confidence vocabulary, at most 16 observations, eight limitations and 240 characters per description/limitation. Evidence lists are nonempty, unique and bounded at 256 opaque IDs. This last ceiling is a selected interface protection; D11 must keep actual per-request evidence below it.
+[visual-analysis.schema.json](visual-analysis.schema.json) enforces the exact category/assessment/confidence vocabulary, at most 16 observations, eight limitations and 240 characters per description/limitation. Evidence lists are nonempty, unique and bounded at 256 opaque IDs. This last ceiling is a selected interface protection; the analysis worker (P9) keeps actual per-request evidence below it.
 
 Schema-valid model text is still untrusted. Check all evidence IDs against the request's supplied set, each observation's IDs against the result's declared set, and the supplied IDs against the current media/evidence revision. Rebind candidate observation IDs to deterministic application IDs. Require explicit precipitation and visibility assessments when assessable, and an honest not-assessable result when night/obstruction prevents assessment. Reject invented IDs, unsupported claims, prompt-injected instructions, truncation and stale jobs before publishing. No numeric confidence percentage replaces the categorical field. The schema is private candidate input; it is not the public Analysis representation and must never be returned raw to browsers.
 
-The [visual fixtures](visual-analysis-fixtures.json) exercise shape limits only. Semantic fixtures must include a schema-valid invented evidence ID, omitted assessable precipitation/visibility, repeated generated IDs across clips, scene prompt injection, stale revision and forward/reverse temporal controls. Passing the shape suite does not close native-video qualification or grounding acceptance.
+The [visual fixtures](visual-analysis-fixtures.json) exercise shape limits only. Semantic fixtures must include a schema-valid invented evidence ID, omitted assessable precipitation/visibility, repeated generated IDs across clips, scene prompt injection, stale revision and forward/reverse temporal controls. Passing the shape suite does not establish grounding.
 
 ## Routes and compatibility
 
@@ -57,7 +55,7 @@ Weather data responses may gain additive fields within v1; clients parse lenient
 
 A public ID is not a capability. The media resolver checks class, committed publication, trusted exposure eligibility, expiry and tombstone before returning headers or bytes. It cannot accept arbitrary upstream URLs/keys. IDs in operator routes similarly require subject-specific authorization.
 
-The proposed session/CSRF names describe the same-origin interface. D13 must bind this to the approved fleet identity integration before implementation; no local password system or public account creation is implied. Both authentication and operator capability are required for edits. Private raw receipts additionally require diagnostic-reader capability. All private responses use no-store and are excluded from public service-worker/CDN caches.
+Operator routes (`/editor`, `/api/v1/operator/*`) sit behind Authentik forward-auth (P11). The API trusts the identity header only from Traefik (enforced by NetworkPolicy) and admits a request only when that subject is on the one-user allowlist; there are no capability roles, local passwords or public accounts. Mutations additionally require `SameSite=Strict` cookies and a matching `Origin`. All private responses, including private raw receipts, use no-store and are excluded from public service-worker/CDN caches.
 
 ## Shape constraints and semantic checks
 
@@ -70,11 +68,11 @@ The proposed session/CSRF names describe the same-origin interface. D13 must bin
 | Keogram | Segment identity, UTC bins, lineage digest and optional asset | Published/partial state requires valid keogram-class asset; x bins ordered/in-range, UTC map matches segment, explicit gaps and source-only lineage |
 | Measured predicates | Whitelisted precipitation/gust/temperature statistics, units and bounded operators/coverage | Unit conversion; aggregate window equality and evidence count/hash; unknown/low coverage never satisfies numeric comparison; filters applied before ranking |
 | Search | Bounded query/top-k, active profile fields and explicit mode; no arbitrary SQL/formula | Count equals result length; current visibility/revision; every seek inside cited media/source interval; profile-compatible vectors; exact predicates preserved under fallback |
-| Editorial | Expected revision, bounded allowed changes; no actor or raw measured fields | Server actor, authorization, CSRF/Origin, CAS, evidence rebase, source-eligible poster, immediate stale-search withdrawal and transactional audit/outbox |
+| Editorial | Expected revision, bounded allowed changes; no actor or raw measured fields | Server actor from the allowlisted identity, Origin check, CAS, evidence rebase, immediate stale-search withdrawal and transactional audit/outbox. Poster choice is #78: frames from the published rendition, embargoed and EXIF-stripped, never overwritten by a pipeline or AI rerun |
 | History/almanac | Bounded pages, units, coverage and evidence count/hash | Stable cursor snapshot, exact supported statistic/formula, coverage interval arithmetic and source-support semantics; aggregates are recomputed on read (C5) |
-| Private receipts | Bounded exact-byte base64 representation and hash | Authorized diagnostic access, canonical decode/hash, complete retained payload and parser lineage, no public cache or logging |
+| Private receipts | Bounded exact-byte base64 representation and hash | Allowlisted operator only, canonical decode/hash, complete retained payload and parser lineage, no public cache or logging |
 
-Schema validation alone does not qualify any of these temporal, privacy or relational invariants. The [publication/recovery protocol](../archive/planning-2026-10/implementation/publication-recovery-contract.md) and [migration contract](../archive/planning-2026-10/implementation/database-migration-contract.md) define authoritative transaction/retention behavior.
+Schema validation alone does not establish any of these temporal, privacy or relational invariants; the database CHECKs, views and server checks do.
 
 ## Time, units and missing data
 
@@ -84,19 +82,19 @@ Current metrics have individual expiry; generated_at is response construction ti
 
 Public metric discovery is /api/v1/weather/metrics. Registry revisions pin canonical units, display conversions and allowable statistics; private diagnostics do not enter this registry. Unknown public metric/statistic requests fail clearly instead of selecting SQL identifiers from raw strings.
 
-Initial measured search admits precipitation observed accumulation (mm/in), maximum wind gust (m/s, km/h, mph), and temperature minimum/maximum/duration-weighted mean (degC/degF). Formula and precision policy match the on-read aggregates and their golden vectors (C5). Scope is the full exact video segment in v1. A semantic clip hit cannot imply the measured event occurred at that clip time. Further metrics/window scopes require a qualified versioned extension.
+Initial measured search admits precipitation observed accumulation (mm/in), maximum wind gust (m/s, km/h, mph), and temperature minimum/maximum/duration-weighted mean (degC/degF). Formula and precision policy match the on-read aggregates and their golden vectors (C5). Scope is the full exact video segment in v1. A semantic clip hit cannot imply the measured event occurred at that clip time. Further metrics or window scopes are a versioned extension.
 
 ## Bounded queries and exports
 
-Schema ceilings: 100 catalog entries, 5,000 history points, 100 private receipts, eight numeric predicates and 20 search results per request. These are selected protective interface ceilings, not measured capacity guarantees; D16 may tighten admitted operational budgets without allowing unbounded public work.
+Schema ceilings: 100 catalog entries, 5,000 history points, 100 private receipts, eight numeric predicates and 20 search results per request. These are protective interface ceilings, not measured capacity guarantees; operational budgets may be tightened but never removed.
 
-Require explicit UTC source bounds for history, event windows, search and almanac. The server additionally enforces configured maximum raw-window duration, aggregate point count, statement timeout, connection/concurrency and embedding rate budgets. Those values require D16 qualification before deployment. Excessive range returns a sanitized error and a suggested compatible resolution in user-facing handling; it never silently changes the statistic.
+Require explicit UTC source bounds for history, event windows, search and almanac. The server additionally enforces configured maximum raw-window duration, aggregate point count, statement timeout, connection/concurrency and embedding rate budgets. Excessive range returns a sanitized error and a suggested compatible resolution in user-facing handling; it never silently changes the statistic.
 
 Cursors are opaque, bounded, authenticated against tampering, and bind query filters, sort key and an insert-time snapshot. The snapshot is the database clock on the first page minus 120 s (longer than any ingest or reproject transaction), compared with each row's database-assigned `inserted_at`, never the receiver's `received_at`; so late rows from a spool drain or reproject neither duplicate nor skip records within an export, and the newest two minutes appear only in a new export. Altered filters invalidate a cursor. Complete history is available by successive bounded intervals/pages; query limits do not authorize deleting old data. UI export orchestration must provide resume/progress and avoid an unbounded server-memory response.
 
 Almanac comparison requests require comparison_start and comparison_end as well as the primary interval; both must form a valid half-open interval. Other products reject those extra bounds. Comparisons retain each interval's actual coverage and duration rather than silently normalizing unequal periods.
 
-Search uses [D12's selected lexical and request policy](../decisions/D12-search-and-profile-consistency.md#selected-lexical-policy-and-public-request-ceilings): explicit English plain-text matching, no-terms handling, finite request/SQL/model-wait budgets and bounded query-vector caching. Search responses/errors use no-store initially. Nonempty no-terms text never silently becomes numeric browsing; without semantic availability return lexical mode with reason `lexical_no_terms`. SQL timeout or failed current-revision hydration is unavailable (503), admission/rate rejection is 429, and invalid input is 400. Owner resource admission and actual enforcement remain required.
+Search uses explicit English plain-text matching, no-terms handling and finite request/SQL/model-wait budgets, with no query-vector cache (P10) and the [request ceilings carried from D12](../architecture.md#rules-carried-from-adrs). Search responses/errors use no-store. Nonempty no-terms text never silently becomes numeric browsing; without semantic availability return lexical mode with reason `lexical_no_terms`. SQL timeout or failed current-revision hydration is unavailable (503), admission/rate rejection is 429, and invalid input is 400.
 
 ## HTTP transport and caches
 
@@ -136,18 +134,7 @@ Media bytes, downloads, previews and preview pointers are `no-store`, and shared
 
 ## Acceptance ownership
 
-WX-08 verifies schema/serialization negatives and relational constraints. WX-13 verifies complete-history pagination, metric freshness and source support. WX-19 verifies media HTTP semantics plus alternate-route privacy. WX-25/42 verify unit equivalence, incomplete/zero observations, current revision filtering and fallback. WX-37/38 verify archived derivative and current-preview timing. WX-43 verifies auth/CAS/private exclusion. WX-33 exercises these together in supported browsers.
-
-Synthetic schema fixtures are design checks only. Server temporal checks, access controls, live source behavior, media playback and resource budgets still need their specified implementation/integration evidence. No model, camera, database or object-store service has been called by creating these contracts.
-
-## Design validation receipt — 2026-10-23
-
-The Draft 2020-12 metaschema check passed for the schema document. All 21 [synthetic positive/negative fixtures](../archive/planning-2026-10/contracts/schema-fixtures.json) passed, covering missing versus zero, UTC/calendar validation, numeric unit/statistic mismatch, request limits, editorial actor/measurement injection and private-original/provider-URL exclusion. Reference resolution, 16 route paths, 19 unique operations, path parameters and explicit operator security declarations were checked locally. This was a small bounded schema check, not a workload experiment.
-
-The installed validator's optional date-time checker was absent; the initial impossible-date fixture exposed this. The successful check explicitly registered UTC/calendar assertions using Python datetime/date parsing and a UTC-Z representation with at most microsecond precision. Implementations must prove format assertion is active using the invalid-date fixture, rather than assume passing a FormatChecker object enables every optional format.
-
-The subsequent [hash-bound validation receipt](../archive/planning-2026-10/contracts/validation-receipt.json) records a successful check against the [official OpenAPI 3.1 document schema](https://spec.openapis.org/oas/3.1/schema/2022-10-07). The three referenced JSON Schema documents and inline Schema Objects were separately metaschema-checked because OpenAPI document validation alone does not validate their complete semantics. All 371 local reference occurrences resolve, operation IDs are unique and path-parameter bindings match. All 45 shape fixtures pass: 24 API, 13 capture and eight visual-candidate cases. This resolves the outstanding structural OpenAPI check for the receipt's exact hashes. Subsequent contract edits require renewed validation. HTTP conformance, authorization, cross-record semantics, live behavior and missing configuration/archival/recovery contracts remain unproven.
-
+Each route's issue owns its tests in its acceptance list (P16): #14 weather data, #20 media origin, #25 search, #39 previews, #42 almanac, #44 and #78 editor.
 
 ## Editorial description write/public parity
 
@@ -159,11 +146,11 @@ The subsequent [hash-bound validation receipt](../archive/planning-2026-10/contr
 
 ## Analysis execution versus available data
 
-[D11](../decisions/D11-analysis-execution-and-failure.md) separates `Analysis.execution_state` and sanitized `reason` from data `state`, mode and coverage. Failed/unsupported execution with no usable evidence has unavailable data; partial validated evidence can survive a failed run. Invalidated claims never become current merely because their producing run completed. Sampled-frame fallback remains degraded and cannot satisfy native-video commissioning. Cross-field validity and remote termination require semantic/runtime checks.
+`Analysis.execution_state` and its sanitized `reason` are separate from data `state`, mode and coverage. Failed or unsupported execution with no usable evidence has unavailable data; partial validated evidence can survive a failed run. Invalidated claims never become current merely because their producing run completed. Analysis uses sampled frames plus the keogram (P9) and is pinned to the model and prompt version at publication.
 
 ## Preview expiry clarification
 
-`Image.expires_at` is logical derivative expiry, not current-preview freshness or permission to delete storage. The [preview policy contract](preview-policy-contract.md) distinguishes earliest publication, conservative current-display age and retention/recovery. A latest-preview response above its current-age cutoff is unavailable with no assets even while a historical direct asset is still eligible. Clients must age already-received current previews during failed polling. Origin authorization checks logical expiry/withdrawal before every GET, HEAD and range response.
+`Image.expires_at` is logical derivative expiry, not current-preview freshness or permission to delete storage. The [preview policy contract](preview-policy-contract.md) distinguishes earliest publication (P14), current-display age and retention. A latest-preview response above its current-age cutoff is unavailable with no assets even while a historical direct asset is still eligible. Clients must age already-received current previews during failed polling. Origin authorization checks logical expiry/withdrawal before every GET, HEAD and range response.
 
 ## Exact time ownership
 
@@ -181,7 +168,7 @@ The [event contract](weather-event-contract.md) defines initial onset/gust/light
 
 Every `SearchHit` carries required `evidence_precision` (`frame`, `interval`, `clip`, or `segment`) alongside its evidence-supported `source_interval`, even when `seek` is null because playback is unavailable. Precision describes the evidence, not the resolution of a numeric timestamp. Do not infer frame-level evidence merely because the player can seek to a frame. When a seek exists, its precision and source interval must agree with the hit’s cited evidence; enforce that cross-field relation semantically. Whole-video measured predicates retain their own aggregate interval and evidence count/hash in `matched_measurements`, which may be broader than the visual hit. The client must label both scopes without presenting a whole-segment gust as a clip-time event.
 
-The draft v1 shape was corrected before implementation; consumers and generated types must include this required field. Prior validation receipts remain historical for their recorded schema hashes.
+The draft v1 shape was corrected before implementation; consumers and generated types must include this required field.
 
 ## Aggregate computation provenance
 
