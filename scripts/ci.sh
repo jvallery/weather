@@ -42,10 +42,7 @@ while (( $# )); do
       ;;
     browser)
       [[ "${WEATHER_CI_IN_CLUSTER:-}" == "1" ]] || { echo 'Browser checks require fleet CI in-cluster' >&2; exit 2; }
-      bash scripts/bootstrap-browser.sh
-      (cd web && pnpm build)
-      node scripts/check-web-build.mjs
-      (cd web && pnpm test:browser)
+      bash scripts/web-browser.sh
       ;;
     supply-chain)
       gitleaks dir --redact --no-banner --config .gitleaks.toml .

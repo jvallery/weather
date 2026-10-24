@@ -110,3 +110,9 @@ filename collisions with different content. The closure is limited to 512 files 
 8 MiB per file; older ancestors do not accumulate. The original scaffold image has one explicit
 legacy-inventory exception; remove that flag when repinning to the first inventoried web image.
 The rolling qualification checks immutable public cache headers as well as bytes and origin custody.
+
+`ci.sh browser` runs the single-worker fixture matrix in all three engines, then writes the existing
+`/workspace/ci-test-report.json` output parameter. It requires every configured case to pass without
+skips or retries and records checksums for 27 synthetic Today/history/About screenshots. ROOT collects
+the listed files from the exact run Pod before PodGC and verifies their hashes for visual review.
+The report is capped at 60 KiB; original test output and traces remain in `artifacts/` for that run.
