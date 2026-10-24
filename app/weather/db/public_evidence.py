@@ -6,7 +6,7 @@ import json
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
@@ -14,6 +14,7 @@ from sqlalchemy import text
 
 from weather.api.cursors import watermark
 from weather.api.metric_registry import PublicInputError
+from weather.api.public_common import utc_instant
 from weather.api.public_models import HistoryPoint, Interval, ObservationQuery, enforce_raw_window
 
 from .public_mapping import history_point, instant, qualified_reported_support
@@ -137,6 +138,7 @@ async def read_evidence_window(
     preceding_hold_seconds: int,
     following_report_seconds: int,
     snapshot_watermark: str | None = None,
+    evaluated_at: datetime | None = None,
     maximum_points: int = 5000,
 ) -> EvidenceWindow:
     """Return a whole bounded window plus per-stream preceding hold boundary.
@@ -145,6 +147,8 @@ async def read_evidence_window(
     no policy is inferred. The result includes all rows from start through the
     inclusive end+report span, and all rows at the latest source-time-eligible timestamp per
     (device alias,family,metric) before start within the supplied hold span.
+    A caller-bound UTC evaluation instant freezes clock qualification across
+    continuation reads; it cannot be later than the current reader clock.
     Field-invalid/null boundaries remain included. Oversize reads fail instead
     of returning a paged subset. Root owns authority, support math and revisions.
     """
@@ -157,10 +161,21 @@ async def read_evidence_window(
         or not 1 <= maximum_points <= 50000
     ):
         raise ValueError("Invalid bounded evidence read budgets")
+    current = instant(reader._clock())
+    if evaluated_at is None:
+        now = current
+    else:
+        try:
+            if not isinstance(evaluated_at, datetime):
+                raise ValueError
+            now = utc_instant(evaluated_at)
+            if now > current:
+                raise ValueError
+        except ValueError, OverflowError:
+            raise ValueError("Invalid bounded evidence evaluation instant") from None
     query = ObservationQuery(start=window.start, end=window.end, metrics=list(metrics), limit=1)
     enforce_raw_window(query, maximum_seconds=reader._raw_seconds)
     parameters = observation_parameters(query, None, reader._station)
-    now = instant(reader._clock())
     parameters.update(
         watermark=int(watermark(snapshot_watermark)) if snapshot_watermark is not None else None,
         lower=window.start - timedelta(seconds=preceding_hold_seconds),
@@ -181,7 +196,6 @@ async def read_evidence_window(
             "Full-window evidence exceeds its configured read budget; split the work interval.",
         )
     result = []
-    now = instant(reader._clock())
     try:
         for row in members:
             quality = row.get("field_quality")

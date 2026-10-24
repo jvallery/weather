@@ -2,7 +2,7 @@
 """Pure complete-window contract tests; fake rows only, no database connection."""
 
 import asyncio
-from datetime import timedelta
+from datetime import timedelta, timezone
 from decimal import Decimal
 from typing import Any
 
@@ -98,6 +98,68 @@ def test_unknown_or_unqualified_report_policy_does_not_create_support() -> None:
             }
         )
         assert history_point(value, AT).support_interval is None
+
+
+def test_bound_evaluation_instant_controls_sql_and_mapping_without_aging() -> None:
+    async def check() -> None:
+        clock = AT + timedelta(seconds=30)
+        source = PublicSqlSource(
+            object(),
+            station_alias="public-station",
+            maximum_raw_seconds=86400,
+            clock=lambda: clock,
+        )
+        captured = []
+
+        async def rows(statement: Any, parameters: dict[str, Any]) -> list[dict[str, Any]]:
+            nonlocal clock
+            captured.append(parameters["now"])
+            clock += timedelta(seconds=30)
+            return [
+                {
+                    "watermark": 1,
+                    **row(
+                        observed_at=AT + timedelta(seconds=1),
+                        publication_seq=1,
+                        device_alias="public-device",
+                        source_time_eligible=False,
+                        value_text="21",
+                    ),
+                }
+            ]
+
+        source._rows = rows
+        window = Interval(start=AT, end=AT + timedelta(seconds=60))
+        for _ in range(2):
+            result = await read_evidence_window(
+                source,
+                window,
+                ["temperature"],
+                preceding_hold_seconds=0,
+                following_report_seconds=0,
+                snapshot_watermark="1",
+                evaluated_at=AT,
+            )
+            assert result.rows[0].point.value is None
+            assert result.rows[0].exact_value is None and not result.rows[0].source_time_eligible
+        assert captured == [AT, AT]
+        for invalid in (
+            AT.replace(tzinfo=None),
+            AT.astimezone(timezone(timedelta(hours=1))),
+            clock + timedelta(microseconds=1),
+        ):
+            with pytest.raises(ValueError, match="^Invalid bounded evidence evaluation instant$"):
+                await read_evidence_window(
+                    source,
+                    window,
+                    ["temperature"],
+                    preceding_hold_seconds=0,
+                    following_report_seconds=0,
+                    evaluated_at=invalid,
+                )
+        assert captured == [AT, AT]  # Invalid inputs never issue a SQL read.
+
+    asyncio.run(check())
 
 
 def test_quality_revision_binds_all_safe_state_without_private_metadata() -> None:
