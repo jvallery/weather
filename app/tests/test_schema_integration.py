@@ -422,6 +422,54 @@ def test_asset_class_and_request_time_public_views() -> None:
     asyncio.run(check())
 
 
+def test_public_view_barriers_prevent_predicate_function_leaks() -> None:
+    async def check() -> None:
+        db = engine()
+        api = engine("weather_api")
+        try:
+            async with db.begin() as connection:
+                await asset(connection, "original")
+                flags = (
+                    (
+                        await connection.execute(
+                            text("""
+                    SELECT c.reloptions FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+                    WHERE n.nspname='public_api' AND c.relkind='v'
+                """)
+                        )
+                    )
+                    .scalars()
+                    .all()
+                )
+                assert flags and all(
+                    "security_barrier=true" in options for options in flags
+                )
+            async with api.begin() as connection:
+                await connection.execute(
+                    text("CREATE TEMP TABLE view_probe(x integer)")
+                )
+                await connection.execute(
+                    text("""
+                    CREATE FUNCTION pg_temp.reject_if_called(text) RETURNS boolean
+                    LANGUAGE plpgsql IMMUTABLE COST 0.000001 AS $$
+                    BEGIN RAISE EXCEPTION 'view filter leak'; END $$
+                """)
+                )
+                assert (
+                    await connection.execute(
+                        text(
+                            "SELECT count(*) FROM public_api.assets "
+                            "WHERE pg_temp.reject_if_called(sha256)"
+                        )
+                    )
+                ).scalar_one() == 0
+        finally:
+            await api.dispose()
+            await db.dispose()
+
+    asyncio.run(check())
+
+
 def test_editorial_append_only_and_concurrent_cas() -> None:
     async def check() -> None:
         db = engine()
