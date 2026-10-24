@@ -1,6 +1,6 @@
 # Planning closure and next evidence
 
-Status: **final architecture consistency and execution handoff review remains; detailed discovery belongs to the execution sprint waves.** Jason explicitly narrowed the review: establish a coherent design aligned with current fleet standards, ownership and supported delivery patterns; do not solve every implementation problem before execution.
+Status: **planning audit complete under Jason's revised architecture-level scope; detailed discovery belongs to the execution sprint waves.** Jason explicitly narrowed the review: establish a coherent design aligned with current fleet standards, ownership and supported delivery patterns; do not solve every implementation problem before execution.
 
 This direction supersedes earlier instructions in this planning collateral that made detailed mechanism qualification, owner provisioning, compatibility experiments, resource grants, performance measurements or complete recovery engineering prerequisites to closing WX-00. Preserve those obligations in their execution issues and acceptance gates. No production change or application implementation is performed as part of this review.
 
@@ -77,3 +77,7 @@ Planning ends after architecture, requirements, fleet ownership/standards and de
 The [targeted readback receipt](settled-design-reconciliation.json) records inspection of all 47 Weather issue bodies and exact-readback corrections to 19. Obsolete transport-selection blockers were replaced with the selected Tunnel/no-store/five-second-origin-lease design; card and root placement statements reflect Jason's approved homepage location. Earlier camera-evidence graph totals are explicitly historical. All prior collateral URLs, requirement IDs and standard IDs were preserved. No native edges changed. This scoped consistency pass does not substitute for final issue consolidation, remaining architecture resolution or runtime acceptance.
 
 Camera privacy selection is closed: Jason approved all three full views without visual masks after review of E06 samples. D02 records explicit no-mask policy, private original custody, metadata stripping and unchanged ten-minute eligibility. This resolves owner input, not camera timing/cadence or derived-product implementation qualification.
+
+## Planning closeout
+
+The [execution handoff](execution-handoff.md) publishes the chosen architecture, owner lanes, discovery assignments, coordination waves, first-ready work and a longest dependency chain. Fresh native readback verifies all 123 edges, acyclicity, 42 required initial items in rollout closure and exclusion of WX-45/46. All 46 issue bodies were read and checked for their mapped requirement references and scope/approach/acceptance/prerequisite sections; together the filed plan covers R01–R38. The earlier clause/standards/owner audits provide the detailed traceability. This completes the owner-requested architecture/plan consistency review; it is not exhaustive implementation-mechanism verification or runtime compliance certification. No application code or infrastructure was deployed.

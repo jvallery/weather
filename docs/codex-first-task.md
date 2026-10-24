@@ -1,4 +1,4 @@
-# Codex continuation handoff — finish the Weather planning audit
+# Codex continuation — execute the filed Weather plan
 
 Use the existing public **`jvallery/weather`** repository. It is already cloned and its planning collateral is published. Preserve existing work and verify the current branch/remote before editing; do not create a second repository or put the application in Sentinel.
 
@@ -6,7 +6,11 @@ Read [requirements.md](requirements.md) in full. It is the authoritative require
 
 The owner chose an **independent, fleet-first application**, with specific upstream implementation references in requirements §20.1. Do not reopen the questionnaire or make application-fork experiments a prerequisite. R29–R37 are selected initial features. R38/WX-45 is the accepted combined east/west skycam follow-on; WX-46 reserves later visual-index research. Both are already filed (#46 and #47), and neither blocks the first release.
 
-## Assignment
+## Planning closeout
+
+The architecture-level planning audit is complete. Start from the [execution-wave handoff](implementation/execution-handoff.md) and live issue states. The review instructions below explain the completed planning boundary; do not repeat this pass or reopen settled choices. Detailed discovery belongs to the assigned execution issue. Actual implementation proceeds when requested under its owner/dependency and estate resource constraints.
+
+## Archived review assignment
 
 **Finish the architecture consistency review and publish the execution-wave handoff.** Jason directed us to stop deep investigation: design and architecture must align with current fleet standards, while mechanism discovery and implementation details belong to the execution sprint. Do not perform more provider, fencing, CPU/model, recovery or compatibility investigation as a planning prerequisite.
 
