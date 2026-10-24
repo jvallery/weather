@@ -66,6 +66,8 @@
       "2026-10-24T05:44:58.206Z"
     ],
     "owner_issue": "jvallery/network-infra#775",
-    "twenty_four_hour_green_claim": false
+    "twenty_four_hour_green_claim": false,
+    "cause": "Weather Host-only web priority1 tied with shared catch-all priority1; one of five Traefik replicas selected static404",
+    "source_correction": "Web priority10; API priority100 unchanged; live post-fix validation pending"
   }
 }

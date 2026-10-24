@@ -50,7 +50,7 @@ spec:
     - name: api
       port: 80
   - match: Host(`weather.vallery.net`)
-    priority: 1
+    priority: 10
     kind: Rule
     middlewares:
     - name: weather-rate-limit

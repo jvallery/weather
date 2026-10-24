@@ -65,7 +65,10 @@ requires durable SBOM upload/readback and final onboarding source closure; the
 walking skeleton does not establish live Tempest conditions or database recovery.
 Continuous monitoring subsequently observed intermittent public-edge HTTP404s;
 that interrupts the launch probe window despite successful point-in-time checks.
-The dated receipt records those failures until the network owner resolves them.
+The dated receipt records those failures. The web route must have priority10,
+above the shared catch-all at1 and below the API route at100; equal priorities
+caused one Traefik replica to select the static404 backend. Verify every ingress
+replica after the correction, then start a new uninterrupted probe window.
 
 API and web disable Kubernetes Service environment injection with
 `enableServiceLinks: false`. This keeps later `WEATHER_PG_*` service variables
