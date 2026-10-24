@@ -2,6 +2,7 @@
 import { createServer } from "node:http";
 import { createReadStream, readFileSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { setTimeout as delay } from "node:timers/promises";
 if (process.platform !== "linux" || process.env.WEATHER_CI_IN_CLUSTER !== "1") throw new Error("Fixture API requires approved in-cluster CI");
 const current = JSON.parse(readFileSync(new URL("../app/fixtures/current.json", import.meta.url)));
 const registry = JSON.parse(readFileSync(new URL("../app/fixtures/metric-registry.json", import.meta.url)));
@@ -59,6 +60,7 @@ createServer(async (req, res) => {
   }
   if (url.pathname === "/healthz") return json(res, { ok: true });
   if (state.apiUnavailable && url.pathname.startsWith("/api/v1/weather/")) return json(res, { code: "synthetic-unavailable" }, 503);
+  if (state.delayMs && url.pathname.startsWith("/api/")) await delay(Math.min(Number(state.delayMs), 5000));
   if (url.pathname === "/api/v1/weather/current") {
     const value = structuredClone(current); const now = Date.now();
     value.generated_at = new Date(now).toISOString();

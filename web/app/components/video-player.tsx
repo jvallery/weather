@@ -22,14 +22,16 @@ export function VideoPlayer({ video }: { video: Video }) {
     return () => media.removeEventListener("change", changed);
   }, [quality]);
   const [resumeMessage, setResumeMessage] = useState("");
-  if (video.state !== "published") return <p>No playable media · {video.reason || video.state}. Coverage and metadata remain available.</p>;
+  if (video.state !== "published" && video.state !== "partial") return <p>No playable media · {video.reason || video.state}. Coverage and metadata remain available.</p>;
+  const partial = video.state === "partial";
   const role = quality === "auto" ? autoRole : quality;
   const rendition = video.renditions.find((item) => item.role === role);
   const native = video.renditions.find((item) => item.role === "native");
   if (!rendition || !native || !video.poster || !video.native_download_url) return <p className="fault">Media metadata is unavailable.</p>;
   return <section aria-labelledby="playback-title"><h2 id="playback-title">Recording</h2>
     <p id="playback-note">Silent, accelerated weather recording. Source dates and description follow.</p>
-    <video ref={player} aria-describedby="playback-note" controls muted playsInline preload="metadata" poster={video.poster.asset.url} src={rendition.asset.url}
+    {partial && <p id="coverage-label" className="notice">Partial coverage · {(video.coverage.fraction * 100).toFixed(1)}% of the source interval was captured; this recording has gaps.</p>}
+    <video ref={player} aria-describedby={partial ? "playback-note coverage-label" : "playback-note"} controls muted playsInline preload="metadata" poster={video.poster.asset.url} src={rendition.asset.url}
       onPlay={(event) => { document.querySelectorAll("video").forEach((other) => { if (other !== event.currentTarget) other.pause(); }); }}
       onLoadedMetadata={() => {
         const element = player.current;

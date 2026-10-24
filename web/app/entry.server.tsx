@@ -31,7 +31,9 @@ export default function handleRequest(request: Request, status: number, headers:
 
 /** Framework errors use bounded metrics; request URLs and stack text are never logged. */
 export function handleError(error: unknown, { request }: { request: Request }): void {
-  if (request.signal.aborted || (isRouteErrorResponse(error) && error.status < 500)) return;
+  // Overload is already counted as an "overloaded" API admission result.
+  const busy = typeof error === "object" && error !== null && "data" in error && error.data === "busy";
+  if (request.signal.aborted || busy || (isRouteErrorResponse(error) && error.status < 500)) return;
   const counter = register.getSingleMetric("weather_web_ssr_failures_total");
   if (counter instanceof Counter) counter.labels("render_error").inc();
 }
