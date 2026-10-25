@@ -352,7 +352,7 @@ curl -s 'https://weather.vallery.net/api/v1/stills?date=2026-11-01&camera=skycam
 
 `app/weather/scheduler/cleanup.py` (#19) runs inside each `pipeline-<camera>` pod, the only
 role besides the collectors that mounts staging (as UID 1025 / GID 100, the share owner), and
-each pod mounts only its own camera's `sealed/`, `tmp/` and `render/` subPaths. The
+each pod mounts only its own camera's `sealed/`, `tmp/`, `render/` and `previews/` subPaths. The
 scheduler and the api never mount NFS (C17). Each pass works on its own camera only, holds a
 per-camera advisory lock, and takes every age from the database clock.
 

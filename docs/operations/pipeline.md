@@ -191,7 +191,8 @@ worker DB role and the media writer key. Their NetworkPolicy
 (`network-policy.yaml`) allows DNS, CNPG and Garage only. Enable both by
 adding `pipeline` to the root kustomization and setting replicas to 1 after
 the cameras, `weather-staging` PVC and both bucket writer keys exist. Each pod mounts only its camera's
-`sealed/`, `tmp/` and `render/` subPaths of the share; create `render/<camera>` owned
+`sealed/`, `tmp/`, `render/` and `previews/` subPaths of the share; create `render/<camera>`
+and `previews/<camera>` owned
 by UID 1025 / GID 100 first (from a pod running as that identity), or the kubelet creates
 it as root.
 

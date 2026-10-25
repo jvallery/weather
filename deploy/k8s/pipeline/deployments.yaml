@@ -99,7 +99,8 @@ spec:
           mountPath: /var/run/weather-garage
           readOnly: true
         # Only this camera's own directories (#19): cleanup can never reach another
-        # camera's input. Create render/skycam_east as UID 1025 / GID 100 before enabling.
+        # camera's input. Create render/skycam_east and previews/skycam_east
+        # as UID 1025 / GID 100 before enabling.
         - name: staging
           mountPath: /staging/sealed/skycam_east
           subPath: sealed/skycam_east
@@ -109,6 +110,9 @@ spec:
         - name: staging
           mountPath: /staging/render/skycam_east
           subPath: render/skycam_east
+        - name: staging
+          mountPath: /staging/previews/skycam_east
+          subPath: previews/skycam_east
         - name: tmp
           mountPath: /tmp
       volumes:
@@ -252,7 +256,8 @@ spec:
           mountPath: /var/run/weather-garage
           readOnly: true
         # Only this camera's own directories (#19): cleanup can never reach another
-        # camera's input. Create render/skycam_west as UID 1025 / GID 100 before enabling.
+        # camera's input. Create render/skycam_west and previews/skycam_west
+        # as UID 1025 / GID 100 before enabling.
         - name: staging
           mountPath: /staging/sealed/skycam_west
           subPath: sealed/skycam_west
@@ -262,6 +267,9 @@ spec:
         - name: staging
           mountPath: /staging/render/skycam_west
           subPath: render/skycam_west
+        - name: staging
+          mountPath: /staging/previews/skycam_west
+          subPath: previews/skycam_west
         - name: tmp
           mountPath: /tmp
       volumes:
@@ -405,7 +413,8 @@ spec:
           mountPath: /var/run/weather-garage
           readOnly: true
         # Only this camera's own directories (#19): cleanup can never reach another
-        # camera's input. Create render/frontyard_1 as UID 1025 / GID 100 before enabling.
+        # camera's input. Create render/frontyard_1 and previews/frontyard_1
+        # as UID 1025 / GID 100 before enabling.
         - name: staging
           mountPath: /staging/sealed/frontyard_1
           subPath: sealed/frontyard_1
@@ -415,6 +424,9 @@ spec:
         - name: staging
           mountPath: /staging/render/frontyard_1
           subPath: render/frontyard_1
+        - name: staging
+          mountPath: /staging/previews/frontyard_1
+          subPath: previews/frontyard_1
         - name: tmp
           mountPath: /tmp
       volumes:

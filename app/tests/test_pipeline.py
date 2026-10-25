@@ -688,7 +688,8 @@ def test_pipeline_deployments_ship_disabled_with_only_their_inputs() -> None:
             if m["name"] == "staging"
         }
         assert mounts == {
-            (f"/staging/{d}/{camera}", f"{d}/{camera}") for d in ("sealed", "tmp", "render")
+            (f"/staging/{d}/{camera}", f"{d}/{camera}")
+            for d in ("sealed", "tmp", "render", "previews")
         }
     # The pipeline writes render/ on the share the collectors write sealed/ to, as them.
     collector = yaml.safe_load((root / "capture/skycam-east.yaml").read_text())
