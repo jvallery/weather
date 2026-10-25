@@ -162,6 +162,30 @@ test("event bookmarks seek via ?t=, day and video strips, feed provenance and re
   await expect(recent.getByRole("listitem")).toHaveCount(5);
   await expect(recent.getByRole("heading", { level: 3 }).first()).toHaveText("Lightning strike reported");
 });
+test("keogram bins: keyboard selection on the day page opens the recording at that bin's time", async ({ page }) => {
+  await page.goto("/day/2026-10-31/");
+  await expect(page.getByRole("figure")).toHaveCount(1);
+  await expect(page.getByText("Keogram Pending", { exact: true })).toHaveCount(4);
+  await expect(page.getByText("Keogram Unavailable · no_observations", { exact: true })).toBeVisible();
+  const east = page.getByRole("figure", { name: /^East sky · Daytime keogram/ });
+  const slider = east.getByRole("slider", { name: "Keogram time" });
+  await slider.focus();
+  await page.keyboard.press("ArrowRight");
+  // Bin 721 of [12:30Z, 01:00Z) in 31.25 s bins: its midpoint is 18:45:46.875Z.
+  await expect(east.getByText(/^Bin 722 of 1440/)).toBeVisible();
+  await expect(slider).toHaveAttribute("aria-valuetext", /observed$/);
+  await page.keyboard.press("Tab");
+  await expect(east.getByRole("link", { name: /^Open the recording at/ })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/timelapses\/skycam_east\/2026-10-31\/daytime\/\?t=2026-10-31T18%3A45%3A46\.875Z$/);
+  await ready(page);
+  await expect.poll(async () => (await linked(page)).utc).toBe("2026-10-31T18:45:46.875Z");
+  agree(await linked(page), "2026-10-31T12:30:00Z");
+  // The video page's strip uses the same keogram's bin map: one arrow key is one 31.25 s bin.
+  const strip = page.getByRole("slider", { name: /Keogram bin/ });
+  await strip.focus(); await page.keyboard.press("ArrowRight");
+  await expect(strip).toHaveAttribute("aria-valuetext", /^Bin 723 of 1440, .*±15\.6 s$/);
+});
 test("safe interpretation text, lifecycle states and quality preservation", async ({ page, request }) => {
   await request.post("http://localhost:4174/__control", { data: { reason: "<script>window.SYNTHETIC_XSS=1</script>" } });
   await page.goto("/timelapses/skycam_east/2026-10-31/daytime/");

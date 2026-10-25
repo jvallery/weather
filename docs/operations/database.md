@@ -103,9 +103,9 @@ dedicated `weather` database. Revision `0001_baseline` (#74) holds the
 slice-1 schema, `0002_api` (#14) adds the API's views, `0003_publication`
 (#18) the publication catalog, `0004_search` (#25) the search tables, `0005_events` (#41)
 weather events, `0006_render` (#15) the frozen solar schedule and render segments, `0009_stills`
-(#38) hour slots, archived originals and comparison stills, and `0010_cleanup` (#19) the staging
-inventory and the deletion and object-lifecycle audits, and `0011_gc_kept` (#19) its `gc_kept`
-marker; all are
+(#38) hour slots, archived originals and comparison stills, `0010_cleanup` (#19) the staging
+inventory and the deletion and object-lifecycle audits, `0011_gc_kept` (#19) its `gc_kept`
+marker, and `0008_keograms` (#37, chained after `0011_gc_kept`) keogram status and bins; all are
 inline DDL and import no application module. The restore-drill schema `weather_recovery_drill` is not Alembic's;
 the baseline and `alembic check` leave it alone.
 
@@ -125,6 +125,8 @@ the baseline and `alembic check` leave it alone.
 | `embedding_profile`, `search_document`, `search_embedding` | Search (0004): profiles, immutable public-text revisions (final withdrawal, generated English `tsvector`) and unit-norm `vector(2560)` rows bound to the document's text hash. See [search operations](search.md) |
 | `public_api.search_documents`, `public_api.search_vectors`, `public_api.search_lexical()` | Security-barrier search views (0004): current public documents past their embargo, and their vectors; a SECURITY DEFINER full-text function with the same filter, so the partial GIN index serves `@@` |
 | `hour_slot`, `archival_still`, `still_derivative`, `public_api.stills` | Hourly stills (0009, #38): UTC hour slots keyed by `starts_at` with the `weather_day` FK (a trigger keeps each inside its day); one selection revision per (camera, slot) with the same-day composite FK, its segment, its camera's still publication and the original's (id, class, sha256), one active per (camera, slot); sanitized derivatives keyed by (still, role). See [media operations](media.md#hourly-originals-and-comparison-stills) |
+| `keogram`, `keogram_bin` | Keograms (0008, #37): per-segment status (`pending`/`published`/`partial`/`unavailable`/`failed`, CHECKed result and `public_not_before >= capture_upper_bound + 630 s`) and the streamed bins (one selected capture and ≤512-pixel column per bin; private, deleted once the PNG commits). See [pipeline operations](pipeline.md#keograms) |
+| `public_api.keograms` | Security-barrier keogram view (0008): nothing before `ends_at + 630 s`, no asset or metadata before the publication's embargo; `public_api.videos` is replaced with the same columns so `keogram_state` reports `failed`/`unavailable` |
 | `solar_cycle`, `segment` | Frozen civil-twilight schedule keyed on `(site, cycle_date)` and one render segment per camera and kind (0006, #15); current segments of a camera never overlap (`btree_gist` exclusion). See [pipeline operations](pipeline.md) |
 | `staging_chunk`, `staging_deletion`, `object_event` | Staging inventory (one row per sealed chunk, kept after deletion), the two-phase staging deletion audit, and the append-only object lifecycle audit (`unavailable`, `expired`, `gc_deleted`, `gc_kept` (0011), `purged`); `media_asset.state` gains `expired` and `state_changed_at` (0010, #19). See [media operations](media.md#staging-cleanup-and-pressure) |
 
@@ -145,7 +147,7 @@ and its public view behind a security barrier. #18 has done so for
 `media_asset`, `video` and the publication tables (`0003_publication`). `0004_search` (#25) replaced the
 v1 `search_document`/`embedding_profile` design. #15 did so for
 `solar_cycle` and `segment` (`0006_render`), and #38 for the hour slots and stills (`0009_stills`). #39 did so for `camera_preview` and
-`public_api.previews` (`0007_previews`).
+`public_api.previews` (`0007_previews`), and #37 for the keogram tables and view (`0008_keograms`).
 
 ## Connection and role custody
 
@@ -166,8 +168,8 @@ every second while the spool holds receipts.
 |---|---|
 | `weather_migrator` | Database/schema owner, DDL and migrations |
 | `weather_ingest` | Insert on station and device, select on their non-private columns (not `private_configuration`); select/insert on receipts and family rows; no update/delete |
-| `weather_worker` | Read/write `job` and `outbox`; select/insert `weather_day`; select/insert `media_asset`, `upload_intent`, `video` with UPDATE only on the columns the publisher writes; select/insert the append-only `publication`, `publication_asset`, `withdrawal`, `product_tombstone`; the fence sequence; select/insert search documents and vectors, update only a document's `visibility`, `withdrawn_at` and `index_status`; select only `id, device_id, source_ts, values, quality` of `evt_precip`, `evt_strike`, `obs_st` and a device's `station_id` (event rules); select/insert events, revisions and day links, update an event's `revision` pointer; select/insert `solar_cycle` and `segment`, updating only the render result columns; select/insert `hour_slot`, `archival_still` and `still_derivative`, updating only a selection's `active`/`retired_at` and a derivative's `state` (both one-way); select on `public_api.obs_st` and `public_api.rapid_wind` for the sidecar weather block (#15); no receipts, serials or other telemetry |
-| `weather_api` | Select the `public_api` views (including the two search views and `stills`) and execute the two value-gating functions and `search_lexical`; no base-table access or `weather` schema usage |
+| `weather_worker` | Read/write `job` and `outbox`; select/insert `weather_day`; select/insert `media_asset`, `upload_intent`, `video` with UPDATE only on the columns the publisher writes; select/insert the append-only `publication`, `publication_asset`, `withdrawal`, `product_tombstone`; the fence sequence; select/insert search documents and vectors, update only a document's `visibility`, `withdrawn_at` and `index_status`; select only `id, device_id, source_ts, values, quality` of `evt_precip`, `evt_strike`, `obs_st` and a device's `station_id` (event rules); select/insert events, revisions and day links, update an event's `revision` pointer; select/insert `solar_cycle` and `segment`, updating only the render result columns; select/insert `keogram` (update only its status columns) and `keogram_bin` (update its sample, delete); select/insert `hour_slot`, `archival_still` and `still_derivative`, updating only a selection's `active`/`retired_at` and a derivative's `state` (both one-way); select on `public_api.obs_st` and `public_api.rapid_wind` for the sidecar weather block (#15); no receipts, serials or other telemetry |
+| `weather_api` | Select the `public_api` views (including the two search views `stills` and `keograms`) and execute the two value-gating functions and `search_lexical`; no base-table access or `weather` schema usage |
 | `weather_editor` | Login only. No editorial functions exist yet; #44 adds them and grants EXECUTE to this role alone |
 
 Neither ingest nor API can delete telemetry. No telemetry retention trigger,
@@ -178,7 +180,7 @@ migrator creates, so a later function is private until granted.
 
 ## Expand/contract migrations
 
-The head is `0011_gc_kept`. `0001_baseline` has run on production, so every change is
+The head is `0008_keograms` (on `0011_gc_kept`). `0001_baseline` has run on production, so every change is
 expand/contract. Add a new revision with inline DDL; never edit an applied
 revision or import current application modules into one. `models.metadata`
 describes the current schema for `alembic check` and must change in the same

@@ -83,6 +83,7 @@ before the segment's video publishes. Sidecar bytes are also kept inline in
 | `upload_intent` | One row per publish attempt: manifest, fence, expected revision, immutable deadline, `pending` / `committed` / `orphan` |
 | `media_asset` | One row per object. CHECKs: `original_private` (originals only, and only originals, are private in `weather-originals`), `embargo` (every public class has `public_not_before` and `published_at`; originals have neither), `content_address`, inline sidecar hash |
 | `publication`, `publication_asset` | Append-only revision log of every product (video, keogram, still) with its roles; `publication.public_not_before >= source_end + 630 s` |
+| `keogram`, `keogram_bin`, `public_api.keograms` | Keogram status, streamed bins and the public view (0008, #37; [pipeline](pipeline.md#keograms)) |
 | `video` | Current state of each (camera, cycle date, segment); `public_not_before >= ends_at + 630 s`; withdrawal tombstone |
 | `withdrawal`, `product_tombstone` | Append-only audit of withdrawals, and the withdrawn products every later commit is checked against |
 | `public_api.assets` | Security barrier: public classes in `weather-media`, available, not withdrawn, past embargo; a still image only through an active, untombstoned selection (0009) |
@@ -92,6 +93,22 @@ The pipeline uses the `weather_worker` role, with UPDATE only on the columns
 the code writes (asset state and withdrawal; intent state; the video's current
 revision). A trigger makes withdrawal one-way, fixes an asset's embargo and
 lets a video's embargo only move later. The API reads only the two views.
+
+## Keogram regions
+
+Each camera's keogram region is chosen once from the camera corpus (#4) and commissioned at
+#49 in `app/weather/pipeline/keogram-regions.json` ([pipeline](pipeline.md#keogram-regions)):
+
+1. Take one full cycle of sealed frames per camera from staging (in a `weather` pod, never on
+   a workstation) and view a daytime and an overnight frame at native geometry.
+2. Sky cameras: a vertical band through the zenith-most open sky, horizon to top, 64–256 px
+   wide, clear of fixed obstructions (eaves, masts, the housing). Front yard: its own band
+   through the area whose light changes matter (sky above the street, then the yard), not an
+   assumed sky strip.
+3. Record `x`, `y` (half-open pixels), `orientation` and `mask: none` under a new `version`,
+   and check that `RegionConfig` validates (`app/tests/test_keogram.py`).
+4. A later change is a new version; keograms already published keep the region recorded in
+   their sidecar.
 
 ## Withdraw
 

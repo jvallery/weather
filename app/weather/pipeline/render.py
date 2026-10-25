@@ -62,10 +62,15 @@ class SegmentJob:
 
 class ChunkStage(Protocol):
     """Per-frame hook for products that share the decode (#37 keograms, #38 hourly
-    candidates, #39 previews). Called once per accepted frame each time its owning block
-    renders, so implementations must be idempotent by slot."""
+    candidates, #39 previews). `frame` is called once per accepted owned frame each time its
+    block renders, so implementations must be idempotent by slot. `commit` is called once the
+    block's frames are integrated and before the block becomes durable: whatever a stage
+    stores there is committed before #19 may release the block's chunks. A stage that raises
+    from `commit` defers the block for retry."""
 
-    def frame(self, camera: str, candidate: Candidate, rgb: NDArray[np.uint8]) -> None: ...
+    def frame(self, job: SegmentJob, candidate: Candidate, rgb: NDArray[np.uint8]) -> None: ...
+
+    def commit(self, job: SegmentJob, first: int, last: int) -> None: ...
 
 
 def micros(value: Fraction) -> str:
@@ -331,7 +336,7 @@ class SegmentRenderer:
                                 expected.height, expected.width, 3
                             )
                             for stage in self.stages:
-                                stage.frame(self.job.camera, candidate, array)
+                                stage.frame(self.job, candidate, array)
                 if pending is not None:
                     current, current_rgb = pending
                     following = decoded[0].time if decoded is not None else None
@@ -395,6 +400,13 @@ class SegmentRenderer:
         else:
             tmp.unlink(missing_ok=True)
             raise FileExistsError("Durable block already exists")
+        # Stages (#37 keogram bins) commit before the block can become durable.
+        try:
+            for stage in self.stages:
+                stage.commit(self.job, first, last)
+        except BaseException:
+            tmp.unlink(missing_ok=True)
+            raise
         durable_write(self.blocks_dir / f"{first:05d}.json", canonical(meta))
         os.link(tmp, target)
         tmp.unlink()

@@ -29,6 +29,7 @@ export type ComparisonWindow = Schemas["ComparisonWindow"];
 // The archive month page renders only these fields of each /api/v1/timelapses entry.
 export type Timelapse = Schemas["Timelapse"];
 export type TimelapsePage = Schemas["TimelapsePage"];
+export type Keogram = Schemas["Keogram"];
 export type Asset = Schemas["Asset"];
 export type ArchiveEntry = Pick<Timelapse, "video_id" | "camera" | "cycle_date" | "segment" | "state" | "reason">;
 export type ArchivePage = { items: ArchiveEntry[]; next_cursor: string | null };
@@ -127,7 +128,7 @@ const timelapse = z.object({
   renditions: z.array(rendition.nullable().catch(null)).transform((items) => items.filter((item) => item !== null)),
   poster: optionalMedia, sidecar: optionalMedia, keogram: optionalMedia,
   native_download_url: text.regex(/^\/downloads\/[0-9a-f-]{36}\/native$/).nullable().catch(null).default(null),
-  keogram_state: lenient(["pending", "published", "partial", "unavailable", "withdrawn"], "unavailable"),
+  keogram_state: lenient(["pending", "published", "partial", "unavailable", "failed", "withdrawn"], "unavailable"),
 });
 // One malformed entry is dropped, never the page.
 const timelapses = z.object({
@@ -185,6 +186,20 @@ const preview = z.object({
   ? { ...value, state: "unavailable" as const, reason: value.reason ?? ("no_preview" as const), images: [] }
   : value);
 
+// Keograms (#37): what the day and video pages render; an unknown state reads as unavailable.
+const keogram = z.object({
+  keogram_id: text, camera, cycle_date: text, segment: z.enum(["daytime", "overnight"]),
+  state: lenient(["pending", "published", "partial", "unavailable", "failed", "withdrawn"], "unavailable"), reason: text.nullable().default(null),
+  source_interval: interval,
+  bins: z.object({ count: z.literal(1440), start: text, end: text, step_seconds: z.object({ numerator: z.number(), denominator: z.number() }) }),
+  observed_bins: number.default(null), gaps: z.array(z.tuple([z.number(), z.number()])).default([]),
+  image: optionalMedia, thumbnail: optionalMedia, video_id: text.nullable().default(null),
+  seek: z.object({ video_id: text, output_seconds: z.array(z.number()) }).nullable().default(null),
+});
+const keograms = z.object({ generated_at: text, items: z.array(keogram.nullable().catch(null)).transform((items) => items.filter((item) => item !== null)) });
+export type KeogramItem = z.infer<typeof keogram>;
+export type KeogramPage = z.infer<typeof keograms>;
+
 // The parsed shapes must stay assignable to the generated types; tsc fails on drift.
 const checks: [
   (value: z.infer<typeof current>) => Current,
@@ -196,7 +211,8 @@ const checks: [
   (value: z.infer<typeof timelapses>) => TimelapsePage,
   (value: z.infer<typeof stills>) => StillPage,
   (value: z.infer<typeof preview>) => Preview,
-] = [(value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value];
+  (value: KeogramItem) => Pick<Keogram, "keogram_id" | "camera" | "cycle_date" | "segment" | "state" | "reason" | "observed_bins" | "video_id">,
+] = [(value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value];
 void checks;
 
 export type Parser<T> = (value: unknown) => T | null;
@@ -210,6 +226,7 @@ export const parseAlmanac: Parser<Almanac> = parser(almanac);
 export const parseArchive: Parser<ArchivePage> = parser(archive);
 export const parseEvents: Parser<Events> = parser(events);
 export const parseTimelapses: Parser<TimelapsePage> = parser(timelapses);
+export const parseKeograms: Parser<KeogramPage> = parser(keograms);
 
 /** A playable entry: published or partial with the full media set (partial plays with a label, C6). */
 export function playable(video: Timelapse): boolean {

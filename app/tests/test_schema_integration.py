@@ -125,10 +125,10 @@ def test_baseline_head_roles_and_least_privilege() -> None:
             async with admin.begin() as connection:
                 assert await scalar(
                     connection, "SELECT version_num FROM public.alembic_version"
-                ) == ("0011_gc_kept")
+                ) == ("0008_keograms")
                 # Slice-1 relations, the observations view, the API's views (0002), the
-                # publication catalog (0003), search (0004), events (0005) and the render
-                # schedule (0006).
+                # publication catalog (0003), search (0004), events (0005), the render
+                # schedule (0006), stills (0009), previews (0007) and keograms (0008, chained after 0007).
                 relations = (
                     await connection.execute(
                         text("""
@@ -182,6 +182,10 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     "weather.staging_chunk",
                     "weather.staging_deletion",
                     "weather.object_event",
+                    # 0008_keograms (#37)
+                    "weather.keogram",
+                    "weather.keogram_bin",
+                    "public_api.keograms",
                 }
                 options = await scalar(
                     connection,
@@ -263,6 +267,14 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     assert not await table(role, "weather.camera_preview", "SELECT")
                 for role in ("weather_ingest", "weather_worker", "weather_editor"):
                     assert not await table(role, "public_api.previews", "SELECT")
+                # Keogram bins are the worker's private working state; only the view is public.
+                assert await table("weather_worker", "weather.keogram_bin", "DELETE")
+                assert not await table("weather_worker", "weather.keogram", "DELETE")
+                for relation in ("weather.keogram", "weather.keogram_bin"):
+                    for role in ("weather_ingest", "weather_api", "weather_editor"):
+                        assert not await table(role, relation, "SELECT")
+                assert await table("weather_api", "public_api.keograms", "SELECT")
+                assert not await table("weather_worker", "public_api.keograms", "SELECT")
                 # No editorial functions exist yet; weather_editor has no schema access (#44).
                 for role, schema in (
                     ("weather_api", "weather"),

@@ -116,3 +116,19 @@ RELEASE_INCIDENTS = Counter(
     "Renderer refused to resume: durable blocks (or recipe) behind segment.mezzanine_through",
     ["camera"],
 )
+KEOGRAMS = Counter(
+    "weather_pipeline_keograms_total",
+    "Segment keograms by final status (published, partial, unavailable, failed)",
+    ["camera", "state"],
+)
+KEOGRAM_MISSING_BINS = Gauge(
+    "weather_pipeline_keogram_missing_bins",
+    "Gap columns in the camera's most recently published keogram (of 1,440)",
+    ["camera"],
+)
+KEOGRAM_LAG = Histogram(
+    "weather_pipeline_keogram_publish_latency_seconds",
+    "Segment boundary to committed keogram",
+    ["camera"],
+    buckets=(300, 600, 900, 1800, 3600, 5400, 7200, 10800),
+)

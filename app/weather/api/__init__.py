@@ -19,6 +19,7 @@ from weather.media.origin import MediaMetrics, MediaOrigin
 from weather.timemodel import ScheduleError, SiteConfig, load_site
 
 from .cursors import CursorCodec
+from .keograms import DatabaseSource as KeogramSource
 from .registry import cadences
 from .routes import install
 from .search import SearchReader, SearchService
@@ -165,5 +166,6 @@ def create_app(settings: Settings, registry: CollectorRegistry = REGISTRY) -> Fa
     app = build_app(service, search, origin)
     app.state.timelapses = Catalog(DatabaseSource(engine), TimelapseCursor(key))
     app.state.stills = StillSource(engine)
+    app.state.keograms = KeogramSource(engine)
     app.router.lifespan_context = lifespan
     return app

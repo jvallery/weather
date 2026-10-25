@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "width": 4096,
+  "height": 1856,
+  "cameras": {
+    "skycam_east": {"version": "fixture-1", "x": [1984, 2112], "y": [0, 1856], "orientation": "vertical", "mask": "none"},
+    "skycam_west": {"version": "fixture-1", "x": [1984, 2112], "y": [0, 1856], "orientation": "vertical", "mask": "none"},
+    "frontyard_1": {"version": "fixture-1", "x": [2944, 3072], "y": [464, 1856], "orientation": "vertical", "mask": "none"}
+  }
+}

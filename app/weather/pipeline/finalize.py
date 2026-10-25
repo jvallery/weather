@@ -312,6 +312,8 @@ def prepare(
             "mezzanine_builds": builds,
         },
         "weather": weather,
+        # The video publishes first; its keogram's final status follows as a sidecar revision.
+        "keogram": {"state": "pending", "reason": None},
     }
     sidecar_bytes = ProductFile.sidecar(sidecar).data
     assert sidecar_bytes is not None

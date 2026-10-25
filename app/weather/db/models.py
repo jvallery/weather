@@ -912,6 +912,90 @@ camera_preview = Table(
     ),
     CheckConstraint("expires_at = captured_lower + interval '3600 seconds'", name="expiry"),
     CheckConstraint("to_timestamp(generation * 60) <= first_published_at", name="generation"),
+# 0008_keograms (#37): per-segment keogram status and its streamed bins (private working state,
+# deleted once the PNG is committed). The keogram itself is a `publication` product.
+Table(
+    "keogram",
+    metadata,
+    Column(
+        "segment_id",
+        PGUUID(as_uuid=True),
+        ForeignKey("weather.segment.id", ondelete="RESTRICT"),
+        primary_key=True,
+    ),
+    Column("state", String(16), nullable=False, server_default=text("'pending'")),
+    Column("reason", String(64)),
+    Column("region_version", String(32), nullable=False),
+    Column("region", JSONB, nullable=False),
+    Column("attempts", Integer, nullable=False, server_default=text("0")),
+    Column("expected_revision", Integer),
+    Column("observed", Integer),
+    Column("gaps", JSONB),
+    Column("lineage_sha256", String(64)),
+    _instant("capture_upper_bound", True),
+    _instant("public_not_before", True),
+    Column("video_synced", Boolean, nullable=False, server_default=text("false")),
+    _created(),
+    Column(
+        "updated_at",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP"),
+    ),
+    CheckConstraint(
+        "state IN ('pending','published','partial','unavailable','failed') "
+        "AND (state IN ('pending','published')) = (reason IS NULL)",
+        name="state",
+    ),
+    CheckConstraint(
+        "jsonb_typeof(region) = 'object' AND octet_length(region::text) <= 4096", name="region"
+    ),
+    CheckConstraint(
+        "attempts >= 0 AND (expected_revision IS NULL OR expected_revision >= 0)",
+        name="counters",
+    ),
+    CheckConstraint(
+        "(state IN ('published','partial')) = (observed IS NOT NULL) "
+        "AND (observed IS NULL) = (gaps IS NULL) "
+        "AND (observed IS NULL) = (lineage_sha256 IS NULL) "
+        "AND (observed IS NULL) = (capture_upper_bound IS NULL) "
+        "AND (state <> 'published' OR observed = 1440) "
+        "AND (state <> 'partial' OR observed BETWEEN 1 AND 1439) "
+        "AND (gaps IS NULL OR jsonb_typeof(gaps) = 'array') "
+        "AND (lineage_sha256 IS NULL OR lineage_sha256 ~ '^[0-9a-f]{64}$')",
+        name="result",
+    ),
+    CheckConstraint(
+        "(observed IS NULL) = (public_not_before IS NULL) AND (public_not_before IS NULL "
+        "OR public_not_before >= capture_upper_bound + interval '630 seconds')",
+        name="embargo",
+    ),
+)
+Table(
+    "keogram_bin",
+    metadata,
+    Column(
+        "segment_id",
+        PGUUID(as_uuid=True),
+        ForeignKey("weather.keogram.segment_id", ondelete="RESTRICT"),
+        primary_key=True,
+    ),
+    Column("bin", SmallInteger, primary_key=True),
+    Column("distance", BigInteger, nullable=False),
+    _instant("captured_at"),
+    Column("capture_id", String(64, collation="C"), nullable=False),
+    _instant("capture_upper_bound"),
+    Column("uncertainty_ms", DOUBLE_PRECISION),
+    Column("strip", LargeBinary, nullable=False),
+    _created(),
+    CheckConstraint(
+        "bin BETWEEN 0 AND 1439 AND distance >= 0 AND capture_upper_bound >= captured_at "
+        "AND (uncertainty_ms IS NULL OR uncertainty_ms >= 0) AND length(capture_id) > 0",
+        name="sample",
+    ),
+    CheckConstraint(
+        "octet_length(strip) BETWEEN 3 AND 1536 AND octet_length(strip) % 3 = 0", name="strip"
+    ),
 )
 # 0010_cleanup (#19): staging chunk inventory, staging deletion audit, object lifecycle audit.
 staging_chunk = Table(

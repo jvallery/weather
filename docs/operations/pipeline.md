@@ -132,6 +132,52 @@ written to `result.json` first); any other content is terminal for that
 result (`unavailable`, reason `revision_conflict`). A failing segment backs off
 from 10 s doubling to 30 min, so it never starves the camera's live segment.
 
+## Keograms
+
+Keograms (#37, `keogram.py`, `keogram_publish.py`) come from the same decode as the video.
+
+- **Bins.** Each segment `[a, b)` has 1,440 equal elapsed-UTC bins,
+  `[a + i(b − a)/1440, a + (i + 1)(b − a)/1440)`, in integer microseconds. A frame belongs to
+  the segment the renderer gives it (a capture exactly at dusk is overnight) and only to the
+  bin holding its source time; no bin borrows a neighbour's capture. Each bin keeps the
+  accepted capture nearest its midpoint; ties go to the earlier capture, then the lower
+  capture ID.
+- **Column.** The camera's region (below) averaged across its width in linear light: #15's
+  sRGB transfer as exact 16-bit linear integers, so the result is the same in any order and on
+  any node. The spatial axis is at most 512 px (box-averaged) and never upscaled.
+- **Streaming.** The renderer calls the keogram stage for every accepted owned frame; before a
+  block becomes durable its bins are merged into `keogram_bin` (a stored bin is only replaced
+  by a better capture), so a raw chunk's keogram duty is done with its block (#19). A database
+  connectivity error defers the block; a database refusal or an extraction error fails only
+  the keogram.
+- **Boundary.** After the segment's video is finalized, the keogram is assembled from the
+  stored bins alone (the raw chunks may be gone): a 1,440 × ≤512 PNG (column i is bin i, time
+  left to right, missing bins as a checkered grey gap column `checker-64-112-4px/v1`) and a
+  360-wide thumbnail, plus a sidecar with the bin map, per-bin capture times, gaps, lineage
+  digest (bins and capture times only), coverage, recipe and region. They publish through #18
+  as product `keogram` (roles `keogram`, `keogram_thumb`, `sidecar`) with
+  `public_not_before = max(b, newest bin capture upper bound) + 630 s`. Once the commit
+  returns the read-back assets, the segment's `keogram_bin` rows are deleted in the same
+  transaction that records the status.
+- **Status** per segment in `weather.keogram`: `pending`, `published` (every bin observed),
+  `partial` (reason `gaps`), `unavailable` (`no_observations`, `withdrawn`) or `failed`
+  (`extraction`, `store`, `region_changed`, `publish_failed` after 3 attempts a minute apart,
+  `deadline_missed` when the segment never finished within the late-render window). The video
+  never waits for its keogram: it publishes with `"keogram": {"state": "pending"}` in its
+  sidecar, and the final status follows as a sidecar-only video revision. Keograms follow the
+  stills lifecycle, not the video expiry (C13).
+
+### Keogram regions
+
+`app/weather/pipeline/keogram-regions.json` (override with `WEATHER_KEOGRAM_REGIONS`) holds
+one versioned region per camera for the commissioned geometry: half-open pixel spans `x` and
+`y`, `orientation` (`vertical` keeps rows as the keogram's axis, `horizontal` keeps columns)
+and `mask` (`none` only). The schema rejects an empty, reversed or out-of-frame region, a
+missing camera, or regions chosen for another geometry, and the pipeline then fails to start.
+The shipped values are fixtures; #49 replaces them from the camera corpus by the procedure in
+[media operations](media.md#keogram-regions). A changed region needs a new `version`; a
+segment whose bins began under another version reports `failed`/`region_changed`.
+
 ## Staging layout and cleanup preconditions (#19)
 
 ```text
@@ -156,7 +202,8 @@ it relies on:
   duty is done once its slot window ends at or before `mezzanine_through` of
   every current segment whose read range `[starts_at − lag, ends_at)` its
   window overlaps, so staging holds only each segment's unrendered tail. The
-  keogram and preview conditions of P3 still apply, and every overlapping hour slot needs an
+  keogram condition holds with it (a durable block's keogram bins are already
+  committed, and a final keogram needs none), the preview condition still applies, and every overlapping hour slot needs an
   active `archival_still` row: its original archived and read back, or recorded missing for
   lack of input (`no_capture`, `no_eligible_capture`; `selection_expired` keeps the chunk);
 - a render directory is deletable once its segment has `finalized_at` set and
@@ -179,6 +226,7 @@ it relies on:
 | `WEATHER_PIPELINE_SHUTTER_DEGREES` | 180 | 180, 270 or 360 |
 | `WEATHER_PIPELINE_BLOCK_FRAMES` | 60 | 1–60; resources only |
 | `WEATHER_CAPTURE_CHUNK_SECONDS` | 60 | Collector chunk length |
+| `WEATHER_KEOGRAM_REGIONS` | packaged `keogram-regions.json` | Keogram region file ([regions](#keogram-regions)) |
 | `WEATHER_IMAGE_DIGEST` | `unpinned` | Recorded in every RenderResult; #49 sets it to the app pin |
 | `WEATHER_FFMPEG` | `ffmpeg` on PATH | Tests only |
 | `WEATHER_PREVIEW_SKEW_SECONDS` | 30 | Preview skew margin, 30–600 ([clock offset](media.md#clock-offset)) |
@@ -226,7 +274,10 @@ issue and delete the Job. Never run it on a workstation.
 | `weather_pipeline_slot_coverage_ratio{camera}` | Last finalized segment's slot coverage |
 | `weather_pipeline_segments_total{camera,state}` | Finalized segments by state |
 | `weather_pipeline_publish_latency_seconds{camera}` | Boundary to commit; SLO 1 is ≤ 2 h for 95% |
-| `weather_pipeline_failures_total{camera,stage}` | `render`, `prepare`, `publish`, `catalog`, `loop`; the segment retries every 10 s |
+| `weather_pipeline_failures_total{camera,stage}` | `render`, `prepare`, `publish`, `catalog`, `keogram`, `loop`; the segment retries every 10 s |
+| `weather_pipeline_keograms_total{camera,state}` | Final keogram statuses; compare with segments for expected vs published. `failed` needs the log's stage and type |
+| `weather_pipeline_keogram_missing_bins{camera}` | Gap columns in the last published keogram |
+| `weather_pipeline_keogram_publish_latency_seconds{camera}` | Boundary to committed keogram; target ≤ 2 h |
 | `weather_schedule_failures_total{reason}`, `weather_schedule_site_configured`, `weather_schedule_anchored_total` | Schedule freezing |
 | `weather_segments_deadline_missed_total{camera}` | Segments still unpublished at boundary + 2 h |
 
