@@ -8,7 +8,7 @@ originals, embargoed, withdrawn and unknown IDs all resolve to None. The object 
 from the content address the row carries, never taken from the request.
 
 `/media/latest/{kind}` is the fixed probe target (#49): the newest public asset of one kind
-whose source ended within `LATEST_WINDOW`, chosen through the same views, so it inherits every
+whose source ended within a short window, chosen through the same views, so it inherits every
 embargo and withdrawal rule and never reaches a camera. It carries its capture upper bound, so
 the origin's breach detector checks it.
 """
@@ -40,21 +40,26 @@ DOWNLOAD = """
     FROM public_api.videos v JOIN public_api.assets a ON a.id = v.native_asset_id
     WHERE v.id = CAST(:id AS uuid)
 """
-# Bounds the view scan; `now()` (not the volatile clock) lets the bound reach the base table.
-LATEST_WINDOW = "interval '14 days'"
+# The route is public, so each source bounds the security-barrier view scan before LIMIT 1.
+# `now()` and `current_date` (stable, not the volatile clock) let the bounds reach the base
+# tables. Videos are a few rows a day per camera; stills are 24, so their window is short and
+# `local_date` (lagging UTC by at most a day) reaches the partial index on active stills.
+VIDEO_WINDOW = "interval '14 days'"
+STILL_WINDOW = "interval '2 days'"
 # kind -> (asset class, source subquery giving asset_id and the capture upper bound).
 _VIDEO = """SELECT v.{column} AS asset_id,v.ends_at AS captured_upper FROM public_api.videos v
       WHERE v.ends_at > now() - {window} AND v.{column} IS NOT NULL
       ORDER BY v.ends_at DESC,v.id LIMIT 1"""
 LATEST_SOURCES = {
-    "video": ("video", _VIDEO.format(column="web_asset_id", window=LATEST_WINDOW)),
-    "poster": ("poster", _VIDEO.format(column="poster_asset_id", window=LATEST_WINDOW)),
-    "keogram": ("keogram", _VIDEO.format(column="keogram_asset_id", window=LATEST_WINDOW)),
+    "video": ("video", _VIDEO.format(column="web_asset_id", window=VIDEO_WINDOW)),
+    "poster": ("poster", _VIDEO.format(column="poster_asset_id", window=VIDEO_WINDOW)),
+    "keogram": ("keogram", _VIDEO.format(column="keogram_asset_id", window=VIDEO_WINDOW)),
     "still": (
         "still",
         f"""SELECT s.asset_ids[1] AS asset_id,s.capture_upper AS captured_upper
       FROM public_api.stills s
-      WHERE s.capture_upper > now() - {LATEST_WINDOW} AND cardinality(s.asset_ids) > 0
+      WHERE s.local_date >= current_date - 3 AND s.capture_upper > now() - {STILL_WINDOW}
+        AND cardinality(s.asset_ids) > 0
       ORDER BY s.capture_upper DESC,s.camera_id LIMIT 1""",
     ),
 }

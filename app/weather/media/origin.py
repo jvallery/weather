@@ -17,9 +17,10 @@ client that stops reading for `write_timeout` is cut off. After the headers, any
 aborts the connection; nothing is ever appended to media bytes.
 
 Breach detector (#49): a representation that carries its capture upper bound and the database
-clock that authorized it is checked once more as its first body byte is written. Bytes served
-less than 600 s after capture increment `weather_embargo_served_before_total{product}`; that
-should be impossible, so any increment pages. A refusal is never a breach.
+clock that authorized it is checked once more just before its first body byte is sent. Today
+that is previews and `/media/latest/`; `/media/{asset_id}` carries no capture bound yet. Bytes
+served less than 600 s after capture increment `weather_embargo_served_before_total{product}`;
+that should be impossible, so any increment pages. A refusal is never a breach.
 """
 
 import asyncio
@@ -393,6 +394,9 @@ class MediaOrigin:
             async for chunk in chunks:
                 if not chunk:
                     continue
+                if first and breach is not None:
+                    # Counted as the first body bytes are handed over, before the send.
+                    self._metrics.served_before.labels(breach).inc()
                 try:
                     async with asyncio.timeout(self._write_timeout):
                         await send({"type": "http.response.body", "body": chunk, "more_body": True})
@@ -400,8 +404,6 @@ class MediaOrigin:
                     return "stalled"
                 if first:
                     self._metrics.ttfb.labels(label).observe(time.monotonic() - started)
-                    if breach is not None:
-                        self._metrics.served_before.labels(breach).inc()
                     first = False
                 self._metrics.bytes.labels(label).inc(len(chunk))
             await send({"type": "http.response.body", "body": b"", "more_body": False})

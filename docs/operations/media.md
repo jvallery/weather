@@ -129,17 +129,17 @@ The `api` streams published media itself (#20); code in `app/weather/media/`
   rate limit and `weather-media-in-flight` (6 open requests per visitor).
 - **Probe target (#49).** `/media/latest/{video,poster,keogram,still}` serves
   the newest asset of that kind (the web rendition for `video`) whose source
-  ended in the last 14 days, chosen from `public_api.videos` or
+  ended in the last 14 days (2 days for stills), chosen from `public_api.videos` or
   `public_api.stills`, so every embargo and withdrawal rule applies. It is
   re-resolved on every request, `no-store`, HEAD-able and ranged like any
   asset, and answers 404 while nothing qualifies. It never reaches a camera.
   Blackbox probes it as `component: media` (monitoring-stack `weather-probes`).
-- **Breach detector.** When a response's first body byte is written less than
-  600 s after the capture upper bound (by the database clock that authorized
-  it), `weather_embargo_served_before_total{product}` increments. That should
-  be impossible and pages. Previews and `/media/latest/` carry their capture
-  bound; `/media/{asset_id}` doesn't yet, because `public_api.assets` exposes
-  no capture bound to the api role.
+- **Breach detector.** Just before a response's first body bytes are sent, if
+  they are less than 600 s past the capture upper bound (by the database clock
+  that authorized them), `weather_embargo_served_before_total{product}`
+  increments. That should be impossible and pages. It covers previews and
+  `/media/latest/` only. `/media/{asset_id}` is not checked yet, because
+  `public_api.assets` exposes no capture bound to the api role.
 - **Eligibility.** Checked on every GET and HEAD against the primary with the
   database clock, never cached. A withdrawal (above) answers 404 from the
   next request. Every denial is the same 404 with no ETag.
@@ -176,7 +176,7 @@ kubectl --context vallery -n weather exec deploy/api -- python -c \
 | `weather_media_upstream_errors_total{route,source,phase}` | `catalog` or `store` failures before (`open`, a 503) or after (`stream`, a cut connection) the headers. Check `weather-pg`, then Garage and `api-garage-egress` |
 | `weather_media_cancels_total{route,reason}` | `disconnect` or `stalled` clients |
 | `weather_media_ttfb_seconds{route}` | Request start to first body byte |
-| `weather_embargo_served_before_total{product}` | Bytes served less than 600 s after capture; always 0. Any increment is a privacy breach: withdraw the product, then find which check let it through |
+| `weather_embargo_served_before_total{product}` | Bytes served less than 600 s after capture, from previews and `/media/latest/` (not `/media/{asset_id}`); always 0. Any increment is a privacy breach: withdraw the product, then find which check let it through |
 
 | Symptom | Likely cause | Action |
 |---|---|---|
