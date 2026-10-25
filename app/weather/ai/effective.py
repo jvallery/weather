@@ -5,10 +5,18 @@ Today the effective description is the current validated analysis summary, bound
 current media revision. The editor (#44) extends this with human-edited revisions.
 """
 
+import re
 from collections.abc import Mapping
 from typing import Any, Final
 
 LABEL: Final = "AI-generated · sampled-frame analysis"
+# The provider's model name is untrusted text: only an identifier-shaped name is kept.
+MODEL_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:/+-]{0,127}")
+
+
+def public_model(value: object, route: str) -> str:
+    """The model name to record and publish: an allowlisted identifier, else the route."""
+    return value if isinstance(value, str) and MODEL_NAME.fullmatch(value) else route
 
 
 def effective_description(row: Mapping[str, Any] | None) -> str | None:

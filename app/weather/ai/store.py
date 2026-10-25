@@ -9,8 +9,9 @@ the current immutable `weather.analysis_revision`. The state machine:
                        pending -> failed                         (media error, or 7 days)
 
 A new web rendition resets the head to pending; the same bytes keep the pinned analysis (no
-automatic reanalysis). Raw model responses live 24 h in `weather.ai_raw_response`, which no
-public role can read.
+automatic reanalysis). `attempt_calls` meters Cortex calls since the head was last queued, so
+scheduler retries of one describe job share one budget. Raw model responses live 24 h in
+`weather.ai_raw_response`, which no public role can read.
 """
 
 from datetime import UTC, date, datetime, time, timedelta
@@ -73,7 +74,7 @@ VALUES(:video,:publication,:sha,'pending',:now,:retry,:now)
 ON CONFLICT (video_id) DO UPDATE SET publication_id=EXCLUDED.publication_id,
   media_sha256=EXCLUDED.media_sha256,state='pending',reason=NULL,stale=false,
   pending_since=EXCLUDED.pending_since,next_attempt_at=EXCLUDED.next_attempt_at,
-  evidence_checked_at=NULL,refreshes=0,updated_at=EXCLUDED.updated_at
+  evidence_checked_at=NULL,refreshes=0,attempt_calls=0,updated_at=EXCLUDED.updated_at
 WHERE weather.analysis.media_sha256 <> EXCLUDED.media_sha256
 RETURNING video_id"""
 
@@ -114,7 +115,16 @@ async def withdraw_event(connection: AsyncConnection, key: str, now: datetime) -
 
 
 async def on_withdrawn(connection: AsyncConnection, video_id: UUID, now: datetime) -> None:
-    """A withdrawn video takes its search documents and visual events with it."""
+    """A withdrawn video takes its search documents and visual events with it.
+
+    The head row is locked first, in its own statement, so a concurrent publication either
+    commits before the keys are read (and its events are withdrawn here) or waits and then sees
+    the withdrawn video under its own lock (`_publish` re-reads it FOR SHARE).
+    """
+    await connection.execute(
+        text("SELECT 1 FROM weather.analysis WHERE video_id=:video FOR UPDATE"),
+        {"video": video_id},
+    )
     await documents.withdraw(connection, video_id)
     keys = (
         await connection.execute(
@@ -224,7 +234,12 @@ async def fail(
 
 
 async def nightly(connection: AsyncConnection, now: datetime, *, limit: int = 100) -> int:
-    """Queue one retry per pending head whose nightly slot has come (inside the 7 days)."""
+    """Queue one retry per pending head whose nightly slot has come (inside the 7 days).
+
+    The slot moves to the following night rather than clearing, so a queued job that is lost
+    (intel disabled, retries exhausted) is queued again instead of waiting out the 7 days. A
+    fresh night also refills the head's call budget.
+    """
     rows = list(
         await connection.execute(
             text("""SELECT video_id,publication_id,next_attempt_at FROM weather.analysis
@@ -237,10 +252,21 @@ async def nightly(connection: AsyncConnection, now: datetime, *, limit: int = 10
         tag = _local_date(row.next_attempt_at).isoformat()
         await enqueue_describe(connection, row.video_id, row.publication_id, tag=tag, now=now)
         await connection.execute(
-            text("UPDATE weather.analysis SET next_attempt_at=NULL WHERE video_id=:video"),
-            {"video": row.video_id},
+            text("""UPDATE weather.analysis SET next_attempt_at=:retry,attempt_calls=0
+            WHERE video_id=:video"""),
+            {"video": row.video_id, "retry": next_night(now)},
         )
     return len(rows)
+
+
+SPEND_SQL = """UPDATE weather.analysis SET attempt_calls=attempt_calls+1
+WHERE video_id=:video AND state='pending' AND attempt_calls<:cap"""
+
+
+async def spend_call(connection: AsyncConnection, video_id: UUID, cap: int) -> bool:
+    """Reserve one Cortex call against the head's budget; False once `cap` is spent."""
+    result = await connection.execute(text(SPEND_SQL), {"video": video_id, "cap": cap})
+    return result.rowcount == 1
 
 
 async def expire(connection: AsyncConnection, now: datetime) -> int:

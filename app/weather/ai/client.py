@@ -18,6 +18,8 @@ from typing import Any, Literal
 
 import httpx2
 
+from .effective import public_model
+
 CORTEX_BASE_URL = "https://cortex.vallery.net/v1"
 MODEL_ROUTE = "llm.primary.longctx.mm"
 KEY_FILE = Path("/var/run/weather-cortex/api_key.txt")
@@ -153,7 +155,7 @@ class Cortex:
             choice = data["choices"][0]
             content = choice["message"].get("content")
             finish = choice.get("finish_reason")
-            model = str(data.get("model") or MODEL_ROUTE)[:128]
+            model = public_model(data.get("model"), MODEL_ROUTE)
         except ValueError, KeyError, IndexError, TypeError, AttributeError:
             raise CortexError("invalid") from None
         if content is not None and not isinstance(content, str):
