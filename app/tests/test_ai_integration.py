@@ -20,7 +20,7 @@ from sqlalchemy import make_url, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from weather.ai import store
-from weather.ai.analyze import Analyzer, Run
+from weather.ai.analyze import MAX_CALLS_PER_RUN, Analyzer, Run
 from weather.ai.slot import CortexSlot
 from weather.api.timelapses import DatabaseSource, build_analysis
 from weather.db import jobs
@@ -234,7 +234,7 @@ def test_describe_publishes_a_pinned_revision_search_documents_and_visual_events
         await make(worker, script).describe(await claim(worker, store.DESCRIBE_KIND, admin))
         current = await head(admin, video)
         assert current["state"] == "complete" and current["revision"] == 1
-        assert len(script.bodies) == 4  # three hour windows and one synthesis
+        assert len(script.bodies) == 3  # three hour windows; no synthesis call (C18)
         async with admin.connect() as c:
             revision = (
                 (await c.execute(text("SELECT * FROM weather.analysis_revision"))).mappings().one()
@@ -244,7 +244,12 @@ def test_describe_publishes_a_pinned_revision_search_documents_and_visual_events
         assert revision["media_sha256"] == sha("web-1") and revision["refresh"] == "full"
         assert revision["inputs"]["keogram"] is True and revision["inputs"]["frames"] == 6
         assert revision["coverage"]["windows_reviewed"] == 3
-        assert revision["summary"].startswith("Broken cumulus clouds drifted")
+        # Template text only (C18): rendered from the enums and the station's values.
+        assert revision["summary"].startswith(
+            "The sampled east-sky frames show broken clouds in all 3 reviewed hour windows. "
+            "The sampled east-sky frames show light rain in all 3 reviewed hour windows."
+        )
+        assert revision["author_kind"] == "model"
         # Search (#25): the description replaced the documents and queued one embedding.
         assert (
             await count(
@@ -264,7 +269,7 @@ def test_describe_publishes_a_pinned_revision_search_documents_and_visual_events
             == 3
         )
         # Raw replies are private and short-lived.
-        assert await count(admin, "SELECT count(*) FROM weather.ai_raw_response") == 4
+        assert await count(admin, "SELECT count(*) FROM weather.ai_raw_response") == 3
         rows = await DatabaseSource(api).analyses([video])
         public = rows[video]
         assert "body" not in public and "observations" not in public
@@ -288,9 +293,7 @@ def test_a_late_result_never_replaces_a_newer_revision() -> None:
         fast = make(worker, Script(by_task()))
         await fast.describe(await claim(worker, store.DESCRIBE_KIND, admin))
         assert (await head(admin, video))["revision"] == 1
-        packet_result = fast._result(
-            None, (await _packet()), (), [], [], {}, {}, refresh="full", reviewed=False
-        )
+        packet_result = fast._result(before, await _packet(), (), {}, {}, refresh="full")
         await fast._publish(
             late_context, before, Run(video, "late"), packet_result, base=0, describe=True
         )
@@ -572,7 +575,7 @@ def test_model_output_never_replaces_a_human_revision() -> None:
         context = await claim(worker, store.SYNTHESIZE_KIND, admin)
         await unit.synthesize(context)
         result = unit._result(
-            None, await _packet(), (), [], [], {}, {}, refresh="synthesis", reviewed=False
+            await head(admin, video), await _packet(), (), {}, {}, refresh="synthesis"
         )
         await unit._publish(
             context, await head(admin, video), Run(video, "late"), result, base=2, describe=False
@@ -623,5 +626,29 @@ def test_withdrawal_waits_for_an_in_flight_publication() -> None:
             )
             == 0
         )
+
+    database(body)
+
+
+def test_a_spent_call_budget_publishes_the_accepted_windows() -> None:
+    async def body(admin: AsyncEngine, worker: AsyncEngine, api: AsyncEngine) -> None:
+        video, publication_id = await seed(admin)
+        await publish(worker, publication_id)
+        # Earlier attempts of this queued describe spent all but one call.
+        async with admin.begin() as c:
+            await c.execute(
+                text("UPDATE weather.analysis SET attempt_calls=:n WHERE video_id=:v"),
+                {"n": MAX_CALLS_PER_RUN - 1, "v": video},
+            )
+        script = Script(by_task())
+        await make(worker, script).describe(await claim(worker, store.DESCRIBE_KIND, admin))
+        current = await head(admin, video)
+        assert len(script.bodies) == 1
+        assert current["state"] == "degraded" and current["reason"] == "call_budget"
+        async with admin.connect() as c:
+            coverage = (
+                await c.execute(text("SELECT coverage FROM weather.analysis_revision"))
+            ).scalar_one()
+        assert coverage["windows_reviewed"] == 1 and coverage["windows_total"] == 3
 
     database(body)

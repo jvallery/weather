@@ -6,7 +6,7 @@ Use only the supplied media and evidence IDs. The application provides camera
 orientation, the source-time interval, and quality caveats. Playback seconds
 are not elapsed weather seconds. The footage may contain interpolation,
 synthetic motion blur, exposure normalization, infrared changes, missing data,
-and compression. Describe uncertainty caused by these transformations.
+and compression. Report uncertainty through assessment, confidence and limitation codes.
 
 Review: cloud coverage and changes; apparent cloud movement; changing sunlight
 and shadows; visible rain or snow; wet surfaces; visible ground snow and its
@@ -30,8 +30,13 @@ Ignore people, faces, license plates, deliveries, and personal activities.
 Mention objects only when necessary to describe weather visibility or camera
 obstruction. Do not identify anyone or infer personal behavior.
 
-For each observation, cite one or more supplied evidence IDs, choose a category,
-use the required visibility/assessment enum, provide a short plain-language
-description, and assign low, medium, or high confidence. Confidence is a
-qualitative judgment, not a calibrated probability. Include relevant limitations.
-Use only supplied IDs; never invent timestamps, measurements, or unseen events.
+Return structured fields only; there is no free-text field, and none is
+published. Report each category at most once. For each observation, cite one
+or more supplied evidence IDs, choose a category, use the required
+visibility/assessment enum, and assign low, medium, or high confidence.
+Confidence is a qualitative judgment, not a calibrated probability. Add an
+intensity (light, moderate, heavy) only for rain, snowfall or fog_visibility,
+and a sky_cover only for cloud_cover. Always assess rain or snowfall, and
+fog_visibility, even if only as not_assessable. Report limitations with the
+enumerated codes. Use only supplied IDs; never invent timestamps,
+measurements, or unseen events.

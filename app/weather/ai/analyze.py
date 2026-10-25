@@ -1,15 +1,18 @@
 # SPDX-License-Identifier: MIT
-"""The `intel` analysis jobs (#23): sampled frames + keogram -> visual observations (Stage A),
-on-read aggregates -> measured packet (Stage B), both -> grounded narrative (Stage C).
+"""The `intel` analysis jobs (#23): sampled frames + keogram -> structured visual observations
+(Stage A), on-read aggregates -> measured packet (Stage B), both -> public text from fixed
+templates (`render.py`, Stage C). No model-written prose is ever published (C18), and there is
+no synthesis call: the only Cortex calls are one image request per hour window.
 
 Budgets: one Cortex call in flight across processes (advisory lock), at most four calls per
 window (first try, two transport retries, one repair; auth and media errors stop at once), and
-a ceiling per queued describe that scheduler retries share (`attempt_calls`). Cortex being down,
-or the slot busy or unreachable, leaves the video `pending` for the nightly retry, and a
-process-level breaker then skips every further call until that nightly window; nothing here
-delays media publication. Publication is a CAS on the head's media revision and current
-analysis revision, so a late result never replaces a newer one. Every revision is immutable and
-pinned to its model, prompt/schema hashes, evidence hash and media SHA-256.
+a ceiling per queued describe that scheduler retries share (`attempt_calls`); once it is spent
+the run publishes what its accepted windows support. Cortex being down, or the slot busy or
+unreachable, leaves the video `pending` for the nightly retry, and a process-level breaker then
+skips every further call until that nightly window; nothing here delays media publication.
+Publication is a CAS on the head's media revision and current analysis revision, so a late
+result never replaces a newer one. Every revision is immutable and pinned to its model, prompt,
+template and schema hashes, evidence hash and media SHA-256.
 """
 
 import asyncio
@@ -35,39 +38,30 @@ from weather.scheduler.registry import JobContext, Registry
 from weather.search import documents
 from weather.search.documents import StaleRevision, VideoText, WindowText
 
-from . import store, validate
+from . import render, store, validate
 from .client import MODEL_ROUTE, Cortex, CortexError, Reply, request_body
 from .effective import LABEL
-from .evidence import AggregateSource, Packet, measured_claims, read_packet
+from .evidence import AggregateSource, Packet, read_packet
 from .media import MediaError, MediaReader, Source, StoredObject, WindowMedia
 from .slot import CortexSlot, SlotBusy
-from .validate import CATEGORIES, Narrative, Observation, Rejected, VisualResult, public_observation
+from .validate import Observation, Rejected, VisualResult
 from .windows import FPS, Window, hour_windows
 
 LOG = logging.getLogger("weather.ai")
 CONTRACTS = validate.CONTRACTS
 VISUAL_PROMPT = (CONTRACTS / "visual-system.txt").read_text()
-NARRATIVE_PROMPT = (CONTRACTS / "narrative-system.txt").read_text()
+# The prompt hash also pins the public templates that turn observations into text.
 PROMPT_SHA256 = hashlib.sha256(
-    (CONTRACTS / "visual-system.txt").read_bytes()
-    + b"\0"
-    + (CONTRACTS / "narrative-system.txt").read_bytes()
+    (CONTRACTS / "visual-system.txt").read_bytes() + b"\0" + render.RENDER_REVISION.encode()
 ).hexdigest()
-SCHEMA_SHA256 = hashlib.sha256(
-    (CONTRACTS / "visual-analysis.schema.json").read_bytes()
-    + b"\0"
-    + (CONTRACTS / "weather-narrative.schema.json").read_bytes()
-).hexdigest()
+SCHEMA_SHA256 = hashlib.sha256((CONTRACTS / "visual-analysis.schema.json").read_bytes()).hexdigest()
 CALLS_PER_WINDOW = 4
 TRANSPORT_ATTEMPTS = 3
 REPAIRS = 1
 MAX_CALLS_PER_RUN = 80
 SLOT_WAIT_SECONDS = 600.0
 BACKOFF_SECONDS = (5.0, 20.0)
-VISUAL_TOKENS = 2048
-NARRATIVE_TOKENS = 2048
-MAX_SYNTHESIS_OBSERVATIONS = 96
-MAX_LIMITATIONS = 8
+VISUAL_TOKENS = 1024
 EVIDENCE_LOOKBACK = timedelta(days=3)
 EVIDENCE_INTERVAL = timedelta(minutes=15)
 MAX_REFRESHES = 3
@@ -88,7 +82,6 @@ EVENT_LABELS = {
     "lightning": "Lightning visible on camera",
     "fog_visibility": "Fog or reduced visibility on camera",
 }
-STAGES = ("visual", "synthesis")
 CALLS = Counter(
     "weather_ai_calls_total", "Cortex chat calls by stage and result", ["stage", "result"]
 )
@@ -103,6 +96,10 @@ LATENCY = Histogram(
     buckets=(1, 2, 5, 10, 20, 30, 60, 90, 120),
 )
 T = TypeVar("T")
+
+
+class BudgetSpent(RuntimeError):
+    """The head's call budget is spent: publish what the accepted windows support."""
 
 
 class CortexDown(RuntimeError):
@@ -203,70 +200,6 @@ def visual_request(
     return body, [item["id"] for item in evidence]
 
 
-RANK = {"visible": 0, "possible": 1, "not_observed": 2, "not_assessable": 3}
-
-
-def narrative_request(
-    row: dict[str, Any],
-    packet: Packet,
-    observations: Sequence[Observation],
-    windows: dict[int, tuple[datetime, datetime]],
-    coverage: str,
-    note: str | None,
-) -> dict[str, Any]:
-    """Stage C: validated observations and the packet; text only."""
-    chosen = sorted(observations, key=lambda o: (RANK[o.assessment], o.window))[
-        :MAX_SYNTHESIS_OBSERVATIONS
-    ]
-    context: dict[str, Any] = {
-        "task": "weather_narrative",
-        "camera": CAMERA_LABELS.get(row["camera_id"], "Camera"),
-        "segment": row["segment"],
-        "source_interval": {"start": _iso(row["starts_at"]), "end": _iso(row["ends_at"])},
-        "visual_coverage": coverage,
-        "visual_observations": [
-            {
-                "id": o.id,
-                "category": o.category,
-                "assessment": o.assessment,
-                "confidence": o.confidence,
-                "description": o.description,
-                "source_interval": {
-                    "start": _iso(windows[o.window][0]),
-                    "end": _iso(windows[o.window][1]),
-                },
-            }
-            for o in sorted(chosen, key=lambda o: (o.window, o.id))
-        ],
-        "instrument_metrics": [metric.prompt() for metric in packet.metrics],
-        "unavailable_metrics": list(packet.withheld),
-        "categories": list(CATEGORIES),
-        "schema": validate.schema("weather-narrative"),
-    }
-    if note is not None:
-        context["previous_reply_rejected"] = note
-    return request_body(
-        NARRATIVE_PROMPT, json.dumps(context, ensure_ascii=False), [], max_tokens=NARRATIVE_TOKENS
-    )
-
-
-def fallback_claims(packet: Packet, observations: Sequence[Observation]) -> list[dict[str, Any]]:
-    """Degraded: the measured summary plus independently validated, clearly visible notes."""
-    claims = measured_claims(packet)
-    seen: set[str] = set()
-    for item in observations:
-        if (
-            item.assessment == "visible"
-            and item.confidence in ("medium", "high")
-            and item.category not in ("lens_condition", "camera_artifact")
-            and item.description not in seen
-            and len(claims) < 6
-        ):
-            seen.add(item.description)
-            claims.append({"text": item.description, "basis": "visual", "evidence_ids": [item.id]})
-    return claims
-
-
 def coverage_record(
     row: dict[str, Any], windows: Sequence[Window], reviewed: set[int]
 ) -> dict[str, Any]:
@@ -283,15 +216,6 @@ def coverage_record(
             {"start": _iso(w.start), "end": _iso(w.end)} for w in windows if w.index not in reviewed
         ],
     }
-
-
-def _limitations(*groups: Sequence[str]) -> list[str]:
-    out: list[str] = []
-    for group in groups:
-        for item in group:
-            if item not in out and len(out) < MAX_LIMITATIONS:
-                out.append(item)
-    return out
 
 
 class Analyzer:
@@ -332,7 +256,7 @@ class Analyzer:
         except (SQLAlchemyError, OSError):
             raise CortexDown("slot_unavailable") from None
         if not spent:
-            raise CortexDown("call_budget")
+            raise BudgetSpent("Call budget spent")
 
     # Calls --------------------------------------------------------------------------------------
 
@@ -372,9 +296,9 @@ class Analyzer:
         """At most four calls; None when this window or stage yields nothing usable.
 
         Raises CortexDown when Cortex is unreachable, busy or refuses the key (tripping the
-        breaker), when the inference slot stays busy or its database is unreachable, or when
-        the head's call budget is spent, so the run is deferred to the nightly retry instead of
-        spending more calls.
+        breaker), or when the inference slot stays busy or its database is unreachable, so the
+        run is deferred to the nightly retry instead of spending more calls. Raises BudgetSpent
+        when the head's call budget is used up.
         """
         failures = repairs = window_calls = 0
         note: str | None = None
@@ -444,24 +368,6 @@ class Analyzer:
             return result
         return None
 
-    async def synthesis(
-        self,
-        run: Run,
-        row: dict[str, Any],
-        packet: Packet,
-        observations: Sequence[Observation],
-        windows: dict[int, tuple[datetime, datetime]],
-        coverage: str,
-    ) -> Narrative | None:
-        return await self.call(
-            run,
-            lambda note: narrative_request(row, packet, observations, windows, coverage, note),
-            lambda reply: validate.narrative(
-                reply.content, reply.finish_reason, packet=packet, observations=observations
-            ),
-            stage="synthesis",
-        )
-
     # Jobs ---------------------------------------------------------------------------------------
 
     async def describe(self, context: JobContext) -> None:
@@ -513,8 +419,9 @@ class Analyzer:
         # A telemetry read failure raises: the job retries with backoff.
         packet = await read_packet(self.weather, run.nonce, row["starts_at"], row["ends_at"])
         observations: list[Observation] = []
-        model_limitations: list[str] = []
+        codes: dict[str, int] = {}
         reviewed: set[int] = set()
+        spent = False
         bounds = {w.index: (w.start, w.end) for w in windows}
         try:
             for media in prepared:
@@ -538,52 +445,36 @@ class Analyzer:
                         nonce=run.nonce,
                     )
 
-                visual = await self.call(
-                    run, build, accept, stage="visual", window_start=media.window.start
-                )
+                try:
+                    visual = await self.call(
+                        run, build, accept, stage="visual", window_start=media.window.start
+                    )
+                except BudgetSpent:
+                    # Scheduler retries spent the head's budget: keep the accepted windows.
+                    spent = True
+                    break
                 if visual is not None:
                     observations.extend(visual.observations)
-                    model_limitations.extend(visual.limitations)
+                    for code in visual.limitations:
+                        codes[code] = codes.get(code, 0) + 1
                     reviewed.add(media.window.index)
-            available = [w for w in windows if w.available]
-            share = (
-                "none"
-                if not reviewed
-                else "complete"
-                if len(reviewed) == len(available)
-                else "partial"
-            )
-            narrative = (
-                await self.synthesis(run, row, packet, observations, bounds, share)
-                if reviewed
-                else None
-            )
         except CortexDown as down:
             await self._defer(context, row, down.reason, run, now)
             return
-        keogram_used = any(m.keogram is not None for m in prepared)
-        app_limitations = []
-        if not keogram_used:
-            app_limitations.append("No keogram was available; hours were described from frames.")
-        if len(reviewed) < len(windows):
-            app_limitations.append("Some hours could not be reviewed visually.")
-        if packet.withheld:
-            app_limitations.append("Station data was incomplete for: " + ", ".join(packet.withheld))
         result = self._result(
-            narrative,
+            row,
             packet,
             observations,
-            app_limitations,
-            model_limitations,
             coverage_record(row, windows, reviewed),
             {
                 "rendition": "web",
                 "frames": sum(len(m.frames) for m in prepared),
                 "windows": len(prepared),
-                "keogram": keogram_used,
+                "keogram": any(m.keogram is not None for m in prepared),
+                "limitations": codes,
+                "call_budget_spent": spent,
             },
             refresh="full",
-            reviewed=bool(reviewed),
         )
         result.event_windows = {o.id: bounds[o.window] for o in observations}
         if result.state == "failed":
@@ -593,34 +484,44 @@ class Analyzer:
 
     def _result(
         self,
-        narrative: Narrative | None,
+        row: dict[str, Any],
         packet: Packet,
         observations: Sequence[Observation],
-        app_limitations: Sequence[str],
-        model_limitations: Sequence[str],
         coverage: dict[str, Any],
         inputs: dict[str, Any],
         *,
         refresh: str,
-        reviewed: bool,
     ) -> Result:
-        if narrative is not None:
+        """Render the public claims and limitations (C18) and choose the state."""
+        reviewed = int(coverage.get("windows_reviewed", 0))
+        available = int(inputs.get("windows", 0))
+        claims = render.claims(packet, observations, reviewed, row["camera_id"])
+        limitations = render.limitations(
+            observations,
+            reviewed,
+            inputs.get("limitations", {}),
+            keogram=bool(inputs.get("keogram")),
+            unreviewed=reviewed < int(coverage.get("windows_total", 0)),
+            withheld=packet.withheld,
+        )
+        if not claims:
+            state, reason = "failed", "no_evidence"
+        elif reviewed and reviewed == available:
             state, reason = "complete", None
-            claims = [claim.record() for claim in narrative.claims]
-            model_limitations = [*narrative.limitations, *model_limitations]
         else:
-            claims = fallback_claims(packet, observations)
-            state = "degraded" if claims else "failed"
+            state = "degraded"
             reason = (
-                ("synthesis_invalid" if reviewed else "visual_invalid")
-                if claims
-                else ("no_evidence")
+                "call_budget"
+                if inputs.get("call_budget_spent")
+                else "visual_partial"
+                if reviewed
+                else "visual_invalid"
             )
         return Result(
             state=state,
             reason=reason,
             claims=claims,
-            limitations=_limitations(app_limitations, model_limitations),
+            limitations=limitations,
             observations=[o.record() for o in observations],
             coverage=coverage,
             inputs=inputs,
@@ -629,7 +530,8 @@ class Analyzer:
         )
 
     async def synthesize(self, context: JobContext) -> None:
-        """Synthesis-only refresh after the measured evidence changed; Stage A is reused."""
+        """Re-render after the measured evidence changed: Stage A is reused and no model is
+        called, so a refresh never waits on Cortex or the breaker."""
         payload = context.job.payload
         video_id = UUID(str(payload["video_id"]))
         publication_id = UUID(str(payload["publication_id"]))
@@ -640,7 +542,7 @@ class Analyzer:
                 (
                     await connection.execute(
                         text("""SELECT id,visual_id,evidence_hash,observations,coverage,inputs,
-                          limitations,author_kind FROM weather.analysis_revision
+                          author_kind FROM weather.analysis_revision
                         WHERE video_id=:video AND revision=:revision"""),
                         {"video": video_id, "revision": base},
                     )
@@ -658,9 +560,6 @@ class Analyzer:
             or previous["author_kind"] != "model"
         ):
             return
-        if self.breaker() is not None:
-            OUTCOMES.labels("refresh_deferred").inc()
-            return
         run = Run(
             video_id, nonce_for(video_id, publication_id, base, context.job.id, context.job.attempt)
         )
@@ -677,54 +576,19 @@ class Analyzer:
             await context.commit(unchanged)
             return
         records = list(previous["observations"])
-        observations = [
-            Observation(
-                id=r["id"],
-                category=r["category"],
-                assessment=r["assessment"],
-                confidence=r["confidence"],
-                description=r["description"],
-                window=int(r["window"]),
-            )
-            for r in records
-        ]
-        bounds = {int(r["window"]): (_parse(r["start"]), _parse(r["end"])) for r in records}
-        coverage = dict(previous["coverage"])
-        share = (
-            "none"
-            if not coverage.get("windows_reviewed")
-            else "complete"
-            if coverage.get("windows_reviewed") == coverage.get("windows_total")
-            else "partial"
-        )
-        try:
-            narrative = (
-                await self.synthesis(run, row, packet, observations, bounds, share)
-                if observations
-                else None
-            )
-        except CortexDown:
-            # Stays stale; the evidence check queues tomorrow's refresh.
-            OUTCOMES.labels("refresh_deferred").inc()
-            return
-        app = [x for x in previous["limitations"] if x.startswith(("No keogram", "Some hours"))]
-        if packet.withheld:
-            app.append("Station data was incomplete for: " + ", ".join(packet.withheld))
+        observations = [Observation.from_record(r) for r in records]
         result = self._result(
-            narrative,
+            row,
             packet,
             observations,
-            app,
-            [],
-            coverage,
+            dict(previous["coverage"]),
             dict(previous["inputs"]),
             refresh="synthesis",
-            reviewed=bool(observations),
         )
         if result.state == "failed":
             return
         result.visual_id = previous["visual_id"]
-        result.event_windows = {o.id: bounds[o.window] for o in observations}
+        result.event_windows = {r["id"]: (_parse(r["start"]), _parse(r["end"])) for r in records}
         await self._publish(context, row, run, result, base=base, describe=False)
 
     # Writes -------------------------------------------------------------------------------------
@@ -927,7 +791,7 @@ class Analyzer:
     # Periodic -----------------------------------------------------------------------------------
 
     async def check_evidence(self, now: datetime, *, limit: int = 12) -> int:
-        """Queue a synthesis-only refresh where a recent revision's measurements changed."""
+        """Queue a re-render where a recent revision's measurements changed."""
         async with self.engine.connect() as connection:
             rows = list(
                 (
@@ -980,11 +844,11 @@ class Analyzer:
 INSERT_REVISION = """INSERT INTO weather.analysis_revision(id,video_id,revision,publication_id,
   media_sha256,state,reason,refresh,visual_id,model_route,model,prompt_sha256,schema_sha256,
   evidence_hash,evidence_count,summary,claims,observations,limitations,coverage,inputs,
-  event_keys,calls,author_kind)
+  event_keys,calls)
 VALUES(:id,:video,:revision,:publication,:sha,:state,:reason,:refresh,:visual,:route,:model,
   :prompt,:schema,:evidence_hash,:evidence_count,:summary,CAST(:claims AS jsonb),
   CAST(:observations AS jsonb),CAST(:limitations AS jsonb),CAST(:coverage AS jsonb),
-  CAST(:inputs AS jsonb),CAST(:event_keys AS jsonb),:calls,'model')"""
+  CAST(:inputs AS jsonb),CAST(:event_keys AS jsonb),:calls)"""
 
 
 def _parse(value: str) -> datetime:
@@ -999,7 +863,7 @@ def visual_events(
 ) -> list[Candidate]:
     """One clip-precision event per (window, category) clearly visible with medium/high
     confidence. Labels are fixed templates, so no model text reaches an event. Events cite the
-    revision whose Stage A produced them, so a synthesis-only refresh leaves them unchanged."""
+    revision whose Stage A produced them, so a measured-evidence re-render leaves them unchanged."""
     found: dict[str, Candidate] = {}
     for item in observations:
         category = item["category"]
@@ -1036,25 +900,21 @@ def video_text(
         f"{LABEL}; {result.state}; {coverage['windows_reviewed']} of "
         f"{coverage['windows_total']} hour windows reviewed, {keogram}"
     )
-    by_window: dict[datetime, list[str]] = {}
+    by_window: dict[datetime, list[Observation]] = {}
     for item in result.observations:
-        if public_observation(item["assessment"], item["description"]):
-            by_window.setdefault(result.event_windows[item["id"]][0], []).append(
-                item["description"]
-            )
+        by_window.setdefault(result.event_windows[item["id"]][0], []).append(
+            Observation.from_record(item)
+        )
     windows = []
     for window in hour_windows(row["starts_at"], row["ends_at"], row["frames"]):
-        if not window.available or window.start not in by_window:
+        note = render.window_text(by_window.get(window.start, ()))
+        if not window.available or note is None:
             continue
-        chosen: list[str] = []
-        for note in by_window[window.start]:
-            if note not in chosen and len(" ".join([*chosen, note])) <= 1900:
-                chosen.append(note)
         windows.append(
             WindowText(
                 window.start,
                 window.end,
-                " ".join(chosen),
+                note,
                 "Sampled-frame visual observations",
                 window.first_frame / FPS,
                 window.end_frame / FPS,

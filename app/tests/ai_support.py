@@ -29,30 +29,11 @@ def context_of(body: dict[str, Any]) -> dict[str, Any]:
 
 def _fill(value: Any, context: dict[str, Any]) -> Any:
     if isinstance(value, list):
-        out: list[Any] = []
-        for item in value:
-            if item == "$EVIDENCE":
-                out.extend(e["id"] for e in context["evidence"])
-            else:
-                out.append(_fill(item, context))
-        return out
+        return [_fill(item, context) for item in value]
     if isinstance(value, dict):
         return {k: _fill(v, context) for k, v in value.items()}
-    if isinstance(value, str) and value.startswith("$"):
-        if value == "$FRAME0":
-            return next(e["id"] for e in context["evidence"] if e["kind"] == "frame")
-        if value.startswith("$V:"):
-            category = value[3:]
-            return next(
-                o["id"] for o in context["visual_observations"] if o["category"] == category
-            )
-        if value.startswith("$M:"):
-            _, metric, statistic = value.split(":")
-            return next(
-                m["id"]
-                for m in context["instrument_metrics"]
-                if m["metric"] == metric and m["statistic"] == statistic
-            )
+    if value == "$FRAME0":
+        return next(e["id"] for e in context["evidence"] if e["kind"] == "frame")
     return value
 
 
@@ -83,7 +64,7 @@ Step = tuple[Any, ...]
 class Script:
     """A Cortex transport answering each call from a list of steps (the last one repeats).
 
-    Steps: ("visual"|"narrative", case) a recorded reply; ("status", code, headers);
+    Steps: ("visual", case) a recorded reply; ("status", code, headers);
     ("down",) a connection failure; ("timeout",) a client timeout."""
 
     def __init__(self, steps: Sequence[Step] | Callable[[dict[str, Any]], Step]) -> None:
@@ -109,10 +90,12 @@ class Script:
         return Cortex("synthetic-key", transport=httpx2.MockTransport(self))
 
 
-def by_task(visual: str = "valid", narrative: str = "valid") -> Callable[[dict[str, Any]], Step]:
+def by_task(visual: str = "valid") -> Callable[[dict[str, Any]], Step]:
+    """Every request is a Stage A window request (there is no synthesis call, C18)."""
+
     def choose(body: dict[str, Any]) -> Step:
-        task = context_of(body)["task"]
-        return ("visual", visual) if task == "visual_analysis" else ("narrative", narrative)
+        assert context_of(body)["task"] == "visual_analysis"
+        return ("visual", visual)
 
     return choose
 

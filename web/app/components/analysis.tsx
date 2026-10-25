@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
-import type { Analysis } from "../lib/weather-api";
+import { ANALYSIS_LABEL, EDITOR_LABEL, type Analysis } from "../lib/weather-api";
 
-/** The labelled AI description (#23): validated text only, rendered as escaped text nodes. */
+/** The labelled description (#23): server-rendered template text (C18), as escaped text nodes. An
+ * editor's revision (#44) is labelled as the editor's and shows no model provenance. */
 const STATES: Record<Analysis["state"], string> = {
   pending: "Pending · not analysed yet",
   complete: "Complete",
-  degraded: "Degraded · measured summary and validated visual notes only",
+  degraded: "Degraded · not every hour was reviewed visually",
   failed: "Failed · no description could be validated",
   unavailable: "Unavailable · no playable media to analyse",
 };
@@ -14,8 +15,11 @@ const REASONS: Record<string, string> = {
   cortex_busy: "The inference service was busy; it is retried nightly for 7 days.",
   cortex_auth: "The inference service refused the request; it is retried nightly for 7 days.",
   expired: "Retries ended after 7 days.",
-  synthesis_invalid: "The written summary did not pass validation.",
+  visual_partial: "Some sampled hours did not pass visual validation.",
   visual_invalid: "No sampled hour passed visual validation.",
+  call_budget: "The analysis call budget ran out; the summary covers the hours reviewed.",
+  slot_busy: "The inference service was busy; it is retried nightly for 7 days.",
+  slot_unavailable: "The inference service was unavailable; it is retried nightly for 7 days.",
   no_evidence: "Neither validated imagery nor station measurements were available.",
   media_unavailable: "The published rendition could not be read.",
 };
@@ -30,14 +34,15 @@ export function AnalysisPanel({ analysis, compact = false }: { analysis: Analysi
   const coverage = analysis.coverage;
   const provenance = analysis.provenance;
   const why = reason(analysis);
+  const editor = analysis.author === "editor";
   return <div className="analysis">
-    <p className="provenance"><strong>{analysis.label}</strong> · {STATES[analysis.state]}</p>
+    <p className="provenance"><strong>{editor ? EDITOR_LABEL : ANALYSIS_LABEL}</strong> · {STATES[analysis.state]}</p>
     {analysis.description ? <p>{analysis.description}</p> : <p>No AI description is available.</p>}
     {analysis.stale && <p className="notice">Station measurements changed after this description; a refreshed summary is queued.</p>}
     {!compact && why && <p className="small">{why}</p>}
     {!compact && analysis.claims.length > 0 && <ul className="claims">{analysis.claims.map((claim, index) => <li key={index}><span className="status">{BASIS[claim.basis]}</span> {claim.text}</li>)}</ul>}
     {!compact && coverage && <p className="small">Analysis coverage: {(coverage.fraction * 100).toFixed(0)}% of the source interval reviewed · {coverage.windows_reviewed} of {coverage.windows_total} hour windows · sampled frames{provenance?.keogram_used ? " and keogram" : " only"}</p>}
-    {!compact && provenance && <p className="small">Model {provenance.model_route} ({provenance.model}) · prompt {provenance.prompt_revision} · schema {provenance.schema_revision} · {provenance.evidence_count.toLocaleString("en-US")} station records · {provenance.frames_sampled} frames · {provenance.refresh === "synthesis" ? "summary refreshed after measurements changed" : "full analysis"}</p>}
+    {!compact && provenance && !editor && <p className="small">Model {provenance.model_route} ({provenance.model}) · prompt {provenance.prompt_revision} · schema {provenance.schema_revision} · {provenance.evidence_count.toLocaleString("en-US")} station records · {provenance.frames_sampled} frames · {provenance.refresh === "synthesis" ? "summary refreshed after measurements changed" : "full analysis"}</p>}
     {!compact && analysis.limitations.length > 0 && <ul className="small">{analysis.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}</ul>}
   </div>;
 }

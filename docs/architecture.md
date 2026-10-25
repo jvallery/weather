@@ -8,7 +8,7 @@
 
 - **Telemetry.** Complete received Tempest UDP history, current conditions refreshed about every 15 s, and a local almanac.
 - **Cameras.** Daytime and overnight timelapses split at civil twilight for `skycam_east`, `skycam_west` and `frontyard_1`, plus keograms, private hourly originals with public comparison stills, and delayed previews.
-- **Intelligence.** Labeled AI descriptions, hybrid semantic/measured search, events and a private editor.
+- **Intelligence.** Labeled AI descriptions, hybrid semantic/measured search, events and a private editor. The model only classifies frames into enums; every public sentence is rendered by server templates (C18).
 
 The vallery.net homepage embeds a small current-weather card. Service tier is 2: NAS-dependent capture and media outages are accepted and shown honestly in the UI.
 
@@ -22,7 +22,7 @@ All application workloads run in namespace `weather` and are rendered from `depl
 | `tempest-receiver` | Deployment, Recreate | UDP 50222 on the agents-owned VLAN-10 `vlan` NAD → SQLite spool → CNPG | 1 GiB `longhorn-v1-rwo` spool | CNPG only; never transmits on the NAD |
 | `pipeline-<camera>` ×3 | Deployment, replicas 1 | Streaming exposure accumulation → mezzanine, keogram columns, hourly candidates, preview; segment finalize/encode/validate/publish | NFS staging + previews | CNPG, Garage |
 | `scheduler` | Deployment, replicas 1 | Solar schedule, job queue/outbox, hour-slot finalization, cleanup, reconciliation, GC | – | CNPG, Garage |
-| `intel` | Deployment, replicas 1 | AI descriptions, embeddings, search documents | – | CNPG, Garage `weather-media` (read-only), Cortex (`cortex.vallery.net/v1`) |
+| `intel` | Deployment, replicas 1 | Structured frame classification (Cortex), template-rendered descriptions, embeddings, search documents | – | CNPG, Garage `weather-media` (read-only), Cortex (`cortex.vallery.net/v1`) |
 | `api` | Deployment ×2 | FastAPI public API, media origin (GET/HEAD/range), operator API; mounts no NFS | – | CNPG, Garage `weather-media` (read-only), Cortex embed (query) |
 | `weather-preview` | Deployment, replicas 1 | Serves eligible delayed previews only (same image, shared origin code); the only public-path pod that mounts staging | NFS `previews/` (read-only) | CNPG |
 | `web` | Deployment ×2 | React Router SSR + client navigation | – | `api` only |

@@ -378,8 +378,17 @@
       },
       "Analysis": {
         "additionalProperties": false,
-        "description": "The labelled AI description of the current media; never raw model text.",
+        "description": "The labelled description of the current media; never model-written text (C18).\n\n`author` is `ai` for template text rendered from the model's validated observations and\n`editor` for a human (#44) revision, whose label then says so.",
         "properties": {
+          "author": {
+            "default": "ai",
+            "enum": [
+              "ai",
+              "editor"
+            ],
+            "title": "Author",
+            "type": "string"
+          },
           "claims": {
             "items": {
               "$ref": "#/components/schemas/AnalysisClaim"
@@ -423,8 +432,11 @@
             "title": "Generated At"
           },
           "label": {
-            "const": "AI-generated \u00b7 sampled-frame analysis",
             "default": "AI-generated \u00b7 sampled-frame analysis",
+            "enum": [
+              "AI-generated \u00b7 sampled-frame analysis",
+              "Editor-written description"
+            ],
             "title": "Label",
             "type": "string"
           },
