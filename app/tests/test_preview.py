@@ -515,7 +515,8 @@ def test_producer_publishes_the_newest_eligible_sealed_frame_and_never_reads_tmp
     db, clock = FakeDatabase(), Clock(T0 + timedelta(minutes=20))
     preview = _producer(tmp_path, db, clock)
     assert asyncio.run(preview.step())
-    assert touched and not any("/tmp/" in p for p in touched)
+    unsealed = str(tmp_path / "tmp")
+    assert touched and not any(p.startswith(unsealed) for p in touched)
     assert all(p.startswith(str(tmp_path / "sealed")) or "previews" in p for p in touched)
     assert [r["variant"] for r in db.rows] == ["large", "small"]
     row = db.rows[0]
