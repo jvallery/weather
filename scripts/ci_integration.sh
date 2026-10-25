@@ -117,6 +117,8 @@ uv run --frozen python -m alembic upgrade head
 uv run --frozen python -m alembic check
 uv run --frozen pytest -m integration
 # Confirm terminal test success before removing all disposable server state.
-pg_ctl -D "$wx_pg_root/data" -m fast -w -t 20 stop >/dev/null
+# A loaded runner can take longer than 20 s to finish a fast shutdown; fall back to immediate.
+pg_ctl -D "$wx_pg_root/data" -m fast -w -t 60 stop >/dev/null \
+  || pg_ctl -D "$wx_pg_root/data" -m immediate -w -t 20 stop >/dev/null
 wx_pg_started=0
 echo 'PostgreSQL 16.15 / pgvector 0.8.6 / Garage integration completed; disposable servers stopped'

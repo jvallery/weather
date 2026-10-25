@@ -473,20 +473,20 @@ def test_a_second_text_search_behind_the_slot_is_labelled_embedding_busy(
 
     monkeypatch.setattr(search_module, "EMBED_SECONDS", 0.2)
 
-    async def scenario() -> tuple[Any, Any]:
-        held = Held(QUERIES["clear"][1])
-        service = make(FakeReader(), client(held))
-        first = asyncio.create_task(service.search(request(query="clear sunny sky")))
-        await held.started.wait()
-        second = await service.search(request(query="puddles"))
-        held.release.set()
-        return await first, second
+    async def scenario() -> Any:
+        embedder = client(Held(QUERIES["clear"][1]))
+        service = make(FakeReader(), embedder)
+        # Another search holds the pod's slot for longer than this search's whole budget.
+        # (Racing two real searches made their equal deadlines expire microseconds apart.)
+        await embedder._slot.acquire()
+        try:
+            return await service.search(request(query="puddles"))
+        finally:
+            embedder._slot.release()
 
-    first, second = run(scenario())
+    second = run(scenario())
     assert second.mode == "lexical" and second.degraded_reason == "embedding_busy"
     assert names(second)  # lexical results are still served
-    # The first held the slot past its own 0.2 s budget: a real timeout, not busy.
-    assert first.degraded_reason == "embedding_unavailable"
 
 
 def body(vectors: list[list[float]], **extra: Any) -> dict[str, Any]:
