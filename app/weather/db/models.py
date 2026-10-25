@@ -144,6 +144,14 @@ receipt = Table(
         name="digest",
     ),
     CheckConstraint("parse_state IN ('parsed','unsupported','quarantined')", name="parse_state"),
+    # 0013_editorial (#44): database-assigned insert time for the private receipts export;
+    # older rows read -infinity.
+    Column(
+        "inserted_at",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("clock_timestamp()"),
+    ),
 )
 # Btree, not BRIN: reproject pages by the (received_at, id) keyset.
 Index("ix_telemetry_receipt_received_id", receipt.c.received_at, receipt.c.id)
@@ -1179,3 +1187,93 @@ Table(
     ),
 )
 Index("ix_ai_raw_response_expires_at", metadata.tables["weather.ai_raw_response"].c.expires_at)
+
+# 0013_editorial (#44): operator allowlist, editorial heads, immutable revisions and audit.
+Table(
+    "editorial_operator",
+    metadata,
+    _identity(),
+    Column("username", String(256), nullable=False, unique=True),
+    Column("application", String(64), nullable=False),
+    Column("active", Boolean, nullable=False, server_default=text("true")),
+    _created(),
+)
+Table(
+    "editorial_subject",
+    metadata,
+    Column("subject_id", PGUUID(as_uuid=True), primary_key=True),
+    Column("kind", String(8), nullable=False),
+    _ref("video_id", "video", nullable=True),
+    _ref("event_id", "weather_event", nullable=True),
+    Column("revision", Integer, nullable=False),
+    Column(
+        "updated_at",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP"),
+    ),
+)
+_tags = ARRAY(String(48))
+Table(
+    "editorial_revision",
+    metadata,
+    Column(
+        "subject_id",
+        PGUUID(as_uuid=True),
+        ForeignKey("weather.editorial_subject.subject_id", ondelete="RESTRICT"),
+        primary_key=True,
+    ),
+    Column("revision", Integer, primary_key=True, autoincrement=False),
+    Column("public_revision", Integer, nullable=False),
+    Column(
+        "recorded_at",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("clock_timestamp()"),
+    ),
+    Column("description", Text),
+    Column("media_sha256", String(64)),
+    Column("evidence_hash", String(64)),
+    Column("public_tags", _tags, nullable=False, server_default=text("'{}'::character varying[]")),
+    Column(
+        "private_tags", _tags, nullable=False, server_default=text("'{}'::character varying[]")
+    ),
+    Column("favorite", Boolean, nullable=False, server_default=text("false")),
+    Column("note", Text),
+    Column("event_revision", Integer),
+)
+editorial_audit = Table(
+    "editorial_audit",
+    metadata,
+    _identity(),
+    Column("subject_id", PGUUID(as_uuid=True), nullable=False),
+    Column("action", String(16), nullable=False),
+    Column("actor", String(256), nullable=False),
+    Column(
+        "recorded_at",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("clock_timestamp()"),
+    ),
+    Column("reason", Text, nullable=False),
+    Column("old_revision", Integer, nullable=False),
+    Column("new_revision", Integer, nullable=False),
+    Column("input", JSONB, nullable=False),
+    Column("media_sha256", String(64)),
+    Column("evidence_hash", String(64)),
+    Column(
+        "evidence_ids",
+        ARRAY(PGUUID(as_uuid=True)),
+        nullable=False,
+        server_default=text("'{}'::uuid[]"),
+    ),
+    Column("event_revision", Integer),
+    ForeignKeyConstraint(
+        ["subject_id", "new_revision"],
+        ["weather.editorial_revision.subject_id", "weather.editorial_revision.revision"],
+        ondelete="RESTRICT",
+    ),
+)
+Index(
+    "ix_editorial_audit_subject_id", editorial_audit.c.subject_id, editorial_audit.c.recorded_at
+)

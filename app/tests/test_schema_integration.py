@@ -127,11 +127,11 @@ def test_baseline_head_roles_and_least_privilege() -> None:
             async with admin.begin() as connection:
                 assert await scalar(
                     connection, "SELECT version_num FROM public.alembic_version"
-                ) == ("0012_analysis")
+                ) == ("0013_editorial")
                 # Slice-1 relations, the observations view, the API's views (0002), the
                 # publication catalog (0003), search (0004), events (0005), the render
                 # schedule (0006), stills (0009), previews (0007), cleanup (0010), keograms
-                # (0008, after 0011) and AI descriptions (0012).
+                # (0008, after 0011), AI descriptions (0012) and the editor (0013).
                 relations = (
                     await connection.execute(
                         text("""
@@ -191,6 +191,13 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     "public_api.keograms",
                     # 0012_analysis (#23)
                     *(f"weather.{name}" for name in ANALYSIS),
+                    # 0013_editorial (#44)
+                    "weather.editorial_operator",
+                    "weather.editorial_subject",
+                    "weather.editorial_revision",
+                    "weather.editorial_audit",
+                    "weather.video_editorial_state",
+                    "public_api.video_editorial",
                 }
                 options = await scalar(
                     connection,
@@ -232,8 +239,12 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                         )
                 for relation in ("weather.job", "weather.outbox"):
                     assert await table("weather_worker", relation, "UPDATE")
-                    for role in ("weather_ingest", "weather_api", "weather_editor"):
+                    for role in ("weather_ingest", "weather_api"):
                         assert not await table(role, relation, "SELECT")
+                    # The editor appends its outbox rows and embedding jobs, never claims them.
+                    assert await table("weather_editor", relation, "INSERT")
+                    for privilege in ("UPDATE", "DELETE"):
+                        assert not await table("weather_editor", relation, privilege)
                 assert await table("weather_worker", "weather.weather_day", "INSERT")
                 assert not await table("weather_worker", "weather.weather_day", "UPDATE")
                 # The renderer's sidecar weather block (#15) reads the two public telemetry
@@ -259,8 +270,13 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                 ):
                     assert await table("weather_worker", relation, "INSERT")
                     assert not await table("weather_worker", relation, "DELETE")
-                    for role in ("weather_ingest", "weather_api", "weather_editor"):
+                    for role in ("weather_ingest", "weather_api"):
                         assert not await table(role, relation, "SELECT")
+                    # Manual events (#44) ensure their calendar rows, nothing else.
+                    assert await table("weather_editor", relation, "SELECT") is (
+                        relation == "weather.hour_slot"
+                    )
+                    assert not await table("weather_editor", relation, "UPDATE")
                 assert not await table("weather_worker", "weather.hour_slot", "UPDATE")
                 assert await table("weather_api", "public_api.stills", "SELECT")
                 assert not await table("weather_worker", "public_api.stills", "SELECT")
@@ -303,14 +319,20 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                         name == "ai_raw_response"
                     )
                     assert not await table("weather_worker", relation, "TRUNCATE")
-                    for role in ("weather_ingest", "weather_api", "weather_editor"):
+                    for role in ("weather_ingest", "weather_api"):
                         assert not await table(role, relation, "SELECT")
+                    # The editor reads the automated text it shows and re-projects (#44), never
+                    # the raw replies, and writes none of it.
+                    assert await table("weather_editor", relation, "SELECT") is (
+                        name != "ai_raw_response"
+                    )
+                    assert not await table("weather_editor", relation, "INSERT")
                 assert await column("summary", "INSERT")
                 assert not await column("author_kind", "INSERT")
-                # No editorial functions exist yet; weather_editor has no schema access (#44).
+                # weather_editor uses the weather schema for editorial writes (#44), never the
+                # public views; weather_api never touches the weather schema.
                 for role, schema in (
                     ("weather_api", "weather"),
-                    ("weather_editor", "weather"),
                     ("weather_editor", "public_api"),
                     ("weather_ingest", "public_api"),
                 ):

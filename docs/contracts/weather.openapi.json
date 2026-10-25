@@ -1223,6 +1223,49 @@
         "title": "Current",
         "type": "object"
       },
+      "Editorial": {
+        "additionalProperties": false,
+        "description": "The effective public description (#44): a human-edited revision while it is bound to the\ncurrent rendition and evidence, else the validated AI description. Public tags only.",
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 8000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "human_edited": {
+            "title": "Human Edited",
+            "type": "boolean"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Tags",
+            "type": "array"
+          }
+        },
+        "required": [
+          "revision",
+          "description",
+          "human_edited",
+          "tags"
+        ],
+        "title": "Editorial",
+        "type": "object"
+      },
       "Event": {
         "additionalProperties": false,
         "properties": {
@@ -3385,6 +3428,9 @@
             "title": "Cycle Date",
             "type": "string"
           },
+          "editorial": {
+            "$ref": "#/components/schemas/Editorial"
+          },
           "keogram": {
             "anyOf": [
               {
@@ -3520,7 +3566,8 @@
           "native_download_url",
           "keogram_state",
           "keogram",
-          "analysis"
+          "analysis",
+          "editorial"
         ],
         "title": "Timelapse",
         "type": "object"

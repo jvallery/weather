@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router";
 import plotStyles from "uplot/dist/uPlot.min.css?url";
-import { AnalysisPanel } from "../components/analysis";
+import { AnalysisPanel, EditorialPanel } from "../components/analysis";
 import { SourceInterval, Status, UnitForm } from "../components/common";
 import { EventStrip } from "../components/events";
 import { LinkedPlayback } from "../components/linked-playback";
@@ -42,7 +42,8 @@ export default function VideoPage() {
       <UnitForm units={units}>{requested && <input type="hidden" name="t" value={requested} />}</UnitForm>
       <LinkedPlayback key={`${video.video_id}-${video.revision}`} video={video} requested={requested} events={events} units={units} registry={registry} />
       <h2>Recording metadata</h2><dl className="video-meta"><dt>Frames</dt><dd>{video.allocated_frames.toLocaleString("en-US")} at 60 fps · 7,200 per camera cycle across both segments</dd><dt>Duration</dt><dd>{(video.allocated_frames / 60).toFixed(2)} seconds · accelerated processed imagery</dd><dt>Keogram</dt><dd>{video.keogram_state}</dd><dt>Catalog revision</dt><dd>{video.revision} · updated <time dateTime={video.updated_at}>{localTime(video.updated_at)}</time></dd></dl>
-      <h2>AI weather description</h2><AnalysisPanel analysis={video.analysis} />
+      <h2>{video.analysis.author === "editor" ? "Weather description" : "AI weather description"}</h2><AnalysisPanel analysis={video.analysis} />
+      <EditorialPanel editorial={video.editorial} />
     </>}
   </>;
 }

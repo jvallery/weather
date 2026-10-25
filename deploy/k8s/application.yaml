@@ -55,11 +55,17 @@ spec:
           containerPort: 8000
         - name: metrics
           containerPort: 9000
+        # The private operator listener (#44): only traefik-apps may connect, and only the
+        # weather-editor IngressRoute, behind Authentik forward-auth, routes to it.
+        - name: operator
+          containerPort: 8001
         env:
         - name: PORT
           value: '8000'
         - name: METRICS_PORT
           value: '9000'
+        - name: OPERATOR_PORT
+          value: '8001'
         - name: WEATHER_PUBLIC_ORIGIN
           value: https://weather.vallery.net
         # Media origin (#20): the weather-media reader key, mounted optionally below.
@@ -104,6 +110,11 @@ spec:
         - name: database
           mountPath: /var/run/weather-db
           readOnly: true
+        # weather_editor (#44), used only by the operator listener; the public listener keeps
+        # the read-only weather_api role.
+        - name: database-editor
+          mountPath: /var/run/weather-db-editor
+          readOnly: true
         - name: cursor
           mountPath: /var/run/weather-api-cursor
           readOnly: true
@@ -130,6 +141,22 @@ spec:
           sources:
           - secret:
               name: weather-pg-api
+              items:
+              - key: username
+                path: username
+              - key: password
+                path: password
+          - secret:
+              name: weather-pg-ca
+              items:
+              - key: ca.crt
+                path: ca.crt
+      - name: database-editor
+        projected:
+          defaultMode: 288
+          sources:
+          - secret:
+              name: weather-pg-editor
               items:
               - key: username
                 path: username
@@ -185,6 +212,26 @@ spec:
   - name: metrics
     port: 9000
     targetPort: metrics
+---
+# The operator listener alone (#44); the public api Service never exposes it.
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-operator
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  selector:
+    app.kubernetes.io/name: api
+    app.kubernetes.io/part-of: weather
+    app.kubernetes.io/component: api
+  ports:
+  - name: operator
+    port: 8001
+    targetPort: operator
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget

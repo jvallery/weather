@@ -8,6 +8,7 @@ resources:
 - network-policy.yaml
 - application.yaml
 - ingress.yaml
+- editor-ingress.yaml
 - database
 - migrate
 - scheduler

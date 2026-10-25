@@ -13,6 +13,8 @@ class Settings(BaseModel):
     public_origin: HttpUrl
     port: int = Field(default=8000, ge=1, le=65535)
     metrics_port: int = Field(default=9000, ge=1, le=65535)
+    # The private operator listener (#44), admitted by NetworkPolicy only from traefik-apps.
+    operator_port: int = Field(default=8001, ge=1, le=65535)
     # Default Tempest cadences; a value is fresh until observed_at + hold (#14).
     api_obs_st_interval_seconds: float = Field(default=60, gt=0, le=3600)
     api_obs_st_hold_seconds: float = Field(default=150, gt=0, le=86400)
@@ -73,7 +75,7 @@ def load_settings(environment: Mapping[str, str] | None = None) -> Settings:
         for key, value in env.items()
         if key.startswith("WEATHER_") and not key.startswith("WEATHER_CI_")
     }
-    for key in ("PORT", "METRICS_PORT"):
+    for key in ("PORT", "METRICS_PORT", "OPERATOR_PORT"):
         if key in env:
             values[key.lower()] = env[key]
     try:
@@ -81,6 +83,6 @@ def load_settings(environment: Mapping[str, str] | None = None) -> Settings:
     except ValidationError as exc:
         fields = sorted({str(error["loc"][0]) for error in exc.errors()})
         raise ConfigurationError("Invalid configuration fields: " + ", ".join(fields)) from None
-    if settings.port == settings.metrics_port:
-        raise ConfigurationError("Invalid configuration fields: port, metrics_port")
+    if len({settings.port, settings.metrics_port, settings.operator_port}) != 3:
+        raise ConfigurationError("Invalid configuration fields: port, metrics_port, operator_port")
     return settings

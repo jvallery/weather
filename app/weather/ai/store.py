@@ -9,9 +9,10 @@ the current immutable `weather.analysis_revision`. The state machine:
                        pending -> failed                         (media error, or 7 days
                                                                   after the first attempt)
 
-A new web rendition resets the head to pending; the same bytes keep the pinned analysis (no
-automatic reanalysis). `attempt_calls` meters Cortex calls since the head was last queued, so
-scheduler retries of one describe job share one budget. Raw model responses live 24 h in
+A new web rendition resets the head to pending and withdraws the video's search text; the same
+bytes keep the pinned analysis (no automatic reanalysis). `attempt_calls` meters Cortex calls
+since the head was last queued, so scheduler retries of one describe job share one budget. Raw
+model responses live 24 h in
 `weather.ai_raw_response`, which no public role can read.
 """
 
@@ -113,6 +114,9 @@ async def on_published(connection: AsyncConnection, publication_id: UUID, now: d
     ).scalar_one_or_none()
     if queued is None:
         return False
+    # New web bytes: text written about the old rendition (automated or human, #44) stops
+    # matching now; a human revision stays stored until an operator rebases it.
+    await documents.withdraw(connection, row.id)
     await enqueue_describe(connection, row.id, publication_id, tag="published", now=now)
     return True
 

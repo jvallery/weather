@@ -131,6 +131,8 @@ the baseline and `alembic check` leave it alone.
 | `solar_cycle`, `segment` | Frozen civil-twilight schedule keyed on `(site, cycle_date)` and one render segment per camera and kind (0006, #15); current segments of a camera never overlap (`btree_gist` exclusion). See [pipeline operations](pipeline.md) |
 | `staging_chunk`, `staging_deletion`, `object_event` | Staging inventory (one row per sealed chunk, kept after deletion), the two-phase staging deletion audit, and the append-only object lifecycle audit (`unavailable`, `expired`, `gc_deleted`, `purged`); `media_asset.state` gains `expired` and `state_changed_at` (0010, #19). See [media operations](media.md#staging-cleanup-and-pressure) |
 | `analysis`, `analysis_revision`, `ai_raw_response` | AI descriptions (0012, #23): one head per video (state machine, CAS base), append-only revisions pinned to media SHA-256, model, prompt/schema and evidence hashes, and private raw replies capped at 24 h by CHECK. The API reads only `public_api.video_analyses`. See [intelligence](intelligence.md) |
+| `editorial_operator`, `editorial_subject`, `editorial_revision`, `editorial_audit` | The private editor (0013, #44): the one-user allowlist (seeded `jason` via `weather-editor`), one CAS head per edited video or event, immutable full-state revisions (human description bound to web SHA-256 and evidence hash, public/private tags, favorite, note, event revision) and immutable audit rows. See [editor](editor.md) |
+| `weather.video_editorial_state`, `public_api.video_editorial` | The one effective-description rule (0013): a human description is active only while its binding matches the current rendition and evidence. The public view (security barrier) exposes the active description, the editorial revision and public tags only |
 
 `obs_st` and `rapid_wind` also carry `inserted_at` (0002; `clock_timestamp()` on insert, `-infinity` for older rows), which export cursors snapshot on. They carry a btree on `source_ts`, so current conditions
 (#14) read the newest row by index. The other families use BRIN.
@@ -172,7 +174,7 @@ every second while the spool holds receipts.
 | `weather_ingest` | Insert on station and device, select on their non-private columns (not `private_configuration`); select/insert on receipts and family rows; no update/delete |
 | `weather_worker` | Read/write `job` and `outbox`; select/insert `weather_day`; select/insert `media_asset`, `upload_intent`, `video` with UPDATE only on the columns the publisher writes; select/insert the append-only `publication`, `publication_asset`, `withdrawal`, `product_tombstone`; the fence sequence; select/insert search documents and vectors, update only a document's `visibility`, `withdrawn_at` and `index_status`; select only `id, device_id, source_ts, values, quality` of `evt_precip`, `evt_strike`, `obs_st` and a device's `station_id` (event rules); select/insert events, revisions and day links, update an event's `revision` pointer; select/insert `solar_cycle` and `segment`, updating only the render result columns; select/insert `keogram` (update only its status columns) and `keogram_bin` (update its sample, delete); select/insert `hour_slot`, `archival_still` and `still_derivative`, updating only a selection's `active`/`retired_at` and a derivative's `state` (both one-way); select on `public_api.obs_st` and `public_api.rapid_wind` for the sidecar weather block (#15); no receipts, serials or other telemetry |
 | `weather_api` | Select the `public_api` views (including the two search views `stills` and `keograms`) and execute the two value-gating functions and `search_lexical`; no base-table access or `weather` schema usage |
-| `weather_editor` | Login only. No editorial functions exist yet; #44 adds them and grants EXECUTE to this role alone |
+| `weather_editor` | The operator listener only (#44): select the allowlist; select/insert editorial heads, revisions and audit (head `revision`/`updated_at` update only); #41's event hooks (select/insert events, revisions, day links, `weather_day`, insert `hour_slot`, update an event's `revision`); select/insert `outbox` and `job`; #25's replace/withdraw on `search_document`; select `video`, `publication_asset`, `analysis`, `analysis_revision`, `video_editorial_state`; select the receipt columns the receipts export serves (not `receiver_incarnation`). No DDL, telemetry or catalog writes, no `public_api` access. `weather_api` has nothing in the `weather` schema; `weather_worker` reads `video_editorial_state` for the AI/search projection |
 
 Neither ingest nor API can delete telemetry. No telemetry retention trigger,
 TTL or cleanup job exists. Station replacement adds a new device validity
@@ -182,7 +184,7 @@ migrator creates, so a later function is private until granted.
 
 ## Expand/contract migrations
 
-The head is `0008_keograms` (on `0011_gc_kept`). `0001_baseline` has run on production, so every change is
+The head is `0013_editorial` (on `0012_analysis`, after `0008_keograms` on `0011_gc_kept`). `0001_baseline` has run on production, so every change is
 expand/contract. Add a new revision with inline DDL; never edit an applied
 revision or import current application modules into one. `models.metadata`
 describes the current schema for `alembic check` and must change in the same

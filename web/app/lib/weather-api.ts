@@ -42,6 +42,7 @@ export type StillPage = Schemas["StillPage"];
 export type Preview = Schemas["Preview"];
 export type PreviewImage = Schemas["PreviewImage"];
 export type Analysis = Schemas["Analysis"];
+export type Editorial = Schemas["Editorial"];
 
 const text = z.string();
 // A new server enum value degrades that one field instead of rejecting the whole response.
@@ -145,6 +146,13 @@ const unavailableAnalysis: z.infer<typeof analysisSchema> = {
   description: null, claims: [], limitations: [], coverage: null, provenance: null,
 };
 export const analysisField = analysisSchema.catch(unavailableAnalysis);
+// The effective description (#44): a human-edited revision, else the AI text. Absent or malformed
+// degrades to "no edit", so an older API or a bad field never sinks the recording.
+const noEditorial = () => ({ revision: 0, description: null, human_edited: false, tags: [] });
+export const editorialField = z.object({
+  revision: z.number().default(0), description: text.nullable().default(null), human_edited: z.boolean().default(false),
+  tags: z.array(text).default([]),
+}).catch(noEditorial);
 
 // Full catalog entries (#18) for the day, video and Today pages. Media URLs must be same-origin
 // opaque paths; an asset that is not is dropped, so the entry degrades instead of linking out.
@@ -163,6 +171,7 @@ const timelapse = z.object({
   native_download_url: text.regex(/^\/downloads\/[0-9a-f-]{36}\/native$/).nullable().catch(null).default(null),
   keogram_state: lenient(["pending", "published", "partial", "unavailable", "failed", "withdrawn"], "unavailable"),
   analysis: analysisField.default(unavailableAnalysis),
+  editorial: editorialField.default(noEditorial),
 });
 // One malformed entry is dropped, never the page.
 const timelapses = z.object({
@@ -247,7 +256,8 @@ const checks: [
   (value: z.infer<typeof preview>) => Preview,
   (value: KeogramItem) => Pick<Keogram, "keogram_id" | "camera" | "cycle_date" | "segment" | "state" | "reason" | "observed_bins" | "video_id">,
   (value: z.infer<typeof analysisSchema>) => Analysis,
-] = [(value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value];
+  (value: z.infer<typeof editorialField>) => Editorial,
+] = [(value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value];
 void checks;
 
 export type Parser<T> = (value: unknown) => T | null;

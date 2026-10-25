@@ -7,15 +7,18 @@ import subprocess
 from pathlib import Path
 
 from weather.api.routes import public_openapi
+from weather.editorial.api import operator_openapi
 
 ROOT = Path(__file__).resolve().parents[1]
 OPENAPI = Path("docs/contracts/weather.openapi.json")
 TYPESCRIPT = Path("web/app/generated/weather-api.ts")
+# The private editor's contract (#44); served only on the operator listener.
+OPERATOR_OPENAPI = Path("docs/contracts/operator.openapi.json")
+OPERATOR_TYPESCRIPT = Path("web/app/generated/operator-api.ts")
 
 
-def rendered() -> dict[Path, str]:
-    schema = json.dumps(public_openapi(), sort_keys=True, indent=2) + "\n"
-    result = subprocess.run(
+def _typescript(schema: str) -> str:
+    return subprocess.run(
         ["node", str(ROOT / "web/contract-tools/generate.mjs")],
         cwd=ROOT,
         input=schema,
@@ -23,8 +26,18 @@ def rendered() -> dict[Path, str]:
         text=True,
         timeout=60,
         check=True,
-    )
-    return {OPENAPI: schema, TYPESCRIPT: result.stdout}
+    ).stdout
+
+
+def rendered() -> dict[Path, str]:
+    schema = json.dumps(public_openapi(), sort_keys=True, indent=2) + "\n"
+    operator = json.dumps(operator_openapi(), sort_keys=True, indent=2) + "\n"
+    return {
+        OPENAPI: schema,
+        TYPESCRIPT: _typescript(schema),
+        OPERATOR_OPENAPI: operator,
+        OPERATOR_TYPESCRIPT: _typescript(operator),
+    }
 
 
 def main() -> None:
