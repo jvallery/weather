@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router";
-import { Coverage, SourceInterval, Status, VideoLink } from "../components/common";
+import { SourceInterval, Status, VideoLink } from "../components/common";
 import { EventStrip } from "../components/events";
 import { CAMERA_LABELS, dateShift } from "../lib/format";
 import { catalogRead, eventsRead } from "../lib/public-api.server";
@@ -21,7 +21,7 @@ export default function Day() {
     {!catalog && <p className="fault">Day metadata API unavailable. Twilight bounds and capture coverage cannot be confirmed.</p>}
     <div className="grid three">{Object.entries(CAMERA_LABELS).map(([camera, label]) => <section className="card" key={camera}><h2>{label}</h2>{(["daytime", "overnight"] as const).map((segment) => {
       const video = catalog?.items.find((item) => item.camera === camera && item.segment === segment);
-      return <article key={segment}><h3>{segment === "daytime" ? "Daytime" : "Overnight"}</h3>{video ? <><p><VideoLink video={video} /></p><Status state={video.state} reason={video.reason} /><SourceInterval video={video} /><p><Coverage fraction={video.coverage.fraction} support={video.coverage.support_seconds} expected={video.coverage.expected_seconds} /></p>{video.editorial.description && <p>{video.editorial.description}</p>}<p className="provenance">{video.editorial.human_edited ? "Human-edited interpretation" : `AI interpretation · ${video.analysis.state}`}</p></> : <><p>Coming soon · no recording is available.</p><p className="small">Twilight bounds, summaries and capture coverage are unavailable until the solar schedule and capture are commissioned.</p></>}</article>;
+      return <article key={segment}><h3>{segment === "daytime" ? "Daytime" : "Overnight"}</h3>{video ? <><p><VideoLink video={video} /></p><Status state={video.state} reason={video.reason} /><SourceInterval video={video} /><p className="small">{video.allocated_frames.toLocaleString("en-US")} frames · keogram {video.keogram_state}</p></> : <><p>Coming soon · no recording is available.</p><p className="small">Twilight bounds and capture coverage are unavailable until this segment is captured and published.</p></>}</article>;
     })}</section>)}</div>
     <EventStrip title={`Weather events · calendar day ${date}`} events={events} />
     <p><Link to={`/events/?day=${date}`}>All events for {date} in the feed</Link></p>

@@ -3,14 +3,12 @@ import { expect, test } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { EventStrip, bookmarkInstant, eventDetail } from "./events";
-import { seekSeconds } from "./video-player";
-import { videoSchema } from "../lib/contracts";
-import { parseEvents } from "../lib/weather-api";
+import { parseEvents, parseTimelapses } from "../lib/weather-api";
 import catalog from "../fixtures/catalog.json";
 import fixture from "../fixtures/events.json";
 
 const feed = parseEvents(fixture)!;
-const video = videoSchema.parse(catalog.items[0]);
+const video = parseTimelapses(catalog)!.items.find((item) => item.camera === "skycam_east" && item.segment === "daytime" && item.cycle_date === "2026-10-31")!;
 const byKind = (kind: string) => feed.items.find((event) => event.kind === kind)!;
 
 test("the events fixture parses and unknown enum values degrade to the most cautious label", () => {
@@ -22,14 +20,10 @@ test("the events fixture parses and unknown enum values degrade to the most caut
   expect(parseEvents({ items: "nope" })).toBeNull();
 });
 
-test("a bookmark seeks inside both the event and the recording through the time map", () => {
+test("a bookmark lies inside both the event and the recording", () => {
   const onset = byKind("precipitation_onset");
   const instant = bookmarkInstant(onset, video);
   expect(instant).toBe("2026-10-31T15:20:00.000Z");
-  // 10,200 s into a 45,000 s map of 3,600 frames at 60 fps: frame 816.
-  expect(seekSeconds(video, instant!)).toBeCloseTo(13.6, 6);
-  expect(seekSeconds(video, video.source_interval.end)).toBeNull();
-  expect(seekSeconds(video, "2026-10-30T00:00:00Z")).toBeNull();
   // An event outside the recording has no bookmark rather than a clamped, fabricated one.
   const outside = { ...onset, source_interval: { start: "2026-11-02T00:00:00Z", end: "2026-11-02T00:00:01Z" } };
   expect(bookmarkInstant(outside, video)).toBeNull();

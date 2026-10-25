@@ -1,0 +1,157 @@
+// SPDX-License-Identifier: MIT
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { Link } from "react-router";
+import type { Units } from "../lib/contracts";
+import { localTime } from "../lib/format";
+import { binCenter, binOf, epochSeconds, frameAt, frameCenter, frameHalfWindowSeconds, frameOf, frameSeconds, gapSpans, instant, iso, isGap, KEOGRAM_BINS, parseTimeMap, resolveSeek, type Instant, type Span, type TimeMap } from "../lib/time-map";
+import { parseAggregates, type Aggregates, type MetricRegistry, type Timelapse, type WeatherEvent } from "../lib/weather-api";
+import { EventStrip } from "./events";
+import { binAt, binValue, LinkedPlots, PLOT_PANELS, plotBins, plotQueries, plotResolution, seriesLabel, seriesSummary } from "./linked-plots";
+import { VideoPlayer, type SeekRequest } from "./video-player";
+
+async function json(url: string, signal: AbortSignal): Promise<unknown> {
+  const response = await fetch(url, { signal, headers: { Accept: "application/json" } });
+  if (!response.ok) throw new Error("unavailable");
+  return response.json();
+}
+const duration = (seconds: number) => seconds >= 3600 ? `${(seconds / 3600).toFixed(1)} h` : seconds >= 60 ? `${Math.round(seconds / 60)} min` : `${seconds.toFixed(1)} s`;
+
+function Keogram({ video, span, cursor, onSelect }: { video: Timelapse; span: Span; cursor: Instant | null; onSelect: (at: Instant) => void }) {
+  const marker = useRef<HTMLDivElement>(null);
+  const visible = (video.keogram_state === "published" || video.keogram_state === "partial") && video.keogram !== null;
+  const bin = cursor === null ? null : binOf(span, KEOGRAM_BINS, cursor);
+  useEffect(() => {
+    if (!marker.current) return;
+    marker.current.hidden = bin === null;
+    if (bin !== null) marker.current.style.left = `${((bin + 0.5) / KEOGRAM_BINS) * 100}%`;
+  }, [bin]);
+  if (!visible) {
+    const state = video.keogram_state === "pending" ? "pending" : video.keogram_state === "withdrawn" ? "withdrawn" : "unavailable";
+    return <p className="notice" id="keogram-state">Keogram {state} · the recording still plays and the plots stay linked.</p>;
+  }
+  const half = epochSeconds(span.end - span.start) / KEOGRAM_BINS / 2;
+  const choose = (index: number) => onSelect(binCenter(span, KEOGRAM_BINS, Math.min(KEOGRAM_BINS - 1, Math.max(0, index))));
+  const key = (event: KeyboardEvent<HTMLDivElement>) => {
+    const from = bin ?? -1;
+    const next = { ArrowRight: from + 1, ArrowUp: from + 1, ArrowLeft: from - 1, ArrowDown: from - 1, PageUp: from + 60, PageDown: from - 60, Home: 0, End: KEOGRAM_BINS - 1 }[event.key];
+    if (next === undefined) return;
+    event.preventDefault(); choose(next);
+  };
+  // The image's x axis is the bin axis: 1,440 equal elapsed-UTC bins (D10).
+  const click = (event: MouseEvent<HTMLDivElement>) => { const box = event.currentTarget.getBoundingClientRect(); choose(Math.floor(((event.clientX - box.left) / box.width) * KEOGRAM_BINS)); };
+  const text = bin === null ? "No bin selected" : `Bin ${bin + 1} of ${KEOGRAM_BINS}, centred ${localTime(iso(binCenter(span, KEOGRAM_BINS, bin)))}, ±${half.toFixed(1)} s`;
+  return <figure className="keogram"><figcaption id="keogram-caption">Keogram · {KEOGRAM_BINS.toLocaleString("en-US")} equal UTC bins of ±{half.toFixed(1)} s{video.keogram_state === "partial" ? " · partial coverage; missing bins stay visible" : ""}</figcaption>
+    <div className="keogram-strip" role="slider" tabIndex={0} aria-label="Keogram bin · arrow keys step one bin and seek the video" aria-describedby="keogram-caption" aria-valuemin={1} aria-valuemax={KEOGRAM_BINS} aria-valuenow={(bin ?? 0) + 1} aria-valuetext={text} onKeyDown={key} onClick={click}>
+      <img src={video.keogram!.url} alt="" width={video.keogram!.width ?? undefined} height={video.keogram!.height ?? undefined} />
+      <div ref={marker} className="keogram-cursor" hidden />
+    </div></figure>;
+}
+
+/**
+ * The route-local controller (D13): it owns the media revision's sidecar time map and the source
+ * UTC cursor. Playback moves the cursor; plot, keogram, event and time-input selections seek
+ * through the same map. A playback report only moves the cursor when the frame changes, so a
+ * seek never echoes back as a second seek.
+ */
+export function LinkedPlayback({ video, requested, events, units, registry }: { video: Timelapse; requested: string | null; events: readonly WeatherEvent[] | null; units: Units; registry: MetricRegistry | null }) {
+  const span = useMemo<Span>(() => ({ start: instant(video.source_interval.start)!, end: instant(video.source_interval.end)! }), [video]);
+  const sidecar = useQuery({
+    queryKey: ["sidecar", video.video_id, video.revision, video.sidecar?.url],
+    enabled: video.sidecar !== null, staleTime: Infinity,
+    queryFn: async ({ signal }) => parseTimeMap(await json(video.sidecar!.url, signal), video),
+  });
+  const map: TimeMap | null = sidecar.data ?? null;
+  const queries = useMemo(() => plotQueries(span), [span]);
+  const plotted = useQueries({
+    queries: queries.map((query) => ({
+      queryKey: ["aggregates", query.toString()], staleTime: 60_000,
+      queryFn: async ({ signal }: { signal: AbortSignal }) => { const parsed = parseAggregates(await json(`/api/v1/weather/aggregates?${query}`, signal)); if (!parsed) throw new Error("invalid"); return parsed; },
+    })),
+  });
+  const [temperature, gust, rain] = plotted.map((result) => result.data);
+  const responses = useMemo<Aggregates[] | null>(() => (temperature && gust && rain ? [temperature, gust, rain] : null), [temperature, gust, rain]);
+  const bins = useMemo(() => (responses ? plotBins(span, responses) : []), [span, responses]);
+  const gaps = useMemo(() => (map ? gapSpans(map) : []), [map]);
+
+  const [cursor, setCursor] = useState<Instant | null>(null);
+  const [seek, setSeek] = useState<SeekRequest | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const serial = useRef(0);
+  const seekTo = useCallback((target: Instant | Span, bookmark = true): boolean => {
+    if (!map) { setNotice("The source-time map is unavailable, so seeking is disabled; playback still works."); return false; }
+    const resolved = resolveSeek(map, target);
+    if (!resolved) { setNotice("That time is outside this recording's source interval; the seek was rejected."); return false; }
+    setNotice(null); setCursor(resolved.at);
+    serial.current += 1; setSeek({ seconds: frameSeconds(map, resolved.frame), serial: serial.current });
+    if (bookmark) {
+      const url = new URL(window.location.href); url.searchParams.set("t", iso(resolved.at));
+      window.history.replaceState(window.history.state, "", url);
+    }
+    return true;
+  }, [map]);
+  const onTime = useCallback((seconds: number) => {
+    if (!map) return;
+    const frame = frameAt(map, seconds);
+    if (frame !== null) setCursor((current) => (current !== null && frameOf(map, current) === frame ? current : frameCenter(map, frame)));
+  }, [map]);
+  // A bookmark seeks once the map is known; without one the cursor rests on the first frame.
+  const started = useRef(false);
+  useEffect(() => {
+    if (!map || started.current) return;
+    started.current = true;
+    const at = requested ? instant(requested) : null;
+    if (at === null || !seekTo(at, false)) {
+      setCursor(frameCenter(map, 0));
+      if (requested) setNotice("The requested time is outside this recording or has no mapped frame; playback starts at the beginning.");
+    }
+  }, [map, requested, seekTo]);
+
+  const frame = map && cursor !== null ? frameOf(map, cursor) : null;
+  const bin = binAt(bins, cursor);
+  const resolution = plotResolution(span);
+  const partialLabel = map?.slotFraction !== null && map?.slotFraction !== undefined ? `Partial coverage · ${(map.slotFraction * 100).toFixed(1)}% of the source interval was captured; this recording has gaps.` : null;
+  const station = useMemo(() => !responses ? null : <>
+    <ul className="plot-summary" id="plot-summary">{PLOT_PANELS.flatMap((panel) => panel.series.map(([metric, statistic]) => <li key={`${metric}-${statistic}`}>{seriesSummary(bins, metric, statistic, units, registry)}</li>))}</ul>
+    <details><summary>Plotted values table</summary><div className="table-wrap" tabIndex={0} role="region" aria-label="Plotted values table"><table><caption>One row per {resolution / 60}-minute interval</caption><thead><tr><th scope="col">Interval start · America/Denver</th>{PLOT_PANELS.flatMap((panel) => panel.series.map(([metric, statistic]) => <th scope="col" key={`${metric}-${statistic}`}>{seriesLabel(metric, statistic, registry)}</th>))}</tr></thead>
+      <tbody>{bins.map((row) => <tr key={String(row.start)}><th scope="row"><time dateTime={iso(row.start)}>{localTime(iso(row.start))}</time></th>{PLOT_PANELS.flatMap((panel) => panel.series.map(([metric, statistic]) => <td key={`${metric}-${statistic}`}>{binValue(row, metric, statistic, units, registry)}</td>))}</tr>)}</tbody></table></div></details>
+  </>, [bins, registry, resolution, responses, units]);
+
+  return <>
+    <VideoPlayer key={`${video.video_id}-${video.revision}`} video={video} seek={seek} onTime={onTime} coverageLabel={partialLabel} />
+    <section aria-labelledby="cursor-title"><h2 id="cursor-title">Source-time cursor</h2>
+      {!video.sidecar ? <p className="fault">This recording has no published sidecar, so its frames cannot be linked to source time.</p>
+        : sidecar.isPending ? <p>Loading the source-time map…<noscript> Linked plots and seeking need JavaScript; the sidecar JSON below carries the same time map.</noscript></p>
+          : !map ? <p className="fault">The source-time map is unavailable or does not match this recording, so seeking and linked plots are disabled. Playback still works.</p>
+            : <>
+              <p className="cursor-readout" id="cursor-readout" data-utc={cursor === null ? "" : iso(cursor)} data-frame={frame ?? ""}>{cursor === null || frame === null ? "No source time selected." : <>
+                <time dateTime={iso(cursor)}>{localTime(iso(cursor))}</time> · <span className="monospace">{iso(cursor)}</span> · frame {(frame + 1).toLocaleString("en-US")} of {map.frames.toLocaleString("en-US")} · ±{frameHalfWindowSeconds(map).toFixed(2)} s frame window
+                {isGap(map, frame) && <strong className="fault"> · Capture gap: this frame is a slate with no observed exposure.</strong>}
+                {bin !== null && <span> · {PLOT_PANELS.flatMap((panel) => panel.series.map(([metric, statistic]) => `${seriesLabel(metric, statistic, registry)} ${binValue(bins[bin], metric, statistic, units, registry)}`)).join(" · ")} (±{resolution / 2} s interval)</span>}
+              </>}</p>
+              {gaps.length > 0 && <p className="small">Capture gaps: {gaps.length} {gaps.length === 1 ? "range" : "ranges"} of slate frames totalling {duration(gaps.reduce((sum, gap) => sum + epochSeconds(gap.end - gap.start), 0))}, shown at their true length: {gaps.slice(0, 8).map((gap) => `${localTime(iso(gap.start))} for ${duration(epochSeconds(gap.end - gap.start))}`).join("; ")}{gaps.length > 8 ? "; …" : ""}.</p>}
+            </>}
+      {notice && <p className="notice" role="status">{notice}</p>}
+      <form method="get" className="filters" onSubmit={(event) => {
+        event.preventDefault();
+        const value = new FormData(event.currentTarget).get("t");
+        const at = typeof value === "string" ? instant(value.trim()) : null;
+        if (at === null) setNotice("Enter a UTC time such as 2026-10-31T15:20:00Z."); else seekTo(at);
+      }}><label>Seek to source time (UTC ISO-8601)<input name="t" defaultValue={requested ?? ""} placeholder={video.source_interval.start} autoComplete="off" spellCheck={false} /></label>{units === "metric" && <input type="hidden" name="units" value="metric" />}<button type="submit">Seek</button></form>
+      {cursor !== null && <p><a href={`?t=${encodeURIComponent(iso(cursor))}${units === "metric" ? "&units=metric" : ""}`}>Link to this moment</a></p>}
+      <Keogram video={video} span={span} cursor={cursor} onSelect={seekTo} />
+    </section>
+    <section aria-labelledby="station-title"><h2 id="station-title">Station measurements · shared by all cameras</h2>
+      <p className="small">From the one weather station, not from this camera: the same UTC interval shows identical values on every camera&apos;s recording. Bounds are this recording&apos;s source interval. Each point summarizes one {resolution / 60}-minute interval (±{resolution / 2} s); intervals without observations are gaps, never zero or interpolated; capture gaps are shaded at their true length.</p>
+      {plotted.some((result) => result.isError) ? <p className="fault">Weather history API unavailable. No substitute values are plotted.</p>
+        : !responses ? <p>Loading measured weather…</p>
+          : bins.length === 0 ? <p>No measured intervals were returned for this recording.</p>
+            : <><LinkedPlots span={span} bins={bins} gaps={gaps} cursor={cursor} onSelect={seekTo} units={units} registry={registry} describedBy="plot-summary" />{station}</>}
+      <p><Link to={`/weather/history/?${new URLSearchParams({ start: iso(span.start), end: iso(span.end) })}`}>Open this interval in weather history</Link></p>
+    </section>
+    <EventStrip title="Weather events in this recording" events={events} video={video} onSeek={map ? (event) => { seekTo(eventSpan(event)); } : undefined} />
+  </>;
+}
+function eventSpan(event: WeatherEvent): Span {
+  return { start: instant(event.source_interval.start) ?? 0n, end: instant(event.source_interval.end) ?? 0n };
+}

@@ -121,6 +121,33 @@ def _frame(segment: PublishedSegment, instant: datetime) -> int | None:
     return None
 
 
+# Playable catalog videos (#18) overlapping one events page; the view already hides embargoed,
+# withdrawn and incomplete media. The sidecar time map (#15) is uniform over [a, b), so the
+# catalog's interval and frame count are that map.
+SEGMENTS_SQL = """SELECT id,camera_id,cycle_date,segment,starts_at,ends_at,frames
+  FROM public_api.videos
+  WHERE state IN ('published','partial') AND NOT withdrawn AND frames > 0
+    AND starts_at < :end AND ends_at > :start
+  ORDER BY starts_at,id LIMIT 2000"""
+
+
+def published_segments(rows: Sequence[Mapping[str, Any]]) -> list[PublishedSegment]:
+    return [
+        PublishedSegment(
+            camera=row["camera_id"],
+            segment=row["segment"],
+            cycle_date=row["cycle_date"],
+            video_id=str(row["id"]),
+            start=row["starts_at"],
+            end=row["ends_at"],
+            fps=Fraction(60),
+            time_map=(MapEntry(0, int(row["frames"]), row["starts_at"], row["ends_at"]),),
+        )
+        for row in rows
+        if row["camera_id"] in CAMERAS
+    ]
+
+
 def video_links(
     start: datetime,
     end: datetime,

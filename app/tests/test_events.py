@@ -379,7 +379,10 @@ class FakeReader:
     def __init__(self) -> None:
         self.rows: list[dict[str, Any]] = []
         self.calls: list[dict[str, Any]] = []
+        self.videos: list[dict[str, Any]] = []
+        self.video_calls: list[tuple[datetime, datetime]] = []
         self.down = False
+        self.videos_down = False
 
     async def events(self, sql: str, parameters: dict[str, Any]) -> list[dict[str, Any]]:
         if self.down:
@@ -391,6 +394,12 @@ class FakeReader:
             rows = [item for item in rows if item["id"] == parameters["event_id"]]
         rows = [item for item in rows if (item["starts_at"], item["id"]) > after]
         return rows[: parameters["rows"]]
+
+    async def segments(self, start: datetime, end: datetime) -> list[dict[str, Any]]:
+        if self.videos_down:
+            raise SourceUnavailable()
+        self.video_calls.append((start, end))
+        return [v for v in self.videos if v["starts_at"] < end and v["ends_at"] > start]
 
     async def ping(self) -> bool:
         return True
@@ -444,6 +453,54 @@ def test_feed_pages_with_a_bound_cursor_and_hides_missing_events() -> None:
     }
     reader.down = True
     assert client.get("/api/v1/events").status_code == 503
+
+
+def test_feed_links_published_catalog_videos_through_the_uniform_time_map() -> None:
+    now = at("2026-07-02T00:00:00Z")
+    reader = FakeReader()
+    onset = row(starts_at=at("2026-07-01T15:20:00Z"), ends_at=at("2026-07-01T15:20:01Z"))
+    reader.rows = [onset]
+    video_id = uuid4()
+    # 12.5 s frames: 10,200 s into [12:30Z, 01:00Z) is frame 816 (13.6 s at 60 fps).
+    reader.videos = [
+        {
+            "id": video_id,
+            "camera_id": "skycam_east",
+            "cycle_date": date(2026, 7, 1),
+            "segment": "daytime",
+            "starts_at": at("2026-07-01T12:30:00Z"),
+            "ends_at": at("2026-07-02T01:00:00Z"),
+            "frames": 3600,
+        },
+    ]
+    client = TestClient(build_app(weather(reader, now)))
+    items = client.get("/api/v1/events", params={"day": "2026-07-01"}).json()["items"]
+    assert reader.video_calls == [(onset["starts_at"], onset["ends_at"])]
+    links = {link["camera"]: link for link in items[0]["videos"]}
+    east = links["skycam_east"]
+    assert east["state"] == "available" and east["video_id"] == str(video_id)
+    assert (east["cycle_date"], east["segment"]) == ("2026-07-01", "daytime")
+    assert east["seek"]["start_seconds"] == pytest.approx(13.6)
+    assert east["seek"]["end_seconds"] == pytest.approx(817 / 60)
+    assert links["skycam_west"]["state"] == links["frontyard_1"]["state"] == "unavailable"
+    single = client.get(f"/api/v1/events/{onset['id']}").json()
+    assert single["videos"][0]["state"] == "available"
+    # A failed catalog read degrades the links to unavailable; the feed still serves.
+    reader.videos_down = True
+    degraded = client.get("/api/v1/events", params={"day": "2026-07-01"})
+    assert degraded.status_code == 200
+    assert {link["state"] for link in degraded.json()["items"][0]["videos"]} == {"unavailable"}
+
+
+def test_web_catalog_fixture_matches_the_public_timelapse_model() -> None:
+    import json
+
+    from weather.api.timelapses import TimelapsePage
+
+    fixture = json.loads((ROOT / "web/app/fixtures/catalog.json").read_text())
+    page = TimelapsePage.model_validate(fixture)
+    assert {item.segment for item in page.items} == {"daytime", "overnight"}
+    assert TimelapsePage.model_validate(page.model_dump(mode="json", by_alias=True)) == page
 
 
 def test_event_cursor_rejects_tampering_and_oversized_snapshots() -> None:

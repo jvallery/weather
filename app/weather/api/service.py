@@ -241,7 +241,14 @@ class ApiMetrics:
         )
         for result in ("live", "cached", "unavailable"):
             self.cache.labels(result)
-        for operation in ("current", "observations", "aggregates", "almanac", "events"):
+        for operation in (
+            "current",
+            "observations",
+            "aggregates",
+            "almanac",
+            "events",
+            "event_videos",
+        ):
             self.db_errors.labels(operation)
 
 
@@ -461,9 +468,11 @@ class WeatherService:
                 now=now,
                 previous=position,
             )
-        # Published segments arrive with slice-2 media (#18); until then every link is
-        # explicitly unavailable rather than fabricated.
-        return Events(generated_at=now, items=self._built(page), next_cursor=cursor)
+        return Events(
+            generated_at=now,
+            items=self._built(page, await self._segments(page)),
+            next_cursor=cursor,
+        )
 
     async def event(self, event_id: UUID) -> Event | None:
         """The current public revision of one stable logical event, or None (withdrawn/private)."""
@@ -473,11 +482,25 @@ class WeatherService:
         except SourceUnavailable:
             self.metrics.db_errors.labels("events").inc()
             raise unavailable() from None
-        return self._built(rows)[0] if rows else None
+        return self._built(rows, await self._segments(rows))[0] if rows else None
 
-    def _built(self, rows: list[Row]) -> list[Event]:
+    async def _segments(self, rows: list[Row]) -> list[feed.PublishedSegment]:
+        """Published videos overlapping the page. A failed catalog read degrades every link to an
+        explicit unavailable, never a fabricated one, and never fails the feed."""
+        if not rows:
+            return []
         try:
-            return [feed.build_event(row) for row in rows]
+            found = await self.reader.segments(
+                min(row["starts_at"] for row in rows), max(row["ends_at"] for row in rows)
+            )
+        except SourceUnavailable:
+            self.metrics.db_errors.labels("event_videos").inc()
+            return []
+        return feed.published_segments(found)
+
+    def _built(self, rows: list[Row], segments: list[feed.PublishedSegment]) -> list[Event]:
+        try:
+            return [feed.build_event(row, segments) for row in rows]
         except ValueError:
             # The database constraints make this unreachable; fail closed, never half a page.
             self.metrics.db_errors.labels("events").inc()
@@ -840,4 +863,3 @@ def summarize(
                 )
             )
     return items
-

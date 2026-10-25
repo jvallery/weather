@@ -1,14 +1,8 @@
 // SPDX-License-Identifier: MIT
 import { test, expect, type APIResponse, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-// Production routes only /api/ to the api (deploy/k8s/ingress.yaml); /media/ and /downloads/ arrive with #20.
-// Until then the page under test receives the synthetic media directly from the fixture API.
-async function syntheticMedia(page: Page) {
-  await page.route(/^http:\/\/localhost:4173\/(?:media|downloads)\//, async (route) => route.fulfill({ response: await route.fetch({ url: `http://localhost:4174${new URL(route.request().url()).pathname}` }) }));
-}
-const paths = ["/", "/about/", "/archive/?month=2026-10", "/archive/2026/10/", "/day/2026-10-31/", "/timelapses/skycam_east/2026-10-31/daytime/", "/weather/history/", "/weather/almanac/", "/events/", "/search/"];
+const paths = ["/", "/about/", "/archive/?month=2026-10", "/archive/2026/10/", "/day/2026-10-31/", "/timelapses/skycam_east/2026-10-31/daytime/", "/timelapses/skycam_west/2026-10-31/overnight/", "/weather/history/", "/weather/almanac/", "/events/", "/search/"];
 test.beforeEach(async ({ request, page }) => {
-  await syntheticMedia(page);
   await page.addInitScript(() => { const violations: string[] = []; (window as Window & { cspViolations?: string[] }).cspViolations = violations; document.addEventListener("securitypolicyviolation", (event) => violations.push(event.effectiveDirective)); }); await request.post("http://localhost:4174/__control", { data: {} }); });
 for (const width of [320, 768, 1440]) for (const path of paths) {
   test(`${path} · ${width}px · WCAG 2.2 AA`, async ({ page, browserName }) => {
@@ -83,8 +77,15 @@ test("placeholders, About topics, repeated hour, source-only network and reduced
   page.on("request", (request) => { if (!new URL(request.url()).hostname.includes("localhost")) unexpected.push(request.url()); });
   await page.emulateMedia({ reducedMotion: "reduce" }); await page.goto("/");
   await expect(page.locator(".preview-placeholder")).toHaveCount(3);
-  await expect(page.getByText("Daytime latest video · coming soon", { exact: true })).toHaveCount(3);
-  await expect(page.getByText("Overnight latest video · coming soon", { exact: true })).toHaveCount(3);
+  // Today media tiles (#40): the latest poster/video and keogram per camera and segment; no latest-media placeholder.
+  await expect(page.getByRole("link", { name: /^Poster frame, .*Watch/ })).toHaveCount(6);
+  await expect(page.getByRole("link", { name: "Keogram, East sky · daytime · 2026-10-31" })).toBeVisible();
+  await expect(page.getByText("Keogram unavailable.", { exact: true })).toHaveCount(1);
+  await expect(page.getByText("Keogram pending.", { exact: true })).toHaveCount(4);
+  await expect(page.getByText(/latest video · coming soon/)).toHaveCount(0);
+  await page.getByRole("link", { name: /^Poster frame, West sky · overnight/ }).click();
+  await expect(page).toHaveURL(/\/timelapses\/skycam_west\/2026-10-31\/overnight\/$/);
+  await page.goto("/");
   expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
   await page.goto("/about/");
   for (const topic of [/Tempest/, /east sky/, /west sky/, /front yard/, /6°/, /7,200/, /not measurements/, /private notes/, /no forecast/]) await expect(page.getByText(topic).first()).toBeVisible();
@@ -102,7 +103,7 @@ test("event bookmarks seek via ?t=, day and video strips, feed provenance and re
   expect(await video.evaluate((element: HTMLVideoElement) => element.currentTime)).toBe(0);
   // 15:20Z is 10,200 s into the 45,000 s source interval: frame 816 of 3,600 at 60 fps.
   await strip.getByRole("link", { name: /^Seek video to precipitation onset/ }).click();
-  await expect(page).toHaveURL(/\?t=2026-10-31T15%3A20%3A00\.000Z$/);
+  await expect(page).toHaveURL(/\?t=2026-10-31T15%3A20%3A00Z$/);
   await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime)).toBeCloseTo(13.6, 1);
   expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
   // A shared bookmark URL seeks on load: 00:40:12Z maps to frame 3,504.
@@ -138,7 +139,7 @@ test("event bookmarks seek via ?t=, day and video strips, feed provenance and re
   await expect(recent.getByRole("heading", { level: 3 }).first()).toHaveText("Lightning strike reported");
 });
 test("safe interpretation text, lifecycle states and quality preservation", async ({ page, request }) => {
-  await request.post("http://localhost:4174/__control", { data: { description: "<script>window.SYNTHETIC_XSS=1</script>" } });
+  await request.post("http://localhost:4174/__control", { data: { reason: "<script>window.SYNTHETIC_XSS=1</script>" } });
   await page.goto("/timelapses/skycam_east/2026-10-31/daytime/");
   expect(await page.evaluate(() => (window as Window & { SYNTHETIC_XSS?: number }).SYNTHETIC_XSS)).toBeUndefined();
   await expect(page.getByText("<script>window.SYNTHETIC_XSS=1</script>")).toBeVisible();
@@ -155,7 +156,7 @@ test("safe interpretation text, lifecycle states and quality preservation", asyn
   await expect(page.getByText(/^Partial coverage · 95\.0% of the source interval was captured/)).toBeVisible();
   await expect(page.getByText(/^Partial/).first()).toBeVisible();
   await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.readyState)).toBeGreaterThanOrEqual(1);
-  for (const state of ["unavailable", "expired"]) {
+  for (const state of ["unavailable", "withdrawn"]) {
     await request.post("http://localhost:4174/__control", { data: { productState: state } });
     await page.reload(); await expect(page.locator("video, main img")).toHaveCount(0);
     await expect(page.getByText(new RegExp(`^${state[0].toUpperCase() + state.slice(1)}`)).first()).toBeVisible();
@@ -305,4 +306,148 @@ test("the card passes WCAG 2.2 AA in Chromium at 320 px", async ({ page, browser
   const result = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
   expect(result.violations).toEqual([]);
   expect(await page.evaluate(() => (window as Window & { cspViolations?: string[] }).cspViolations)).toEqual([]);
+});
+
+// Linked playback (#40): the sidecar time map links the player, plots, keogram, events and ?t=.
+// Fixture segments: 2026-10-31 daytime is [12:30Z, 01:00Z), overnight [01:00Z, 13:30Z); 3,600 frames of 12.5 s.
+const EAST_DAY = "/timelapses/skycam_east/2026-10-31/daytime/";
+type Linked = { time: number; utc: string; frame: number; paused: boolean };
+const linked = (page: Page) => page.evaluate(() => {
+  const video = document.querySelector("video")!, readout = document.getElementById("cursor-readout")!;
+  return { time: video.currentTime, utc: readout.dataset.utc || "", frame: Number(readout.dataset.frame), paused: video.paused };
+});
+/** The UTC cursor's frame (from the map) and the player's frame agree, and the player sits inside that frame. */
+function agree(state: Linked, start: string, step = 12.5) {
+  const frame = Math.floor((Date.parse(state.utc) - Date.parse(start)) / (step * 1000));
+  expect(state.frame).toBe(frame);
+  expect(Math.abs(state.time - (frame + 0.5) / 60)).toBeLessThanOrEqual(1 / 60);
+}
+async function ready(page: Page) {
+  await expect(page.locator("#cursor-readout")).toHaveAttribute("data-frame", /\d+/);
+  await expect(page.getByRole("slider", { name: /Measured weather plots/ })).toBeVisible();
+  await expect.poll(() => page.locator("video").evaluate((element: HTMLVideoElement) => element.readyState)).toBeGreaterThanOrEqual(1);
+}
+test("linked playback: play moves the cursor; chart, keogram and event selections seek within one frame, with no feedback loop", async ({ page }) => {
+  await page.goto(EAST_DAY); await ready(page);
+  const video = page.locator("video");
+  const before = await linked(page);
+  expect(before.utc).toBe("2026-10-31T12:30:06.25Z");
+  await video.evaluate((element: HTMLVideoElement) => element.play());
+  await expect.poll(async () => (await linked(page)).frame, { timeout: 15_000 }).toBeGreaterThan(60);
+  await video.evaluate((element: HTMLVideoElement) => element.pause());
+  await expect.poll(async () => { const state = await linked(page); return state.frame === Math.floor(state.time * 60 + 1e-6); }).toBe(true);
+  // Chart: click 40% across the first panel.
+  const over = page.locator(".linked-plot .u-over").first();
+  const box = (await over.boundingBox())!;
+  await over.click({ position: { x: box.width * 0.4, y: box.height / 2 } });
+  await expect.poll(async () => (await linked(page)).utc).not.toBe(before.utc);
+  await expect.poll(async () => { const state = await linked(page); return Math.abs(state.time - (state.frame + 0.5) / 60) <= 1 / 60; }).toBe(true);
+  const chart = await linked(page); agree(chart, "2026-10-31T12:30:00Z");
+  expect(Math.abs(Date.parse(chart.utc) - (Date.parse("2026-10-31T12:30:00Z") + 0.4 * 45_000_000))).toBeLessThan(45_000_000 / box.width * 2);
+  // No seek-feedback loop: a paused, seeked player and the cursor stay put.
+  await page.waitForTimeout(750);
+  expect(await linked(page)).toEqual(chart);
+  // Keogram bin: the cursor lands on a bin centre (31.25 s bins).
+  const strip = page.locator(".keogram-strip"); const stripBox = (await strip.boundingBox())!;
+  await strip.click({ position: { x: stripBox.width * 0.25, y: stripBox.height / 2 } });
+  await expect.poll(async () => (Date.parse((await linked(page)).utc) - Date.parse("2026-10-31T12:30:00Z")) % 31_250).toBe(15_625);
+  await expect.poll(async () => { const state = await linked(page); return Math.abs(state.time - (state.frame + 0.5) / 60) <= 1 / 60; }).toBe(true);
+  agree(await linked(page), "2026-10-31T12:30:00Z");
+  // A fixture event through seek(interval): 15:20Z is frame 816.
+  await page.getByRole("link", { name: /^Seek video to precipitation onset/ }).click();
+  await expect.poll(async () => (await linked(page)).utc).toBe("2026-10-31T15:20:00Z");
+  await expect.poll(async () => (await linked(page)).time).toBeCloseTo(816.5 / 60, 2);
+  agree(await linked(page), "2026-10-31T12:30:00Z");
+  await expect(page).toHaveURL(/\?t=2026-10-31T15%3A20%3A00Z$/);
+});
+test("plot bounds equal the segment's source interval for a daytime and an overnight recording", async ({ page }) => {
+  for (const [path, start, end] of [[EAST_DAY, "2026-10-31T12:30:00Z", "2026-11-01T01:00:00Z"], ["/timelapses/skycam_east/2026-10-31/overnight/", "2026-11-01T01:00:00Z", "2026-11-01T13:30:00Z"]]) {
+    const seen: URLSearchParams[] = [];
+    page.on("request", (request) => { const url = new URL(request.url()); if (url.pathname === "/api/v1/weather/aggregates") seen.push(url.searchParams); });
+    await page.goto(path); await ready(page);
+    expect(seen.length).toBe(3);
+    for (const query of seen) expect([query.get("start"), query.get("end")]).toEqual([start, end]);
+    page.removeAllListeners("request");
+  }
+});
+test("a telemetry gap and a partial recording: gap and coverage shown, nothing interpolated, no time hidden; a missing keogram still plays", async ({ page, request }) => {
+  await request.post("http://localhost:4174/__control", { data: { productState: "partial" } });
+  await page.goto(EAST_DAY); await ready(page);
+  await expect(page.getByText(/^Partial coverage · 95\.0% of the source interval was captured/)).toBeVisible();
+  await expect(page.getByText(/^Capture gaps: 2 ranges of slate frames totalling 16 min, shown at their true length/)).toBeVisible();
+  await page.getByLabel(/Seek to source time/).fill("2026-10-31T15:10:00Z"); await page.getByLabel(/Seek to source time/).press("Enter");
+  await expect(page.locator("#cursor-readout")).toContainText("Temperature mean no observations");
+  await expect(page.getByText(/^Temperature mean: .*, 9 without observations; coverage 94\.0%\.$/)).toBeVisible();
+  // Inside the 15-minute capture gap the frame is a labelled slate, at its own source time.
+  await page.getByLabel(/Seek to source time/).fill("2026-10-31T16:45:00Z"); await page.getByLabel(/Seek to source time/).press("Enter");
+  await expect(page.locator("#cursor-readout")).toContainText("Capture gap: this frame is a slate");
+  agree(await linked(page), "2026-10-31T12:30:00Z");
+  await request.post("http://localhost:4174/__control", { data: {} });
+  await page.goto("/timelapses/skycam_west/2026-10-31/overnight/"); await ready(page);
+  await expect(page.getByText(/^Keogram unavailable · the recording still plays/)).toBeVisible();
+  await expect(page.locator("video")).toHaveCount(1);
+});
+test("midnight and both DST transitions: repeated local hours carry different offsets and the UTC selection is stable", async ({ page }) => {
+  await page.goto("/timelapses/skycam_east/2026-10-31/overnight/"); await ready(page);
+  const input = page.getByLabel(/Seek to source time/);
+  await input.fill("2026-11-01T07:30:00Z"); await input.press("Enter");
+  await expect(page.locator("#cursor-readout")).toContainText("01:30:00 GMT-06:00");
+  const first = await linked(page);
+  await input.fill("2026-11-01T08:30:00Z"); await input.press("Enter");
+  await expect(page.locator("#cursor-readout")).toContainText("01:30:00 GMT-07:00");
+  const second = await linked(page);
+  expect(second.frame - first.frame).toBe(288);
+  await page.reload(); await ready(page);
+  await expect.poll(async () => (await linked(page)).utc).toBe("2026-11-01T08:30:00Z");
+  await page.goto("/timelapses/skycam_east/2026-03-07/overnight/?t=2026-03-08T09:00:00Z"); await ready(page);
+  await expect(page.locator("#cursor-readout")).toContainText("03:00:00 GMT-06:00");
+  await expect(page.getByText(/Source interval:/)).toContainText("GMT-07:00");
+  agree(await linked(page), "2026-03-08T00:27:00Z", 44_700 / 3600);
+});
+test("a copied ?t= link restores camera, segment and cursor in a fresh context", async ({ page, browser }) => {
+  await page.goto(EAST_DAY); await ready(page);
+  await page.getByLabel(/Seek to source time/).fill("2026-10-31T18:00:00.5Z"); await page.getByRole("button", { name: "Seek" }).click();
+  await expect.poll(async () => (await linked(page)).utc).toBe("2026-10-31T18:00:00.5Z");
+  const href = await page.getByRole("link", { name: "Link to this moment" }).getAttribute("href");
+  expect(href).toBe("?t=2026-10-31T18%3A00%3A00.5Z");
+  const context = await browser.newContext({ baseURL: "http://localhost:4173" });
+  const fresh = await context.newPage();
+  await fresh.goto(new URL(href!, `http://localhost:4173${EAST_DAY}`).toString()); await ready(fresh);
+  await expect(fresh.getByRole("heading", { level: 1, name: "East sky · Daytime" })).toBeVisible();
+  await expect.poll(async () => (await linked(fresh)).utc).toBe("2026-10-31T18:00:00.5Z");
+  await expect(fresh.locator("#cursor-readout")).toContainText("12:00:00 GMT-06:00");
+  await expect.poll(async () => { const state = await linked(fresh); return Math.abs(state.time - (state.frame + 0.5) / 60) <= 1 / 60; }).toBe(true);
+  agree(await linked(fresh), "2026-10-31T12:30:00Z");
+  await context.close();
+});
+test("keyboard-only seek, a text summary, axe on the linked page, one player and bounded points on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  const points: number[] = [];
+  page.on("response", async (response) => { if (new URL(response.url()).pathname === "/api/v1/weather/aggregates") points.push(((await response.json()) as { items: unknown[] }).items.length); });
+  await page.goto(EAST_DAY); await ready(page);
+  const plots = page.getByRole("slider", { name: /Measured weather plots/ });
+  await plots.focus(); await page.keyboard.press("Home");
+  await expect.poll(async () => (await linked(page)).utc).toBe("2026-10-31T12:32:30Z");
+  await page.keyboard.press("ArrowRight");
+  await expect.poll(async () => (await linked(page)).utc).toBe("2026-10-31T12:37:30Z");
+  await expect(plots).toHaveAttribute("aria-valuetext", /±150 s/);
+  const keogram = page.getByRole("slider", { name: /Keogram bin/ });
+  await keogram.focus(); await page.keyboard.press("ArrowRight");
+  await expect.poll(async () => (await linked(page)).utc).toBe("2026-10-31T12:38:04.375Z");
+  await expect(keogram).toHaveAttribute("aria-valuetext", /^Bin 16 of 1440, .*±15\.6 s$/);
+  await expect.poll(async () => { const state = await linked(page); return Math.abs(state.time - (state.frame + 0.5) / 60) <= 1 / 60; }).toBe(true);
+  await expect(page.locator("#plot-summary li")).toHaveCount(6);
+  await page.getByText("Plotted values table").click();
+  await expect(page.getByRole("region", { name: "Plotted values table" })).toBeVisible();
+  expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze()).violations).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expect(page.locator("video")).toHaveCount(1);
+  await expect.poll(() => points.length).toBe(3);
+  expect(points.reduce((sum, count) => sum + count, 0)).toBeLessThan(5000);
+});
+test("the same UTC interval from two cameras shows identical, shared station values", async ({ page }) => {
+  const summary = async (path: string) => { await page.goto(path); await ready(page); return page.locator("#plot-summary").innerText(); };
+  const east = await summary(EAST_DAY), west = await summary("/timelapses/skycam_west/2026-10-31/daytime/");
+  expect(east).toBe(west); expect(east).toContain("Temperature mean:");
+  await expect(page.getByRole("heading", { name: "Station measurements · shared by all cameras" })).toBeVisible();
 });
