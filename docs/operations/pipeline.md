@@ -148,9 +148,11 @@ The pipeline deletes nothing. For #19:
   every current segment whose read range `[starts_at − lag, ends_at)` its
   window overlaps, so staging holds only each segment's unrendered tail. The
   keogram, hourly-original and preview conditions of P3 still apply;
-- a render directory is deletable once its segment is terminal
-  (`published`/`partial`/`unavailable`) and, unless `unavailable`, its
-  `video` row has the committed revision;
+- a render directory is deletable once its segment has `finalized_at` set
+  (the pipeline recorded its RenderResult), or, for a segment made terminal by
+  the deadline sweep without one, once `ends_at` is more than 12 h past
+  (`LATE_RENDER`). A `deadline_missed` or sweep-reconciled segment is still
+  rendered, published and finalized within those 12 h;
 - `.tmp-*` files belong to an in-progress write; the pipeline removes its own
   on restart.
 
@@ -160,7 +162,7 @@ The pipeline deletes nothing. For #19:
 |---|---|---|
 | `WEATHER_STAGING` | `/staging` | Staging share mount |
 | `WEATHER_PIPELINE_GEOMETRY` | `4096x1856` | Commissioned frame geometry |
-| `WEATHER_PIPELINE_CADENCE_MS` / `_PHASE_MS` | 2000 (0.5 Hz, #4) / collector default | Capture grid; must equal `capture.json`, or every frame is a `settings` reject |
+| `WEATHER_PIPELINE_CADENCE_MS` / `_PHASE_MS` | 2000 (0.5 Hz, #4) / collector default | Capture grid. Change it in the same commit as `capture.json`'s `cadence_ms` (a new capture epoch); a mismatch makes every frame a `settings` reject (`weather_pipeline_slot_rejects_total{reason="settings"}`) |
 | `WEATHER_PIPELINE_SHUTTER_DEGREES` | 180 | 180, 270 or 360 |
 | `WEATHER_PIPELINE_BLOCK_FRAMES` | 60 | 1–60; resources only |
 | `WEATHER_CAPTURE_CHUNK_SECONDS` | 60 | Collector chunk length |
@@ -198,7 +200,7 @@ issue and delete the Job. Never run it on a workstation.
 | Metric | Meaning and action |
 |---|---|
 | `weather_pipeline_output_frames_total{camera,result}` | Rendered vs gap (slate) frames |
-| `weather_pipeline_slot_rejects_total{camera,reason}` | Per-slot rejects; `decode` means FFmpeg refused a sealed JPEG |
+| `weather_pipeline_slot_rejects_total{camera,reason}` | Per-slot rejects; `decode` means FFmpeg refused a sealed JPEG; `settings` means the pipeline's cadence/phase differ from `capture.json` |
 | `weather_pipeline_late_frames_total{camera}` | Frames sealed after their block; check collector seal latency |
 | `weather_pipeline_render_lag_seconds{camera}` | Wall time minus the mezzanine's source time |
 | `weather_pipeline_slot_coverage_ratio{camera}` | Last finalized segment's slot coverage |

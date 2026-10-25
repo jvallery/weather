@@ -224,9 +224,16 @@ class Worker:
             # A withdrawn video stays withdrawn: record it, never republish it.
             LOG.warning("Segment product was withdrawn; not republished (%s)", camera)
             return "unavailable", "withdrawn"
-        except catalog.RevisionConflict:
+        except (catalog.RevisionConflict, catalog.StaleFence) as error:
+            # Re-read what is committed: a deadline placeholder racing this commit (its newer
+            # intent fences ours, or its commit moved the revision) converges right here.
             current = await schedule.current_video(self.engine, row.job)
             if not schedule.is_placeholder(current):
+                if (
+                    isinstance(error, catalog.StaleFence)
+                    and current.revision == prepared.result.expected_revision
+                ):
+                    raise  # a newer attempt is still in flight: retry after it resolves
                 # Someone else committed other content: terminal for this prepared result.
                 LOG.warning("Segment video changed under the pipeline (%s)", camera)
                 return "unavailable", "revision_conflict"

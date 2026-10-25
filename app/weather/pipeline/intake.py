@@ -209,6 +209,8 @@ class ChunkIndex:
         self.expected = expected
         self.chunks: dict[Path, Chunk] = {}
         self.invalid: set[Path] = set()
+        # Chunks the last refresh could not read (I/O error); a block must not render past them.
+        self.unreadable: set[Path] = set()
         self.generation = 0
 
     def refresh(self, start: Fraction, end: Fraction) -> list[Chunk]:
@@ -219,12 +221,17 @@ class ChunkIndex:
         hour = (int(start // 1) // HOUR - 1) * HOUR
         last = int(end // 1) // HOUR * HOUR
         self.generation += 1
+        self.unreadable = set()
         while hour <= last:
             directory = self.root / hour_name(hour)
             hour += HOUR
             try:
                 names = sorted(entry.name for entry in os.scandir(directory) if entry.is_file())
             except FileNotFoundError:
+                continue
+            except OSError:
+                LOG.warning("Sealed hour unreadable; will retry (%s)", self.expected.camera)
+                self.unreadable.add(directory)
                 continue
             for name in names:
                 path = directory / name
@@ -235,6 +242,7 @@ class ChunkIndex:
                 except OSError:
                     # A soft-mounted share can fail transiently: retry on the next refresh.
                     LOG.warning("Sealed chunk unreadable; will retry (%s)", self.expected.camera)
+                    self.unreadable.add(path)
                     continue
                 except ValueError:
                     # Never log the path; a reason code is all an operator needs.

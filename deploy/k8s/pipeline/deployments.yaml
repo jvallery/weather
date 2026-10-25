@@ -32,11 +32,14 @@ spec:
       serviceAccountName: pipeline-skycam-east
       imagePullSecrets:
       - name: zot-origin-cluster-pull
+      # Same identity as the collectors: the staging share is owned by UID 1025 / GID 100
+      # (storage-infra#1106), and the pipeline creates render/ beside sealed/.
       securityContext:
         runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
+        runAsUser: 1025
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
       terminationGracePeriodSeconds: 60
@@ -161,11 +164,14 @@ spec:
       serviceAccountName: pipeline-skycam-west
       imagePullSecrets:
       - name: zot-origin-cluster-pull
+      # Same identity as the collectors: the staging share is owned by UID 1025 / GID 100
+      # (storage-infra#1106), and the pipeline creates render/ beside sealed/.
       securityContext:
         runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
+        runAsUser: 1025
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
       terminationGracePeriodSeconds: 60
@@ -290,11 +296,14 @@ spec:
       serviceAccountName: pipeline-frontyard-1
       imagePullSecrets:
       - name: zot-origin-cluster-pull
+      # Same identity as the collectors: the staging share is owned by UID 1025 / GID 100
+      # (storage-infra#1106), and the pipeline creates render/ beside sealed/.
       securityContext:
         runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
+        runAsUser: 1025
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
       terminationGracePeriodSeconds: 60

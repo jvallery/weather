@@ -37,7 +37,9 @@ Source: `deploy/k8s/capture/`, rendered by Argo Application `weather`.
 | 2026-10-25 | 2000 (0.5 Hz) | Jason's decision: staging capacity before #19 cleanup exists. At the default 180° shutter rule the 60 fps timelapse loses no quality at 0.5 Hz. |
 
 1 Hz (`cadence_ms: 1000`) is the target once #19 cleanup runs in production: edit
-`capture.json`, merge, and record the new epoch in this table and in D02. The change
+`capture.json` and, in the same commit, `WEATHER_PIPELINE_CADENCE_MS` in
+`deploy/k8s/pipeline/deployments.yaml` (the renderer rejects frames on any other grid as
+`settings`), merge, and record the new epoch in this table and in D02. The change
 alters `config_hash`, so chunks before and after are distinguishable.
 
 ## Staging occupancy plan
@@ -56,7 +58,8 @@ the collector itself stops writing JPEG payloads (below).
   `deploy/k8s/capture/<camera>.yaml`, merge, and let Argo sync. On SIGTERM the collector seals
   its current chunk within the grace period. Never `kubectl scale` against Argo except as an
   emergency stop, then follow with the Git change.
-- **Cadence change:** edit `capture.json`, record the epoch above and in D02, merge.
+- **Cadence change:** edit `capture.json` and the pipelines' `WEATHER_PIPELINE_CADENCE_MS`
+  together, record the epoch above and in D02, merge.
 - **Credential rotation (with Sentinel):** the camera credential is the Sentinel/Frigate
   default; rotate it with the sentinel owner, then update the agents `secrets-ksops/weather`
   Secret. Restart each collector after the new Secret is live (projected files update, but the

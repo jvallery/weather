@@ -670,6 +670,15 @@ def test_pipeline_deployments_ship_disabled_with_only_their_inputs() -> None:
             if "persistentVolumeClaim" in v
         }
         assert claims == {"weather-staging"}
+    # The pipeline writes render/ on the share the collectors write sealed/ to, as them.
+    collector = yaml.safe_load((root / "capture/skycam-east.yaml").read_text())
+    identity = {
+        k: collector["spec"]["template"]["spec"]["securityContext"][k]
+        for k in ("runAsUser", "runAsGroup", "fsGroup")
+    }
+    for deployment in deployments:
+        context = deployment["spec"]["template"]["spec"]["securityContext"]
+        assert {k: context[k] for k in identity} == identity
     egress_ports = {p["port"] for rule in policy["spec"]["egress"] for p in rule["ports"]}
     assert egress_ports == {5432, 53, 443, 8443}
     bench = yaml.safe_load((root / "pipeline/bench-job.yaml").read_text())
@@ -914,3 +923,46 @@ def test_half_hertz_coverage_one_missed_slot_is_one_gap_frame(tmp_path: Path) ->
     prepared = prepare(renderer, weather=None, expected_revision=0)
     assert (prepared.result.slots.expected, prepared.result.slots.accepted) == (120, 119)
     assert prepared.result.exposure.gaps == [(8, 9)]
+
+
+@needs_ffmpeg
+def test_an_unreadable_chunk_defers_the_block_instead_of_rendering_without_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from weather.pipeline import intake as intake_module
+
+    _corpus(tmp_path, 120)
+    renderer = _renderer(tmp_path, _job(120, 60))
+    real = intake_module.parse_chunk
+    state = {"failed": False}
+
+    def flaky(path: Path, expected: Expected) -> object:
+        if not state["failed"]:
+            state["failed"] = True
+            raise OSError(5, "Input/output error")
+        return real(path, expected)
+
+    monkeypatch.setattr(intake_module, "parse_chunk", flaky)
+    with pytest.raises(OSError):
+        renderer.advance(FAR_FUTURE)
+    assert renderer.metas == []
+    renderer.advance(FAR_FUTURE)
+    prepared = prepare(renderer, weather=None, expected_revision=0)
+    assert prepared.result.slots.accepted == 120
+
+
+@needs_ffmpeg
+def test_a_tail_attempt_never_downgrades_an_accepted_slot(tmp_path: Path) -> None:
+    # Slot 19 (just before b = 20): one writer's capture landed at 19.1 and decodes; another
+    # writer's attempt for the same slot landed after b and is corrupt.
+    synthetic.write_chunks(tmp_path, "skycam_east", _frames_at(T0, range(20)), geometry=(W, H))
+    corrupt = synthetic.corrupt_entropy(synthetic.jpeg(synthetic.sky(W, H, 3)))
+    late = synthetic.Frame(int(T0.timestamp() + 19) * NS, corrupt, offset_ns=1_300_000_000)
+    synthetic.write_chunks(tmp_path, "skycam_east", [late], geometry=(W, H), pod="second")
+    renderer = _renderer(tmp_path, _job(20, 10))
+    renderer.advance(FAR_FUTURE)
+    verdicts = {k: v for meta in renderer.metas for k, v in meta["slots"].items()}
+    from weather.pipeline.render import micros
+
+    assert verdicts[micros(instant("2026-10-23T15:00:19Z"))] == "ok"
+    assert prepare(renderer, weather=None, expected_revision=0).result.slots.accepted == 20

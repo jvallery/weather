@@ -227,9 +227,14 @@ class SegmentRenderer:
         window = self.index.window(lo, hi)
         own = self.index.window(*owned)
         slots: dict[str, str] = {}
+        if self.index.unreadable:
+            # A chunk that could hold this block's frames failed to read: never make a block
+            # durable without it. The next loop retries.
+            raise OSError("Sealed chunk unreadable; block deferred")
         for slot, (source_time, reason) in window.rejected.items():
             if owned[0] <= source_time < owned[1]:
                 slots[micros(slot)] = reason
+                metrics.REJECTS.labels(self.job.camera, reason).inc()
         width = g.width
         threshold = self.recipe.min_exposure_coverage
         accumulators: dict[int, _Accumulator] = {}
@@ -331,17 +336,23 @@ class SegmentRenderer:
             encoder.close()
             if final:
                 tail = self.index.window(g.end, tail_end)
+
+                def judge(slot: Fraction, verdict: str) -> None:
+                    # Another attempt for the slot may already be accepted: never downgrade it.
+                    if slots.get(micros(slot)) != "ok":
+                        slots[micros(slot)] = verdict
+
                 for slot, (_, reason) in tail.rejected.items():
                     if slot < g.end:
-                        slots[micros(slot)] = reason
+                        judge(slot, reason)
                 for candidate in tail.frames:
                     if candidate.slot >= g.end:
                         continue
                     try:
                         good = decode_jpeg(read_frame(candidate), expected.width, expected.height)
-                        slots[micros(candidate.slot)] = "ok" if good is not None else "decode"
+                        judge(candidate.slot, "ok" if good is not None else "decode")
                     except IntakeError:
-                        slots[micros(candidate.slot)] = "changed"
+                        judge(candidate.slot, "changed")
         except BaseException:
             encoder.abort()
             tmp.unlink(missing_ok=True)

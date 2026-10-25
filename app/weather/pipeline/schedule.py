@@ -406,16 +406,17 @@ class SegmentRow:
 async def active(engine: AsyncEngine, camera: str, now: datetime) -> list[SegmentRow]:
     """Current segments of a camera that have started and are not finished, oldest first.
 
-    A segment that missed its deadline stays here for LATE_RENDER after its end, so a late
-    (or unacknowledged) render still publishes and supersedes the deadline placeholder."""
+    A segment made terminal by the deadline sweep (a placeholder, or a committed video whose
+    acknowledgement was lost) is not finalized; it stays here for LATE_RENDER after its end, so
+    the pipeline still publishes (superseding a placeholder, or a no-op duplicate) and records
+    its RenderResult and `finalized_at`."""
     async with engine.connect() as connection:
         rows = await connection.execute(
             text("""
             SELECT id,state,cycle_date,kind,revision,starts_at,ends_at,frames
             FROM weather.segment WHERE current AND camera_id=:camera AND starts_at <= :now
               AND (state IN ('scheduled','processing')
-                   OR (state='unavailable' AND reason='deadline_missed'
-                       AND finalized_at IS NULL AND ends_at > CAST(:late AS timestamptz)))
+                   OR (finalized_at IS NULL AND ends_at > CAST(:late AS timestamptz)))
             ORDER BY starts_at
         """),
             {"camera": camera, "now": now, "late": now - LATE_RENDER},
