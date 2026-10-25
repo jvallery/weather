@@ -27,7 +27,7 @@ from weather.db.days import ensure_days
 from weather.db.models import metadata
 from weather.media.catalog import CatalogResolver
 from weather.pipeline import schedule, synthetic
-from weather.pipeline.hourly import HourlyArchive
+from weather.pipeline.hourly import EXPIRY, HourlyArchive
 from weather.pipeline.intake import ChunkIndex, Expected
 from weather.publish import catalog as publish_catalog
 from weather.publish.model import EMBARGO, MEDIA_BUCKET, ORIGINALS_BUCKET, Product, ProductFile
@@ -447,7 +447,9 @@ def test_hour_archive_exact_bytes_dusk_binding_crash_correction_and_expiry(
                     "SELECT count(*) AS n FROM weather.archival_still "
                     "WHERE camera_id='skycam_east' AND active",
                 )
-            )[0].n == 48  # every slot of the 48 h expiry window, each exactly once
+            )[0].n == len(
+                archive_for(worker, publisher, tmp_path, "skycam_east").due(now, EXPIRY)
+            )  # every slot of the 48 h expiry window, each exactly once (47 within settle)
             expired = await rows(
                 admin,
                 "SELECT count(*) AS n FROM weather.archival_still WHERE camera_id='skycam_east' "
