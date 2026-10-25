@@ -63,8 +63,9 @@ one definition the API, search and AI share):
   function and keeps the human text in search.
 - New web bytes or changed measured evidence withdraw it from the API and search (the
   validated AI text, if any, becomes effective) but keep the revision. The editor shows the
-  bound and current evidence; a description or event change then needs `"rebase": true`
-  (409 `rebase_required` otherwise), audited as action `rebase`.
+  bound and current evidence; new description text or an event change then needs
+  `"rebase": true` (409 `rebase_required` otherwise), audited as action `rebase`. Clearing
+  (`null`) never needs one.
 - `"description": null` clears the override; only eligible validated AI text remains.
 
 Events follow #41: a rule rerun withdraws a stale operator override with `override_stale`;

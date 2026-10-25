@@ -194,8 +194,8 @@ def statements() -> list[str]:
         "weather.analysis,weather.analysis_revision TO weather_editor",
         "GRANT SELECT,INSERT ON weather.weather_event,weather.weather_event_revision,"
         "weather.weather_event_day,weather.weather_day TO weather_editor",
-        # Manual events ensure their calendar rows exist (ON CONFLICT DO NOTHING).
-        "GRANT INSERT ON weather.hour_slot TO weather_editor",
+        # Manual events ensure their calendar rows exist (ON CONFLICT needs SELECT).
+        "GRANT SELECT,INSERT ON weather.hour_slot TO weather_editor",
         "GRANT UPDATE (revision) ON weather.weather_event TO weather_editor",
         "GRANT SELECT,INSERT ON weather.outbox,weather.job TO weather_editor",
         "GRANT SELECT,INSERT ON weather.search_document TO weather_editor",

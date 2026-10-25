@@ -127,11 +127,11 @@ def test_baseline_head_roles_and_least_privilege() -> None:
             async with admin.begin() as connection:
                 assert await scalar(
                     connection, "SELECT version_num FROM public.alembic_version"
-                ) == ("0011_analysis")
+                ) == ("0012_editorial")
                 # Slice-1 relations, the observations view, the API's views (0002), the
                 # publication catalog (0003), search (0004), events (0005), the render
-                # schedule (0006), hourly stills (0009), previews (0007) and AI descriptions
-                # (0011).
+                # schedule (0006), hourly stills (0009), previews (0007), AI descriptions
+                # (0011) and the editor (0012).
                 relations = (
                     await connection.execute(
                         text("""
@@ -187,6 +187,13 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     "weather.object_event",
                     # 0011_analysis (#23)
                     *(f"weather.{name}" for name in ANALYSIS),
+                    # 0012_editorial (#44)
+                    "weather.editorial_operator",
+                    "weather.editorial_subject",
+                    "weather.editorial_revision",
+                    "weather.editorial_audit",
+                    "weather.video_editorial_state",
+                    "public_api.video_editorial",
                 }
                 options = await scalar(
                     connection,
@@ -259,8 +266,13 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                 ):
                     assert await table("weather_worker", relation, "INSERT")
                     assert not await table("weather_worker", relation, "DELETE")
-                    for role in ("weather_ingest", "weather_api", "weather_editor"):
+                    for role in ("weather_ingest", "weather_api"):
                         assert not await table(role, relation, "SELECT")
+                    # Manual events (#44) ensure their calendar rows, nothing else.
+                    assert await table("weather_editor", relation, "SELECT") is (
+                        relation == "weather.hour_slot"
+                    )
+                    assert not await table("weather_editor", relation, "UPDATE")
                 assert not await table("weather_worker", "weather.hour_slot", "UPDATE")
                 assert await table("weather_api", "public_api.stills", "SELECT")
                 assert not await table("weather_worker", "public_api.stills", "SELECT")

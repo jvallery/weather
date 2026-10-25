@@ -338,7 +338,7 @@ test("embed success, 404, 500 and API-down responses allow only vallery.net to f
     expect(text).not.toMatch(PRIVATE);
   }
   await request.post("http://localhost:4174/__control", { data: {} });
-  for (const [path, status] of [["/", 200], ["/weather/history/", 200], ["/editor", 404]] as const) {
+  for (const [path, status] of [["/", 200], ["/weather/history/", 200], ["/editor", 200], ["/no-such-page", 404]] as const) {
     const response = await request.get(path);
     expect(response.status()).toBe(status);
     expect(framing(response)).toEqual({ ancestors: "'none'", xfo: "DENY" });

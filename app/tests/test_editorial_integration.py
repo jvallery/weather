@@ -405,7 +405,9 @@ def test_every_edit_is_audited_in_its_transaction_and_audit_is_append_only() -> 
         assert first["action"] == "edit" and first["recorded_at"] is not None
         assert first["input"] == {"description": "Clear and calm."}
         assert first["media_sha256"] == sha("web-1") and len(first["evidence_hash"]) == 64
-        assert rows[1]["input"] == {"description": None} and rows[1]["media_sha256"] is None
+        assert rows[1]["input"] == {"description": None}
+        # Every row records the media and evidence the subject's public text depended on.
+        assert rows[1]["media_sha256"] == sha("web-1") and rows[1]["evidence_hash"]
         # Audit and revisions are immutable, even for the database owner's sessions.
         for statement in (
             "UPDATE weather.editorial_audit SET reason='rewritten'",
@@ -541,5 +543,59 @@ def test_editorial_changed_is_routed_and_its_handler_reprojects() -> None:
             == "succeeded"
         )
         assert await searchable(api, video, "dust lens")
+
+    database(body)
+
+
+def test_an_ai_republish_never_overwrites_an_editor_revision() -> None:
+    async def body(admin: AsyncEngine, worker: AsyncEngine, api: AsyncEngine, editor: Any) -> None:
+        video, publication_id = await seed(admin)
+        async with worker.begin() as c:
+            await analysis.on_published(c, publication_id, datetime.now(UTC))
+        weather = StaticWeather(station(START, END))
+        await described(worker, admin, weather)
+        human = "Valley fog burned off by mid-morning."
+        await edit(editor, video, change(0, description=human, favorite=True))
+        before = await scalar(
+            admin,
+            "SELECT row_to_json(r)::text FROM weather.editorial_revision r WHERE subject_id=:v",
+            v=video,
+        )
+        # Two AI re-publications of the same media and evidence.
+        for tag in ("rerun-1", "rerun-2"):
+            async with admin.begin() as c:
+                await c.execute(
+                    text("""UPDATE weather.analysis SET state='pending',pending_since=now(),
+                      next_attempt_at=NULL WHERE video_id=:v"""),
+                    {"v": video},
+                )
+                await analysis.enqueue_describe(
+                    c, video, publication_id, tag=tag, now=datetime.now(UTC)
+                )
+            await described(worker, admin, weather)
+        assert await scalar(admin, "SELECT revision FROM weather.analysis") == 3
+        # The editor's revision is untouched and still effective in the API and search.
+        assert await scalar(admin, "SELECT count(*) FROM weather.editorial_revision") == 1
+        assert (
+            await scalar(
+                admin,
+                "SELECT row_to_json(r)::text FROM weather.editorial_revision r WHERE subject_id=:v",
+                v=video,
+            )
+            == before
+        )
+        served = await public(api, video)
+        assert served.editorial.description == human and served.editorial.human_edited
+        assert served.analysis.description is None
+        assert await searchable(api, video, "valley fog")
+        assert not await searchable(api, video, "drifted")
+        # Human text never lives in analysis revisions, so every one of them is the model's
+        # (#23's author_kind guard stays a backstop that never has to fire).
+        assert (
+            await scalar(
+                admin, "SELECT count(*) FROM weather.analysis_revision WHERE author_kind<>'model'"
+            )
+            == 0
+        )
 
     database(body)

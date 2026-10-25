@@ -242,10 +242,14 @@ async def _append(
     actor: str,
     reason: str,
     changes: Mapping[str, Any],
-    evidence_ids: list[UUID],
+    evidence: tuple[str | None, str | None, list[UUID]],
     now: datetime,
 ) -> None:
-    """The revision, its complete audit row and the outbox entry, in the caller's transaction."""
+    """The revision, its complete audit row and the outbox entry, in the caller's transaction.
+
+    `evidence` is what the subject's public content depended on when it was edited: the web
+    rendition SHA-256, the analysis or event evidence hash and the event's evidence IDs.
+    """
     await connection.execute(
         text(INSERT_REVISION_SQL),
         {
@@ -271,9 +275,9 @@ async def _append(
             "old": revision - 1,
             "new": revision,
             "input": json.dumps(changes, allow_nan=False, sort_keys=True),
-            "media": content["media_sha256"],
-            "evidence": content["evidence_hash"],
-            "evidence_ids": evidence_ids,
+            "media": evidence[0],
+            "evidence": evidence[1],
+            "evidence_ids": evidence[2],
             "event_revision": content["event_revision"],
         },
     )
@@ -307,19 +311,28 @@ async def patch(
     changes = body.changes
     fields = changes.model_fields_set
     action = "rebase" if "rebase" in fields else "edit"
-    evidence_ids: list[UUID] = []
+    evidence: tuple[str | None, str | None, list[UUID]] = (None, None, [])
     if kind == "video":
         if "event" in fields:
             raise Invalid("Event changes apply to events only")
         row = await _one(connection, VIDEO_SQL, id=subject_id)
         assert row is not None
-        stale = row["human"] is not None and not row["human_active"]
-        if stale and "description" in fields and "rebase" not in fields:
+        evidence = (row["media_sha256"], row["evidence_hash"], [])
+        # The head already points at the revision being written, so the view's human columns
+        # are empty here: apply its binding rule to the previous revision instead.
+        human = content["description"]
+        stale = human is not None and not (
+            content["media_sha256"] == row["media_sha256"]
+            and content["evidence_hash"] in (None, row["evidence_hash"])
+        )
+        # Clearing never needs a rebase; writing new text over stale evidence does.
+        writes = "description" in fields and changes.description is not None
+        if stale and writes and "rebase" not in fields:
             raise RebaseRequired("Media or evidence changed since the human revision")
         if "rebase" in fields and not stale:
             raise Invalid("Nothing to rebase")
         if "description" in fields or "rebase" in fields:
-            written = changes.description if "description" in fields else row["human"]
+            written = changes.description if "description" in fields else human
             if written is None:
                 content.update(description=None, media_sha256=None, evidence_hash=None)
             else:
@@ -361,7 +374,7 @@ async def patch(
             )
         else:
             content["event_revision"] = int(current["revision"])
-        evidence_ids = list(current["evidence_ids"] or [])
+        evidence = (None, current["evidence_hash"], list(current["evidence_ids"] or []))
     if "tags" in fields:
         content["public_tags"] = sorted(t.tag for t in changes.tags if t.visibility == "public")
         content["private_tags"] = sorted(t.tag for t in changes.tags if t.visibility == "private")
@@ -379,7 +392,7 @@ async def patch(
         actor=actor,
         reason=body.reason,
         changes=changes.model_dump(mode="json", exclude_unset=True),
-        evidence_ids=evidence_ids,
+        evidence=evidence,
         now=now,
     )
     if kind == "video":
@@ -415,7 +428,7 @@ async def create_event(
         actor=actor,
         reason=body.reason,
         changes=body.model_dump(mode="json"),
-        evidence_ids=list(body.evidence_ids),
+        evidence=(None, None, list(body.evidence_ids)),
         now=now,
     )
     return await read(connection, event_id)
