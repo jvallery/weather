@@ -256,8 +256,8 @@ def test_human_description_survives_reruns_withdraws_on_evidence_change_and_reba
         weather = StaticWeather(station(START, END))
         await described(worker, admin, weather)
         automated = (await public(api, video)).editorial
-        assert automated.human_edited is False and automated.description.startswith("Broken")
-        assert await searchable(api, video, "cumulus")
+        assert automated.human_edited is False and automated.description.startswith("The sampled")
+        assert await searchable(api, video, "sampled frames")
 
         # A correction reaches the API and search in the same transaction.
         text_ = "Thin cirrus all afternoon; the low cloud was smoke, not cumulus."
@@ -281,7 +281,7 @@ def test_human_description_survives_reruns_withdraws_on_evidence_change_and_reba
         assert served.editorial.tags == ["smoke"] and served.analysis.author == "editor"
         assert served.analysis.description == text_ and served.analysis.claims == []
         assert await searchable(api, video, "cirrus smoke")
-        assert not await searchable(api, video, "drifted")  # the old AI text is unsearchable
+        assert not await searchable(api, video, "sampled")  # the old AI text is unsearchable
         documents = await scalar(
             admin,
             "SELECT string_agg(text, ' ') FROM weather.search_document WHERE video_id=:v",
@@ -293,7 +293,7 @@ def test_human_description_survives_reruns_withdraws_on_evidence_change_and_reba
         async with admin.begin() as c:
             await c.execute(
                 text("""UPDATE weather.analysis SET state='pending',pending_since=now(),
-                  next_attempt_at=NULL WHERE video_id=:v"""),
+                  attempt_calls=0,next_attempt_at=NULL WHERE video_id=:v"""),
                 {"v": video},
             )
             await analysis.enqueue_describe(
@@ -303,7 +303,7 @@ def test_human_description_survives_reruns_withdraws_on_evidence_change_and_reba
         assert await scalar(admin, "SELECT revision FROM weather.analysis") == 2
         assert (await public(api, video)).editorial.description == text_
         assert await searchable(api, video, "cirrus") and not await searchable(
-            api, video, "drifted"
+            api, video, "sampled"
         )
 
         # Changed evidence withdraws the human text from API and search but keeps the revision.
@@ -566,7 +566,7 @@ def test_an_ai_republish_never_overwrites_an_editor_revision() -> None:
             async with admin.begin() as c:
                 await c.execute(
                     text("""UPDATE weather.analysis SET state='pending',pending_since=now(),
-                      next_attempt_at=NULL WHERE video_id=:v"""),
+                  attempt_calls=0,next_attempt_at=NULL WHERE video_id=:v"""),
                     {"v": video},
                 )
                 await analysis.enqueue_describe(
@@ -586,9 +586,9 @@ def test_an_ai_republish_never_overwrites_an_editor_revision() -> None:
         )
         served = await public(api, video)
         assert served.editorial.description == human and served.editorial.human_edited
-        assert served.analysis.description is None
+        assert served.analysis.author == "editor" and served.analysis.description == human
         assert await searchable(api, video, "valley fog")
-        assert not await searchable(api, video, "drifted")
+        assert not await searchable(api, video, "sampled")
         # Human text never lives in analysis revisions, so every one of them is the model's
         # (#23's author_kind guard stays a backstop that never has to fire).
         assert (
