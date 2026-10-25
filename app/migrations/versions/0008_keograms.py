@@ -14,7 +14,7 @@ file of a withdrawn keogram (its thumbnail or sidecar, not only the withdrawn PN
 from alembic import op
 
 revision = "0008_keograms"
-down_revision = "0010_cleanup"
+down_revision = "0011_gc_kept"
 branch_labels = None
 depends_on = None
 
