@@ -33,7 +33,9 @@ API_VIEWS = (
     "public_api.station",
     "public_api.search_documents",
     "public_api.search_vectors",
+    "public_api.video_analyses",
 )
+ANALYSIS = ("analysis", "analysis_revision", "ai_raw_response")
 SEARCH = ("embedding_profile", "search_document", "search_embedding")
 TELEMETRY = (
     "station",
@@ -125,10 +127,11 @@ def test_baseline_head_roles_and_least_privilege() -> None:
             async with admin.begin() as connection:
                 assert await scalar(
                     connection, "SELECT version_num FROM public.alembic_version"
-                ) == ("0010_cleanup")
+                ) == ("0011_analysis")
                 # Slice-1 relations, the observations view, the API's views (0002), the
-                # publication catalog (0003), search (0004), events (0005) and the render
-                # schedule (0006).
+                # publication catalog (0003), search (0004), events (0005), the render
+                # schedule (0006), hourly stills (0009), previews (0007) and AI descriptions
+                # (0011).
                 relations = (
                     await connection.execute(
                         text("""
@@ -182,6 +185,8 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     "weather.staging_chunk",
                     "weather.staging_deletion",
                     "weather.object_event",
+                    # 0011_analysis (#23)
+                    *(f"weather.{name}" for name in ANALYSIS),
                 }
                 options = await scalar(
                     connection,
@@ -263,6 +268,17 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     assert not await table(role, "weather.camera_preview", "SELECT")
                 for role in ("weather_ingest", "weather_worker", "weather_editor"):
                     assert not await table(role, "public_api.previews", "SELECT")
+                # AI descriptions (#23): the worker writes; only the filtered view is public, and
+                # raw model replies are deletable diagnostics no other role can read.
+                for name in ANALYSIS:
+                    relation = f"weather.{name}"
+                    assert await table("weather_worker", relation, "INSERT")
+                    assert await table("weather_worker", relation, "DELETE") is (
+                        name == "ai_raw_response"
+                    )
+                    assert not await table("weather_worker", relation, "TRUNCATE")
+                    for role in ("weather_ingest", "weather_api", "weather_editor"):
+                        assert not await table(role, relation, "SELECT")
                 # No editorial functions exist yet; weather_editor has no schema access (#44).
                 for role, schema in (
                     ("weather_api", "weather"),

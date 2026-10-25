@@ -1,0 +1,122 @@
+# One bounded live image call through the scoped weather-cortex key (#23); publishes nothing,
+# has no database or Garage access and is never in any kustomization. Usage, the digest and
+# expiry to fill in, and cleanup: docs/operations/intelligence.md#live-smoke.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: weather-intel-smoke
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+    estate.vallery.net/disposable: 'true'
+    estate.vallery.net/expires: 'YYYY-MM-DD'
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: weather
+      app.kubernetes.io/component: intel-smoke
+  policyTypes:
+  - Ingress
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to:
+    - ipBlock:
+        cidr: 192.168.7.10/32
+    ports:
+    - protocol: TCP
+      port: 443
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik-apps
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: traefik
+    ports:
+    - protocol: TCP
+      port: 8443
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: weather-intel-smoke
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    app.kubernetes.io/component: intel-smoke
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+    estate.vallery.net/disposable: 'true'
+    estate.vallery.net/expires: 'YYYY-MM-DD'
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 180
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/part-of: weather
+        app.kubernetes.io/component: intel-smoke
+        estate.vallery.net/disposable: 'true'
+    spec:
+      restartPolicy: Never
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      serviceAccountName: intel
+      imagePullSecrets:
+      - name: zot-origin-cluster-pull
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: smoke
+        image: registry.vallery.net/jvallery/weather-app@sha256:REPLACE_WITH_DIGEST_UNDER_TEST
+        command:
+        - weather
+        - intel
+        - smoke
+        env:
+        - name: WEATHER_CORTEX_BASE_URL
+          value: https://cortex.vallery.net/v1
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: cortex
+          mountPath: /var/run/weather-cortex
+          readOnly: true
+      volumes:
+      - name: cortex
+        secret:
+          secretName: weather-cortex
+          defaultMode: 288
+          items:
+          - key: api_key.txt
+            path: api_key.txt
