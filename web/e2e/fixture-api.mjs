@@ -11,6 +11,7 @@ const catalog = JSON.parse(readFileSync(new URL("../app/fixtures/catalog.json", 
 const almanac = Object.fromEntries(["record", "rain_day", "wind_rose_bin", "astronomy", "comparison", "empty"].map((name) => [name, JSON.parse(readFileSync(new URL(`../app/fixtures/almanac-${name}.json`, import.meta.url)))]));
 const events = JSON.parse(readFileSync(new URL("../app/fixtures/events.json", import.meta.url)));
 const stills = JSON.parse(readFileSync(new URL("../app/fixtures/stills.json", import.meta.url)));
+const search = JSON.parse(readFileSync(new URL("../app/fixtures/search.json", import.meta.url)));
 const media = new URL("../.test-media/clip.mp4", import.meta.url);
 const poster = new URL("../.test-media/poster.jpg", import.meta.url);
 const keogramImage = new URL("../.test-media/keogram.jpg", import.meta.url);
@@ -18,7 +19,31 @@ let state = {};
 let serial = 0;
 // Video rendition paths requested since the last /__control reset, as the media origin sees them.
 let videoRequests = new Set();
-function json(res, value, status = 200) { res.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store" }); res.end(JSON.stringify(value)); }
+function json(res, value, status = 200, headers = {}) { res.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store", ...headers }); res.end(JSON.stringify(value)); }
+// POST /api/v1/search (#25 contract): the request must carry exactly the contract's fields.
+// Control `searchStatus` (400/429/503) or `searchOffline`; text containing "slow" answers after
+// 1.5 s, "nothing" matches no recording, and text without letters or digits has no lexical terms.
+const SEARCH_FIELDS = ["start", "end", "query", "cameras", "segments", "predicates", "top_k"];
+async function searchResponse(req, res) {
+  let body = "";
+  for await (const chunk of req) { body += chunk; if (body.length > 16_384) return json(res, { code: "invalid_request", message: "Too large" }, 400); }
+  let request;
+  try { request = JSON.parse(body); } catch { return json(res, { code: "invalid_request", message: "Invalid JSON" }, 400); }
+  if (!request || Object.keys(request).sort().join() !== [...SEARCH_FIELDS].sort().join()) return json(res, { code: "invalid_request", message: "Unexpected fields" }, 400);
+  const text = String(request.query);
+  if (text.includes("slow")) await delay(1500);
+  if (state.searchStatus === 429) return json(res, { code: "busy", message: "Search is busy." }, 429, { "Retry-After": "7" });
+  if (state.searchStatus === 503) return json(res, { code: "unavailable", message: "Search is unavailable." }, 503);
+  if (state.searchStatus === 400) return json(res, { code: "range_too_large", message: "Measured filters cover at most 31 days per search." }, 400);
+  const empty = text.trim() === "", terms = /[\p{L}\p{N}]/u.test(text);
+  const mode = empty ? "numeric" : state.searchOffline ? "lexical" : "hybrid_exact";
+  const reason = mode !== "lexical" ? null : terms ? "embedding_unavailable" : "lexical_no_terms";
+  let hits = search.hits.filter((hit) => (!request.cameras.length || request.cameras.includes(hit.camera_id)) && (!request.segments.length || request.segments.includes(hit.segment)));
+  if (text.includes("nothing") || reason === "lexical_no_terms") hits = [];
+  if (empty) hits = hits.filter((hit) => hit.evidence_precision === "segment").sort((a, b) => Date.parse(b.video_interval.start) - Date.parse(a.video_interval.start));
+  hits = hits.slice(0, request.top_k).map((hit, index) => ({ ...hit, rank: index + 1 }));
+  return json(res, { ...search, generated_at: new Date().toISOString(), mode, degraded_reason: reason, profile_id: mode === "hybrid_exact" ? search.profile_id : null, count: hits.length, hits });
+}
 // Synthetic slate ranges (non-uniform) per video; every sidecar reports 95% slot coverage.
 const GAPS = { "skycam_east/2026-10-31/daytime": [[1200, 1272], [2000, 2003]], "skycam_west/2026-10-31/overnight": [[600, 601], [1800, 1950]] };
 const gcd = (a, b) => (b === 0n ? a : gcd(b, a % b));
@@ -105,6 +130,7 @@ createServer(async (req, res) => {
   if (url.pathname === "/healthz") return json(res, { ok: true });
   if (state.apiUnavailable && url.pathname.startsWith("/api/v1/weather/")) return json(res, { code: "synthetic-unavailable" }, 503);
   if (state.delayMs && url.pathname.startsWith("/api/")) await delay(Math.min(Number(state.delayMs), 5000));
+  if (url.pathname === "/api/v1/search" && req.method === "POST") return searchResponse(req, res);
   if (url.pathname === "/api/v1/weather/current") {
     const value = structuredClone(current); const now = Date.now();
     value.generated_at = new Date(now).toISOString();

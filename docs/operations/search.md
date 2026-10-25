@@ -147,5 +147,5 @@ kubectl --context vallery -n weather get ingressroute weather-search
 - Hydration joins `public_api.videos`, so a hit whose media is unavailable or withdrawn drops
   or loses its seek even before #18's withdrawal calls `withdraw`.
 - #23 wires `register(registry, embedder)` into the worker that holds Cortex egress and calls
-  `replace`; #44 calls `replace`/`withdraw` on editorial changes; #27 builds the UI.
+  `replace`; #44 calls `replace`/`withdraw` on editorial changes; the UI is #27 ([web](web.md#search-27)).
 - Live 429 bursts, seek checks and relevance on the real corpus are #50.

@@ -34,9 +34,11 @@ export function fromEpochSeconds(value: number): Instant { return BigInt(Math.ro
 
 const ceilDiv = (a: bigint, b: bigint) => (a + b - 1n) / b;
 
+/** Half-open membership: start ≤ at < end. */
+export function within(span: Span, at: Instant): boolean { return span.start <= at && at < span.end; }
 /** Bin i of `count` equal elapsed-UTC bins over [start, end) (frames, keogram columns). */
 export function binOf(span: Span, count: number, at: Instant): number | null {
-  if (at < span.start || at >= span.end) return null;
+  if (!within(span, at)) return null;
   return Number(((at - span.start) * BigInt(count)) / (span.end - span.start));
 }
 /** The integer-microsecond half-open source interval owned by bin i. */
@@ -56,17 +58,19 @@ export type TimeMap = Span & {
   slotFraction: number | null;
 };
 
+/** A published segment never exceeds one camera cycle's 7,200 frames (120 s at 60 fps). */
+export const MAX_FRAMES = 7200;
 const ratio = z.object({ numerator: z.number().int().positive(), denominator: z.number().int().positive() });
 const sidecar = z.object({
   schema_version: z.literal(1),
   source_interval: z.object({ start: z.string(), end: z.string() }),
   time_map: z.object({
-    frames: z.number().int().positive().max(7200), fps: z.literal(60), timescale: z.literal(60000),
+    frames: z.number().int().positive().max(MAX_FRAMES), fps: z.literal(60), timescale: z.literal(60000),
     sample_ticks: z.literal(1000), terminal_ticks: z.number().int(), source_step_seconds: ratio,
   }),
   coverage: z.object({
     slots: z.object({ fraction: z.number().min(0).max(1) }).nullable().catch(null).default(null),
-    exposure: z.object({ gaps: z.array(z.tuple([z.number().int(), z.number().int()])).max(7200) }),
+    exposure: z.object({ gaps: z.array(z.tuple([z.number().int(), z.number().int()])).max(MAX_FRAMES) }),
   }),
 });
 
