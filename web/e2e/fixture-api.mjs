@@ -12,7 +12,7 @@ const almanac = Object.fromEntries(["record", "rain_day", "wind_rose_bin", "astr
 const events = JSON.parse(readFileSync(new URL("../app/fixtures/events.json", import.meta.url)));
 const media = new URL("../.test-media/clip.mp4", import.meta.url);
 const poster = new URL("../.test-media/poster.jpg", import.meta.url);
-const keogramImage = new URL("../.test-media/keogram.png", import.meta.url);
+const keogramImage = new URL("../.test-media/keogram.jpg", import.meta.url);
 let state = {};
 let serial = 0;
 function json(res, value, status = 200) { res.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store" }); res.end(JSON.stringify(value)); }
@@ -48,7 +48,7 @@ function asset(id) {
   for (const video of snapshot().items) {
     if (video.renditions.some((item) => item.asset.asset_id === id)) return { path: media, mime: "video/mp4" };
     if (video.poster?.asset_id === id) return { path: poster, mime: "image/jpeg" };
-    if (video.keogram?.asset_id === id) return { path: keogramImage, mime: "image/png" };
+    if (video.keogram?.asset_id === id) return { path: keogramImage, mime: "image/jpeg" };
     if (video.sidecar?.asset_id === id) return { sidecar: sidecarFor(video) };
   }
   return null;

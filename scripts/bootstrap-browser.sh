@@ -15,4 +15,4 @@ mkdir -p web/.test-media
 ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=0x0e5a43:s=320x180:r=60 -t 60 -c:v libx264 -threads 1 -preset ultrafast -pix_fmt yuv420p -movflags +faststart -y web/.test-media/clip.mp4
 ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=0x0e5a43:s=320x180 -frames:v 1 -threads 1 -y web/.test-media/poster.jpg
 # A synthetic 1,440-bin keogram strip (test pattern), never camera imagery.
-ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc2=s=1440x64 -frames:v 1 -threads 1 -y web/.test-media/keogram.png
+ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc2=s=1440x64 -frames:v 1 -threads 1 -y web/.test-media/keogram.jpg
