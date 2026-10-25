@@ -6,8 +6,8 @@ import hashlib
 import time
 from collections.abc import AsyncIterator, Iterable
 from contextlib import asynccontextmanager
-from dataclasses import dataclass, field
-from datetime import date
+from dataclasses import dataclass, field, replace
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from urllib.parse import unquote
 from uuid import UUID, uuid4
@@ -16,7 +16,13 @@ import pytest
 from fastapi.testclient import TestClient
 from prometheus_client import CollectorRegistry
 from weather.api import build_app
-from weather.media.catalog import download_name, media_routes, representation
+from weather.media.catalog import (
+    LATEST_SOURCES,
+    download_name,
+    latest_representation,
+    media_routes,
+    representation,
+)
 from weather.media.origin import (
     MediaMetrics,
     MediaOrigin,
@@ -531,3 +537,122 @@ def test_api_dispatches_media_ahead_of_other_routes() -> None:
     assert client.get(f"/media/{uuid4()}").status_code == 404
     assert client.get("/api/healthz").json()["status"] == "ok"
     assert client.get(f"/downloads/{VIDEO}/native").content == DATA
+
+
+# Breach detector and probe target (#49) ------------------------------------------------------
+
+NOW = datetime(2026, 10, 25, 12, tzinfo=UTC)
+STILL = Representation(
+    locator=f"still/{SHA}.jpg", length=len(DATA), sha256=SHA, content_type="image/jpeg",
+    product="still", captured_upper=NOW - timedelta(seconds=900), resolved_at=NOW,
+)
+EARLY = replace(STILL, captured_upper=NOW - timedelta(seconds=599))
+
+
+class Latest:
+    def __init__(self, found: Representation | None = STILL) -> None:
+        self.found = found
+        self.kinds: list[str] = []
+
+    async def __call__(self, kind: str) -> Representation | None:
+        self.kinds.append(kind)
+        return self.found
+
+
+def latest_origin(
+    found: Representation | None = STILL, body: FakeBody | None = None
+) -> tuple[MediaOrigin, Latest, CollectorRegistry]:
+    resolver, latest, registry = Resolver(), Latest(found), CollectorRegistry()
+    origin = MediaOrigin(
+        media_routes(resolver.asset, resolver.download, latest),
+        FakeBody() if body is None else body,
+        MediaMetrics(registry),
+    )
+    return origin, latest, registry
+
+
+def breaches(registry: CollectorRegistry, **labels: str) -> float:
+    return sample(registry, "weather_embargo_served_before_total", **labels)
+
+
+def test_breach_counter_starts_at_zero_for_every_product() -> None:
+    registry = CollectorRegistry()
+    MediaMetrics(registry)
+    products = {
+        item.labels["product"]
+        for metric in registry.collect()
+        for item in metric.samples
+        if item.name == "weather_embargo_served_before_total"
+    }
+    assert products == {"preview", "still", "keogram", "video", "poster"}
+    assert breaches(registry) == 0
+
+
+def test_bytes_served_inside_600_s_of_capture_count_as_a_breach() -> None:
+    assert EARLY.early and not STILL.early
+    assert replace(STILL, captured_upper=NOW - timedelta(seconds=600)).early is False
+    assert replace(EARLY, product=None).early is False  # not checked without a product
+    origin, _, registry = latest_origin(EARLY)
+    # HEAD writes no body, a range is still bytes served.
+    assert run(origin, "/media/latest/still", "HEAD").status == 200
+    assert breaches(registry) == 0
+    assert run(origin, "/media/latest/still", range="bytes=0-0").status == 206
+    assert breaches(registry, product="still") == 1
+    assert run(origin, "/media/latest/still").body == DATA
+    assert breaches(registry, product="still") == 2 and breaches(registry) == 2
+
+
+def test_no_breach_without_bytes_or_inside_the_embargo() -> None:
+    # Store fails before the headers: a 503, nothing served.
+    origin, _, registry = latest_origin(EARLY, FakeBody(open_error=True))
+    assert run(origin, "/media/latest/still").status == 503
+    # A refusal is not a breach.
+    refused, _, refused_registry = latest_origin(None)
+    assert run(refused, "/media/latest/still").status == 404
+    # Eligible and past 600 s: served, not counted.
+    served, _, served_registry = latest_origin(STILL)
+    assert run(served, "/media/latest/still").status == 200
+    assert breaches(registry) == breaches(refused_registry) == breaches(served_registry) == 0
+
+
+def test_latest_is_a_fixed_cache_safe_head_able_target() -> None:
+    origin, latest, registry = latest_origin()
+    result = run(origin, "/media/latest/still")
+    assert result.status == 200 and result.body == DATA and result.complete
+    assert result.header("cache-control") == "no-store, no-transform"
+    assert result.header("etag") == ETAG and result.header("location") is None
+    head = run(origin, "/media/latest/still", "HEAD")
+    assert head.status == 200 and head.body == b"" and head.header("content-length") == "100"
+    # Re-resolved on every request; nothing is cached.
+    assert latest.kinds == ["still", "still"]
+    assert sample(registry, "weather_media_requests_total", route="latest", status="200") == 2
+    # Unknown kinds, other spellings and extra segments are the same 404, with no lookup.
+    for path in ("/media/latest/original", "/media/latest/", "/media/latest/still/",
+                 "/media/latest/Still", "/media/latest/%73till", "/media/latest/still/x"):
+        denied = run(origin, path)
+        assert denied.status == 404 and denied.body == run(origin, "/media/nope").body, path
+    assert latest.kinds == ["still", "still"]
+    # Nothing qualifies yet: 404.
+    empty, _, _ = latest_origin(None)
+    assert run(empty, "/media/latest/video").status == 404
+    assert run(empty, "/media/latest/video", "HEAD").status == 404
+    # Asset IDs still resolve beside the fixed space.
+    assert run(origin, f"/media/{ASSET}").status == 200
+    assert set(LATEST_SOURCES) == {"video", "poster", "keogram", "still"}
+
+
+def test_latest_row_carries_the_capture_bound() -> None:
+    row = {"class": "keogram", "sha256": SHA, "extension": "png", "bytes": 10,
+           "content_type": "image/png", "captured_upper": NOW - timedelta(seconds=700),
+           "now": NOW}
+    found = latest_representation(row, "keogram")
+    assert found is not None and found.locator == f"keogram/{SHA}.png"
+    assert (found.product, found.captured_upper, found.resolved_at) == (
+        "keogram", NOW - timedelta(seconds=700), NOW)
+    assert not found.early
+    assert latest_representation(row, "still") is None
+    assert latest_representation({**row, "captured_upper": None}, "keogram") is None
+    assert latest_representation({**row, "class": "original"}, "keogram") is None
+    for _, source in LATEST_SOURCES.values():
+        # The window uses the stable now(), so the bound reaches the base table.
+        assert "now() - interval '14 days'" in source

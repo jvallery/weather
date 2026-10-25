@@ -137,7 +137,7 @@ def create_app(settings: Settings, registry: CollectorRegistry = REGISTRY) -> Fa
     store = media_store()
     resolver = CatalogResolver(engine)
     origin = MediaOrigin(
-        media_routes(resolver.asset, resolver.download),
+        media_routes(resolver.asset, resolver.download, resolver.latest),
         GarageBody(store) if store is not None else None,
         MediaMetrics(registry),
     )

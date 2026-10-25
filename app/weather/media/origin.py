@@ -15,6 +15,11 @@ Memory is bounded per stream: one upstream chunk is in flight and every write wa
 client (uvicorn's flow control). A client disconnect cancels the upstream read at once; a
 client that stops reading for `write_timeout` is cut off. After the headers, any failure
 aborts the connection; nothing is ever appended to media bytes.
+
+Breach detector (#49): a representation that carries its capture upper bound and the database
+clock that authorized it is checked once more as its first body byte is written. Bytes served
+less than 600 s after capture increment `weather_embargo_served_before_total{product}`; that
+should be impossible, so any increment pages. A refusal is never a breach.
 """
 
 import asyncio
@@ -31,6 +36,7 @@ from collections.abc import (
 )
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from typing import Any, Protocol
 from uuid import UUID
 
@@ -46,6 +52,10 @@ MIME = re.compile(r"[a-z]+/[a-z0-9][a-z0-9.+-]{0,62}")
 FILENAME = re.compile(r"[a-z0-9][a-z0-9._-]{0,127}")
 # Digits beyond this are a malformed request, never an allocation.
 SPAN = re.compile(r"[ \t]*([0-9]{0,32})-([0-9]{0,32})[ \t]*")
+# P14's minimum delay from capture; the breach detector's own floor, independent of any
+# `public_not_before` (#49).
+EMBARGO_FLOOR = timedelta(seconds=600)
+EMBARGO_PRODUCTS = ("preview", "still", "keogram", "video", "poster")
 
 Message = MutableMapping[str, Any]
 Receive = Callable[[], Awaitable[Message]]
@@ -77,6 +87,11 @@ class Representation:
     sha256: str
     content_type: str
     filename: str | None = None
+    # For the breach detector: what is served, the newest capture instant in these bytes and
+    # the database clock that authorized them. A representation without them is not checked.
+    product: str | None = None
+    captured_upper: datetime | None = None
+    resolved_at: datetime | None = None
 
     def __post_init__(self) -> None:
         if (
@@ -90,6 +105,16 @@ class Representation:
     @property
     def etag(self) -> str:
         return f'"{self.sha256}"'
+
+    @property
+    def early(self) -> bool:
+        """Less than 600 s from capture to the authorizing clock: serving it is a breach."""
+        return (
+            self.product is not None
+            and self.captured_upper is not None
+            and self.resolved_at is not None
+            and self.resolved_at - self.captured_upper < EMBARGO_FLOOR
+        )
 
 
 class Body(Protocol):
@@ -106,12 +131,14 @@ Resolve = Callable[[UUID], Awaitable[Representation | None]]
 
 @dataclass(frozen=True)
 class Route:
-    """`prefix` claims a path space; `pattern` must match the whole path with one UUID group."""
+    """`prefix` claims a path space; `pattern` must match the whole path with one group, which
+    `key` turns into what `resolve` takes (a UUID, or a fixed name)."""
 
     label: str
     prefix: bytes
     pattern: re.Pattern[bytes]
-    resolve: Resolve
+    resolve: Callable[[Any], Awaitable[Representation | None]]
+    key: Callable[[str], object] = UUID
 
 
 def byte_range(
@@ -193,6 +220,14 @@ class MediaMetrics:
             ["route", "reason"],
             registry=registry,
         )
+        self.served_before = Counter(
+            "weather_embargo_served_before_total",
+            "Media bodies whose first byte was served less than 600 s after capture; always 0",
+            ["product"],
+            registry=registry,
+        )
+        for product in EMBARGO_PRODUCTS:
+            self.served_before.labels(product)
         self.ttfb = Histogram(
             "weather_media_ttfb_seconds",
             "Request start to the first body byte",
@@ -243,7 +278,7 @@ class MediaOrigin:
         raw, path = _paths(scope)
         # Both spellings must be the canonical one: no escapes, dots or extra segments.
         match = route.pattern.fullmatch(raw)
-        identity = UUID(match[1].decode()) if match and raw == path else None
+        identity = route.key(match[1].decode()) if match and raw == path else None
         method = scope["method"]
         status = await self._serve(route, identity, method, scope, receive, send, started)
         label = method if method in {"GET", "HEAD"} else "other"
@@ -252,7 +287,7 @@ class MediaOrigin:
     async def _serve(
         self,
         route: Route,
-        identity: UUID | None,
+        identity: object | None,
         method: str,
         scope: Message,
         receive: Receive,
@@ -281,7 +316,7 @@ class MediaOrigin:
     async def _respond(
         self,
         route: Route,
-        identity: UUID,
+        identity: object,
         method: str,
         scope: Message,
         receive: Receive,
@@ -328,7 +363,8 @@ class MediaOrigin:
             async with self._body.open(representation, first, last) as chunks:
                 await send(_start(status, representation, first, last))
                 sent = True
-                outcome = await self._stream(chunks, receive, send, label, started)
+                breach = representation.product if representation.early else None
+                outcome = await self._stream(chunks, receive, send, label, started, breach)
         except Unavailable as error:
             metrics.upstream_errors.labels(label, error.source, "stream" if sent else "open").inc()
             if not sent:
@@ -347,8 +383,10 @@ class MediaOrigin:
         send: Send,
         label: str,
         started: float,
+        breach: str | None = None,
     ) -> str:
-        """Copy chunks until done, a disconnect or a stall; returns which one happened."""
+        """Copy chunks until done, a disconnect or a stall; returns which one happened.
+        `breach` names the product when its first byte out is an embargo breach."""
 
         async def copy() -> str:
             first = True
@@ -362,6 +400,8 @@ class MediaOrigin:
                     return "stalled"
                 if first:
                     self._metrics.ttfb.labels(label).observe(time.monotonic() - started)
+                    if breach is not None:
+                        self._metrics.served_before.labels(breach).inc()
                     first = False
                 self._metrics.bytes.labels(label).inc(len(chunk))
             await send({"type": "http.response.body", "body": b"", "more_body": False})
@@ -436,3 +476,16 @@ def uuid_route(label: str, prefix: str, suffix: str, resolve: Resolve) -> Route:
     raw = prefix.encode()
     pattern = re.compile(re.escape(raw) + UUID_PATTERN + re.escape(suffix.encode()))
     return Route(label, raw, pattern, resolve)
+
+
+def named_route(
+    label: str,
+    prefix: str,
+    names: Iterable[str],
+    resolve: Callable[[str], Awaitable[Representation | None]],
+) -> Route:
+    """A route for `<prefix><name>` over a fixed vocabulary, such as `/media/latest/still`."""
+    raw = prefix.encode()
+    alternatives = b"|".join(re.escape(name.encode()) for name in sorted(names))
+    pattern = re.compile(re.escape(raw) + b"(" + alternatives + b")")
+    return Route(label, raw, pattern, resolve, str)

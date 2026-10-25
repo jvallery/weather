@@ -585,6 +585,15 @@ def test_hour_archive_exact_bytes_dusk_binding_crash_correction_and_expiry(
             east_ids = [d.asset_id for d in derivatives]
             for asset_id in east_ids:
                 assert await resolver.asset(asset_id) is not None
+            # The probe target (#49) serves a still with its capture bound, past the embargo;
+            # every kind's query runs as the api role (a SQL error would raise Unavailable).
+            latest = await resolver.latest("still")
+            assert latest is not None and latest.product == "still"
+            assert latest.locator.startswith("still/") and not latest.early
+            assert latest.resolved_at is not None and latest.captured_upper is not None
+            assert latest.resolved_at - latest.captured_upper >= EMBARGO
+            for kind in ("video", "poster", "keogram"):
+                await resolver.latest(kind)
             # Withdrawing one image tombstones its still: every sibling leaves the media
             # origin and the stills view lists the slot withdrawn, with no images.
             west_ids = [

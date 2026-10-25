@@ -378,6 +378,7 @@ def run(camera: str) -> None:
     try:
         config = PipelineConfig.from_environment(camera)
         start_http_server(config.metrics_port)
+        metrics.zero_pipeline(config.camera)
         asyncio.run(main_async(config))
     except Exception as error:
         LOG.error("Pipeline startup failed (%s)", type(error).__name__)

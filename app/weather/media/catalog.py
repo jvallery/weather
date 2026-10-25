@@ -6,18 +6,25 @@ primary, with the database clock, once per request; nothing is cached. The views
 public classes in `weather-media` that are available, not withdrawn and past their embargo, so
 originals, embargoed, withdrawn and unknown IDs all resolve to None. The object key is rebuilt
 from the content address the row carries, never taken from the request.
+
+`/media/latest/{kind}` is the fixed probe target (#49): the newest public asset of one kind
+whose source ended within `LATEST_WINDOW`, chosen through the same views, so it inherits every
+embargo and withdrawal rule and never reaches a camera. It carries its capture upper bound, so
+the origin's breach detector checks it.
 """
 
 import asyncio
+import dataclasses
 import re
-from datetime import date
+from collections.abc import Awaitable, Callable
+from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from .origin import Representation, Resolve, Route, Unavailable, uuid_route
+from .origin import Representation, Resolve, Route, Unavailable, named_route, uuid_route
 
 PUBLIC_CLASSES = frozenset({"video", "poster", "keogram", "still", "sidecar"})
 CAMERAS = frozenset({"skycam_east", "skycam_west", "frontyard_1"})
@@ -32,6 +39,29 @@ DOWNLOAD = """
     SELECT a.class,a.sha256,a.extension,a.bytes,a.content_type,v.camera_id,v.cycle_date,v.segment
     FROM public_api.videos v JOIN public_api.assets a ON a.id = v.native_asset_id
     WHERE v.id = CAST(:id AS uuid)
+"""
+# Bounds the view scan; `now()` (not the volatile clock) lets the bound reach the base table.
+LATEST_WINDOW = "interval '14 days'"
+# kind -> (asset class, source subquery giving asset_id and the capture upper bound).
+_VIDEO = """SELECT v.{column} AS asset_id,v.ends_at AS captured_upper FROM public_api.videos v
+      WHERE v.ends_at > now() - {window} AND v.{column} IS NOT NULL
+      ORDER BY v.ends_at DESC,v.id LIMIT 1"""
+LATEST_SOURCES = {
+    "video": ("video", _VIDEO.format(column="web_asset_id", window=LATEST_WINDOW)),
+    "poster": ("poster", _VIDEO.format(column="poster_asset_id", window=LATEST_WINDOW)),
+    "keogram": ("keogram", _VIDEO.format(column="keogram_asset_id", window=LATEST_WINDOW)),
+    "still": (
+        "still",
+        f"""SELECT s.asset_ids[1] AS asset_id,s.capture_upper AS captured_upper
+      FROM public_api.stills s
+      WHERE s.capture_upper > now() - {LATEST_WINDOW} AND cardinality(s.asset_ids) > 0
+      ORDER BY s.capture_upper DESC,s.camera_id LIMIT 1""",
+    ),
+}
+LATEST = """
+    SELECT clock_timestamp() AS now,a.class,a.sha256,a.extension,a.bytes,a.content_type,
+      l.captured_upper
+    FROM ({source}) l JOIN public_api.assets a ON a.id = l.asset_id
 """
 
 
@@ -62,7 +92,7 @@ class CatalogResolver:
     def __init__(self, engine: AsyncEngine, *, timeout_ms: int = 1500) -> None:
         self._engine, self._timeout_ms = engine, timeout_ms
 
-    async def _row(self, sql: str, identity: UUID) -> dict[str, Any] | None:
+    async def _row(self, sql: str, identity: UUID | None = None) -> dict[str, Any] | None:
         try:
             # One deadline covers the pool wait and the statement.
             async with (
@@ -74,7 +104,8 @@ class CatalogResolver:
                 await connection.execute(
                     text(f"SET LOCAL statement_timeout = {int(self._timeout_ms)}")
                 )
-                row = (await connection.execute(text(sql), {"id": identity})).mappings().first()
+                params = {"id": identity} if identity is not None else {}
+                row = (await connection.execute(text(sql), params)).mappings().first()
                 return dict(row) if row is not None else None
         except Exception:
             # Never retain or log driver errors, SQL or parameters.
@@ -90,9 +121,34 @@ class CatalogResolver:
             return None
         return representation(row, name)
 
+    async def latest(self, kind: str) -> Representation | None:
+        if kind not in LATEST_SOURCES:
+            return None
+        expected, source = LATEST_SOURCES[kind]
+        row = await self._row(LATEST.format(source=source))
+        return latest_representation(row, expected) if row is not None else None
 
-def media_routes(asset: Resolve, download: Resolve) -> list[Route]:
+
+def latest_representation(row: dict[str, Any], expected: str) -> Representation | None:
+    """The probe target's row, carrying what the breach detector checks."""
+    found = representation(row)
+    captured, now = row.get("captured_upper"), row.get("now")
+    if found is None or row["class"] != expected:
+        return None
+    if not isinstance(captured, datetime) or not isinstance(now, datetime):
+        return None
+    return dataclasses.replace(found, product=expected, captured_upper=captured, resolved_at=now)
+
+
+def media_routes(
+    asset: Resolve,
+    download: Resolve,
+    latest: Callable[[str], Awaitable[Representation | None]] | None = None,
+) -> list[Route]:
+    # The fixed `/media/latest/` space comes first: it would otherwise fall under `/media/`.
+    fixed = [named_route("latest", "/media/latest/", LATEST_SOURCES, latest)] if latest else []
     return [
+        *fixed,
         uuid_route("media", "/media/", "", asset),
         uuid_route("download", "/downloads/", "/native", download),
     ]
