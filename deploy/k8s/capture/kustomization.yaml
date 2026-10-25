@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Camera capture (#4). Camera Secrets and the per-camera egress policies
+# (collector-<camera>-egress, one camera address and its snapshot port) come from the
+# encrypted weather-secrets overlay in jvallery/agents; nothing here names a camera address.
+resources:
+- pvc.yaml
+- network-policy.yaml
+- skycam-east.yaml
+- skycam-west.yaml
+- frontyard-1.yaml
+# Config epoch 2026-10-25 (D02): 0.5 Hz until #19 staging cleanup runs, then 1 Hz. phase_ms
+# defaults per camera (0/333/667 ms). The hash suffix rolls the collectors on any change.
+configMapGenerator:
+- name: collector-capture
+  files:
+  - capture.json
+  options:
+    labels:
+      app.kubernetes.io/part-of: weather
+      app.kubernetes.io/component: collector
+      agent-fleet.vallery.net/owner: jvallery
+      agent-fleet.vallery.net/project: weather

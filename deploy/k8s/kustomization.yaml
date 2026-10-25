@@ -11,6 +11,7 @@ resources:
 - database
 - migrate
 - scheduler
+- capture
 # Search (#25): uncomment in the deploy commit that pins an app digest carrying weather.search.
 # components:
 # - search

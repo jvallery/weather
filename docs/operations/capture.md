@@ -1,9 +1,75 @@
 # Snapshot collector operation
 
-WX-10 provides source and fake-camera qualification. WX-03 commissions the real
-cameras, per-camera PVC/mounts, NetworkPolicies, cadence and workload activation.
-Do not use a public request to trigger capture. No camera commissioning or live
-camera qualification is implied by a passing fake-camera test.
+Three collectors (`collector-skycam-east`, `collector-skycam-west`, `collector-frontyard-1`)
+write sealed chunks to the Obsidian staging share (#4). They are the only input to the
+renderer (#15), keograms, hourly stills and delayed previews. Public requests never
+trigger camera access.
+
+## Deployment
+
+Source: `deploy/k8s/capture/`, rendered by Argo Application `weather`.
+
+- PVC `weather-staging` binds the storage-infra#1106 PV (300 GiB hard quota, soft
+  NFSv4.1 mount, Retain, `Prune=false,Delete=false`). Each collector mounts it once at
+  `/staging`; `tmp/` and `sealed/` must stay on that one mount (a cross-mount seal rename
+  fails with EXDEV).
+- StatefulSets `collector-<camera>`, `replicas: 1`, image `weather-app` at the pinned digest,
+  command `weather capture collect --camera <id>`. They run as UID 1025 / GID 100 (the share
+  owner), read-only root FS, all capabilities dropped, seccomp RuntimeDefault, no SA token,
+  priority `estate-app`, grace period 30 s.
+- ConfigMap `collector-capture-<hash>` (from `capture/capture.json`) plus the Downward API
+  `POD_UID` are projected read-only at `/etc/weather/capture`. The hash suffix rolls the
+  three collectors on any change. `phase_ms` defaults per camera: 0, 333, 667 ms.
+- Secret `weather-camera-<camera>` (agents KSOPS overlay) is mounted as files at
+  `/run/secrets/camera`, mode 0440.
+- Network: namespace `default-deny`, NetworkPolicy `collector` (metrics ingress on 9000 from
+  `observability` only, no egress), and the agents-owned `collector-<camera>-egress`, which
+  selects `app.kubernetes.io/name: collector-<camera>` and allows that camera's address and
+  snapshot port only. No DNS, database, Garage or API access. The NFS mount is made by the
+  kubelet, not the pod.
+- Metrics: the `weather-app` scrape job keeps every `part-of=weather` pod with a `metrics`
+  port, so the collectors are scraped without extra config.
+
+## Cadence (config epoch)
+
+| Epoch | `cadence_ms` | Reason |
+|---|---:|---|
+| 2026-10-25 | 2000 (0.5 Hz) | Jason's decision: staging capacity before #19 cleanup exists. At the default 180° shutter rule the 60 fps timelapse loses no quality at 0.5 Hz. |
+
+1 Hz (`cadence_ms: 1000`) is the target once #19 cleanup runs in production: edit
+`capture.json`, merge, and record the new epoch in this table and in D02. The change
+alters `config_hash`, so chunks before and after are distinguishable.
+
+## Staging occupancy plan
+
+Until #19 cleanup runs, nothing removes sealed chunks, so the share only fills. Measured fill
+rate and time to 70% are in [D02](../decisions/D02-camera-sources-and-time.md#commissioned-measurements).
+Watch `weather_capture_staging_ratio` (or `df` on `/staging` inside a collector). If it
+approaches 0.70, scale all three collectors to 0 through Git (below) and leave them there
+until #19 runs or Jason chooses another bound. Do not delete anything to make room: sealed
+chunks are renderer input, and tmp files belong to scheduler reconciliation (#19). At 0.90
+the collector itself stops writing JPEG payloads (below).
+
+## Runbook
+
+- **Pause/resume one camera or all:** set `replicas: 0` (or back to 1) in
+  `deploy/k8s/capture/<camera>.yaml`, merge, and let Argo sync. On SIGTERM the collector seals
+  its current chunk within the grace period. Never `kubectl scale` against Argo except as an
+  emergency stop, then follow with the Git change.
+- **Cadence change:** edit `capture.json`, record the epoch above and in D02, merge.
+- **Credential rotation (with Sentinel):** the camera credential is the Sentinel/Frigate
+  default; rotate it with the sentinel owner, then update the agents `secrets-ksops/weather`
+  Secret. Restart each collector after the new Secret is live (projected files update, but the
+  collector reads them once at start). Expect `authentication` results until both sides match.
+- **NAS outage:** the soft mount returns errors; the collector abandons its own chunk, backs
+  off and records `persist_failed` loss ranges. Gaps are explicit; nothing spills to node
+  storage. Restore the NAS (storage-infra); no collector action is needed.
+- **Staging full:** see the occupancy plan. Do not delete sealed input.
+- **Frigate regression:** if Frigate camera fps, skipped fps, errors or restarts regress for
+  `skycam_east`, `skycam_west` or `frontyard_1`, scale all three collectors to 0 through Git
+  immediately, then investigate with the sentinel owner.
+
+## Collector behaviour
 
 Run `weather capture collect --camera <id>` with a camera-specific read-only
 `/etc/weather/capture` and `/run/secrets/camera` mount. Camera IDs are `skycam_east`,

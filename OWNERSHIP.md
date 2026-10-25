@@ -20,7 +20,7 @@ What this repository owns and its state: **live** (running or applied), **disabl
 | Deployment `scheduler` ×1 and NetworkPolicy `scheduler` | `scheduler/` | live |
 | Search: NetworkPolicy `api-cortex-egress`, IngressRoute `weather-search`, Middlewares `weather-search-rate-limit`, `weather-search-in-flight`, `weather-cortex` mount in `api` | `search/` component; runbook [search](docs/operations/search.md) | disabled (#25) |
 | NetworkPolicy `pipeline` | `pipeline/` | disabled (#15) |
-| Collectors ×3 and PVC `weather-staging` (binds the storage-infra PV) | — | planned (#4) |
+| StatefulSets `collector-skycam-east`, `-skycam-west`, `-frontyard-1` ×1, ConfigMap `collector-capture-<hash>`, NetworkPolicy `collector`, PVC `weather-staging` (binds the storage-infra PV; `Prune=false,Delete=false`) | `capture/`; runbook [capture](docs/operations/capture.md) | live (#4, 0.5 Hz epoch) |
 | `tempest-receiver` and its spool PVC | — | planned (#5) |
 | Pipelines ×3, `weather-preview`, `intel` | — | planned (#15, #39, #23) |
 | Images `weather-app`, `weather-web` (digests in `kustomization.yaml`) | `registry.vallery.net/jvallery/` | live |
@@ -36,11 +36,11 @@ Disposable restore-drill resources (`weather-drill-*`) are created by `scripts/r
 | Secrets `weather-pg-backup-b2-writer`, `weather-pg-backup-b2-reader` | `weather-pg` backups, restore drills | live |
 | Secret `weather-media-s3-reader` | api media origin | live |
 | Secrets `weather-media-s3-writer`, `weather-originals-s3-writer`, `weather-custody-restore-reader` | pipelines, custody drill (#77) | live |
-| Secrets `weather-camera-skycam-east`, `-skycam-west`, `-frontyard-1` | collectors | live (unused until #4) |
+| Secrets `weather-camera-skycam-east`, `-skycam-west`, `-frontyard-1` | collectors | live |
 | Secret `weather-cortex` | api search, intel | live (unused until #25 is enabled) |
 | Secret `weather-api-cursor` | api | live |
 | Secret `weather-site` (almanac sun/moon position) | api | planned |
-| NetworkPolicies `collector-skycam-east-egress`, `collector-skycam-west-egress`, `collector-frontyard-1-egress` | collectors | live (no pods selected yet) |
+| NetworkPolicies `collector-skycam-east-egress`, `collector-skycam-west-egress`, `collector-frontyard-1-egress` | collectors | live |
 | NetworkAttachmentDefinition for the Tempest receiver (VLAN 10) | `tempest-receiver` | planned (agents#5368) |
 
 Secret `zot-origin-cluster-pull` is reflected from `agent-fleet-runners` for image pulls.
@@ -52,7 +52,7 @@ Secret `zot-origin-cluster-pull` is reflected from `agent-fleet-runners` for ima
 | Fleet registry record `gh-1431367372` (`ci-only`), AppProject and Applications | agents | live |
 | Garage buckets `weather-media`, `weather-originals` and custody mirrors (Weather owns their objects and catalog) | storage-infra#1107 | live |
 | B2 bucket for CNPG archives | storage-infra#1112 | live |
-| NFS PV `weather-staging` | storage-infra#1106 | live (unbound) |
+| NFS PV `weather-staging` | storage-infra#1106 | live (bound to PVC `weather/weather-staging`) |
 | Hostname record, `ak-forwardauth` | network-infra | live |
 | Scrape, probes, alert rules, dashboards | monitoring-stack#1072 | live (slice 1) |
 | Cameras (sentinel), Tempest hub (homeassistant), Cortex routes (cortex-ai-compute), vallery.net homepage (VerdifyConsultancy/wordpress) | — | — |
