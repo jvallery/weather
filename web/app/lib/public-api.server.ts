@@ -2,9 +2,9 @@
 import { z } from "zod";
 import { data } from "react-router";
 import { Counter, Gauge, register } from "prom-client";
-import { parseAggregates, parseAlmanac, parseArchive, parseCurrent, parseEvents, parseRegistry, parseTimelapses, type Current, type Parser } from "./weather-api";
+import { parseAggregates, parseAlmanac, parseArchive, parseCurrent, parseEvents, parseRegistry, parseStills, parseTimelapses, type Current, type Parser } from "./weather-api";
 
-const ALLOWED = /^\/api\/v1\/(?:weather\/(?:current|observations|aggregates|almanac|metrics)|events|timelapses(?:\/[A-Za-z0-9_-]{1,128})?)$/;
+const ALLOWED = /^\/api\/v1\/(?:weather\/(?:current|observations|aggregates|almanac|metrics)|events|stills|timelapses(?:\/[A-Za-z0-9_-]{1,128})?)$/;
 const requests = (register.getSingleMetric("weather_web_api_requests_total") as Counter<"route" | "result"> | undefined) || new Counter({ name: "weather_web_api_requests_total", help: "Bounded SSR public API reads by result", labelNames: ["route", "result"] });
 const inFlight = (register.getSingleMetric("weather_web_api_inflight") as Gauge | undefined) || new Gauge({ name: "weather_web_api_inflight", help: "Active bounded SSR API reads" });
 let active = 0;
@@ -93,4 +93,8 @@ export async function metricRegistryRead(request: Request) {
 }
 export async function eventsRead(request: Request, params: URLSearchParams) {
   return publicRead("/api/v1/events", parseEvents, request.signal, params);
+}
+/** Hourly stills (#38): one calendar day, or one camera's clock hour across dates. */
+export async function stillsRead(request: Request, params: URLSearchParams) {
+  return publicRead("/api/v1/stills", parseStills, request.signal, params);
 }

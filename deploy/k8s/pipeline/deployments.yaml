@@ -1,7 +1,7 @@
 # Disabled (#15): replicas 0, and the pipeline directory is not in the root kustomization.
-# #49 enables them once the cameras (#4), the staging PVC and the weather-media writer key
-# (storage-infra#1107) exist. WEATHER_IMAGE_DIGEST must then equal the app digest pin, so
-# every RenderResult records the image that produced it. Runbook: docs/operations/pipeline.md.
+# #49 enables them once the cameras (#4), the staging PVC and the weather-media and
+# weather-originals writer keys (storage-infra#1107) exist. WEATHER_IMAGE_DIGEST must then
+# equal the app digest pin, so every RenderResult records the image that produced it. Runbook: docs/operations/pipeline.md.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -126,6 +126,14 @@ spec:
                 path: weather-media/access_key_id
               - key: AWS_SECRET_ACCESS_KEY
                 path: weather-media/secret_access_key
+          # The only originals key (#38); no web identity can read weather-originals.
+          - secret:
+              name: weather-originals-s3-writer
+              items:
+              - key: AWS_ACCESS_KEY_ID
+                path: weather-originals/access_key_id
+              - key: AWS_SECRET_ACCESS_KEY
+                path: weather-originals/secret_access_key
       - name: staging
         persistentVolumeClaim:
           claimName: weather-staging
@@ -258,6 +266,14 @@ spec:
                 path: weather-media/access_key_id
               - key: AWS_SECRET_ACCESS_KEY
                 path: weather-media/secret_access_key
+          # The only originals key (#38); no web identity can read weather-originals.
+          - secret:
+              name: weather-originals-s3-writer
+              items:
+              - key: AWS_ACCESS_KEY_ID
+                path: weather-originals/access_key_id
+              - key: AWS_SECRET_ACCESS_KEY
+                path: weather-originals/secret_access_key
       - name: staging
         persistentVolumeClaim:
           claimName: weather-staging
@@ -390,6 +406,14 @@ spec:
                 path: weather-media/access_key_id
               - key: AWS_SECRET_ACCESS_KEY
                 path: weather-media/secret_access_key
+          # The only originals key (#38); no web identity can read weather-originals.
+          - secret:
+              name: weather-originals-s3-writer
+              items:
+              - key: AWS_ACCESS_KEY_ID
+                path: weather-originals/access_key_id
+              - key: AWS_SECRET_ACCESS_KEY
+                path: weather-originals/secret_access_key
       - name: staging
         persistentVolumeClaim:
           claimName: weather-staging

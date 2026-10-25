@@ -125,7 +125,7 @@ def test_baseline_head_roles_and_least_privilege() -> None:
             async with admin.begin() as connection:
                 assert await scalar(
                     connection, "SELECT version_num FROM public.alembic_version"
-                ) == ("0006_render")
+                ) == ("0009_stills")
                 # Slice-1 relations, the observations view, the API's views (0002), the
                 # publication catalog (0003), search (0004), events (0005) and the render
                 # schedule (0006).
@@ -170,6 +170,11 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     # 0006_render (#15)
                     "weather.solar_cycle",
                     "weather.segment",
+                    # 0009_stills (#38)
+                    "weather.hour_slot",
+                    "weather.archival_still",
+                    "weather.still_derivative",
+                    "public_api.stills",
                 }
                 options = await scalar(
                     connection,
@@ -230,6 +235,19 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     assert not await table("weather_worker", relation, "DELETE")
                     for role in ("weather_ingest", "weather_api", "weather_editor"):
                         assert not await table(role, relation, "SELECT")
+                # Hourly stills (#38): the worker records selections, the API reads the view.
+                for relation in (
+                    "weather.hour_slot",
+                    "weather.archival_still",
+                    "weather.still_derivative",
+                ):
+                    assert await table("weather_worker", relation, "INSERT")
+                    assert not await table("weather_worker", relation, "DELETE")
+                    for role in ("weather_ingest", "weather_api", "weather_editor"):
+                        assert not await table(role, relation, "SELECT")
+                assert not await table("weather_worker", "weather.hour_slot", "UPDATE")
+                assert await table("weather_api", "public_api.stills", "SELECT")
+                assert not await table("weather_worker", "public_api.stills", "SELECT")
                 # No editorial functions exist yet; weather_editor has no schema access (#44).
                 for role, schema in (
                     ("weather_api", "weather"),

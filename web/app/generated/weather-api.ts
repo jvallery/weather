@@ -52,6 +52,23 @@ export interface paths {
         readonly patch?: never;
         readonly trace?: never;
     };
+    readonly "/api/v1/stills": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /** List Stills */
+        readonly get: operations["listStills"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
     readonly "/api/v1/timelapses": {
         readonly parameters: {
             readonly query?: never;
@@ -926,6 +943,104 @@ export interface components {
              */
             readonly source_at: string;
         };
+        /** Still */
+        readonly Still: {
+            /**
+             * Calendar Date
+             * Format: date
+             */
+            readonly calendar_date: string;
+            /** Camera */
+            readonly camera: string;
+            /**
+             * Cycle Date
+             * @description The winner's solar cycle; not the calendar day
+             */
+            readonly cycle_date: string | null;
+            /**
+             * Day Id
+             * Format: date
+             * @description The calendar day the slot belongs to
+             */
+            readonly day_id: string;
+            /**
+             * Fold
+             * @description 1 for the repeated hour after the fall change
+             */
+            readonly fold: number;
+            /** Images */
+            readonly images: readonly components["schemas"]["StillImage"][];
+            /**
+             * Local Label
+             * @description Local slot start with its UTC offset
+             */
+            readonly local_label: string;
+            /**
+             * Offset Seconds
+             * @description Source time minus slot start + 30 min
+             */
+            readonly offset_seconds: number | null;
+            /** Policy */
+            readonly policy: string | null;
+            /** Reason */
+            readonly reason: string | null;
+            /** Revision */
+            readonly revision: number | null;
+            /**
+             * Schema Version
+             * @default 1
+             * @constant
+             */
+            readonly schema_version: 1;
+            /** Segment */
+            readonly segment: ("daytime" | "overnight") | null;
+            /**
+             * Slot Id
+             * @description The slot's UTC start, e.g. 2026-11-01T07:00:00Z
+             */
+            readonly slot_id: string;
+            readonly slot_interval: components["schemas"]["weather__api__stills__Interval"];
+            /** @description Source time to capture upper bound */
+            readonly source_interval: components["schemas"]["weather__api__stills__Interval"] | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            readonly state: "on_target" | "off_target" | "missing" | "pending" | "withdrawn";
+            /** Utc Offset Minutes */
+            readonly utc_offset_minutes: number;
+        };
+        /** StillImage */
+        readonly StillImage: {
+            /**
+             * Asset Id
+             * Format: uuid
+             */
+            readonly asset_id: string;
+            /** Bytes */
+            readonly bytes: number;
+            /** Height */
+            readonly height: number;
+            /**
+             * Mime
+             * @enum {string}
+             */
+            readonly mime: "image/jpeg" | "image/webp";
+            /** Url */
+            readonly url: string;
+            /** Width */
+            readonly width: number;
+        };
+        /** StillPage */
+        readonly StillPage: {
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            readonly generated_at: string;
+            /** Items */
+            readonly items: readonly components["schemas"]["Still"][];
+        };
         /** Timelapse */
         readonly Timelapse: {
             /** Allocated Frames */
@@ -1000,6 +1115,19 @@ export interface components {
          * @description Half-open UTC interval [start, end).
          */
         readonly weather__api__models__Interval: {
+            /**
+             * End
+             * Format: date-time
+             */
+            readonly end: string;
+            /**
+             * Start
+             * Format: date-time
+             */
+            readonly start: string;
+        };
+        /** Interval */
+        readonly weather__api__stills__Interval: {
             /**
              * End
              * Format: date-time
@@ -1196,6 +1324,54 @@ export interface operations {
                 };
             };
             /** @description Weather data is temporarily unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    readonly listStills: {
+        readonly parameters: {
+            readonly query?: {
+                readonly camera?: string | null;
+                /** @description Calendar date (America/Denver) */
+                readonly date?: string | null;
+                /** @description First calendar date */
+                readonly from?: string | null;
+                /** @description Local clock hour, 0 to 23 */
+                readonly hour?: string | null;
+                /** @description Last calendar date, inclusive */
+                readonly to?: string | null;
+            };
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["StillPage"];
+                };
+            };
+            /** @description Invalid request. */
+            readonly 400: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The catalog is temporarily unavailable. */
             readonly 503: {
                 headers: {
                     readonly [name: string]: unknown;

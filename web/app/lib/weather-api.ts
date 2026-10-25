@@ -35,6 +35,9 @@ export type ArchivePage = { items: ArchiveEntry[]; next_cursor: string | null };
 export type WeatherEvent = Schemas["Event"];
 export type Events = Schemas["Events"];
 export type EventVideo = Schemas["EventVideo"];
+export type Still = Schemas["Still"];
+export type StillImage = Schemas["StillImage"];
+export type StillPage = Schemas["StillPage"];
 
 const text = z.string();
 // A new server enum value degrades that one field instead of rejecting the whole response.
@@ -146,6 +149,20 @@ const weatherEvent = z.object({
   distance_km: number.default(null), coverage: coverage.nullable().default(null), videos: z.array(video).default([]), updated_at: text,
 });
 const events = z.object({ generated_at: text, items: z.array(weatherEvent), next_cursor: text.nullable().default(null) });
+// Hourly stills (#38): an image of an unknown type is dropped; an unknown state shows as pending.
+const stillImage = z.object({
+  asset_id: text, url: z.string().regex(/^\/media\/[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/), mime: z.enum(["image/jpeg", "image/webp"]),
+  bytes: z.number(), width: z.number(), height: z.number(),
+});
+const still = z.object({
+  schema_version: z.literal(1), camera, slot_id: text, day_id: text, calendar_date: text, cycle_date: text.nullable(),
+  segment: z.enum(["daytime", "overnight"]).nullable().catch(null), local_label: text, utc_offset_minutes: z.number(), fold: z.number(),
+  slot_interval: interval, state: lenient(["on_target", "off_target", "missing", "pending", "withdrawn"], "pending"),
+  reason: text.nullable(), policy: text.nullable(), revision: z.number().nullable(), source_interval: interval.nullable(),
+  offset_seconds: z.number().nullable(),
+  images: z.array(stillImage.nullable().catch(null)).transform((items) => items.filter((item) => item !== null)),
+});
+const stills = z.object({ generated_at: text, items: z.array(still) });
 
 // The parsed shapes must stay assignable to the generated types; tsc fails on drift.
 const checks: [
@@ -156,7 +173,8 @@ const checks: [
   (value: z.infer<typeof archive>) => ArchivePage,
   (value: z.infer<typeof events>) => Events,
   (value: z.infer<typeof timelapses>) => TimelapsePage,
-] = [(value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value];
+  (value: z.infer<typeof stills>) => StillPage,
+] = [(value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value];
 void checks;
 
 export type Parser<T> = (value: unknown) => T | null;
@@ -176,3 +194,4 @@ export function playable(video: Timelapse): boolean {
   const roles = new Set(video.renditions.map((item) => item.role));
   return (video.state === "published" || video.state === "partial") && !video.withdrawn && roles.size === 3 && video.poster !== null && video.native_download_url !== null;
 }
+export const parseStills: Parser<StillPage> = parser(stills);

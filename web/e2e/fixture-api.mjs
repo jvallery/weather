@@ -10,6 +10,7 @@ const observations = JSON.parse(readFileSync(new URL("../app/fixtures/observatio
 const catalog = JSON.parse(readFileSync(new URL("../app/fixtures/catalog.json", import.meta.url)));
 const almanac = Object.fromEntries(["record", "rain_day", "wind_rose_bin", "astronomy", "comparison", "empty"].map((name) => [name, JSON.parse(readFileSync(new URL(`../app/fixtures/almanac-${name}.json`, import.meta.url)))]));
 const events = JSON.parse(readFileSync(new URL("../app/fixtures/events.json", import.meta.url)));
+const stills = JSON.parse(readFileSync(new URL("../app/fixtures/stills.json", import.meta.url)));
 const media = new URL("../.test-media/clip.mp4", import.meta.url);
 const poster = new URL("../.test-media/poster.jpg", import.meta.url);
 const keogramImage = new URL("../.test-media/keogram.jpg", import.meta.url);
@@ -51,6 +52,8 @@ function asset(id) {
     if (video.keogram?.asset_id === id) return { path: keogramImage, mime: "image/jpeg" };
     if (video.sidecar?.asset_id === id) return { sidecar: sidecarFor(video) };
   }
+  // Hourly stills (#38): every synthetic still image is the poster JPEG.
+  if (stills.items.some((still) => still.images.some((image) => image.asset_id === id))) return { path: poster, mime: "image/jpeg" };
   return null;
 }
 // Segment plots (#40): epoch-aligned bins clipped to [start, end), identical for every camera.
@@ -123,6 +126,14 @@ createServer(async (req, res) => {
       && (!query.get("origin") || event.origin === query.get("origin")));
     if (query.get("order") === "desc") items = items.reverse();
     return json(res, { ...events, items: items.slice(0, Number(query.get("limit") || 50)) });
+  }
+  if (url.pathname === "/api/v1/stills") {
+    // The API's filters: one calendar day, or one camera's local clock hour across dates.
+    const query = url.searchParams;
+    const items = stills.items.filter((still) => (!query.get("camera") || still.camera === query.get("camera"))
+      && (query.has("date") ? still.calendar_date === query.get("date") : still.calendar_date >= query.get("from") && still.calendar_date <= query.get("to"))
+      && (!query.has("hour") || Number(still.local_label.slice(11, 13)) === Number(query.get("hour"))));
+    return json(res, { ...stills, items });
   }
   if (url.pathname === "/api/v1/timelapses") {
     const value = snapshot();

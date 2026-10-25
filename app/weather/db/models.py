@@ -21,6 +21,7 @@ from sqlalchemy import (
     Integer,
     LargeBinary,
     MetaData,
+    SmallInteger,
     String,
     Table,
     Text,
@@ -297,6 +298,8 @@ Table(
     *_withdrawn(),
     _created(),
     UniqueConstraint("id", "class"),
+    # 0009_stills (#38): a still row's recorded hash is the archived original's.
+    UniqueConstraint("id", "class", "sha256"),
     CheckConstraint(
         "class IN ('video','poster','keogram','still','sidecar','original')", name="class"
     ),
@@ -394,6 +397,8 @@ publication = Table(
     ),
     UniqueConstraint("product", "camera_id", "product_key", "revision"),
     UniqueConstraint("id", "product"),
+    # 0009_stills (#38): a still row's publication is the same camera's still product.
+    UniqueConstraint("id", "product", "camera_id"),
     CheckConstraint(
         f"{PRODUCT} AND {CAMERA} AND {PRODUCT_KEY} AND revision > 0 AND fence > 0",
         name="identity",
@@ -745,3 +750,115 @@ Index(
     postgresql_where=segment.c.current,
 )
 Index("ix_segment_ends_at", segment.c.ends_at, postgresql_where=segment.c.current)
+
+# 0009_stills (#38): hourly slots, archived originals or explicit missing slots, and their
+# sanitized public derivatives. The CHECKs and the slot-in-day trigger live in the migration.
+hour_slot = Table(
+    "hour_slot",
+    metadata,
+    Column("starts_at", DateTime(timezone=True), primary_key=True),
+    Column(
+        "local_date",
+        Date,
+        ForeignKey("weather.weather_day.local_date", ondelete="RESTRICT"),
+        nullable=False,
+    ),
+    Column("utc_offset_minutes", SmallInteger, nullable=False),
+    Column("fold", SmallInteger, nullable=False),
+    UniqueConstraint("starts_at", "local_date"),
+)
+archival_still = Table(
+    "archival_still",
+    metadata,
+    _identity(),
+    Column("camera_id", String(32), nullable=False),
+    _instant("slot_starts_at"),
+    Column("local_date", Date, nullable=False),
+    Column("revision", Integer, nullable=False),
+    Column("active", Boolean, nullable=False, server_default=text("true")),
+    Column("state", String(16), nullable=False),
+    Column("reason", String(64)),
+    Column("policy", String(64), nullable=False),
+    Column("eligible", Integer, nullable=False),
+    _data("rejections"),
+    Column("attempt_id", String(128)),
+    Column("chunk", String(256)),
+    Column("member", String(128)),
+    _instant("source_ts", True),
+    _instant("capture_upper", True),
+    Column("offset_us", BigInteger),
+    Column("cycle_date", Date),
+    Column("segment_kind", String(16)),
+    Column("segment_revision", Integer),
+    Column("original_asset_id", PGUUID(as_uuid=True)),
+    Column("original_class", String(16)),
+    Column("sha256", String(64)),
+    Column("bytes", BigInteger),
+    Column("width", Integer),
+    Column("height", Integer),
+    Column("publication_id", PGUUID(as_uuid=True)),
+    Column("publication_product", String(16)),
+    Column("retain_until", Date, nullable=False),
+    _created(),
+    _instant("retired_at", True),
+    UniqueConstraint("camera_id", "slot_starts_at", "revision"),
+    ForeignKeyConstraint(
+        ["slot_starts_at", "local_date"],
+        ["weather.hour_slot.starts_at", "weather.hour_slot.local_date"],
+        ondelete="RESTRICT",
+    ),
+    ForeignKeyConstraint(
+        ["camera_id", "cycle_date", "segment_kind", "segment_revision"],
+        [
+            "weather.segment.camera_id",
+            "weather.segment.cycle_date",
+            "weather.segment.kind",
+            "weather.segment.revision",
+        ],
+        ondelete="RESTRICT",
+    ),
+    ForeignKeyConstraint(
+        ["original_asset_id", "original_class", "sha256"],
+        ["weather.media_asset.id", "weather.media_asset.class", "weather.media_asset.sha256"],
+        ondelete="RESTRICT",
+    ),
+    ForeignKeyConstraint(
+        ["publication_id", "publication_product", "camera_id"],
+        [
+            "weather.publication.id",
+            "weather.publication.product",
+            "weather.publication.camera_id",
+        ],
+        ondelete="RESTRICT",
+    ),
+)
+Index(
+    "uq_archival_still_active",
+    archival_still.c.camera_id,
+    archival_still.c.slot_starts_at,
+    unique=True,
+    postgresql_where=archival_still.c.active,
+)
+Index(
+    "ix_archival_still_local_date",
+    archival_still.c.local_date,
+    postgresql_where=archival_still.c.active,
+)
+still_derivative = Table(
+    "still_derivative",
+    metadata,
+    Column("archival_still_id", PGUUID(as_uuid=True), primary_key=True),
+    Column("role", String(16), primary_key=True),
+    Column("asset_id", PGUUID(as_uuid=True), nullable=False),
+    Column("asset_class", String(16), nullable=False, server_default=text("'still'")),
+    Column("recipe", String(64), nullable=False),
+    Column("state", String(16), nullable=False, server_default=text("'published'")),
+    _created(),
+    ForeignKeyConstraint(["archival_still_id"], ["weather.archival_still.id"], ondelete="RESTRICT"),
+    ForeignKeyConstraint(
+        ["asset_id", "asset_class"],
+        ["weather.media_asset.id", "weather.media_asset.class"],
+        ondelete="RESTRICT",
+    ),
+)
+Index("ix_still_derivative_asset_id", still_derivative.c.asset_id)

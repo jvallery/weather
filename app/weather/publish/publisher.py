@@ -11,11 +11,11 @@ import asyncio
 import dataclasses
 import hashlib
 import logging
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from datetime import UTC, date, datetime
 from pathlib import Path
 
-from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from . import catalog, metrics
 from .model import (
@@ -30,6 +30,9 @@ from .model import (
 from .objects import READ_CHUNK, ObjectStore, StoreError
 
 LOG = logging.getLogger("weather.publish")
+# Catalog writes that must commit in the same transaction as the publication (#38's selection
+# row); also called for a retry that finds its content already committed.
+Then = Callable[[AsyncConnection, Committed], Awaitable[None]]
 
 
 class ObjectConflict(RuntimeError):
@@ -147,12 +150,20 @@ class Publisher:
             metrics.BYTES.labels(item.asset_class).inc(item.size)
         return Staged(intent_id, fence, expected_revision, product, objects, sidecar)
 
-    async def commit(self, staged: Staged) -> Committed:
+    async def commit(self, staged: Staged, then: Then | None = None) -> Committed:
         async with self._engine.begin() as connection:
-            return await catalog.commit(connection, staged)
+            committed = await catalog.commit(connection, staged)
+            if then is not None:
+                await then(connection, committed)
+            return committed
 
     async def publish(
-        self, product: Product, *, expected_revision: int, deadline: datetime
+        self,
+        product: Product,
+        *,
+        expected_revision: int,
+        deadline: datetime,
+        then: Then | None = None,
     ) -> Committed:
         """Stage and commit in one call; raises (and counts) a per-product failure."""
         product.validate()  # before the camera becomes a metric label
@@ -161,7 +172,7 @@ class Publisher:
             staged = await self.stage(
                 product, expected_revision=expected_revision, deadline=deadline
             )
-            return await self.commit(staged)
+            return await self.commit(staged, then)
         except BaseException as error:
             reason = getattr(error, "code", None) or (
                 "store" if isinstance(error, StoreError) else "error"

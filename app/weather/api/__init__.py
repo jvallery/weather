@@ -24,6 +24,7 @@ from .routes import install
 from .search import SearchReader, SearchService
 from .service import WeatherService
 from .source import WeatherReader
+from .stills import DatabaseSource as StillSource
 from .timelapses import Catalog, DatabaseSource, TimelapseCursor
 
 CURSOR_KEY = Path("/var/run/weather-api-cursor/CURSOR_HMAC_KEY")
@@ -163,5 +164,6 @@ def create_app(settings: Settings, registry: CollectorRegistry = REGISTRY) -> Fa
 
     app = build_app(service, search, origin)
     app.state.timelapses = Catalog(DatabaseSource(engine), TimelapseCursor(key))
+    app.state.stills = StillSource(engine)
     app.router.lifespan_context = lifespan
     return app

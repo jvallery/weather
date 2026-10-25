@@ -54,6 +54,19 @@ class HourSlot:
     def fold(self) -> int:
         return self.start.astimezone(site_timezone()).fold
 
+    @property
+    def utc_offset_minutes(self) -> int:
+        offset = self.start.astimezone(site_timezone()).utcoffset()
+        if offset is None:
+            raise ScheduleError("The site timezone has no UTC offset")
+        return int(offset.total_seconds()) // 60
+
+    @property
+    def local_hour(self) -> int:
+        """The local clock hour; two fall-back slots share one, and a spring-forward day
+        has none for 02."""
+        return self.start.astimezone(site_timezone()).hour
+
 
 def weather_day(local_date: date) -> WeatherDay:
     return WeatherDay(local_date)

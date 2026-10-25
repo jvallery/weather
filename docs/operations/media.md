@@ -11,7 +11,7 @@ below. Live use starts with the pipeline Deployments (#15) and the bucket keys
 | Bucket | Classes | Writers | Readers |
 |---|---|---|---|
 | `weather-media` | `video`, `poster`, `keogram`, `still`, `sidecar` | pipeline (media key) | api (read-only key, #20) |
-| `weather-originals` | `original` | pipeline (originals key) | none online; custody only |
+| `weather-originals` | `original` | pipeline (`weather-originals-s3-writer`, its only key) | none online; custody only |
 
 Object keys are `<class>/<sha256>.<ext>`, where the hash is computed locally
 from the bytes, never taken from an ETag. Public URLs are same-origin
@@ -197,6 +197,71 @@ pipeline pod. It is idempotent and prints counts:
 
 If Garage is unreachable, the reconciler decides nothing and retries on the
 next run.
+
+## Hourly originals and comparison stills
+
+#38. Code: `app/weather/stills/` (policy, sanitizer, catalog) and the pipeline's hourly pass
+`app/weather/pipeline/hourly.py`; schema `0009_stills`; API `/api/v1/stills`; web `/stills/`
+and the day page.
+
+- **Selection** (`nearest-half-hour/v1`). Per camera and UTC hour slot, among the hour's
+  eligible captures (known timing, native geometry, commissioned settings, then a clean decode
+  by the pinned FFmpeg of bytes that still match the sealed manifest), the source time nearest
+  `slot start + 30 min` wins; ties go to the earlier source time, then the attempt ID. Within
+  60 s is `on_target`, otherwise the hour's nearest is `off_target` with its exact offset
+  (`offset_us`). No eligible capture is `missing` (`no_capture` or `no_eligible_capture`,
+  with per-reason rejection counts). Only source time decides membership: a capture never
+  fills another hour.
+- **When.** Each pipeline loop selects every slot of the last 12 h that ended at least
+  `max_lag + chunk_seconds + 60 s` ago (about 2 min) and has no active selection, re-reading
+  the sealed chunks, so a restart selects the same capture. A chunk that fails to read defers
+  the slot.
+- **Archive.** One still product (`<camera>`, `YYYY-MM-DDTHH:00Z`) through the publisher:
+  role `original` is the TAR member's exact bytes (EXIF included) in private
+  `weather-originals`, roles `still`, `still_960`, `still_480`, `still_webp`, `still_webp960`,
+  `still_webp480` are the sanitized derivatives in `weather-media`. The `archival_still` row
+  (source chunk and member, source time and capture upper bound, segment and solar cycle,
+  size, SHA-256, geometry, policy, retain-until date) commits in the same transaction as the
+  publication. A crash before that commit leaves only a pending intent (the reconciler orphans
+  it as `superseded`) and content-addressed objects; the rerun commits exactly one active
+  selection. A missing slot is a database-only row.
+- **Dusk.** The winner binds to the current #15 segment that contains its source time, so an
+  hour straddling civil twilight may archive a daytime or an overnight capture. No segment yet
+  (schedule not frozen) retries (`stage="bind"`).
+- **Derivatives** (`sanitized-still/v1`, mask policy `none/v1`): re-encoded from the decoded
+  pixels, full view, JPEG and WebP at 1920, 960 and 480 px wide (never upscaled), the poster
+  encoder settings. Each is scanned before upload: any EXIF, XMP, IPTC, ICC, comment, GPS or
+  unknown segment refuses the still.
+- **Embargo.** `public_not_before = capture upper bound + 630 s` on the publication and every
+  derivative; `public_api.stills` also requires `source_ts + 630 s` and `capture_upper + 630 s`
+  to have passed. A late fallback captured in an hour's last 10 minutes appears only then.
+- **Corrections.** `weather.stills.catalog.record` with a different outcome retires the active
+  revision (`active=false`, `retired_at`) and its derivatives (`retired`) and adds the next
+  revision; retirement is one-way (trigger). The retired original stays archived.
+- **Retention.** Five years (`retain_until`, `RETENTION_YEARS`), independent of video. Video
+  expiry or withdrawal never touches a still: no still FK points at a video, and a video
+  withdrawal withdraws only video and keogram assets. No deletion job exists (#79).
+- **Withdraw.** `weather media withdraw <asset_id>` on a derivative tombstones that hour's still
+  product: the API lists the slot as `withdrawn` with no images, and it is never republished.
+
+| Metric | Meaning and action |
+|---|---|
+| `weather_stills_slots_total{camera,state}` | Slots finalized as `on_target`, `off_target` or `missing` |
+| `weather_stills_archived_total{camera}` | Originals archived, read back and committed with their derivatives |
+| `weather_stills_pending_slots{camera}` | Closed slots of the last 12 h without a selection; expected slots = finalized + pending |
+| `weather_stills_oldest_pending_seconds{camera}` | Above 30 min: check `weather_stills_failures_total` and the pipeline log |
+| `weather_stills_failures_total{camera,stage}` | `select` (unreadable chunk, decode), `bind` (no segment), `archive` (Garage, commit), `catalog` (database); the slot retries with backoff |
+
+```sql
+-- As weather_worker: one camera's selections for a calendar day.
+SELECT slot_starts_at,revision,state,reason,offset_us,segment_kind FROM weather.archival_still
+ WHERE camera_id='skycam_east' AND active AND local_date='2026-11-01' ORDER BY slot_starts_at;
+```
+
+```sh
+curl -s 'https://weather.vallery.net/api/v1/stills?date=2026-11-01&camera=skycam_east' \
+  | jq '.items[] | {slot_id, local_label, state, reason, offset_seconds, images: (.images|length)}'
+```
 
 ## Failure isolation
 
