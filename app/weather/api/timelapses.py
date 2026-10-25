@@ -25,6 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from weather.ai.effective import (
     EDITOR_LABEL,
     LABEL,
+    STATION_LABEL,
     effective_description,
     public_author,
     public_model,
@@ -78,9 +79,16 @@ class Interval(Model):
     end: datetime
 
 
+Label = Literal[
+    "AI-generated · sampled-frame analysis",
+    "Station measurements only",
+    "Editor-written description",
+]
+
+
 class AnalysisClaim(Model):
     text: str = Field(min_length=1, max_length=240)
-    basis: Literal["visual", "instrument", "inference"]
+    basis: Literal["visual", "instrument"]
 
 
 class AnalysisCoverage(Model):
@@ -100,7 +108,7 @@ class AnalysisProvenance(Model):
     model: str
     prompt_revision: str
     schema_revision: str
-    refresh: Literal["full", "synthesis"]
+    refresh: Literal["full", "measurements"]
     evidence_count: int = Field(ge=0)
     frames_sampled: int = Field(ge=0)
     keogram_used: bool
@@ -109,11 +117,12 @@ class AnalysisProvenance(Model):
 class Analysis(Model):
     """The labelled description of the current media; never model-written text (C18).
 
-    `author` is `ai` for template text rendered from the model's validated observations and
-    `editor` for a human (#44) revision, whose label then says so."""
+    `author` is `ai` for template text rendered from the model's validated observations,
+    `station` when no hour passed visual review (the text is station data only, with no AI
+    label or model provenance), and `editor` for a human (#44) revision; the label says which."""
 
-    label: Literal["AI-generated · sampled-frame analysis", "Editor-written description"] = LABEL
-    author: Literal["ai", "editor"] = "ai"
+    label: Label = LABEL
+    author: Literal["ai", "station", "editor"] = "ai"
     state: Literal["pending", "complete", "degraded", "failed", "unavailable"]
     reason: str | None
     stale: bool
@@ -344,6 +353,7 @@ class DatabaseSource:
             raise CatalogUnavailable("Catalog unavailable") from None
 
 
+LABELS: dict[str, Label] = {"ai": LABEL, "station": STATION_LABEL, "editor": EDITOR_LABEL}
 ANALYSIS_COLUMNS = (
     "video_id,state,reason,stale,updated_at,revision,revision_state,refresh,model_route,model,"
     "prompt_sha256,schema_sha256,evidence_count,summary,claims,limitations,coverage,inputs,"
@@ -379,9 +389,13 @@ def build_analysis(row: dict[str, Any] | None, playable: bool) -> Analysis:
         state = "pending"
     coverage = row["coverage"] if content else None
     inputs = row["inputs"] if content else {}
-    author = public_author(row.get("author_kind", "model")) if content else "ai"
+    author: Literal["ai", "station", "editor"] = (
+        public_author(row.get("author_kind", "model")) if content else "ai"
+    )
+    if author == "ai" and coverage is not None and not coverage.get("windows_reviewed"):
+        author = "station"
     return Analysis(
-        label=EDITOR_LABEL if author == "editor" else LABEL,
+        label=LABELS[author],
         author=author,
         state=state,
         # Fixed identifiers from the worker's own vocabulary, never provider text.
@@ -393,6 +407,8 @@ def build_analysis(row: dict[str, Any] | None, playable: bool) -> Analysis:
         claims=[
             AnalysisClaim(text=claim["text"], basis=claim["basis"])
             for claim in (row["claims"] if content else [])
+            # Fail closed: a claim of any other basis is never served.
+            if claim.get("basis") in ("visual", "instrument")
         ],
         limitations=list(row["limitations"]) if content else [],
         coverage=AnalysisCoverage.model_validate(

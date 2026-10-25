@@ -40,7 +40,7 @@ from weather.search.documents import StaleRevision, VideoText, WindowText
 
 from . import render, store, validate
 from .client import MODEL_ROUTE, Cortex, CortexError, Reply, request_body
-from .effective import LABEL
+from .effective import LABEL, STATION_LABEL
 from .evidence import AggregateSource, Packet, read_packet
 from .media import MediaError, MediaReader, Source, StoredObject, WindowMedia
 from .slot import CortexSlot, SlotBusy
@@ -75,7 +75,7 @@ SCENES = {
     "skycam_west": "Fixed sky camera looking west; mostly sky above a low horizon.",
     "frontyard_1": "Fixed ground-level camera over a front yard with some sky.",
 }
-# Visual events from validated observations only (#41's model hook); never from synthesis.
+# Visual events from validated observations only (#41's model hook), with fixed labels.
 EVENT_LABELS = {
     "rain": "Rain visible on camera",
     "snowfall": "Snowfall visible on camera",
@@ -114,8 +114,8 @@ class Run:
     nonce: str
     calls: int = 0
     model: str = MODEL_ROUTE
-    # Describe runs spend from the head's budget, shared by the job's scheduler retries.
-    metered: bool = False
+    # Describe runs spend from this publication's head budget, shared by the job's retries.
+    publication_id: UUID | None = None
 
 
 @dataclass
@@ -131,6 +131,10 @@ class Result:
     refresh: str
     visual_id: UUID | None = None
     event_windows: dict[str, tuple[datetime, datetime]] = field(default_factory=dict)
+    # A re-render keeps the model, prompt and schema that produced its observations.
+    model: str | None = None
+    prompt_sha256: str | None = None
+    schema_sha256: str | None = None
 
 
 def nonce_for(*parts: object) -> str:
@@ -190,7 +194,7 @@ def visual_request(
         "source_interval": {"start": _iso(window.start), "end": _iso(window.end)},
         "evidence": evidence,
         "caveats": caveats,
-        "schema": validate.schema("visual-analysis"),
+        "schema": validate.schema(),
     }
     if note is not None:
         context["previous_reply_rejected"] = note
@@ -248,11 +252,13 @@ class Analyzer:
         return CortexDown(reason)
 
     async def _spend(self, run: Run) -> None:
-        if not run.metered:
+        if run.publication_id is None:
             return
         try:
             async with self.engine.begin() as connection:
-                spent = await store.spend_call(connection, run.video_id, MAX_CALLS_PER_RUN)
+                spent = await store.spend_call(
+                    connection, run.video_id, run.publication_id, MAX_CALLS_PER_RUN
+                )
         except (SQLAlchemyError, OSError):
             raise CortexDown("slot_unavailable") from None
         if not spent:
@@ -393,7 +399,7 @@ class Analyzer:
             nonce_for(
                 video_id, publication_id, row["revision"], context.job.id, context.job.attempt
             ),
-            metered=True,
+            publication_id=publication_id,
         )
         tripped = self.breaker()
         if tripped is not None:
@@ -412,6 +418,8 @@ class Analyzer:
             else None,
         )
         try:
+            # A transient store error (MediaUnavailable) raises: the job retries with backoff
+            # and the head stays pending. Only definitely missing or invalid media fails it.
             prepared = await self.media.prepare(source, windows)
         except MediaError as error:
             await self._fail(context, row, f"media_{error.reason}"[:32], run, now)
@@ -495,7 +503,9 @@ class Analyzer:
         """Render the public claims and limitations (C18) and choose the state."""
         reviewed = int(coverage.get("windows_reviewed", 0))
         available = int(inputs.get("windows", 0))
-        claims = render.claims(packet, observations, reviewed, row["camera_id"])
+        claims = render.claims(
+            packet, observations, reviewed, row["camera_id"], inputs.get("limitations", {})
+        )
         limitations = render.limitations(
             observations,
             reviewed,
@@ -542,7 +552,8 @@ class Analyzer:
                 (
                     await connection.execute(
                         text("""SELECT id,visual_id,evidence_hash,observations,coverage,inputs,
-                          author_kind FROM weather.analysis_revision
+                          author_kind,model,prompt_sha256,schema_sha256
+                        FROM weather.analysis_revision
                         WHERE video_id=:video AND revision=:revision"""),
                         {"video": video_id, "revision": base},
                     )
@@ -583,11 +594,14 @@ class Analyzer:
             observations,
             dict(previous["coverage"]),
             dict(previous["inputs"]),
-            refresh="synthesis",
+            refresh="measurements",
         )
         if result.state == "failed":
             return
         result.visual_id = previous["visual_id"]
+        result.model = previous["model"]
+        result.prompt_sha256 = previous["prompt_sha256"]
+        result.schema_sha256 = previous["schema_sha256"]
         result.event_windows = {r["id"]: (_parse(r["start"]), _parse(r["end"])) for r in records}
         await self._publish(context, row, run, result, base=base, describe=False)
 
@@ -696,9 +710,9 @@ class Analyzer:
                     "refresh": result.refresh,
                     "visual": visual_id,
                     "route": MODEL_ROUTE,
-                    "model": run.model,
-                    "prompt": PROMPT_SHA256,
-                    "schema": SCHEMA_SHA256,
+                    "model": result.model or run.model,
+                    "prompt": result.prompt_sha256 or PROMPT_SHA256,
+                    "schema": result.schema_sha256 or SCHEMA_SHA256,
                     "evidence_hash": result.packet.evidence_hash,
                     "evidence_count": result.packet.evidence_count,
                     "summary": summary,
@@ -896,8 +910,9 @@ def video_text(
     """The search projection of a published description (#25's replace hook)."""
     coverage = result.coverage
     keogram = "with keogram" if result.inputs.get("keogram") else "frames only"
+    label = LABEL if coverage.get("windows_reviewed") else STATION_LABEL
     quality = (
-        f"{LABEL}; {result.state}; {coverage['windows_reviewed']} of "
+        f"{label}; {result.state}; {coverage['windows_reviewed']} of "
         f"{coverage['windows_total']} hour windows reviewed, {keogram}"
     )
     by_window: dict[datetime, list[Observation]] = {}

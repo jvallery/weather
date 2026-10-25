@@ -7,20 +7,23 @@ limitation codes), window counts and station values formatted by `evidence.py`.
 
 - `visible` with medium or high confidence renders plainly; `possible`, or `visible` with low
   confidence, always renders hedged ("possibly show light rain").
-- Absence is worded only where it can be proven: "no rain was visible in the sampled frames"
-  when every reviewed window assessed rain as `not_observed`, and a measured zero rain total
-  only at full station coverage.
+- Absence is worded only where it can be proven: "No rain was visible in the sampled frames in
+  all 3 reviewed hour windows" when every reviewed window assessed rain as `not_observed` with
+  medium or high confidence, no darkness or infrared limitation was reported, and the station
+  measured none; a measured zero rain total only at full station coverage.
+- A positive total never prints as zero ("less than 0.1 mm"), and a partial-coverage value
+  says so.
 - `not_assessable` and the model's limitation codes become fixed limitation sentences.
 """
 
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from .evidence import FULL_COVERAGE, Metric, Packet
+from .evidence import FULL_COVERAGE, Metric, Packet, join
 from .validate import Observation
 
 # Bump when any template below changes; it is part of every revision's prompt hash.
-RENDER_REVISION = "templates-v1"
+RENDER_REVISION = "templates-v2"
 MAX_CLAIMS = 16
 MAX_LIMITATIONS = 8
 CAMERA_FRAMES = {
@@ -41,11 +44,11 @@ SCENE = (
     "lightning",
 )
 SKY = {
-    "clear": "a clear sky",
+    "clear": "clear skies",
     "few": "a few clouds",
     "scattered": "scattered clouds",
     "broken": "broken clouds",
-    "overcast": "an overcast sky",
+    "overcast": "overcast skies",
 }
 FOG = {"light": "haze", "moderate": "fog", "heavy": "dense fog"}
 PLAIN = {
@@ -59,13 +62,21 @@ PLAIN = {
     "fog_visibility": "fog or reduced visibility",
     "lightning": "lightning",
 }
-# Categories whose absence from the frames is worth saying, and how.
+# Categories whose absence from the frames is worth saying, how, and the station metric whose
+# positive value would contradict it (then the measured sentence speaks instead).
 ABSENT = {
     "rain": "rain",
     "snowfall": "falling snow",
     "fog_visibility": "fog",
     "lightning": "lightning",
 }
+CONTRADICTED_BY = {
+    "rain": ("precipitation", "sum"),
+    "snowfall": ("precipitation", "sum"),
+    "lightning": ("lightning_count", "sum"),
+}
+# Limitation codes under which "not visible" proves nothing.
+BLIND = frozenset({"darkness", "infrared"})
 UNASSESSED = {
     "rain": "Rain",
     "snowfall": "Falling snow",
@@ -112,16 +123,26 @@ def shown(observation: Observation) -> bool:
     return observation.category in SCENE and observation.assessment in ("visible", "possible")
 
 
+def plural(count: int, singular: str, many: str | None = None) -> str:
+    """'1 strike', '3 strikes'."""
+    return f"{count} {singular if count == 1 else many or singular + 's'}"
+
+
 def _hours(count: int, total: int) -> str:
     if total == 1:
         return "the one reviewed hour window"
     if count == total:
-        return f"all {total} reviewed hour windows"
-    return f"{count} of {total} reviewed hour windows"
+        return "both reviewed hour windows" if total == 2 else f"all {total} reviewed hour windows"
+    return f"{count} of {plural(total, 'reviewed hour window')}"
 
 
 def visual_claims(
-    observations: Sequence[Observation], reviewed: int, camera: str
+    observations: Sequence[Observation],
+    reviewed: int,
+    camera: str,
+    *,
+    codes: Mapping[str, int] | None = None,
+    packet: Packet | None = None,
 ) -> list[dict[str, Any]]:
     """One sentence per (category, phrase, hedge), then provable absences, in scene order."""
     frames = f"sampled {CAMERA_FRAMES.get(camera, 'camera')} frames"
@@ -141,13 +162,25 @@ def visual_claims(
                 "evidence_ids": [o.id for o in items][:100],
             }
         )
+    if not reviewed or BLIND & set(codes or {}):
+        return claims
     for category, noun in ABSENT.items():
         assessed = [o for o in observations if o.category == category]
-        absent = {o.window for o in assessed if o.assessment == "not_observed"}
-        if reviewed and len(absent) == reviewed and len(assessed) == reviewed:
+        absent = {
+            o.window
+            for o in assessed
+            if o.assessment == "not_observed" and o.confidence in ("medium", "high")
+        }
+        measured = (
+            packet.find(*CONTRADICTED_BY[category])
+            if packet and category in CONTRADICTED_BY
+            else None
+        )
+        if len(absent) == reviewed == len(assessed) and not (measured and measured.value > 0):
+            scope = _hours(reviewed, reviewed)
             claims.append(
                 {
-                    "text": f"No {noun} was visible in the {frames}.",
+                    "text": f"No {noun} was visible in the {frames} in {scope}.",
                     "basis": "visual",
                     "evidence_ids": [o.id for o in assessed][:100],
                 }
@@ -155,28 +188,57 @@ def visual_claims(
     return claims
 
 
+def amount(metric: Metric) -> str:
+    """A metric's renderings; a positive value that rounds to zero reads "less than 0.1 mm",
+    and a count of one is singular."""
+    shown = []
+    for number, unit in metric.renderings:
+        if metric.value > 0 and float(number) == 0:
+            step = "0." + "0" * (len(number.split(".")[1]) - 1) + "1" if "." in number else "1"
+            shown.append("less than " + join(step, unit))
+        elif unit == "strikes" and number == "1":
+            shown.append("1 strike")
+        else:
+            shown.append(join(number, unit))
+    return shown[0] + (f" ({', '.join(shown[1:])})" if len(shown) > 1 else "")
+
+
+def _partial(*metrics: Metric) -> str:
+    return (
+        " over partial station coverage" if any(m.coverage < FULL_COVERAGE for m in metrics) else ""
+    )
+
+
 def measured_claims(packet: Packet) -> list[dict[str, Any]]:
-    """Deterministic instrument sentences; every number is the station's, formatted by code."""
+    """Deterministic instrument sentences; every number is the station's, formatted by code,
+    and qualified when the station's coverage was partial."""
     claims: list[tuple[str, list[Metric]]] = []
     low, high = packet.find("temperature", "min"), packet.find("temperature", "max")
     if low and high:
         claims.append(
-            (f"Measured temperature ranged from {low.text()} to {high.text()}.", [low, high])
+            (
+                f"Measured temperature ranged from {amount(low)} to {amount(high)}"
+                f"{_partial(low, high)}.",
+                [low, high],
+            )
         )
     wind = packet.find("wind_avg", "mean")
     if wind:
-        claims.append((f"The mean measured wind was {wind.text()}.", [wind]))
+        claims.append((f"The mean measured wind was {amount(wind)}{_partial(wind)}.", [wind]))
     gust = packet.find("wind_gust", "max")
     if gust:
-        claims.append((f"The strongest measured wind gust was {gust.text()}.", [gust]))
+        claims.append(
+            (f"The strongest measured wind gust was {amount(gust)}{_partial(gust)}.", [gust])
+        )
     rain = packet.find("precipitation", "sum")
     # A zero is an absence claim, made only at full coverage; a partial total is a lower bound.
     if rain and (rain.value > 0 or rain.coverage >= FULL_COVERAGE):
-        partial = "" if rain.coverage >= FULL_COVERAGE else " over partial station coverage"
-        claims.append((f"Measured rain total: {rain.text()}{partial}.", [rain]))
+        claims.append((f"Measured rain total: {amount(rain)}{_partial(rain)}.", [rain]))
     strikes = packet.find("lightning_count", "sum")
     if strikes and strikes.value > 0:
-        claims.append((f"The station counted {strikes.text()} of lightning.", [strikes]))
+        claims.append(
+            (f"The station counted {amount(strikes)} of lightning{_partial(strikes)}.", [strikes])
+        )
     return [
         {"text": text, "basis": "instrument", "evidence_ids": [m.id for m in cited]}
         for text, cited in claims
@@ -235,9 +297,14 @@ def window_text(observations: Sequence[Observation]) -> str | None:
 
 
 def claims(
-    packet: Packet, observations: Sequence[Observation], reviewed: int, camera: str
+    packet: Packet,
+    observations: Sequence[Observation],
+    reviewed: int,
+    camera: str,
+    codes: Mapping[str, int] | None = None,
 ) -> list[dict[str, Any]]:
     """The published claims: visual sentences, then measured ones, at most sixteen."""
     measured = measured_claims(packet)
-    visual = visual_claims(observations, reviewed, camera)[: MAX_CLAIMS - len(measured)]
+    visual = visual_claims(observations, reviewed, camera, codes=codes, packet=packet)
+    visual = visual[: MAX_CLAIMS - len(measured)]
     return [*visual, *measured]

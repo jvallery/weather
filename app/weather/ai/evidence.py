@@ -79,7 +79,7 @@ class Metric:
 
     def text(self) -> str:
         """The first rendering plus conversions, e.g. '21.4 °C (70.5 °F)'."""
-        shown = [_join(number, unit) for number, unit in self.renderings]
+        shown = [join(number, unit) for number, unit in self.renderings]
         return shown[0] + (f" ({', '.join(shown[1:])})" if len(shown) > 1 else "")
 
 
@@ -93,16 +93,13 @@ class Packet:
     evidence_hash: str
     evidence_count: int
 
-    def by_id(self) -> dict[str, Metric]:
-        return {metric.id: metric for metric in self.metrics}
-
     def find(self, metric: str, statistic: str) -> Metric | None:
         return next(
             (m for m in self.metrics if m.metric == metric and m.statistic == statistic), None
         )
 
 
-def _join(number: str, unit: str) -> str:
+def join(number: str, unit: str) -> str:
     return f"{number}{unit}" if unit in ("%", "°C", "°F") else f"{number} {unit}"
 
 

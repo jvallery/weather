@@ -141,7 +141,7 @@ Each route's issue owns its tests in its acceptance list (P16): #14 weather data
 
 ## Synthesis attribution
 
-Public text is rendered by server templates (C18; [public description text](weather-narrative-contract.md)); there is no model-written candidate. `Analysis.author` is `ai` for that text and `editor` for a human (#44) revision, which carries its own label. Public Claim/Event require evidence `basis` (visual/instrument/inference) separately from `origin`; inferred automated records use origin `synthesis`. Measured/visual origins require matching instrument/visual basis. Human/manual origins retain explicit evidence basis and attribution. Application-assigned interval/precision and seeks come from validated evidence, never model timestamps. Every consumer, sidecar and search projection must preserve that distinction.
+Public text is rendered by server templates (C18; [description text contract](description-text-contract.md)); there is no model-written candidate and no synthesis call. `Analysis.author` is `ai` for template text from validated observations, `station` when no hour passed visual review, and `editor` for a human (#44) revision; each carries its own label. Analysis claims have basis `visual` or `instrument` only, and a stored claim of any other basis is never served. Public events keep evidence `basis` separately from `origin` (#41). Measured/visual origins require matching instrument/visual basis. Human/manual origins retain explicit evidence basis and attribution. Application-assigned interval/precision and seeks come from validated evidence, never model timestamps. Every consumer, sidecar and search projection must preserve that distinction.
 
 ## Analysis execution versus available data (implemented, #23)
 

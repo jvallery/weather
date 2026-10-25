@@ -23,14 +23,23 @@ from PIL import Image as PILImage
 from sqlalchemy.exc import OperationalError
 from weather.ai import media, render, store, validate
 from weather.ai.analyze import Analyzer, BudgetSpent, CortexDown, Run, visual_request
-from weather.ai.client import MODEL_ROUTE, Cortex
-from weather.ai.effective import EDITOR_LABEL, LABEL, public_model
+from weather.ai.client import MODEL_ROUTE, Cortex, CortexError
+from weather.ai.effective import EDITOR_LABEL, LABEL, STATION_LABEL, public_model
 from weather.ai.evidence import Packet, build_packet
-from weather.ai.media import GarageMedia, Source, StoredObject, WindowMedia, keogram_windows
+from weather.ai.media import (
+    GarageMedia,
+    MediaError,
+    MediaUnavailable,
+    Source,
+    StoredObject,
+    WindowMedia,
+    keogram_windows,
+)
 from weather.ai.slot import LOCK, UNLOCK, CortexSlot, SlotBusy, Uncertain
 from weather.ai.validate import Observation, Rejected
 from weather.ai.windows import hour_windows, samples
 from weather.api.timelapses import build_analysis
+from weather.publish.objects import StoreError
 
 T0 = datetime(2026, 6, 1, 12, 0, tzinfo=UTC)
 END = T0 + timedelta(hours=2)
@@ -127,11 +136,11 @@ def test_templates_render_hedges_and_provable_absence_only() -> None:
         obs(1, "snowfall", "not_assessable"),
     ]
     assert texts(render.visual_claims(observations, 2, "skycam_east")) == [
-        "The sampled east-sky frames show broken clouds in all 2 reviewed hour windows.",
+        "The sampled east-sky frames show broken clouds in both reviewed hour windows.",
         "The sampled east-sky frames possibly show light rain in 1 of 2 reviewed hour windows.",
         "The sampled east-sky frames possibly show moderate rain in 1 of 2 reviewed hour windows.",
-        # Absence only where every reviewed window assessed it as not observed.
-        "No fog was visible in the sampled east-sky frames.",
+        # Absence only where every reviewed window assessed it as not observed, scoped.
+        "No fog was visible in the sampled east-sky frames in both reviewed hour windows.",
     ]
     assert render.window_text([observations[0], observations[2], observations[4]]) == (
         "Broken clouds; possibly light rain; no fog visible in the frames."
@@ -148,41 +157,113 @@ def test_templates_render_hedges_and_provable_absence_only() -> None:
     ]  # fmt: skip
 
 
-def test_measured_text_prints_station_numbers_and_a_zero_only_at_full_coverage() -> None:
-    def rain_lines(data: Packet) -> list[str]:
-        return [t for t in texts(render.measured_claims(data)) if "rain" in t]
+@pytest.mark.parametrize(
+    ("confidence", "codes", "data", "expected"),
+    [
+        ("high", {}, None, True),
+        ("medium", {"sparse_sampling": 1}, None, True),
+        # A low-confidence "not observed" proves nothing.
+        ("low", {}, None, False),
+        # Nor does one made in darkness or infrared imaging.
+        ("high", {"darkness": 1}, None, False),
+        ("high", {"infrared": 2}, None, False),
+        # A positive measured total would contradict it; the measured sentence speaks instead.
+        ("high", {}, packet(precipitation_sum=4.2), False),
+    ],
+)
+def test_visual_absence_needs_confidence_daylight_and_no_measured_rain(
+    confidence: str, codes: dict[str, int], data: Packet | None, expected: bool
+) -> None:
+    observations = [obs(w, "rain", "not_observed", confidence) for w in range(3)]
+    claims = texts(
+        render.visual_claims(observations, 3, "skycam_west", codes=codes, packet=data or packet())
+    )
+    absence = "No rain was visible in the sampled west-sky frames in all 3 reviewed hour windows."
+    assert (absence in claims) is expected
+
+
+def test_measured_text_never_prints_a_positive_total_as_zero_and_qualifies_partial() -> None:
+    def lines(data: Packet, word: str) -> list[str]:
+        return [t for t in texts(render.measured_claims(data)) if word in t]
 
     assert texts(render.measured_claims(packet()))[:3] == [
         "Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
         "The mean measured wind was 5.1 m/s (18.4 km/h, 11.4 mph).",
         "The strongest measured wind gust was 12.4 m/s (44.6 km/h, 27.7 mph).",
     ]
-    assert rain_lines(packet()) == ["Measured rain total: 0.0 mm (0.00 in)."]
-    assert rain_lines(packet(coverage={"precipitation_sum": 0.8})) == []
-    wet = packet(coverage={"precipitation_sum": 0.8}, precipitation_sum=2.3)
-    assert rain_lines(wet) == [
+    assert lines(packet(), "rain") == ["Measured rain total: 0.0 mm (0.00 in)."]
+    assert lines(packet(coverage={"precipitation_sum": 0.8}), "rain") == []
+    partial = {"precipitation_sum": 0.6}
+    assert lines(packet(coverage=partial, precipitation_sum=0.04), "rain") == [
+        "Measured rain total: less than 0.1 mm (less than 0.01 in) over partial station coverage."
+    ]
+    assert lines(packet(precipitation_sum=0.06), "rain") == [
+        "Measured rain total: 0.1 mm (less than 0.01 in)."
+    ]
+    assert lines(packet(coverage=partial, precipitation_sum=2.3), "rain") == [
         "Measured rain total: 2.3 mm (0.09 in) over partial station coverage."
     ]
+    # Temperature and lightning are qualified the same way, and one strike is singular.
+    thin = packet(coverage={"temperature_min": 0.7, "lightning_count_sum": 0.7},
+                  lightning_count_sum=1.0)  # fmt: skip
+    assert lines(thin, "temperature") == [
+        "Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F) "
+        "over partial station coverage."
+    ]
+    assert lines(thin, "lightning") == [
+        "The station counted 1 strike of lightning over partial station coverage."
+    ]
+    assert lines(packet(lightning_count_sum=3.0), "lightning") == [
+        "The station counted 3 strikes of lightning."
+    ]
+    for value in (0.001, 0.04, 0.049, 0.05, 0.06, 0.2):
+        for line in lines(packet(precipitation_sum=value), "rain"):
+            assert " 0.0 mm" not in line and "(0.00 in)" not in line
 
 
-def test_every_public_string_comes_from_the_templates() -> None:
-    """Exhaustive over the enums: claims, window text and limitations use only fixed phrases."""
+BAD_GRAMMAR = (
+    "1 reviewed hour windows",
+    "all 1 ",
+    "all 2 ",
+    "1 strikes",
+    "show a clear",
+    "show an overcast",
+    "  ",
+    " .",
+)
+
+
+def test_every_public_string_comes_from_the_templates_and_reads_correctly() -> None:
+    """Exhaustive over the enums and window counts: fixed phrases only, and no bad grammar."""
     allowed_nouns = {*render.SKY.values(), *render.FOG.values(), *render.PLAIN.values()}
     allowed_nouns |= {
         f"{i} {n}" for i in ("light", "moderate", "heavy") for n in ("rain", "falling snow")
     }
+    extras: list[dict[str, Any]] = [{}]
+    extras += [{"intensity": i} for i in ("light", "moderate", "heavy")]
+    extras += [{"sky_cover": c} for c in render.SKY]
     for category in validate.CATEGORIES:
         for assessment in ("visible", "possible", "not_observed", "not_assessable"):
-            for extra in ({}, {"intensity": "heavy"}, {"sky_cover": "few"}):
-                item = obs(0, category, assessment, "medium", **extra)
-                for claim in render.visual_claims([item], 1, "frontyard_1"):
-                    assert claim["basis"] == "visual"
-                    assert claim["text"].startswith(("The sampled front-yard frames ", "No "))
-                if render.shown(item):
-                    assert render.phrase(item) in allowed_nouns
-                for line in render.limitations([item], 1, {}, keogram=True, unreviewed=False,
-                                               withheld=[]):
-                    assert line.endswith(".")
+            for confidence in ("low", "medium", "high"):
+                for extra in extras:
+                    for reviewed in (1, 2, 3):
+                        for count in range(1, reviewed + 1):
+                            items = [
+                                obs(w, category, assessment, confidence, **extra)
+                                for w in range(count)
+                            ]
+                            lines = texts(render.visual_claims(items, reviewed, "frontyard_1"))
+                            lines += render.limitations(
+                                items, reviewed, {}, keogram=True, unreviewed=False, withheld=[]
+                            )
+                            note = render.window_text(items[:1])
+                            lines += [note] if note else []
+                            for line in lines:
+                                assert line.endswith(".") and line[0].isupper(), line
+                                assert not any(bad in line for bad in BAD_GRAMMAR), line
+                            if render.shown(items[0]):
+                                assert render.phrase(items[0]) in allowed_nouns
+    assert render.plural(1, "strike") == "1 strike" and render.plural(2, "strike") == "2 strikes"
     assert len(render.claims(packet(), [obs(w, "rain", "visible", intensity=i)
                                          for w in range(20) for i in ("light", "moderate")],
                              20, "skycam_west")) <= render.MAX_CLAIMS  # fmt: skip
@@ -426,8 +507,9 @@ def test_the_head_budget_bounds_calls_across_scheduler_retries() -> None:
     unit = analyzer(Script([("visual", "malformed_json")]), sink=sink)
     # The first attempt spends two calls (try and repair); its retry has one left, then stops
     # (describe then publishes what its accepted windows support).
-    assert visual_call(unit, Run(uuid4(), "n0nce000", metered=True)) is None
-    retry = Run(uuid4(), "n0nce001", metered=True)
+    publication = uuid4()
+    assert visual_call(unit, Run(uuid4(), "n0nce000", publication_id=publication)) is None
+    retry = Run(uuid4(), "n0nce001", publication_id=publication)
     with pytest.raises(BudgetSpent):
         visual_call(unit, retry)
     assert retry.calls == 1 and sink.spent == 3
@@ -471,8 +553,10 @@ def test_nightly_moves_the_slot_and_refills_the_budget_only_when_it_queues(
     class Connection:
         async def execute(self, statement: Any, params: dict[str, Any]) -> Any:
             if "SKIP LOCKED" in str(statement):
-                # Heads with a live describe job are never selected.
+                # Withdrawn videos and heads with a live describe job are never selected.
                 assert "j.status IN ('queued','running')" in str(statement)
+                assert "NOT v.withdrawn" in str(statement)
+                assert "attempted_at" in str(statement)
                 assert params["kind"] == store.DESCRIBE_KIND
                 return [row]
             updates.append((str(statement), params))
@@ -527,6 +611,53 @@ def test_provider_model_text_never_reaches_provenance() -> None:
     edited = build_analysis({**row, "author_kind": "operator"}, True)
     assert edited.author == "editor" and edited.label == EDITOR_LABEL
     assert edited.provenance is None
+    # No hour passed visual review: station data only, never AI-labelled.
+    unreviewed = {"windows_reviewed": 0, "windows_total": 3}
+    station_only = build_analysis({**row, "coverage": {**COVERAGE, **unreviewed}}, True)
+    assert station_only.author == "station" and station_only.label == STATION_LABEL
+    assert station_only.provenance is None
+    reviewed = build_analysis({**row, "coverage": COVERAGE}, True)
+    assert reviewed.author == "ai" and reviewed.label == LABEL
+    # A stored claim of any other basis fails closed: it is never served.
+    claims = [{"text": "Clouds.", "basis": "visual"}, {"text": "Odd.", "basis": "inference"}]
+    assert [c.text for c in build_analysis({**row, "claims": claims}, True).claims] == ["Clouds."]
+
+
+COVERAGE = {
+    "algorithm_revision": "hour-windows-v1",
+    "reviewed_seconds": 3600.0,
+    "expected_seconds": 7200.0,
+    "fraction": 0.5,
+    "windows_reviewed": 1,
+    "windows_total": 2,
+    "gaps": [],
+}
+
+
+# 1. Undecodable or absurdly nested replies are rejected, never a crash ------------------------
+
+
+def test_lone_surrogates_and_deep_nesting_are_malformed_not_fatal() -> None:
+    for content in ('{"schema_version": 2, "x": "\ud800"}', "[" * 100_000, "{" * 5000 + "}"):
+        with pytest.raises(Rejected) as rejected:
+            validate.parse(content, "stop")
+        assert rejected.value.code in ("malformed_json", "schema")
+    with pytest.raises(Rejected) as surrogate:
+        validate.parse("\ud800{}", "stop")
+    assert surrogate.value.code == "malformed_json"
+
+    def nested(request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(200, content=b'{"choices": ' + b"[" * 100_000)
+
+    with pytest.raises(CortexError) as invalid:
+        run(Cortex("k", transport=httpx2.MockTransport(nested)).chat({"messages": []}))
+    assert invalid.value.kind == "invalid"
+    # Inside a run, both are a rejected try plus one repair, then the window is skipped.
+    script = Script([])
+    script.cortex = lambda: Cortex("k", transport=httpx2.MockTransport(nested))  # type: ignore[method-assign]
+    unit = analyzer(script)
+    state = Run(uuid4(), "n0nce000")
+    assert visual_call(unit, state) is None and state.calls == 2
 
 
 # 14. A bad keogram means frames only, never a failed video -------------------------------------
@@ -561,12 +692,14 @@ class Span:
 
 
 class Store:
-    def __init__(self, objects: dict[str, bytes]) -> None:
-        self.objects = objects
+    def __init__(self, objects: dict[str, bytes], errors: dict[str, StoreError] | None = None):
+        self.objects, self.errors = objects, errors or {}
         self.opened: list[str] = []
 
     async def open_span(self, key: str, first: int, last: int, size: int) -> Span:
         self.opened.append(key)
+        if key in self.errors:
+            raise self.errors[key]
         return Span(self.objects[key])
 
 
@@ -594,3 +727,59 @@ def test_garage_media_describes_from_frames_when_the_keogram_is_bad(
     )
     assert len(prepared) == 2 and all(p.keogram is None and p.frames for p in prepared)
     assert reader.opened == (["web", "keogram"] if problem == "content_address" else ["web"])
+
+
+# 4. A transient store error retries; only a definite answer fails the video -------------------
+
+
+@pytest.mark.parametrize(
+    ("error", "outcome"),
+    [
+        (StoreError("span"), MediaUnavailable),  # transport
+        (StoreError("span", 503), MediaUnavailable),
+        (StoreError("span read"), MediaUnavailable),
+        (StoreError("span", 404), MediaError),  # definitely missing
+        (StoreError("span", 200), MediaError),  # served, but not the committed object
+    ],
+)
+def test_store_errors_on_the_rendition_retry_unless_definite(
+    error: StoreError, outcome: type[Exception], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(media, "sample_frames", lambda *_: [])
+    reader = Store({"web": b"web-bytes"}, {"web": error})
+    with pytest.raises(outcome):
+        run(GarageMedia(reader, tmp_path).prepare(Source(stored("web", b"web"), None), WINDOWS))
+
+
+def test_a_missing_keogram_means_frames_only_but_a_store_blip_retries(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(
+        media, "sample_frames", lambda path, indices, directory: [tiny_jpeg()] * len(indices)
+    )
+    keogram = png(1440, 32)
+    objects = {"web": b"web-bytes", "keogram": keogram}
+    source = Source(stored("web", b"web-bytes"), stored("keogram", keogram))
+    gone = Store(objects, {"keogram": StoreError("span", 404)})
+    prepared = run(GarageMedia(gone, tmp_path).prepare(source, WINDOWS))
+    assert all(p.keogram is None and p.frames for p in prepared)
+    blip = Store(objects, {"keogram": StoreError("span", 502)})
+    with pytest.raises(MediaUnavailable):
+        run(GarageMedia(blip, tmp_path).prepare(source, WINDOWS))
+
+
+# 9. A stale job cannot spend a newer publication's budget --------------------------------------
+
+
+def test_spending_is_bound_to_the_publication() -> None:
+    seen: list[tuple[str, dict[str, Any]]] = []
+
+    class Connection:
+        async def execute(self, statement: Any, params: dict[str, Any]) -> Any:
+            seen.append((str(statement), params))
+            return SimpleNamespace(rowcount=0)
+
+    video, publication = uuid4(), uuid4()
+    assert not run(store.spend_call(Connection(), video, publication, 80))  # type: ignore[arg-type]
+    ((sql, params),) = seen
+    assert "publication_id=:publication" in sql and params["publication"] == publication

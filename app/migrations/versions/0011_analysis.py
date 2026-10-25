@@ -39,6 +39,7 @@ def statements() -> list[str]:
             refreshes integer DEFAULT 0 NOT NULL,
             attempt_calls integer DEFAULT 0 NOT NULL,
             pending_since timestamptz,
+            attempted_at timestamptz,
             next_attempt_at timestamptz,
             evidence_checked_at timestamptz,
             created_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -99,7 +100,7 @@ def statements() -> list[str]:
               AND (author_kind <> 'model' OR (model_route = 'llm.primary.longctx.mm'
                 AND model ~ '^[A-Za-z0-9][A-Za-z0-9._:/+-]{{0,127}}$'))),
             CONSTRAINT ck_analysis_revision_state CHECK (state IN ('complete','degraded')
-              AND refresh IN ('full','synthesis')
+              AND refresh IN ('full','measurements')
               AND (state = 'complete') = (reason IS NULL)
               AND (reason IS NULL OR reason {REASON})),
             CONSTRAINT ck_analysis_revision_content CHECK (
@@ -129,7 +130,7 @@ def statements() -> list[str]:
             CONSTRAINT pk_ai_raw_response PRIMARY KEY (id),
             CONSTRAINT fk_ai_raw_response_video_id_video FOREIGN KEY (video_id)
               REFERENCES weather.video (id) ON DELETE RESTRICT,
-            CONSTRAINT ck_ai_raw_response_identity CHECK (stage IN ('visual','synthesis')
+            CONSTRAINT ck_ai_raw_response_identity CHECK (stage = 'visual'
               AND call > 0 AND outcome ~ '^[a-z][a-z0-9_]{0,31}$'),
             -- Private diagnostics live at most a day, whatever the purge does.
             CONSTRAINT ck_ai_raw_response_retention
@@ -159,7 +160,8 @@ def statements() -> list[str]:
         "summary,claims,observations,limitations,coverage,inputs,event_keys,calls)"
         " ON weather.analysis_revision TO weather_worker",
         "GRANT UPDATE (publication_id,media_sha256,state,reason,revision,stale,runs,calls,"
-        "refreshes,attempt_calls,pending_since,next_attempt_at,evidence_checked_at,updated_at)"
+        "refreshes,attempt_calls,pending_since,attempted_at,next_attempt_at,evidence_checked_at,"
+        "updated_at)"
         " ON weather.analysis TO weather_worker",
         "GRANT SELECT,INSERT,DELETE ON weather.ai_raw_response TO weather_worker",
         # Neither the raw table nor the revision tables: only the filtered view.

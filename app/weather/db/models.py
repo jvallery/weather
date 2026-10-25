@@ -1023,6 +1023,7 @@ analysis = Table(
     Column("refreshes", Integer, nullable=False, server_default=text("0")),
     Column("attempt_calls", Integer, nullable=False, server_default=text("0")),
     _instant("pending_since", True),
+    _instant("attempted_at", True),
     _instant("next_attempt_at", True),
     _instant("evidence_checked_at", True),
     _created(),

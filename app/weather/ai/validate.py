@@ -45,8 +45,9 @@ class Rejected(ValueError):
 
 
 @cache
-def schema(name: str) -> dict[str, Any]:
-    loaded: dict[str, Any] = json.loads((CONTRACTS / f"{name}.schema.json").read_text())
+def schema() -> dict[str, Any]:
+    """The shipped VisualAnalysis v2 schema, the only model output contract."""
+    loaded: dict[str, Any] = json.loads((CONTRACTS / "visual-analysis.schema.json").read_text())
     return loaded
 
 
@@ -86,26 +87,32 @@ def _check(value: Any, rule: Mapping[str, Any], defs: Mapping[str, Any]) -> bool
     return True
 
 
-def shape_valid(name: str, value: Any) -> bool:
-    rules = schema(name)
+def shape_valid(value: Any) -> bool:
+    rules = schema()
     return _check(value, rules, rules.get("$defs", {}))
 
 
-def parse(content: str | None, finish_reason: str | None, name: str) -> dict[str, Any]:
-    """The JSON object of a completed reply; a single ```json fence is tolerated."""
+def parse(content: str | None, finish_reason: str | None) -> dict[str, Any]:
+    """The JSON object of a completed reply; a single ```json fence is tolerated. Undecodable
+    text (a lone surrogate) or nesting deep enough to exhaust recursion is malformed."""
     if finish_reason != "stop":
         raise Rejected("truncated" if finish_reason == "length" else "finish_reason")
-    if content is None or len(content.encode()) > MAX_CONTENT:
+    try:
+        size = len(content.encode()) if content is not None else None
+    except UnicodeEncodeError:
+        raise Rejected("malformed_json") from None
+    if content is None or size is None or size > MAX_CONTENT:
         raise Rejected("malformed_json")
     body = content.strip()
     fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", body, re.S)
     if fenced:
         body = fenced.group(1)
     try:
-        value = json.loads(body)
-    except ValueError:
+        value: dict[str, Any] = json.loads(body)
+        valid = isinstance(value, dict) and shape_valid(value)
+    except ValueError, RecursionError:
         raise Rejected("malformed_json") from None
-    if not isinstance(value, dict) or not shape_valid(name, value):
+    if not valid:
         raise Rejected("schema")
     return value
 
@@ -164,7 +171,7 @@ def visual(
     nonce: str,
 ) -> VisualResult:
     """Validate one window's Stage A reply and bind its observations to this run."""
-    value = parse(content, finish_reason, "visual-analysis")
+    value = parse(content, finish_reason)
     observations = value["observations"]
     categories = [o["category"] for o in observations]
     if len(set(categories)) != len(categories):

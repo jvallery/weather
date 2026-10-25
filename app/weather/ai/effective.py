@@ -12,6 +12,8 @@ from typing import Any, Final, Literal
 
 LABEL: Final = "AI-generated · sampled-frame analysis"
 EDITOR_LABEL: Final = "Editor-written description"
+# No hour passed visual review: the text is the station's measurements only, never AI-labelled.
+STATION_LABEL: Final = "Station measurements only"
 
 
 def public_author(author_kind: object) -> Literal["ai", "editor"]:

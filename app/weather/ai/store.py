@@ -6,7 +6,8 @@ the current immutable `weather.analysis_revision`. The state machine:
 
     published media -> pending -> complete | degraded            (a run validated output)
                        pending -> pending (next 02:00 local)     (Cortex down, auth or busy)
-                       pending -> failed                         (media error, or 7 days)
+                       pending -> failed                         (media error, or 7 days
+                                                                  after the first attempt)
 
 A new web rendition resets the head to pending; the same bytes keep the pinned analysis (no
 automatic reanalysis). `attempt_calls` meters Cortex calls since the head was last queued, so
@@ -84,7 +85,8 @@ VALUES(:video,:publication,:sha,'pending',:now,:retry,:now)
 ON CONFLICT (video_id) DO UPDATE SET publication_id=EXCLUDED.publication_id,
   media_sha256=EXCLUDED.media_sha256,state='pending',reason=NULL,stale=false,
   pending_since=EXCLUDED.pending_since,next_attempt_at=EXCLUDED.next_attempt_at,
-  evidence_checked_at=NULL,refreshes=0,attempt_calls=0,updated_at=EXCLUDED.updated_at
+  evidence_checked_at=NULL,refreshes=0,attempt_calls=0,attempted_at=NULL,
+  updated_at=EXCLUDED.updated_at
 WHERE weather.analysis.media_sha256 <> EXCLUDED.media_sha256
 RETURNING video_id"""
 
@@ -202,10 +204,12 @@ async def defer(
     calls: int,
     now: datetime,
 ) -> bool:
-    """Cortex was unavailable: stay pending until the next nightly slot."""
+    """Cortex was unavailable: stay pending until the next nightly slot. The first attempt
+    starts the 7-day retry clock, so a head queued while intel is disabled never expires
+    unattempted."""
     result = await connection.execute(
         text("""UPDATE weather.analysis SET reason=:reason,next_attempt_at=:retry,runs=runs+1,
-          calls=calls+:calls,updated_at=:now
+          calls=calls+:calls,attempted_at=COALESCE(attempted_at,:now),updated_at=:now
         WHERE video_id=:video AND publication_id=:publication AND state='pending'"""),
         {
             "video": video_id,
@@ -244,19 +248,22 @@ async def fail(
 
 
 NIGHTLY_SQL = """SELECT a.video_id,a.publication_id,a.next_attempt_at FROM weather.analysis a
-WHERE a.state='pending' AND a.next_attempt_at<=:now AND a.pending_since>:oldest
+JOIN weather.video v ON v.id=a.video_id AND NOT v.withdrawn
+WHERE a.state='pending' AND a.next_attempt_at<=:now
+  AND (a.attempted_at IS NULL OR a.attempted_at>:oldest)
   AND NOT EXISTS (SELECT 1 FROM weather.job j WHERE j.kind=:kind
     AND j.status IN ('queued','running') AND j.payload->>'video_id'=a.video_id::text)
 ORDER BY a.next_attempt_at,a.video_id LIMIT :limit FOR UPDATE OF a SKIP LOCKED"""
 
 
 async def nightly(connection: AsyncConnection, now: datetime, *, limit: int = 100) -> int:
-    """Queue one retry per pending head whose nightly slot has come (inside the 7 days).
+    """Queue one retry per pending head whose nightly slot has come (inside the 7 days after
+    its first attempt).
 
-    Heads with a live describe job are left alone. The slot moves to the following night
-    rather than clearing, so a queued job that is lost (intel disabled, retries exhausted) is
-    queued again instead of waiting out the 7 days. The call budget is refilled only when a
-    job is actually queued.
+    Heads of withdrawn videos and heads with a live describe job are left alone. The slot
+    moves to the following night rather than clearing, so a queued job that is lost (intel
+    disabled, retries exhausted) is queued again instead of waiting out the 7 days. The call
+    budget is refilled only when a job is actually queued.
     """
     rows = list(
         await connection.execute(
@@ -282,21 +289,28 @@ async def nightly(connection: AsyncConnection, now: datetime, *, limit: int = 10
 
 
 SPEND_SQL = """UPDATE weather.analysis SET attempt_calls=attempt_calls+1
-WHERE video_id=:video AND state='pending' AND attempt_calls<:cap"""
+WHERE video_id=:video AND publication_id=:publication AND state='pending'
+  AND attempt_calls<:cap"""
 
 
-async def spend_call(connection: AsyncConnection, video_id: UUID, cap: int) -> bool:
-    """Reserve one Cortex call against the head's budget; False once `cap` is spent."""
-    result = await connection.execute(text(SPEND_SQL), {"video": video_id, "cap": cap})
+async def spend_call(
+    connection: AsyncConnection, video_id: UUID, publication_id: UUID, cap: int
+) -> bool:
+    """Reserve one Cortex call against the head's budget; False once `cap` is spent, or when
+    the head has moved to another publication (a stale job never spends the new budget)."""
+    result = await connection.execute(
+        text(SPEND_SQL), {"video": video_id, "publication": publication_id, "cap": cap}
+    )
     return result.rowcount == 1
 
 
 async def expire(connection: AsyncConnection, now: datetime) -> int:
-    """Pending for 7 days: failed, keeping the last Cortex reason."""
+    """Pending 7 days after its first attempt: failed, keeping the last Cortex reason. A head
+    never attempted (intel disabled) does not expire."""
     result = await connection.execute(
         text("""UPDATE weather.analysis SET state='failed',reason=COALESCE(reason,'expired'),
           pending_since=NULL,next_attempt_at=NULL,updated_at=:now
-        WHERE state='pending' AND pending_since<=:oldest"""),
+        WHERE state='pending' AND attempted_at<=:oldest"""),
         {"now": now, "oldest": now - RETRY_WINDOW},
     )
     return result.rowcount

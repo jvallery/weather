@@ -378,12 +378,13 @@
       },
       "Analysis": {
         "additionalProperties": false,
-        "description": "The labelled description of the current media; never model-written text (C18).\n\n`author` is `ai` for template text rendered from the model's validated observations and\n`editor` for a human (#44) revision, whose label then says so.",
+        "description": "The labelled description of the current media; never model-written text (C18).\n\n`author` is `ai` for template text rendered from the model's validated observations,\n`station` when no hour passed visual review (the text is station data only, with no AI\nlabel or model provenance), and `editor` for a human (#44) revision; the label says which.",
         "properties": {
           "author": {
             "default": "ai",
             "enum": [
               "ai",
+              "station",
               "editor"
             ],
             "title": "Author",
@@ -435,6 +436,7 @@
             "default": "AI-generated \u00b7 sampled-frame analysis",
             "enum": [
               "AI-generated \u00b7 sampled-frame analysis",
+              "Station measurements only",
               "Editor-written description"
             ],
             "title": "Label",
@@ -517,8 +519,7 @@
           "basis": {
             "enum": [
               "visual",
-              "instrument",
-              "inference"
+              "instrument"
             ],
             "title": "Basis",
             "type": "string"
@@ -624,7 +625,7 @@
           "refresh": {
             "enum": [
               "full",
-              "synthesis"
+              "measurements"
             ],
             "title": "Refresh",
             "type": "string"

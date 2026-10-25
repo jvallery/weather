@@ -44,7 +44,7 @@ async def smoke() -> int:
         "source_interval": {"start": "2026-01-01T12:00:00Z", "end": "2026-01-01T13:00:00Z"},
         "evidence": [{"id": "f-smoke-0-0", "kind": "frame", "source_time": "2026-01-01T12:30:00Z"}],
         "caveats": ["Synthetic image generated for a connectivity check."],
-        "schema": validate.schema("visual-analysis"),
+        "schema": validate.schema(),
     }
     body = request_body(
         VISUAL_PROMPT, json.dumps(context), [("f-smoke-0-0", synthetic_image())], max_tokens=1024

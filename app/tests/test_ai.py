@@ -32,7 +32,7 @@ from ai_support import (
     tiny_jpeg,
 )
 from PIL import Image as PILImage
-from weather.ai import analyze, store, validate
+from weather.ai import analyze, render, store, validate
 from weather.ai.analyze import Analyzer, CortexDown, Run, visual_events, visual_request
 from weather.ai.client import (
     MAX_IMAGE_BYTES,
@@ -111,13 +111,15 @@ def test_the_prompt_is_hashed_and_the_schema_matches_its_fixtures() -> None:
         "visual-system.txt",
     ]
     prompt = (contracts / "visual-system.txt").read_bytes()
-    assert analyze.PROMPT_SHA256 == hashlib.sha256(prompt + b"\0templates-v1").hexdigest()
-    assert "description" not in json.dumps(validate.schema("visual-analysis")["properties"])
+    assert analyze.PROMPT_SHA256 == hashlib.sha256(
+        prompt + b"\0" + render.RENDER_REVISION.encode()
+    ).hexdigest()
+    assert "description" not in json.dumps(validate.schema()["properties"])
     cases = json.loads((ROOT / "docs/contracts/visual-analysis-fixtures.json").read_text())
     for case in cases["cases"]:
-        assert validate.shape_valid("visual-analysis", case["value"]) is case["valid"], case["name"]
+        assert validate.shape_valid(case["value"]) is case["valid"], case["name"]
     assert set(validate.CATEGORIES) == set(
-        validate.schema("visual-analysis")["properties"]["observations"]["items"]["properties"][
+        validate.schema()["properties"]["observations"]["items"]["properties"][
             "category"
         ]["enum"]
     )
