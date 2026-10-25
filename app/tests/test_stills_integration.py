@@ -473,7 +473,7 @@ def test_hour_archive_exact_bytes_dusk_binding_crash_correction_and_expiry(
                 "WHERE d.archival_still_id=:id ORDER BY d.role",
                 id=e.id,
             )
-            assert [d.role for d in derivatives] == sorted(
+            assert sorted(d.role for d in derivatives) == sorted(
                 ["still", "still_960", "still_480", "still_webp", "still_webp960", "still_webp480"]
             )
             for d in derivatives:
@@ -577,7 +577,7 @@ def test_hour_archive_exact_bytes_dusk_binding_crash_correction_and_expiry(
                 id=e.id,
             )
             assert [s.state for s in states] == ["retired"]
-            async with worker.connect() as connection:
+            async with worker.begin() as connection:
                 await rejected(
                     connection,
                     "UPDATE weather.archival_still SET active=true,retired_at=NULL WHERE id=:id",
