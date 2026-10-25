@@ -663,7 +663,13 @@ def test_pipeline_deployments_ship_disabled_with_only_their_inputs() -> None:
             for volume in spec["volumes"]
             for source in volume.get("projected", {}).get("sources", [])
         }
-        assert secrets == {"weather-pg-worker", "weather-pg-ca", "weather-media-s3-writer"}
+        # The pipelines hold the only originals key (#38).
+        assert secrets == {
+            "weather-pg-worker",
+            "weather-pg-ca",
+            "weather-media-s3-writer",
+            "weather-originals-s3-writer",
+        }
         claims = {
             v["persistentVolumeClaim"]["claimName"]
             for v in spec["volumes"]

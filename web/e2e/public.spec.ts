@@ -464,8 +464,9 @@ test("hourly stills: day and hour navigation, the repeated 01:00 and missing slo
   // Both 01:00 slots of the fall change, with their own offsets, and an explicit missing slot.
   await expect(page.getByRole("heading", { name: "01:00 UTC-06:00", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "01:00 UTC-07:00 (repeated hour)" })).toBeVisible();
-  await expect(page.getByText("Missing · no_eligible_capture")).toBeVisible();
-  await expect(page.getByText(/Off target · nearest capture in the hour/)).toBeVisible();
+  const cards = page.locator(".still");
+  await expect(cards.getByText("Missing · no_eligible_capture")).toBeVisible();
+  await expect(cards.getByText(/Off target · nearest capture in the hour/)).toBeVisible();
   await expect(page.getByText(/\+11 min 0\.0 s from :30/)).toBeVisible();
   await page.getByRole("link", { name: "Next day" }).click();
   await expect(page).toHaveURL(/date=2026-11-02/);
@@ -475,7 +476,7 @@ test("hourly stills: day and hour navigation, the repeated 01:00 and missing slo
   // The same clock hour across dates: actual capture times, offsets and the missing day.
   await expect(page.getByRole("heading", { name: "2026-10-31 · 01:00 UTC-06:00" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "2026-10-30 · 01:00 UTC-06:00" })).toBeVisible();
-  await expect(page.getByText("Missing · no_capture")).toBeVisible();
+  await expect(page.locator(".still").getByText("Missing · no_capture")).toBeVisible();
   await expect(page.getByText(/\+12\.4 s from :30/)).toBeVisible();
   await expect(page.getByText(/same clock hour is not the same solar phase/)).toBeVisible();
   for (const image of await page.locator(".still img").all()) expect(await image.getAttribute("src")).toMatch(/^\/media\/[A-Za-z0-9_-]+$/);
