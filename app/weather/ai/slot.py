@@ -4,9 +4,16 @@
 The lock is session-scoped on a dedicated AUTOCOMMIT connection, so no transaction or snapshot
 stays open while Cortex works. If the client gave up on a call (timeout), the server may still
 be running it, so the slot is held for a short grace before it is released.
+
+A session lock outlives its holder if the connection goes back to the pool still holding it.
+So unless the UNLOCK is confirmed (or the last try returned false, so nothing is held), the
+connection is invalidated on the way out, whatever the exit: a cancellation during
+`pg_try_advisory_lock`, the grace sleep or the UNLOCK, or a database error. Closing the session
+releases the lock server-side.
 """
 
 import asyncio
+import contextlib
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -39,15 +46,23 @@ class CortexSlot:
         loop = asyncio.get_running_loop()
         deadline = loop.time() + max(wait, 0.0)
         async with self._engine.connect() as raw:
-            connection = await raw.execution_options(isolation_level="AUTOCOMMIT")
-            while not (await connection.execute(text(LOCK))).scalar_one():
-                if loop.time() >= deadline:
-                    raise SlotBusy("Inference slot busy")
-                await asyncio.sleep(POLL_SECONDS)
-            uncertain = Uncertain()
+            clear = False  # True once this session provably holds no slot lock
             try:
-                yield uncertain
+                connection = await raw.execution_options(isolation_level="AUTOCOMMIT")
+                while not (await connection.execute(text(LOCK))).scalar_one():
+                    if loop.time() >= deadline:
+                        clear = True
+                        raise SlotBusy("Inference slot busy")
+                    await asyncio.sleep(POLL_SECONDS)
+                uncertain = Uncertain()
+                try:
+                    yield uncertain
+                finally:
+                    if uncertain.value:
+                        await asyncio.sleep(self._grace)
+                    await connection.execute(text(UNLOCK))
+                    clear = True
             finally:
-                if uncertain.value:
-                    await asyncio.shield(asyncio.sleep(self._grace))
-                await asyncio.shield(connection.execute(text(UNLOCK)))
+                if not clear:
+                    with contextlib.suppress(Exception):
+                        await raw.invalidate()

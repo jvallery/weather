@@ -4,8 +4,10 @@ on-read aggregates -> measured packet (Stage B), both -> grounded narrative (Sta
 
 Budgets: one Cortex call in flight across processes (advisory lock), at most four calls per
 window (first try, two transport retries, one repair; auth and media errors stop at once), and
-a per-run ceiling. Cortex being down leaves the video `pending` for the nightly retry; nothing
-here delays media publication. Publication is a CAS on the head's media revision and current
+a ceiling per queued describe that scheduler retries share (`attempt_calls`). Cortex being down,
+or the slot busy or unreachable, leaves the video `pending` for the nightly retry, and a
+process-level breaker then skips every further call until that nightly window; nothing here
+delays media publication. Publication is a CAS on the head's media revision and current
 analysis revision, so a late result never replaces a newer one. Every revision is immutable and
 pinned to its model, prompt/schema hashes, evidence hash and media SHA-256.
 """
@@ -23,6 +25,7 @@ from uuid import UUID, uuid4
 
 from prometheus_client import Counter, Histogram
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from weather.api.source import SourceUnavailable
@@ -37,8 +40,8 @@ from .client import MODEL_ROUTE, Cortex, CortexError, Reply, request_body
 from .effective import LABEL
 from .evidence import AggregateSource, Packet, measured_claims, read_packet
 from .media import MediaError, MediaReader, Source, StoredObject, WindowMedia
-from .slot import CortexSlot
-from .validate import CATEGORIES, Narrative, Observation, Rejected, VisualResult
+from .slot import CortexSlot, SlotBusy
+from .validate import CATEGORIES, Narrative, Observation, Rejected, VisualResult, public_observation
 from .windows import FPS, Window, hour_windows
 
 LOG = logging.getLogger("weather.ai")
@@ -114,6 +117,8 @@ class Run:
     nonce: str
     calls: int = 0
     model: str = MODEL_ROUTE
+    # Describe runs spend from the head's budget, shared by the job's scheduler retries.
+    metered: bool = False
 
 
 @dataclass
@@ -305,6 +310,29 @@ class Analyzer:
         self.engine, self.cortex, self.slot = engine, cortex, slot
         self.media, self.weather, self.profile_id = media, weather, profile_id
         self.sleep, self.clock = sleep, clock
+        # Process-level breaker: after Cortex is down, no call until the next nightly window.
+        self._breaker: tuple[datetime, str] | None = None
+
+    def breaker(self) -> str | None:
+        """The reason Cortex calls are skipped until the next nightly window, if they are."""
+        if self._breaker is not None and self.clock() >= self._breaker[0]:
+            self._breaker = None
+        return self._breaker[1] if self._breaker is not None else None
+
+    def _trip(self, reason: str) -> CortexDown:
+        self._breaker = (store.next_night(self.clock()), reason)
+        return CortexDown(reason)
+
+    async def _spend(self, run: Run) -> None:
+        if not run.metered:
+            return
+        try:
+            async with self.engine.begin() as connection:
+                spent = await store.spend_call(connection, run.video_id, MAX_CALLS_PER_RUN)
+        except (SQLAlchemyError, OSError):
+            raise CortexDown("slot_unavailable") from None
+        if not spent:
+            raise CortexDown("call_budget")
 
     # Calls --------------------------------------------------------------------------------------
 
@@ -343,45 +371,63 @@ class Analyzer:
     ) -> T | None:
         """At most four calls; None when this window or stage yields nothing usable.
 
-        Raises CortexDown when Cortex is unreachable, busy or refuses the key, so the run is
-        deferred to the nightly retry instead of spending more calls.
+        Raises CortexDown when Cortex is unreachable, busy or refuses the key (tripping the
+        breaker), when the inference slot stays busy or its database is unreachable, or when
+        the head's call budget is spent, so the run is deferred to the nightly retry instead of
+        spending more calls.
         """
         failures = repairs = window_calls = 0
         note: str | None = None
         while window_calls < CALLS_PER_WINDOW and run.calls < MAX_CALLS_PER_RUN:
+            reason = self.breaker()
+            if reason is not None:
+                raise CortexDown(reason)
             try:
                 body = build(note)
             except CortexError:
                 CALLS.labels(stage, "media").inc()
                 return None
-            window_calls += 1
-            run.calls += 1
+            reply: Reply | None = None
+            failure: CortexError | None = None
             try:
                 async with self.slot.hold(SLOT_WAIT_SECONDS) as uncertain:
+                    await self._spend(run)
+                    window_calls += 1
+                    run.calls += 1
                     try:
                         with LATENCY.labels(stage).time():
                             reply = await self.cortex.chat(body)
                     except CortexError as error:
                         uncertain.value = error.timeout
-                        raise
-            except CortexError as error:
-                CALLS.labels(stage, error.kind).inc()
-                await self._raw(run, stage, window_start, error.kind, None)
-                if error.kind == "auth":
-                    raise CortexDown("cortex_auth") from None
-                if error.kind == "media":
+                        failure = error
+            except SlotBusy:
+                raise CortexDown("slot_busy") from None
+            except (SQLAlchemyError, OSError) as error:
+                if reply is None and failure is None:
+                    raise CortexDown("slot_unavailable") from None
+                # Only the release failed: the slot dropped its session (and so the lock), and
+                # the call's outcome still stands.
+                LOG.warning("Inference slot release failed (%s)", type(error).__name__)
+            if failure is not None:
+                CALLS.labels(stage, failure.kind).inc()
+                await self._raw(run, stage, window_start, failure.kind, None)
+                if failure.kind == "auth":
+                    raise self._trip("cortex_auth")
+                if failure.kind == "media":
                     return None
-                if error.kind == "invalid":
+                if failure.kind == "invalid":
                     if repairs >= REPAIRS:
                         return None
                     repairs, note = repairs + 1, "invalid_reply"
                     continue
                 failures += 1
                 if failures >= TRANSPORT_ATTEMPTS:
-                    reason = "cortex_busy" if error.kind == "busy" else "cortex_unavailable"
-                    raise CortexDown(reason) from None
-                await self.sleep(error.retry_after or BACKOFF_SECONDS[failures - 1])
+                    raise self._trip(
+                        "cortex_busy" if failure.kind == "busy" else "cortex_unavailable"
+                    )
+                await self.sleep(failure.retry_after or BACKOFF_SECONDS[failures - 1])
                 continue
+            assert reply is not None
             try:
                 result = accept(reply)
             except Rejected as rejection:
@@ -441,7 +487,12 @@ class Analyzer:
             nonce_for(
                 video_id, publication_id, row["revision"], context.job.id, context.job.attempt
             ),
+            metered=True,
         )
+        tripped = self.breaker()
+        if tripped is not None:
+            await self._defer(context, row, tripped, run, now)
+            return
         web = assets["web"]
         if web is None or web.sha256 != row["media_sha256"]:
             await self._fail(context, row, "media_unavailable", run, now)
@@ -589,7 +640,7 @@ class Analyzer:
                 (
                     await connection.execute(
                         text("""SELECT id,visual_id,evidence_hash,observations,coverage,inputs,
-                          limitations FROM weather.analysis_revision
+                          limitations,author_kind FROM weather.analysis_revision
                         WHERE video_id=:video AND revision=:revision"""),
                         {"video": video_id, "revision": base},
                     )
@@ -604,7 +655,11 @@ class Analyzer:
             or row["revision"] != base
             or row["state"] not in ("complete", "degraded")
             or row["withdrawn"]
+            or previous["author_kind"] != "model"
         ):
+            return
+        if self.breaker() is not None:
+            OUTCOMES.labels("refresh_deferred").inc()
             return
         run = Run(
             video_id, nonce_for(video_id, publication_id, base, context.job.id, context.job.attempt)
@@ -730,6 +785,32 @@ class Analyzer:
                 or current["withdrawn"]
                 or (describe and current["state"] != "pending")
             ):
+                return
+            # Withdrawal (#15): re-read the video under a share lock, so a withdrawal either
+            # committed first (seen here) or waits for this transaction, after which
+            # `store.on_withdrawn` (which locks the head) withdraws what this one wrote.
+            withdrawn = (
+                await connection.execute(
+                    text("SELECT withdrawn FROM weather.video WHERE id=:video FOR SHARE"),
+                    {"video": row["video_id"]},
+                )
+            ).scalar_one()
+            if withdrawn:
+                return
+            # Model output never replaces a human (#44) revision of the same media.
+            author = (
+                await connection.execute(
+                    text("""SELECT author_kind,media_sha256 FROM weather.analysis_revision
+                    WHERE video_id=:video AND revision=:revision"""),
+                    {"video": row["video_id"], "revision": base},
+                )
+            ).first()
+            if (
+                author is not None
+                and author.author_kind != "model"
+                and author.media_sha256 == row["media_sha256"]
+            ):
+                outcome["value"] = "kept_human"
                 return
             revision_id = uuid4()
             visual_id = result.visual_id or revision_id
@@ -857,6 +938,7 @@ class Analyzer:
                           ON r.video_id=a.video_id AND r.revision=a.revision
                         JOIN weather.video v ON v.id=a.video_id
                         WHERE a.state IN ('complete','degraded') AND a.refreshes<:cap
+                          AND r.author_kind='model'
                           AND NOT v.withdrawn AND v.ends_at>:since
                           AND (a.evidence_checked_at IS NULL OR a.evidence_checked_at<:due)
                         ORDER BY a.evidence_checked_at NULLS FIRST,a.video_id LIMIT :limit"""),
@@ -898,11 +980,11 @@ class Analyzer:
 INSERT_REVISION = """INSERT INTO weather.analysis_revision(id,video_id,revision,publication_id,
   media_sha256,state,reason,refresh,visual_id,model_route,model,prompt_sha256,schema_sha256,
   evidence_hash,evidence_count,summary,claims,observations,limitations,coverage,inputs,
-  event_keys,calls)
+  event_keys,calls,author_kind)
 VALUES(:id,:video,:revision,:publication,:sha,:state,:reason,:refresh,:visual,:route,:model,
   :prompt,:schema,:evidence_hash,:evidence_count,:summary,CAST(:claims AS jsonb),
   CAST(:observations AS jsonb),CAST(:limitations AS jsonb),CAST(:coverage AS jsonb),
-  CAST(:inputs AS jsonb),CAST(:event_keys AS jsonb),:calls)"""
+  CAST(:inputs AS jsonb),CAST(:event_keys AS jsonb),:calls,'model')"""
 
 
 def _parse(value: str) -> datetime:
@@ -956,7 +1038,7 @@ def video_text(
     )
     by_window: dict[datetime, list[str]] = {}
     for item in result.observations:
-        if item["assessment"] in ("visible", "possible"):
+        if public_observation(item["assessment"], item["description"]):
             by_window.setdefault(result.event_windows[item["id"]][0], []).append(
                 item["description"]
             )
