@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, create_async_en
 from weather.db.models import metadata
 from weather.pipeline import synthetic
 from weather.pipeline.intake import Expected
+from weather.preview import policy
 from weather.preview.producer import PreviewProducer
 from weather.preview.server import Files, PreviewMetrics, PreviewService, Source
 
@@ -139,7 +140,8 @@ def test_checks_view_clock_and_grants() -> None:
 
 def test_producer_commits_as_worker_and_pointer_reads_as_api(tmp_path: Path) -> None:
     now = datetime.now(UTC).replace(microsecond=0)
-    start = now - timedelta(minutes=15)
+    # On the commissioned 2 s grid (phase 0); an odd second would be a `settings` reject.
+    start = now - timedelta(minutes=15, seconds=now.second % 2)
     frames = [
         synthetic.Frame(int(start.timestamp() + s) * NS, synthetic.solid(W, H, s % 250))
         for s in range(0, 600, 2)
@@ -156,7 +158,9 @@ def test_producer_commits_as_worker_and_pointer_reads_as_api(tmp_path: Path) -> 
             assert not await producer.step()  # same minute
             service = PreviewService(Source(api), files, metrics)
             body = (await service.pointer("skycam_east")).model_dump(mode="json")
-            assert body["state"] == "fresh" and len(body["images"]) == 2
+            seen = await Source(api).latest("skycam_east")
+            detail = (body, seen, [policy.servable(r.timing, seen[0]) for r in seen[1]])
+            assert body["state"] == "fresh" and len(body["images"]) == 2, detail
             assert body["age_seconds"] > 630
             url = body["images"][0]["url"]
             found = await service.resolve(UUID(url.rsplit("/", 1)[1]))

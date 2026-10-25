@@ -11,8 +11,9 @@ outage it publishes the newest eligible frame once; it never replays the missed 
 
 A generation is the producer's UTC minute, so a camera gets at most one per minute. Its
 derivatives are written tmp -> fsync -> rename under `previews/<camera>/<generation>-<variant>
-.jpg`, then both pointer rows commit in one transaction with `first_published_at` from the
-database clock; the CHECKs refuse a row the database clock does not yet consider eligible.
+.jpg`, then both pointer rows commit in one transaction with one `first_published_at`, the
+database clock at the transaction's start; the CHECKs refuse a row the database clock does
+not yet consider eligible.
 Rows past `expires_at` are deleted and files are removed about an hour after their generation.
 """
 
@@ -66,7 +67,7 @@ INSERT = """
       path,captured_lower,captured_upper,public_not_before,first_published_at,expires_at)
     VALUES (:camera,:generation,:variant,:width,:height,:bytes,:sha256,:path,
       CAST(:lower AS timestamptz),CAST(:upper AS timestamptz),CAST(:not_before AS timestamptz),
-      clock_timestamp(),CAST(:lower AS timestamptz) + interval '3600 seconds')
+      now(),CAST(:lower AS timestamptz) + interval '3600 seconds')
     ON CONFLICT (camera_id,generation,variant) DO NOTHING
 """
 

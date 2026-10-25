@@ -265,6 +265,23 @@ def test_pointer_fake_clock_embargo_age_and_expiry(harness: Harness) -> None:
     assert harness.pointer()["reason"] == "no_preview"
 
 
+def test_variants_of_one_generation_form_one_pointer(harness: Harness) -> None:
+    rows = harness.publish()
+    # Publication times of the two rows may differ; the capture is what identifies them.
+    small = rows["small"]
+    later = replace(small.timing, first_published_at=small.timing.first_published_at + MS)
+    harness.source.rows[-1] = replace(small, timing=later)
+    harness.source.now = later.first_published_at
+    body = harness.pointer()
+    assert body["state"] == "fresh" and len(body["images"]) == 2
+    # Different captures under one generation are never mixed into one pointer.
+    other = replace(
+        later, captured_lower=later.captured_lower - MS, expires_at=later.expires_at - MS
+    )
+    harness.source.rows[-1] = replace(small, timing=other)
+    assert harness.pointer()["reason"] == "no_preview"
+
+
 def test_repeated_identical_bytes_never_reset_capture_time_or_age(harness: Harness) -> None:
     rows = harness.publish()
     harness.source.now = CAPTURED + timedelta(seconds=700)

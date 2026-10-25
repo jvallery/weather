@@ -340,7 +340,8 @@ class PreviewService:
     async def pointer(self, camera: str) -> Preview:
         now, rows = await self.source.latest(camera)
         rows = [row for row in rows if self._servable(row, now, "pointer")]
-        if not rows or len({(r.generation, r.timing) for r in rows}) != 1:
+        capture = {(r.generation, r.timing.captured_lower, r.timing.captured_upper) for r in rows}
+        if len(capture) != 1:
             return self._response(camera, now, "no_preview")
         state = policy.state(rows[0].timing.captured_lower, now)
         if state == "unavailable":
