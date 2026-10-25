@@ -24,3 +24,7 @@ The compiler stage uses main, bookworm-updates and bookworm-security from the sa
 Debian snapshot date. All three suites are needed because the digest-pinned Python base
 already includes security updates; main alone can require an older exact-version dependency
 (for example perl versus perl-base), causing apt to fail before compilation.
+
+## Consumers
+
+The streaming renderer (`app/weather/pipeline/`, #15) is the only runtime consumer. It runs this FFmpeg for the intra-only mezzanine blocks, the native, web and mobile renditions, frame decoding for validation, and poster extraction. WebP posters come from Pillow, because this build has no WebP encoder. Record the FFmpeg version string with every render result (`RenderResult` and the sidecar `mezzanine_builds`).
