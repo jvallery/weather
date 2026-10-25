@@ -180,7 +180,8 @@ Garage or custody: disposable files on the staging share plus `camera_preview` p
   renderer. Every 15 s it lists `sealed/<camera>/` for the current and previous UTC hour (never
   `tmp/`), reads new sealed chunks once, and in each UTC minute publishes the newest frame
   whose `capture_upper_bound + 600 s + skew_margin` has passed, if it is newer than the last
-  one. Derivatives `large` (≤1280 px) and `small` (≤480 px) are decoded, resized and
+  one. Repeats of the same camera bytes (`duplicate_hash`, or the last published source hash)
+  are skipped, so a frozen camera's preview goes stale, then `too_old`. Derivatives `large` (≤1280 px) and `small` (≤480 px) are decoded, resized and
   re-encoded with no EXIF, XMP, GPS, ICC or comment, written tmp → fsync → rename to
   `previews/<camera>/<generation>-<variant>.jpg`, then both rows commit with
   `first_published_at` from the database clock. Rows are deleted at `expires_at`

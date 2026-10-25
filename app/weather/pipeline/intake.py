@@ -58,6 +58,8 @@ class Candidate:
     offset: int | None = None  # member data offset, so a read never rescans the archive
     # The older capture bound: the calibrated lower bound, else the request start (#39).
     lower: Fraction | None = None
+    # The collector saw these exact bytes on its previous capture (a frozen or cached camera).
+    duplicate: bool = False
 
     def rank(self) -> tuple[Any, ...]:
         uncertainty = self.uncertainty_ms if self.uncertainty_ms is not None else float("inf")
@@ -166,6 +168,7 @@ def parse_chunk(path: Path, expected: Expected) -> Chunk:
                 reject=reject,
                 offset=offsets.get(str(member["name"])),
                 lower=instant(lower) if lower is not None else None,
+                duplicate=record.get("duplicate_hash") is True,
             )
         )
     return chunk

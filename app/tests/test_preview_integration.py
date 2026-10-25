@@ -31,8 +31,9 @@ NS = 1_000_000_000
 W, H = 64, 32
 INSERT = """
     INSERT INTO weather.camera_preview (camera_id,generation,variant,width,height,bytes,sha256,
-      path,captured_lower,captured_upper,public_not_before,first_published_at,expires_at)
-    SELECT :camera,:generation,:variant,64,32,10,:sha,:path,t.lower,t.upper,t.nb,t.nb,
+      source_sha256,path,captured_lower,captured_upper,public_not_before,first_published_at,
+      expires_at)
+    SELECT :camera,:generation,:variant,64,32,10,:sha,:sha,:path,t.lower,t.upper,t.nb,t.nb,
       t.lower + interval '3600 seconds'
     FROM (SELECT n - make_interval(secs => a) AS lower, n - make_interval(secs => a - 1) AS upper,
             n - make_interval(secs => a - 631 - d) AS nb
@@ -118,6 +119,23 @@ def test_checks_view_clock_and_grants() -> None:
                     "23514",
                 )
                 await rejects(connection, {**row(9), "variant": "native"}, "23514")
+                # A generation (UTC minute) after its own publication time.
+                await rejects(connection, {**row(10**9)}, "23514")
+                # Future capture: stored (its embargo is in the future too) but never visible.
+                future = (await connection.execute(text(INSERT), row(11, age=-60))).scalar_one()
+                withdrawn = (await connection.execute(text(INSERT), row(12))).scalar_one()
+            worker = engine("weather_worker")
+            try:
+                async with worker.begin() as connection:
+                    await connection.execute(
+                        text(
+                            "UPDATE weather.camera_preview SET withdrawn_at = clock_timestamp() "
+                            "WHERE id = :id"
+                        ),
+                        {"id": withdrawn},
+                    )
+            finally:
+                await worker.dispose()
             async with api.connect() as connection:
                 ids = set(
                     (await connection.execute(text("SELECT id FROM public_api.previews"))).scalars()
@@ -127,7 +145,8 @@ def test_checks_view_clock_and_grants() -> None:
                 ids = set(
                     (await connection.execute(text("SELECT id FROM public_api.previews"))).scalars()
                 )
-                assert ids == {visible, embargoed} and expired not in ids
+                assert ids == {visible, embargoed}
+                assert not {expired, future, withdrawn} & ids
                 with pytest.raises(DBAPIError) as denied:
                     await connection.execute(text("SELECT 1 FROM weather.camera_preview"))
                 assert getattr(denied.value.orig, "sqlstate", None) == "42501"

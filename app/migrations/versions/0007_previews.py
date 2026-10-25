@@ -5,7 +5,9 @@ Expand-only and inline DDL; never import application modules here. The bytes are
 files under the staging share's `previews/<camera>/`, never Garage or custody. The CHECKs hold
 the P14 embargo (`public_not_before >= captured_upper + 630 s`), a non-reversed capture
 interval, a publication time inside the half-open lifetime, `expires_at = captured_lower +
-3600 s` and a path confined to the row's own camera directory. `public_api.previews` is a
+3600 s`, a generation (UTC minute) no later than its publication by the database clock, and a
+path confined to the row's own camera directory. `source_sha256` (the sealed frame's hash,
+never in the view) keeps a frozen camera from being republished as new. `public_api.previews` is a
 security barrier that admits a row only while the database clock says it is eligible; the API
 role reads only the view.
 """
@@ -38,6 +40,7 @@ def statements() -> list[str]:
             height integer NOT NULL,
             bytes integer NOT NULL,
             sha256 varchar(64) NOT NULL,
+            source_sha256 varchar(64) NOT NULL,
             path varchar(96) NOT NULL,
             captured_lower timestamptz NOT NULL,
             captured_upper timestamptz NOT NULL,
@@ -53,7 +56,7 @@ def statements() -> list[str]:
               AND generation > 0 AND variant IN ('large','small')),
             CONSTRAINT ck_camera_preview_image CHECK (width BETWEEN 1 AND 1280
               AND height BETWEEN 1 AND 16384 AND bytes BETWEEN 1 AND 2097152
-              AND sha256 ~ '^[0-9a-f]{{64}}$'),
+              AND sha256 ~ '^[0-9a-f]{{64}}$' AND source_sha256 ~ '^[0-9a-f]{{64}}$'),
             CONSTRAINT ck_camera_preview_path CHECK (path = 'previews/' || camera_id || '/'
               || generation || '-' || variant || '.jpg'),
             CONSTRAINT ck_camera_preview_capture CHECK (captured_lower <= captured_upper),
@@ -62,7 +65,9 @@ def statements() -> list[str]:
             CONSTRAINT ck_camera_preview_published CHECK (
               first_published_at >= public_not_before AND first_published_at < expires_at),
             CONSTRAINT ck_camera_preview_expiry CHECK (
-              expires_at = captured_lower + interval '3600 seconds')
+              expires_at = captured_lower + interval '3600 seconds'),
+            CONSTRAINT ck_camera_preview_generation CHECK (
+              to_timestamp(generation * 60) <= first_published_at)
         )""",
         # The bytes route resolves by id; the pointer takes the camera's newest visible
         # generation through the unique index.

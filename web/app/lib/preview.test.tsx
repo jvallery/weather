@@ -32,6 +32,10 @@ test("local aging: fresh through 1,200 s, stale through 1,800 s, then unavailabl
   expect(previewTile(received, true, 1_100_001)).toEqual({ kind: "unavailable", message: "The last capture is more than 30 minutes old." });
   // A server-stale preview stays stale; a clock running backwards never makes it younger.
   expect(previewTile({ preview: pointer(1300, "stale"), receivedAt: 0 }, false, -50_000)).toMatchObject({ state: "stale", age: 1300 });
+  // A suspended tab's monotonic clock may stall; wall time since receipt still ages it.
+  expect(previewTile({ preview: pointer(700), receivedAt: 0, receivedWall: 0 }, false, 0, 1_100_001)).toMatchObject({ kind: "unavailable" });
+  // A wall clock stepped backwards cannot make it younger than monotonic time says.
+  expect(previewTile({ preview: pointer(700), receivedAt: 0, receivedWall: 0 }, false, 500_001, -1e9)).toMatchObject({ state: "stale" });
   expect(previewTile(null, false, 0)).toEqual({ kind: "loading" });
   expect(previewTile(null, true, 0)).toEqual({ kind: "unavailable", message: SERVICE_DOWN });
   expect(captureLabel("2026-10-24T18:00:00Z", 725)).toBe("captured 12:00 (12 min ago)");

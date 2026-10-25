@@ -41,6 +41,7 @@ from fastapi.responses import JSONResponse
 from prometheus_client import REGISTRY, CollectorRegistry, Counter
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from weather.api.models import Preview, PreviewImage, PreviewInterval, PreviewReason, Problem
 from weather.media.origin import (
@@ -346,14 +347,15 @@ class PreviewService:
         state = policy.state(rows[0].timing.captured_lower, now)
         if state == "unavailable":
             return self._response(camera, now, "too_old")
+        rows = sorted(rows, key=lambda r: r.variant)
+        # Both sizes at once, so a stalled share costs one read deadline, not one per size.
+        found = await asyncio.gather(
+            *(self.files.read(r.path, r.bytes, r.sha256) for r in rows), return_exceptions=True
+        )
+        if any(data is None or isinstance(data, BaseException) for data in found):
+            return self._response(camera, now, "media_unavailable")
         images = []
-        for row in sorted(rows, key=lambda r: r.variant):
-            try:
-                data = await self.files.read(row.path, row.bytes, row.sha256)
-            except Unavailable:
-                data = None
-            if data is None:
-                return self._response(camera, now, "media_unavailable")
+        for row in rows:
             images.append(
                 PreviewImage(
                     variant=row.variant,
@@ -385,6 +387,7 @@ ERRORS: dict[int | str, dict[str, Any]] = {
 }
 
 
+@router.head("/api/v1/cameras/{camera}/preview", include_in_schema=False)
 @router.get(
     "/api/v1/cameras/{camera}/preview",
     response_model=Preview,
@@ -426,6 +429,18 @@ def build_preview_app(service: PreviewService | None, origin: MediaOrigin | None
     @app.exception_handler(RequestValidationError)
     async def invalid(_request: Request, _error: RequestValidationError) -> JSONResponse:
         return _problem(400, "invalid_request", "Invalid request parameters.")
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_error(_request: Request, error: StarletteHTTPException) -> JSONResponse:
+        # 404 and 405 from routing: the same no-store problem shape as every other answer.
+        response = _problem(
+            error.status_code,
+            "not_found" if error.status_code == 404 else "method_not_allowed",
+            "No such resource." if error.status_code == 404 else "Use GET or HEAD.",
+        )
+        if error.status_code == 405:
+            response.headers["Allow"] = "GET, HEAD"
+        return response
 
     app.add_middleware(MediaDispatch, state=app.state)
     return app

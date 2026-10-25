@@ -7,7 +7,10 @@ previous UTC hour (never `tmp/`), reads each new sealed chunk once through the s
 intake, and keeps the newest frame whose bounds are plausible and whose
 `capture_upper_bound + 600 s + skew_margin` has passed. A frame no newer than the last
 published one is not republished, so a stopped camera ages honestly to unavailable. After an
-outage it publishes the newest eligible frame once; it never replays the missed minutes.
+outage it publishes the newest eligible frame once; it never replays the missed minutes. A
+frame the collector flagged `duplicate_hash`, or whose sealed bytes equal the last published
+frame's, is never published: a frozen or cached camera's old picture would otherwise get a new
+request-time lower bound every minute and never age out.
 
 A generation is the producer's UTC minute, so a camera gets at most one per minute. Its
 derivatives are written tmp -> fsync -> rename under `previews/<camera>/<generation>-<variant>
@@ -64,8 +67,9 @@ AGE = Gauge(
 )
 INSERT = """
     INSERT INTO weather.camera_preview (camera_id,generation,variant,width,height,bytes,sha256,
-      path,captured_lower,captured_upper,public_not_before,first_published_at,expires_at)
-    VALUES (:camera,:generation,:variant,:width,:height,:bytes,:sha256,:path,
+      source_sha256,path,captured_lower,captured_upper,public_not_before,first_published_at,
+      expires_at)
+    VALUES (:camera,:generation,:variant,:width,:height,:bytes,:sha256,:source,:path,
       CAST(:lower AS timestamptz),CAST(:upper AS timestamptz),CAST(:not_before AS timestamptz),
       now(),CAST(:lower AS timestamptz) + interval '3600 seconds')
     ON CONFLICT (camera_id,generation,variant) DO NOTHING
@@ -97,13 +101,20 @@ class PreviewProducer:
         self.loaded = False
         self.generation = 0
         self.last: tuple[datetime, datetime] | None = None  # (lower, upper) last published
+        self.last_source: str | None = None  # sha256 of the last published sealed frame
         self.cleaned = 0  # the minute of the last cleanup
         AGE.labels(self.camera).set(-1)
 
     # ---- selection (runs in a thread: NFS calls may block) -----------------------------------
 
     def _usable(self, candidate: Candidate, now: datetime) -> bool:
-        if candidate.reject is not None or candidate.upper is None or candidate.lower is None:
+        if (
+            candidate.reject is not None
+            or candidate.upper is None
+            or candidate.lower is None
+            or candidate.duplicate
+            or candidate.sha256 == self.last_source
+        ):
             return False
         lower, upper = utc(candidate.lower), utc(candidate.upper)
         if not policy.publishable(lower, upper, now, self.skew):
@@ -179,7 +190,7 @@ class PreviewProducer:
             row = (
                 await connection.execute(
                     text(
-                        "SELECT generation,captured_lower,captured_upper "
+                        "SELECT generation,captured_lower,captured_upper,source_sha256 "
                         "FROM weather.camera_preview WHERE camera_id=:camera "
                         "ORDER BY generation DESC LIMIT 1"
                     ),
@@ -189,6 +200,7 @@ class PreviewProducer:
         if row is not None:
             self.generation = int(row.generation)
             self.last = (row.captured_lower, row.captured_upper)
+            self.last_source = row.source_sha256
         self.loaded = True
 
     async def _commit(
@@ -209,6 +221,7 @@ class PreviewProducer:
                         "height": height,
                         "bytes": len(data),
                         "sha256": hashlib.sha256(data).hexdigest(),
+                        "source": candidate.sha256,
                         "path": f"previews/{self.camera}/{generation}-{variant}.jpg",
                         "lower": lower,
                         "upper": upper,
@@ -216,6 +229,7 @@ class PreviewProducer:
                     },
                 )
         self.generation, self.last = generation, (lower, upper)
+        self.last_source = candidate.sha256
 
     async def step(self) -> bool:
         """Publish at most one generation; True when one was committed."""

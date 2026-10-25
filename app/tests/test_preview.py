@@ -265,6 +265,33 @@ def test_pointer_fake_clock_embargo_age_and_expiry(harness: Harness) -> None:
     assert harness.pointer()["reason"] == "no_preview"
 
 
+def test_pointer_and_bytes_agree_at_the_embargo_instant(harness: Harness) -> None:
+    rows = harness.publish()
+    large = rows["large"]
+    for variant in ("large", "small"):
+        row = rows[variant]
+        at_embargo = replace(row.timing, first_published_at=row.timing.public_not_before)
+        harness.source.rows[[r.id for r in harness.source.rows].index(row.id)] = replace(
+            row, timing=at_embargo
+        )
+    url = f"/media/previews/{large.id}"
+    embargo = large.timing.public_not_before
+    harness.source.now = embargo - MS
+    assert harness.pointer()["reason"] == "no_preview"
+    assert harness.client.get(url).status_code == 404
+    assert harness.client.head(url).status_code == 404
+    harness.source.now = embargo
+    assert harness.pointer()["state"] == "fresh"
+    assert harness.client.get(url).status_code == 200
+    assert harness.client.head(url).status_code == 200
+    head = harness.client.head("/api/v1/cameras/skycam_east/preview")
+    assert head.status_code == 200 and head.content == b""
+    assert head.headers["cache-control"] == "no-store"
+    refused = harness.client.post("/api/v1/cameras/skycam_east/preview")
+    assert refused.status_code == 405 and refused.headers["cache-control"] == "no-store"
+    assert harness.client.get("/elsewhere").headers["cache-control"] == "no-store"
+
+
 def test_variants_of_one_generation_form_one_pointer(harness: Harness) -> None:
     rows = harness.publish()
     # Publication times of the two rows may differ; the capture is what identifies them.
@@ -391,6 +418,8 @@ def test_stalled_share_answers_unavailable_within_its_deadline(tmp_path: Path) -
         started = time.monotonic()
         body = h.pointer()
         assert body["reason"] == "media_unavailable"
+        # Both sizes were read concurrently: one deadline, not one per size.
+        assert time.monotonic() - started < 0.35
         # Both readers are now stuck: later requests answer at once instead of queueing.
         assert h.client.get(f"/media/previews/{rows['small'].id}").status_code == 503
         assert h.pointer()["reason"] == "media_unavailable"
@@ -438,6 +467,7 @@ class FakeDatabase:
                             generation=top["generation"],
                             captured_lower=top["lower"],
                             captured_upper=top["upper"],
+                            source_sha256=top["source"],
                         )
                         if top
                         else None
@@ -573,6 +603,48 @@ def test_one_generation_per_minute_none_for_an_old_frame_and_one_after_an_outage
     again = _producer(tmp_path, db, clock)
     assert not asyncio.run(again.step())
     assert len(db.rows) == 6
+
+
+def test_a_frozen_camera_is_never_republished_and_ages_out(tmp_path: Path) -> None:
+    frozen = synthetic.solid(W, H, 77)
+    frames = [
+        synthetic.Frame(
+            int(T0.timestamp() + s) * NS,
+            synthetic.solid(W, H, s % 250) if s < 300 else frozen,
+            # The collector flags each repeat of the previous capture's bytes.
+            extra=(("duplicate_hash", s > 300),),
+        )
+        for s in range(0, 2400, 2)
+    ]
+    paths = synthetic.write_chunks(
+        tmp_path, "skycam_east", frames, geometry=(W, H), cadence_ms=2000
+    )
+    for index, path in enumerate(paths):
+        sealed = T0.timestamp() + 60 * (index + 1) + 1
+        os.utime(path, ns=(int(sealed * NS), int(sealed * NS)))
+    db, clock = FakeDatabase(), Clock(T0 + timedelta(minutes=20))
+    preview = _producer(tmp_path, db, clock)
+    # The first frozen frame (slot 300) is the newest that is not a repeat.
+    assert asyncio.run(preview.step())
+    assert db.rows[-1]["upper"] == T0 + timedelta(seconds=300, milliseconds=150)
+    for minutes in (25, 35, 45, 50):
+        clock.now = T0 + timedelta(minutes=minutes)
+        assert not asyncio.run(preview.step())
+    # A restarted collector no longer flags the repeat, and a restarted producer reloads the
+    # last source hash: still never republished.
+    again = tmp_path / "again"
+    synthetic.write_chunks(
+        again,
+        "skycam_east",
+        [synthetic.Frame(int((T0 + timedelta(minutes=40)).timestamp()) * NS, frozen)],
+        geometry=(W, H),
+        cadence_ms=2000,
+    )
+    restarted = _producer(again, db, Clock(T0 + timedelta(minutes=52)))
+    assert not asyncio.run(restarted.step())
+    assert len({r["generation"] for r in db.rows}) == 1
+    # So the pointer ages the one published capture out: unavailable after 1,800 s.
+    assert policy.state(db.rows[-1]["lower"], T0 + timedelta(minutes=50)) == "unavailable"
 
 
 def test_unknown_or_future_timing_is_never_published(tmp_path: Path) -> None:

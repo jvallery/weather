@@ -874,6 +874,7 @@ camera_preview = Table(
     Column("height", Integer, nullable=False),
     Column("bytes", Integer, nullable=False),
     Column("sha256", String(64), nullable=False),
+    Column("source_sha256", String(64), nullable=False),
     Column("path", String(96), nullable=False),
     _instant("captured_lower"),
     _instant("captured_upper"),
@@ -889,7 +890,8 @@ camera_preview = Table(
     ),
     CheckConstraint(
         "width BETWEEN 1 AND 1280 AND height BETWEEN 1 AND 16384 "
-        "AND bytes BETWEEN 1 AND 2097152 AND sha256 ~ '^[0-9a-f]{64}$'",
+        "AND bytes BETWEEN 1 AND 2097152 AND sha256 ~ '^[0-9a-f]{64}$' "
+        "AND source_sha256 ~ '^[0-9a-f]{64}$'",
         name="image",
     ),
     CheckConstraint(
@@ -905,4 +907,5 @@ camera_preview = Table(
         name="published",
     ),
     CheckConstraint("expires_at = captured_lower + interval '3600 seconds'", name="expiry"),
+    CheckConstraint("to_timestamp(generation * 60) <= first_published_at", name="generation"),
 )
