@@ -23,4 +23,4 @@ images:
   digest: sha256:bc913946161fbf5b452c4afb45de1e4105a369f432d701de7fd199f5c71ef5eb
 - name: weather-web
   newName: registry.vallery.net/jvallery/weather-web
-  digest: sha256:d8558c36322f11b79fae1557b5a4150b69b0898c117bb551edf7ffa73abfb08d
+  digest: sha256:b505b30fe104f23b33cce103a136142c3cb3259757918220fb0da874d118a68a
