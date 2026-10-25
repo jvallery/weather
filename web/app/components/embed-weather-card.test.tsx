@@ -80,3 +80,11 @@ test("the error card shows no values and keeps the top-level exit link", () => {
   expect(html).toContain('target="_top"');
   expect(html).not.toMatch(/<strong>|<time/);
 });
+
+test("an unparseable observed_at shows that time as unavailable instead of failing the render", () => {
+  const now = Date.parse("2026-10-24T18:00:00Z");
+  const broken = parseCurrent({ ...fixture, metrics: [metric("temperature", 4.3, "degC", "not-a-time", "2026-10-24T18:02:00Z", "fresh")] })!;
+  const today = ssr(<CurrentConditions initial={broken} renderedAt={now} units="us" registry={registry} />);
+  const embed = card(broken, now);
+  for (const html of [today, embed]) expect(html).toContain("time unavailable");
+});

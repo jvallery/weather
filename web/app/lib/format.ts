@@ -3,8 +3,16 @@ import type { Units } from "./contracts";
 import type { Metric, MetricDefinition } from "./weather-api";
 
 export const CAMERA_LABELS = { skycam_east: "East sky", skycam_west: "West sky", frontyard_1: "Front yard" } as const;
+// An unparseable instant from the API is shown as unavailable for that value only, never a render error.
+export const TIME_UNAVAILABLE = "time unavailable";
+function instantDate(instant: string): Date | null {
+  const date = new Date(instant);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
 export function localTime(instant: string): string {
-  return new Intl.DateTimeFormat("en-US", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23", timeZoneName: "longOffset" }).format(new Date(instant));
+  const date = instantDate(instant);
+  if (!date) return TIME_UNAVAILABLE;
+  return new Intl.DateTimeFormat("en-US", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23", timeZoneName: "longOffset" }).format(date);
 }
 export function plotTime(epochSeconds: number): string {
   const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZoneName: "longOffset" }).formatToParts(new Date(epochSeconds * 1000));
@@ -12,7 +20,9 @@ export function plotTime(epochSeconds: number): string {
   return `${part("month")}/${part("day")}/${part("year")}\n${part("hour")}:${part("minute")} ${part("timeZoneName")}`;
 }
 export function localDate(instant: string): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(instant));
+  const date = instantDate(instant);
+  if (!date) return TIME_UNAVAILABLE;
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
 }
 const preferredUS: Record<string, string> = { degC: "degF", "m/s": "mph", mm: "in", hPa: "inHg", km: "mi" };
 export function conversionAvailable(unit: string, units: Units, definition?: MetricDefinition): boolean {
