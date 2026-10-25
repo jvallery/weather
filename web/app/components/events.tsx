@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { Link } from "react-router";
-import type { Video } from "../lib/contracts";
 import { CAMERA_LABELS, localTime } from "../lib/format";
-import type { WeatherEvent } from "../lib/weather-api";
+import type { Timelapse, WeatherEvent } from "../lib/weather-api";
 
 const ORIGIN_LABELS = { measured: "Measured · station instrument", visual: "Visual · AI from recorded video", synthesis: "AI synthesis · inferred", manual: "Manual · human annotation" } as const;
 const MPH = 3600 / 1609.344;
@@ -26,7 +25,7 @@ export function EventTime({ event }: { event: WeatherEvent }) {
   return <span className="source-time"><time dateTime={start}>{localTime(start)}</time> → <time dateTime={end}>{localTime(end)}</time> · {precision}</span>;
 }
 /** The instant a bookmark seeks to: the start of the event's overlap with this recording, or null. */
-export function bookmarkInstant(event: WeatherEvent, video: Video): string | null {
+export function bookmarkInstant(event: WeatherEvent, video: Pick<Timelapse, "source_interval">): string | null {
   const start = Math.max(Date.parse(event.source_interval.start), Date.parse(video.source_interval.start));
   const end = Math.min(Date.parse(event.source_interval.end), Date.parse(video.source_interval.end));
   return Number.isFinite(start) && Number.isFinite(end) && start < end ? new Date(start).toISOString() : null;
@@ -36,23 +35,24 @@ function videoLinks(event: WeatherEvent) {
     ? <li key={`${video.camera}-${video.video_id}`}><Link to={`/timelapses/${video.camera}/${video.cycle_date}/${video.segment}/?t=${encodeURIComponent(video.seek.source_interval.start)}`}>{CAMERA_LABELS[video.camera]} · {video.segment} video at this time</Link></li>
     : <li key={video.camera}>{CAMERA_LABELS[video.camera]} · video unavailable</li>);
 }
-export function EventItem({ event, seekTo, showVideos = false }: { event: WeatherEvent; seekTo?: string | null; showVideos?: boolean }) {
+export function EventItem({ event, seekTo, onSeek, showVideos = false }: { event: WeatherEvent; seekTo?: string | null; onSeek?: (event: WeatherEvent) => void; showVideos?: boolean }) {
   const detail = eventDetail(event);
   return <li className="event" id={`event-${event.id}`}>
     <h3>{event.label}</h3>
     <p><ProvenanceBadge event={event} /> {event.camera ? <span className="small">{CAMERA_LABELS[event.camera]} only</span> : <span className="small">Station-wide</span>}</p>
     <p><EventTime event={event} /></p>
     {detail && <p>{detail}</p>}
-    {seekTo && <p><Link className="button-link" to={`?t=${encodeURIComponent(seekTo)}`}>Seek video to {event.label.toLowerCase()} · {localTime(seekTo)}</Link></p>}
+    {seekTo && <p><Link className="button-link" to={`?t=${encodeURIComponent(seekTo)}`} onClick={onSeek ? (click) => { click.preventDefault(); onSeek(event); } : undefined}>Seek video to {event.label.toLowerCase()} · {localTime(seekTo)}</Link></p>}
     {showVideos && <ul className="segment-list">{videoLinks(event)}</ul>}
   </li>;
 }
 /** A day's events in source order. Each event is shown once, whatever videos it overlaps. */
-export function EventStrip({ title, events, unavailable, video }: { title: string; events: readonly WeatherEvent[] | null; unavailable?: boolean; video?: Video }) {
+/** With `onSeek`, a bookmark seeks the page's player through its time map (the event's interval). */
+export function EventStrip({ title, events, unavailable, video, onSeek }: { title: string; events: readonly WeatherEvent[] | null; unavailable?: boolean; video?: Pick<Timelapse, "source_interval">; onSeek?: (event: WeatherEvent) => void }) {
   return <section className="event-strip" aria-labelledby="event-strip-title"><h2 id="event-strip-title">{title}</h2>
     {unavailable || events === null ? <p className="fault">Events API unavailable. No events are shown in its place.</p>
       : events.length === 0 ? <p>No weather events recorded for this period.</p>
-      : <><p className="small">{events.length} {events.length === 1 ? "event" : "events"} · a video link is navigation, not a claim that the camera saw the event.</p><ol className="events">{events.map((event) => <EventItem key={event.id} event={event} seekTo={video ? bookmarkInstant(event, video) : null} />)}</ol></>}
+      : <><p className="small">{events.length} {events.length === 1 ? "event" : "events"} · a video link is navigation, not a claim that the camera saw the event.</p><ol className="events">{events.map((event) => <EventItem key={event.id} event={event} seekTo={video ? bookmarkInstant(event, video) : null} onSeek={onSeek} />)}</ol></>}
   </section>;
 }
 export function EventFeedItem({ event }: { event: WeatherEvent }) {

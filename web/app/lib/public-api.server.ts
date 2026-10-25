@@ -2,16 +2,14 @@
 import { z } from "zod";
 import { data } from "react-router";
 import { Counter, Gauge, register } from "prom-client";
-import { catalogSchema } from "./contracts";
-import { parseAggregates, parseAlmanac, parseArchive, parseCurrent, parseEvents, parser, parseRegistry, type Current, type Parser } from "./weather-api";
+import { parseAggregates, parseAlmanac, parseArchive, parseCurrent, parseEvents, parseRegistry, parseTimelapses, type Current, type Parser } from "./weather-api";
 
 const ALLOWED = /^\/api\/v1\/(?:weather\/(?:current|observations|aggregates|almanac|metrics)|events|timelapses(?:\/[A-Za-z0-9_-]{1,128})?)$/;
-const parseCatalog = parser(catalogSchema);
 const requests = (register.getSingleMetric("weather_web_api_requests_total") as Counter<"route" | "result"> | undefined) || new Counter({ name: "weather_web_api_requests_total", help: "Bounded SSR public API reads by result", labelNames: ["route", "result"] });
 const inFlight = (register.getSingleMetric("weather_web_api_inflight") as Gauge | undefined) || new Gauge({ name: "weather_web_api_inflight", help: "Active bounded SSR API reads" });
 let active = 0;
-// Three reads per admitted SSR document (Today) across server.mjs's four slots.
-const API_SLOTS = 12;
+// Four reads per admitted SSR document (Today; a video page) across server.mjs's four slots.
+const API_SLOTS = 16;
 /** Overload is "busy, retry", never "API unavailable": the root boundary renders it with Retry-After. */
 export function busy() { return data("busy", { status: 503, headers: { "Retry-After": "5" } }); }
 function origin(): string {
@@ -74,8 +72,8 @@ export async function currentRead(request: Request) {
   return { current: current || unavailableCurrent(now), now, apiUnavailable: current === null };
 }
 export async function catalogRead(request: Request, extra = new URLSearchParams()) {
-  extra.set("limit", "100");
-  return publicRead("/api/v1/timelapses", parseCatalog, request.signal, extra);
+  if (!extra.has("limit")) extra.set("limit", "100");
+  return publicRead("/api/v1/timelapses", parseTimelapses, request.signal, extra);
 }
 export async function aggregatesRead(request: Request, params: URLSearchParams) {
   return publicReadResult("/api/v1/weather/aggregates", parseAggregates, request.signal, params);

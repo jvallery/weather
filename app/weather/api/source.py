@@ -239,9 +239,7 @@ class WeatherReader:
         except SourceUnavailable:
             return False
 
-    async def current(
-        self, now: datetime, hour_start: datetime, day_start: datetime
-    ) -> Reading:
+    async def current(self, now: datetime, hour_start: datetime, day_start: datetime) -> Reading:
         station, st, rw, rain = await self._run(
             [
                 (STATION_SQL, {}),
@@ -305,6 +303,15 @@ class WeatherReader:
     async def events(self, sql: str, parameters: dict[str, Any]) -> list[Row]:
         """One event page, read in a single statement (its snapshot is in each row)."""
         (rows,) = await self._run([(sql, parameters)], self._statement_ms)
+        return rows
+
+    async def segments(self, start: datetime, end: datetime) -> list[Row]:
+        """Playable catalog videos overlapping [start, end), for event video links."""
+        from .events import SEGMENTS_SQL
+
+        (rows,) = await self._run(
+            [(SEGMENTS_SQL, {"start": start, "end": end})], self._statement_ms
+        )
         return rows
 
     async def aggregates(

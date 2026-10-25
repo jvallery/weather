@@ -914,13 +914,15 @@ def test_timelapse_catalog_reads_public_views(tmp_path: Path) -> None:
                 expected_revision=0,
                 deadline=DEADLINE,
             )
-            # Ended five minutes ago: inside ends_at + 630 s, so not listed at all.
+            # Ended five minutes ago: inside ends_at + 630 s, so not listed at all. Relative to
+            # the wall clock, not import-time NOW, which a long suite can outrun by 5.5 minutes.
+            recent = datetime.now(UTC).replace(microsecond=0) - timedelta(minutes=5)
             await publisher.publish(
                 video(
                     media(tmp_path),
                     camera="frontyard_1",
                     day=october,
-                    end=NOW - timedelta(minutes=5),
+                    end=recent,
                 ),
                 expected_revision=0,
                 deadline=DEADLINE,
@@ -943,7 +945,7 @@ def test_timelapse_catalog_reads_public_views(tmp_path: Path) -> None:
                     connection,
                     "SELECT not_before >= :pnb FROM weather.outbox "
                     "WHERE topic='media.published' AND payload->>'camera_id'='frontyard_1'",
-                    pnb=NOW - timedelta(minutes=5) + timedelta(seconds=630),
+                    pnb=recent + timedelta(seconds=630),
                 )
                 assert embargoed
         finally:

@@ -32,11 +32,11 @@ test("SSR API admission is bounded, reports overload as busy and releases capaci
   const complete: Array<(response: Response) => void> = [];
   const fetch = vi.fn(() => new Promise<Response>((resolve) => complete.push(resolve)));
   vi.stubGlobal("fetch", fetch);
-  const work = Array.from({ length: 14 }, () => publicRead("/api/v1/weather/current", parseCurrent, new AbortController().signal));
-  expect(fetch).toHaveBeenCalledTimes(12);
+  const work = Array.from({ length: 18 }, () => publicRead("/api/v1/weather/current", parseCurrent, new AbortController().signal));
+  expect(fetch).toHaveBeenCalledTimes(16);
   for (const resolve of complete) resolve(new Response(JSON.stringify(fixture)));
   const settled = await Promise.allSettled(work);
-  expect(settled.filter((result) => result.status === "fulfilled" && result.value)).toHaveLength(12);
+  expect(settled.filter((result) => result.status === "fulfilled" && result.value)).toHaveLength(16);
   // Overload is a distinct retryable state, never "API unavailable".
   expect(settled.filter((result) => result.status === "rejected").map((result) => (result as PromiseRejectedResult).reason)).toEqual(Array(2).fill(expect.objectContaining({ data: "busy", init: expect.objectContaining({ status: 503 }) })));
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(fixture))));

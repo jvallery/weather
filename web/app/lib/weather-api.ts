@@ -27,7 +27,10 @@ export type AstronomyItem = Schemas["AstronomyItem"];
 export type ComparisonItem = Schemas["ComparisonItem"];
 export type ComparisonWindow = Schemas["ComparisonWindow"];
 // The archive month page renders only these fields of each /api/v1/timelapses entry.
-export type ArchiveEntry = Pick<Schemas["Timelapse"], "video_id" | "camera" | "cycle_date" | "segment" | "state" | "reason">;
+export type Timelapse = Schemas["Timelapse"];
+export type TimelapsePage = Schemas["TimelapsePage"];
+export type Asset = Schemas["Asset"];
+export type ArchiveEntry = Pick<Timelapse, "video_id" | "camera" | "cycle_date" | "segment" | "state" | "reason">;
 export type ArchivePage = { items: ArchiveEntry[]; next_cursor: string | null };
 export type WeatherEvent = Schemas["Event"];
 export type Events = Schemas["Events"];
@@ -104,6 +107,28 @@ const archiveEntry = z.object({
   state: lenient(["published", "partial", "unavailable", "withdrawn"], "unavailable"), reason: text.nullable().default(null),
 });
 const archive = z.object({ items: z.array(archiveEntry), next_cursor: text.nullable() });
+// Full catalog entries (#18) for the day, video and Today pages. Media URLs must be same-origin
+// opaque paths; an asset that is not is dropped, so the entry degrades instead of linking out.
+const media = z.object({
+  asset_id: text, class: z.enum(["video", "poster", "keogram", "sidecar"]), url: text.regex(/^\/media\/[0-9a-f-]{36}$/),
+  mime: text, bytes: z.number(), width: number, height: number,
+});
+const optionalMedia = media.nullable().catch(null).default(null);
+const rendition = z.object({ role: z.enum(["native", "web", "mobile"]), asset: media });
+const timelapse = z.object({
+  schema_version: z.literal(1), video_id: text, camera: text, cycle_date: text, segment: z.enum(["daytime", "overnight"]),
+  state: lenient(["published", "partial", "unavailable", "withdrawn"], "unavailable"), reason: text.nullable().default(null),
+  withdrawn: z.boolean().default(false), revision: z.number(), updated_at: text, source_interval: interval, allocated_frames: z.number(),
+  renditions: z.array(rendition.nullable().catch(null)).transform((items) => items.filter((item) => item !== null)),
+  poster: optionalMedia, sidecar: optionalMedia, keogram: optionalMedia,
+  native_download_url: text.regex(/^\/downloads\/[0-9a-f-]{36}\/native$/).nullable().catch(null).default(null),
+  keogram_state: lenient(["pending", "published", "partial", "unavailable", "withdrawn"], "unavailable"),
+});
+// One malformed entry is dropped, never the page.
+const timelapses = z.object({
+  generated_at: text, next_cursor: text.nullable().default(null),
+  items: z.array(timelapse.nullable().catch(null)).transform((items) => items.filter((item) => item !== null)),
+});
 
 const camera = z.enum(["skycam_east", "skycam_west", "frontyard_1"]);
 const video = z.object({
@@ -130,7 +155,8 @@ const checks: [
   (value: z.infer<typeof almanac>) => Almanac,
   (value: z.infer<typeof archive>) => ArchivePage,
   (value: z.infer<typeof events>) => Events,
-] = [(value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value];
+  (value: z.infer<typeof timelapses>) => TimelapsePage,
+] = [(value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value];
 void checks;
 
 export type Parser<T> = (value: unknown) => T | null;
@@ -143,3 +169,10 @@ export const parseAggregates: Parser<Aggregates> = parser(aggregates);
 export const parseAlmanac: Parser<Almanac> = parser(almanac);
 export const parseArchive: Parser<ArchivePage> = parser(archive);
 export const parseEvents: Parser<Events> = parser(events);
+export const parseTimelapses: Parser<TimelapsePage> = parser(timelapses);
+
+/** A playable entry: published or partial with the full media set (partial plays with a label, C6). */
+export function playable(video: Timelapse): boolean {
+  const roles = new Set(video.renditions.map((item) => item.role));
+  return (video.state === "published" || video.state === "partial") && !video.withdrawn && roles.size === 3 && video.poster !== null && video.native_download_url !== null;
+}

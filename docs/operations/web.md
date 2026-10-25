@@ -7,8 +7,10 @@ persistent browser cache for weather data.
 
 The read-only server consumes only the fixed `API_ORIGIN=http://api` Service on port 80. It forwards no
 cookies or authorization headers, follows no redirects, allows only the listed public API paths, and
-bounds each request to 6 seconds and 4 MiB. At most twelve upstream requests run at once: three per
-document, because Today reads current conditions, the metric registry and recent events concurrently. API-backed
+bounds each request to 6 seconds and 4 MiB. At most sixteen upstream requests run at once: four per
+document, because Today reads current conditions, the metric registry, recent events and the latest
+catalog entries concurrently, and a video page reads its catalog entry, the registry and one or two
+event days. API-backed
 document/data responses have four slots and a 15-second absolute deadline, matching the initial
 512 MiB web memory limit. Static files, process health, the loader-less About and Search pages and the
 lazy route manifest (`/__manifest`) do not consume those slots. Overload is reported as "Weather is
@@ -51,10 +53,43 @@ following a cursor or choosing another interval exposes older retained data. The
 selects solar-cycle dates; its separate bounded catalog clearly labels its filter/pagination scope.
 Day pages retain three cameras by two segments, with honest uncommissioned metadata states.
 
-Published and partial-coverage video products receive a native player; a partial product shows a
-visible coverage label. Unavailable/expired products retain text and coverage but expose no player
-or poster. The player never autoplays; quality changes retain the
-playhead and pause other players. Native downloads and the JSON sidecar stay on the same origin.
+Day, video and Today pages parse `/api/v1/timelapses` leniently through the generated types: an
+asset whose URL is not a same-origin `/media/<uuid>` is dropped, an unknown state degrades to
+`unavailable` and one malformed entry is dropped rather than the page. Published and
+partial-coverage products with the full media set receive a native player; a partial product shows
+a visible coverage label (slot coverage from the sidecar). Unavailable or withdrawn products keep
+their text and source interval but expose no player or poster. The player never autoplays; quality
+changes retain the playhead and pause other players. Native downloads and the JSON sidecar stay on
+the same origin. Today shows, per camera and segment, the newest catalog entry's state, poster link
+and keogram, or "pending" when nothing has been published.
+
+### Linked playback (#40)
+
+One route-local controller (`components/linked-playback.tsx`) owns the media revision's sidecar
+time map and the source-UTC cursor. The browser fetches the sidecar (`/media/<id>`) and three
+aggregate requests whose `start`/`end` are exactly the segment's `[a, b)` (mean temperature,
+humidity, pressure and wind; maximum gust; rain total), at the finest epoch-aligned resolution
+that keeps ≤300 intervals per series (5 min for a 12–24 h segment), so well under the API's
+5,000-point ceiling on every device. Nothing is fetched per frame.
+
+Mapping (`lib/time-map.ts`) is exact integer-microsecond arithmetic: frame k owns
+`[a + k(b − a)/N, a + (k + 1)(b − a)/N)`; player time t shows frame `floor(60t)`; a seek goes to the
+middle of the target frame's display window. A sidecar whose interval, frame count, step or tick
+total disagrees with the catalog entry is refused, and the page plays without linking. Playback
+moves the cursor only when the frame changes, so a seek never echoes back as another seek. Plot,
+keogram (1,440 equal UTC bins, D10), event and time-input selections all seek through the same map;
+an instant outside `[a, b)` is rejected with a notice, and an event interval is clamped to its
+overlap. Slate frames are shaded and labelled at their true length; telemetry gaps are line breaks
+and read "no observations". Every explicit seek updates `?t=<UTC>` with `history.replaceState`;
+"Link to this moment" carries the cursor. Keyboard: the plot group and keogram are sliders (arrow
+keys step one interval or bin; Page Up/Down step 12 intervals or 60 bins; Home/End), and the UTC time input seeks (without
+JavaScript it reloads with `?t=`). The plotted values have a text summary and a table.
+
+| Symptom | Check |
+|---|---|
+| "source-time map is unavailable or does not match" | Fetch the sidecar URL from the catalog entry; compare its `source_interval`, `time_map.frames` and step with `/api/v1/timelapses/<id>`. A mismatch is a publication defect (#15/#18), not a web bug. |
+| "Weather history API unavailable" on a video page | The aggregate reads failed; see `weather_api_db_errors_total{operation="aggregates"}`. Playback and seeking still work. |
+| "Keogram pending/unavailable" | The catalog's `keogram_state`; keograms are #37. Playback is unaffected. |
 
 Fonts are the exact approved Fontsource 5.3.0 IBM Plex Sans Variable and Mono members. Their original
 OFL notices are served at `/fonts/OFL-sans.txt` and `/fonts/OFL-mono.txt`.

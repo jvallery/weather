@@ -77,9 +77,12 @@ withdrawals show in a new feed; withdrawal is immediate for every new read. Resp
 `no-store`. A missing, private or withdrawn event is the same 404. After a PITR restore, discard
 outstanding cursors (they expire within 24 hours anyway).
 
-Video links come from UTC overlap with each camera's published segments, with seeks derived
-through the source-time map. Until slice-2 media (#18) publishes segments, every link is
-`unavailable`; the web's video pages derive bookmarks from the catalog's own time map (`?t=<UTC>`).
+Video links come from UTC overlap with each camera's playable segments in `public_api.videos`
+(published or partial, not withdrawn; one bounded read per page, #40), with seeks through the
+segment's uniform time map (frame k owns `[a + k(b − a)/N, a + (k + 1)(b − a)/N)`, 60 fps). A camera
+without overlapping footage gets an explicit `unavailable` link. If that catalog read fails, every
+link on the page degrades to `unavailable` and `weather_api_db_errors_total{operation="event_videos"}`
+counts it; the feed itself still serves. Video pages seek to `?t=<UTC>` through the sidecar map.
 
 ## Operator hooks (#44)
 
@@ -112,3 +115,4 @@ JOIN weather.weather_event_revision r ON r.event_id=e.id AND r.revision=e.revisi
 | `weather_events_revisions_total{action="withdrawn"}` jumps | Evidence invalidated, an authority switch, or stale overrides; inspect the revisions' `withdrawal_reason` |
 | `weather_outbox_quarantined_total` with `weather_event.changed` | A scheduler without the route ran; deploy the current scheduler, then re-queue (see database.md) |
 | `weather_api_db_errors_total{operation="events"}` | Feed read failed or timed out (1.5 s); check database health |
+| `weather_api_db_errors_total{operation="event_videos"}` | The page's catalog read failed; links show `unavailable` until it recovers |

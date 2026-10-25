@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { expect, test } from "vitest";
-import { catalogSchema, intervalSchema } from "./contracts";
-import { parseAggregates, parseCurrent, parseRegistry } from "./weather-api";
+import { intervalSchema } from "./contracts";
+import { parseAggregates, parseCurrent, parseRegistry, parseTimelapses, playable } from "./weather-api";
 import current from "../fixtures/current.json";
 import aggregatesFixture from "../fixtures/aggregates.json";
 import registryFixture from "../fixtures/metric-registry.json";
@@ -16,7 +16,7 @@ test("generated-type fixtures parse, keeping zero distinct from missing", () => 
   expect(parseCurrent(current)?.metrics[0].value).toBe(0);
   expect(parseAggregates(aggregatesFixture)?.items).toHaveLength(12);
   expect(registry.metrics).toHaveLength(16);
-  expect(catalogSchema.parse(catalog).items).toHaveLength(6);
+  expect(parseTimelapses(catalog)?.items).toHaveLength(7);
 });
 test("parsing is lenient about additive fields and drops what the UI does not know", () => {
   const extended = { ...current, future_field: 1, metrics: current.metrics.map((metric) => ({ ...metric, future_metric_field: "x" })) };
@@ -40,10 +40,19 @@ test("responses missing what the UI reads are rejected", () => {
   expect(parseAggregates({ ...aggregatesFixture, items: [{ metric: "temperature" }] })).toBeNull();
   expect(intervalSchema.safeParse({ start: "2026-01-01T00:00:00.000001Z", end: "2026-01-01T00:00:00.000002Z" }).success).toBe(true);
 });
-test("private fields and provider URLs are rejected at the media boundary", () => {
+test("provider URLs never reach the page: the asset is dropped and the entry is not playable", () => {
   const polluted = structuredClone(catalog);
   polluted.items[0].renditions[0].asset.url = "https://example.invalid/original";
-  expect(catalogSchema.safeParse(polluted).success).toBe(false);
+  (polluted.items[1] as { keogram_state: string }).keogram_state = "galaxy";
+  (polluted.items[2] as Record<string, unknown>).private_object_key = "originals/private";
+  const parsed = parseTimelapses(polluted)!;
+  expect(parsed.items[0].renditions).toHaveLength(2);
+  expect(playable(parsed.items[0])).toBe(false);
+  expect(parsed.items[1].keogram_state).toBe("unavailable");
+  expect(JSON.stringify(parsed)).not.toMatch(/example\.invalid|private_object_key/);
+  // One malformed entry is dropped, never the page.
+  expect(parseTimelapses({ ...catalog, items: [{ video_id: "x" }, ...catalog.items] })?.items).toHaveLength(7);
+  expect(parseTimelapses({ ...catalog, items: "nope" })).toBeNull();
 });
 test("US conversions distinguish real zero from missing", () => {
   expect(metricValue(0, "degC", "us", definition("temperature"))).toBe("32 °F");
