@@ -20,7 +20,7 @@ resources:
 images:
 - name: weather-app
   newName: registry.vallery.net/jvallery/weather-app
-  digest: sha256:bc913946161fbf5b452c4afb45de1e4105a369f432d701de7fd199f5c71ef5eb
+  digest: sha256:34a7171933df05694df8cd0ae4718f467739dd91187fc85097685b264d77ab16
 - name: weather-web
   newName: registry.vallery.net/jvallery/weather-web
   digest: sha256:b505b30fe104f23b33cce103a136142c3cb3259757918220fb0da874d118a68a
