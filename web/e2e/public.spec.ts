@@ -221,7 +221,7 @@ test("SSR admission: loader-less routes and the route manifest stay available wh
   // The lazy route manifest request exactly as the fog-of-war client sends it.
   const manifest = await request.get(`/__manifest?paths=${encodeURIComponent("/search/")}&version=${encodeURIComponent(version || "")}`);
   expect(manifest.status()).toBe(200);
-  expect(await manifest.json()).toMatchObject({ "routes/not-ready": { path: "search" } });
+  expect(await manifest.json()).toMatchObject({ "routes/search": { path: "search" } });
   await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Archive" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Weather is busy" })).toBeVisible();
   await expect(page.getByText(/Please retry in a few seconds/)).toBeVisible();

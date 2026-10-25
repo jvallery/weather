@@ -1,0 +1,228 @@
+{
+  "generated_at": "2026-11-01T14:00:00Z",
+  "mode": "hybrid_exact",
+  "degraded_reason": null,
+  "profile_id": "embed-main-2560-v1",
+  "count": 4,
+  "hits": [
+    {
+      "rank": 1,
+      "video_id": "95b04e2e-8d73-577b-9965-f83ba83079f8",
+      "document_id": "5f0c1d2e-0001-4a00-8000-000000000001",
+      "camera_id": "skycam_east",
+      "segment": "daytime",
+      "video_interval": {
+        "start": "2026-10-31T12:30:00Z",
+        "end": "2026-11-01T01:00:00Z"
+      },
+      "source_interval": {
+        "start": "2026-10-31T15:00:00Z",
+        "end": "2026-10-31T16:00:00Z"
+      },
+      "evidence_precision": "interval",
+      "analysis_mode": "video",
+      "snippet": "Light rain begins over the east ridge under low cloud.",
+      "media_revision": 1,
+      "poster_asset_id": "239ed53c-212a-53ef-99a8-0904671e4630",
+      "seek": {
+        "media_seconds": 12.0,
+        "source_at": "2026-10-31T15:00:00Z"
+      },
+      "matched_measurements": [
+        {
+          "metric": "precipitation",
+          "statistic": "sum",
+          "value": 1.2,
+          "unit": "mm",
+          "interval": {
+            "start": "2026-10-31T12:30:00Z",
+            "end": "2026-11-01T01:00:00Z"
+          },
+          "coverage": {
+            "fraction": 0.99,
+            "support_seconds": 44550.0,
+            "expected_seconds": 45000.0
+          },
+          "evidence_count": 741,
+          "evidence_hash": "1f3a000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "metric": "wind_gust",
+          "statistic": "max",
+          "value": 12.5,
+          "unit": "m/s",
+          "interval": {
+            "start": "2026-10-31T12:30:00Z",
+            "end": "2026-11-01T01:00:00Z"
+          },
+          "coverage": {
+            "fraction": 0.99,
+            "support_seconds": 44550.0,
+            "expected_seconds": 45000.0
+          },
+          "evidence_count": 741,
+          "evidence_hash": "2b4c000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "metric": "temperature",
+          "statistic": "mean",
+          "value": 8.4,
+          "unit": "degC",
+          "interval": {
+            "start": "2026-10-31T12:30:00Z",
+            "end": "2026-11-01T01:00:00Z"
+          },
+          "coverage": {
+            "fraction": 0.99,
+            "support_seconds": 44550.0,
+            "expected_seconds": 45000.0
+          },
+          "evidence_count": 741,
+          "evidence_hash": "3c5d000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "rank": 2,
+      "video_id": "3bd41fd8-0dd2-5fa6-967b-c9494c1b0418",
+      "document_id": "5f0c1d2e-0002-4a00-8000-000000000002",
+      "camera_id": "skycam_west",
+      "segment": "daytime",
+      "video_interval": {
+        "start": "2026-10-31T12:30:00Z",
+        "end": "2026-11-01T01:00:00Z"
+      },
+      "source_interval": {
+        "start": "2026-10-31T16:00:00Z",
+        "end": "2026-10-31T17:00:00Z"
+      },
+      "evidence_precision": "interval",
+      "analysis_mode": "video",
+      "snippet": "Showers drift west; the gauge reports nothing measurable.",
+      "media_revision": 2,
+      "poster_asset_id": "3fdab70d-f737-5bd2-84cd-d6154f4bf133",
+      "seek": {
+        "media_seconds": 20.0,
+        "source_at": "2026-10-31T18:00:00Z"
+      },
+      "matched_measurements": [
+        {
+          "metric": "precipitation",
+          "statistic": "sum",
+          "value": 0,
+          "unit": "mm",
+          "interval": {
+            "start": "2026-10-31T12:30:00Z",
+            "end": "2026-11-01T01:00:00Z"
+          },
+          "coverage": {
+            "fraction": 0.6,
+            "support_seconds": 27000.0,
+            "expected_seconds": 45000.0
+          },
+          "evidence_count": 446,
+          "evidence_hash": "4d6e000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "rank": 3,
+      "video_id": "95b04e2e-8d73-577b-9965-f83ba83079f8",
+      "document_id": "5f0c1d2e-0003-4a00-8000-000000000003",
+      "camera_id": "skycam_east",
+      "segment": "daytime",
+      "video_interval": {
+        "start": "2026-10-31T12:30:00Z",
+        "end": "2026-11-01T01:00:00Z"
+      },
+      "source_interval": {
+        "start": "2026-10-31T12:30:00Z",
+        "end": "2026-11-01T01:00:00Z"
+      },
+      "evidence_precision": "segment",
+      "analysis_mode": "video",
+      "snippet": "Light rain begins over the east ridge under low cloud.",
+      "media_revision": 1,
+      "poster_asset_id": "239ed53c-212a-53ef-99a8-0904671e4630",
+      "seek": {
+        "media_seconds": 0.0,
+        "source_at": "2026-10-31T12:30:00Z"
+      },
+      "matched_measurements": [
+        {
+          "metric": "precipitation",
+          "statistic": "sum",
+          "value": 1.2,
+          "unit": "mm",
+          "interval": {
+            "start": "2026-10-31T12:30:00Z",
+            "end": "2026-11-01T01:00:00Z"
+          },
+          "coverage": {
+            "fraction": 0.99,
+            "support_seconds": 44550.0,
+            "expected_seconds": 45000.0
+          },
+          "evidence_count": 741,
+          "evidence_hash": "1f3a000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "metric": "wind_gust",
+          "statistic": "max",
+          "value": 12.5,
+          "unit": "m/s",
+          "interval": {
+            "start": "2026-10-31T12:30:00Z",
+            "end": "2026-11-01T01:00:00Z"
+          },
+          "coverage": {
+            "fraction": 0.99,
+            "support_seconds": 44550.0,
+            "expected_seconds": 45000.0
+          },
+          "evidence_count": 741,
+          "evidence_hash": "2b4c000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "metric": "temperature",
+          "statistic": "mean",
+          "value": 8.4,
+          "unit": "degC",
+          "interval": {
+            "start": "2026-10-31T12:30:00Z",
+            "end": "2026-11-01T01:00:00Z"
+          },
+          "coverage": {
+            "fraction": 0.99,
+            "support_seconds": 44550.0,
+            "expected_seconds": 45000.0
+          },
+          "evidence_count": 741,
+          "evidence_hash": "3c5d000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "rank": 4,
+      "video_id": "c586ac04-b19c-5e40-a985-9efebee88673",
+      "document_id": "5f0c1d2e-0004-4a00-8000-000000000004",
+      "camera_id": "frontyard_1",
+      "segment": "overnight",
+      "video_interval": {
+        "start": "2026-11-01T01:00:00Z",
+        "end": "2026-11-01T13:30:00Z"
+      },
+      "source_interval": {
+        "start": "2026-11-01T01:00:00Z",
+        "end": "2026-11-01T13:30:00Z"
+      },
+      "evidence_precision": "segment",
+      "analysis_mode": "sampled_frames",
+      "snippet": "Clear and calm overnight; frost forms on the lawn before dawn.",
+      "media_revision": 1,
+      "poster_asset_id": null,
+      "seek": null,
+      "matched_measurements": []
+    }
+  ]
+}

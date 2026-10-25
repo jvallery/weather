@@ -91,6 +91,37 @@ JavaScript it reloads with `?t=`). The plotted values have a text summary and a 
 | "Weather history API unavailable" on a video page | The aggregate reads failed; see `weather_api_db_errors_total{operation="aggregates"}`. Playback and seeking still work. |
 | "Keogram pending/unavailable" | The catalog's `keogram_state`; keograms are #37. Playback is unaffected. |
 
+### Search (#27)
+
+`/search/` (`routes/search.tsx`, `lib/search.ts`) is loader-less: SSR renders the form from the URL,
+and the browser sends `POST /api/v1/search` (#25) itself, so search never takes an SSR API slot.
+The URL is the whole query: `q`, `from`/`to` (America/Denver calendar days, last day inclusive,
+sent as the half-open UTC interval between local midnights), repeated `camera` and `segment`,
+repeated `p=<metric>.<statistic>:<op>:<value>:<unit>:<min_coverage>` (ops `lt le eq ge gt`; units
+`mm in`, `m/s km/h mph`, `degC degF`, always explicit), `top_k` (omitted when 10) and `units`
+(always present). D12 ceilings are checked before sending (≤512 Unicode scalars and no control
+characters, ≤8 filters over ≤31 days of UTC duration, `top_k` 1–20); any invalid parameter is
+listed and nothing is sent, and the form keeps the raw value for correction.
+
+One request per submitted URL or "Search again": none while typing, no automatic retry, no
+prefetch, `cache: no-store`, no cookies, a 10 s client deadline. A newer search aborts the older
+request and a late older response is ignored. States: hybrid, lexical with its reason
+(`embedding_unavailable` and `embedding_busy` show the AI-offline/busy banner; `lexical_no_terms`
+explains the text cannot match), numeric, empty, busy (429 with its `Retry-After`), rejected (400)
+and unavailable (503, network, malformed). Hits from one video collapse into one card. A window's
+seek links to `/timelapses/<camera>/<cycle date>/<segment>/?t=<UTC>` only when its source instant
+lies in the cited interval inside the recording's interval (exact microseconds, `lib/time-map.ts`)
+and its media offset is within a segment's 120 s timeline; otherwise "Location unavailable".
+The cycle date is the local date the recording starts. Measured matches are labelled whole-video;
+rain below 95% coverage is "Unknown" when zero and "At least" otherwise, never "0 in".
+Display conversions come from `/api/v1/weather/metrics`, fetched only when a result has
+measurements.
+
+| Symptom | Check |
+|---|---|
+| Every search says "Search unavailable" | `curl -s -X POST https://weather.vallery.net/api/v1/search -H 'content-type: application/json' -d '{"start":"2026-07-01T06:00:00Z","end":"2026-07-08T06:00:00Z","query":""}' -o /dev/null -w '%{http_code}'` from outside; anything but 200 is the API or its route, see [search](search.md) (live wiring is #50). 200 with this banner means the browser's request failed: check the browser console for a CSP or network error. |
+| Persistent "Search is busy" | The API's admission or Traefik limits; see [search](search.md) failure modes. |
+
 Fonts are the exact approved Fontsource 5.3.0 IBM Plex Sans Variable and Mono members. Their original
 OFL notices are served at `/fonts/OFL-sans.txt` and `/fonts/OFL-mono.txt`.
 `python scripts/check_web_assets.py` verifies all four hashes against `font-provenance.json`.
