@@ -54,6 +54,11 @@ async def reconcile(
                 _, done = await catalog.gate(connection, staged)
             if done is not None:
                 continue
+            if staged.product.kind == "still":
+                # A still commits only with its selection row (#38), which the pipeline's
+                # hourly rerun writes in the same transaction; never commit it bare.
+                counts["orphaned"] += await _orphan(engine, staged.intent_id, "still_selection")
+                continue
             sidecar = None
             for item in staged.objects:
                 data = await verify(stores[item.bucket], item, keep=item.asset_class == "sidecar")

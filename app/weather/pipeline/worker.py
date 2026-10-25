@@ -4,8 +4,9 @@
 Every ten seconds: load the camera's started, unfinished segments; render every block whose
 inputs have had time to seal; once a segment's mezzanine is complete, prepare (encode,
 validate, posters, sidecar) and publish through #18, then record the result on the segment.
-Each segment fails alone and retries on the next loop. CPU work runs in a worker thread so
-the metrics endpoint stays responsive.
+Then the hourly pass (#38) selects and archives each closed hour's original. Each segment and
+each hour fails alone and retries on a later loop. CPU work runs in a worker thread so the
+metrics endpoint stays responsive.
 """
 
 import asyncio
@@ -24,13 +25,14 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from weather.api.source import SourceUnavailable
 from weather.db.connection import create_database_engine, wait_for_database
 from weather.publish import catalog
-from weather.publish.model import MEDIA_BUCKET
+from weather.publish.model import MEDIA_BUCKET, ORIGINALS_BUCKET
 from weather.publish.objects import ObjectStore
 from weather.publish.publisher import Publisher
 from weather.timemodel._instant import epoch_seconds
 
 from . import ffmpeg, metrics, schedule
 from .finalize import RESULT, Prepared, prepare, publish, rebase
+from .hourly import HourlyArchive
 from .intake import ChunkIndex, Expected, utc
 from .recipe import (
     CAMERAS,
@@ -108,10 +110,23 @@ class Worker:
         weather: WeatherSummaryProvider,
         *,
         stages: Sequence[ChunkStage] = (),
+        archive_hours: bool = False,
     ) -> None:
         self.config, self.engine, self.publisher, self.weather = config, engine, publisher, weather
         self.stages = tuple(stages)
         self.index = ChunkIndex(config.staging, config.expected)
+        self.hourly = (
+            HourlyArchive(
+                config.camera,
+                engine,
+                publisher,
+                self.index,
+                config.expected,
+                config.chunk_seconds,
+            )
+            if archive_hours
+            else None
+        )
         self.renderers: dict[UUID, SegmentRenderer] = {}
         self.durable: set[UUID] = set()
         # Per-segment retry backoff: (consecutive failures, wall time of the next attempt).
@@ -209,6 +224,12 @@ class Worker:
                 failures = self.backoff.get(row.id, (0, now))[0] + 1
                 delay = min(MAX_BACKOFF, LOOP_SECONDS * 2 ** min(failures - 1, 10))
                 self.backoff[row.id] = (failures, now + timedelta(seconds=delay))
+        if self.hourly is not None:
+            try:
+                await self.hourly.step(now)
+            except Exception as error:
+                metrics.STILL_FAILURES.labels(camera, "catalog").inc()
+                LOG.error("Hourly pass failed (%s, %s)", camera, type(error).__name__)
         if rows:
             self.index.prune(min(epoch_seconds(row.job.starts_at) for row in rows) - 3600)
 
@@ -264,6 +285,8 @@ async def main_async(config: PipelineConfig) -> None:
     config = replace(config, recipe=recipe)
     engine = create_database_engine()
     store = ObjectStore.from_environment(MEDIA_BUCKET)
+    # The pipeline holds the only originals key (#38); no other identity can read the bucket.
+    originals = ObjectStore.from_environment(ORIGINALS_BUCKET)
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
@@ -271,11 +294,16 @@ async def main_async(config: PipelineConfig) -> None:
     try:
         await wait_for_database(engine)
         worker = Worker(
-            config, engine, Publisher(engine, {MEDIA_BUCKET: store}), AggregateWeather(engine)
+            config,
+            engine,
+            Publisher(engine, {MEDIA_BUCKET: store, ORIGINALS_BUCKET: originals}),
+            AggregateWeather(engine),
+            archive_hours=True,
         )
         await worker.run(stop)
     finally:
         await store.aclose()
+        await originals.aclose()
         await engine.dispose()
 
 

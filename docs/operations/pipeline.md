@@ -1,7 +1,8 @@
 # Timelapse pipeline
 
 `app/weather/pipeline/` (#15) turns each camera's sealed capture chunks into one
-timelapse per civil-twilight segment: a frozen schedule, a streaming
+timelapse per civil-twilight segment, and (#38) archives one private native original per UTC
+hour with sanitized comparison stills ([hourly stills](media.md#hourly-originals-and-comparison-stills)): a frozen schedule, a streaming
 observed-exposure renderer, a near-lossless mezzanine, three H.264 renditions,
 posters, a sidecar and validation, published through #18
 ([media operations](media.md)). Live use starts at #49 with the cameras (#4),
@@ -147,7 +148,8 @@ The pipeline deletes nothing. For #19:
   duty is done once its slot window ends at or before `mezzanine_through` of
   every current segment whose read range `[starts_at − lag, ends_at)` its
   window overlaps, so staging holds only each segment's unrendered tail. The
-  keogram, hourly-original and preview conditions of P3 still apply;
+  keogram and preview conditions of P3 still apply, and every overlapping hour slot needs an
+  active `archival_still` row (its original archived and read back, or recorded missing);
 - a render directory is deletable once its segment has `finalized_at` set
   (the pipeline recorded its RenderResult), or, for a segment made terminal by
   the deadline sweep without one, once `ends_at` is more than 12 h past
@@ -169,8 +171,9 @@ The pipeline deletes nothing. For #19:
 | `WEATHER_IMAGE_DIGEST` | `unpinned` | Recorded in every RenderResult; #49 sets it to the app pin |
 | `WEATHER_FFMPEG` | `ffmpeg` on PATH | Tests only |
 
-Database (`weather-pg-worker`) and Garage (`weather-media-s3-writer` projected
-to `/var/run/weather-garage/weather-media/`) credentials are mounted files.
+Database (`weather-pg-worker`) and Garage (`weather-media-s3-writer` and
+`weather-originals-s3-writer`, projected to `/var/run/weather-garage/<bucket>/`) credentials
+are mounted files. The pipeline holds the only originals key; it does not start without it.
 
 ## Deploying (#49)
 
@@ -181,7 +184,7 @@ requested and 4 CPU/8 GiB limits each, sync wave 2, with the staging PVC, the
 worker DB role and the media writer key. Their NetworkPolicy
 (`network-policy.yaml`) allows DNS, CNPG and Garage only. Enable both by
 adding `pipeline` to the root kustomization and setting replicas to 1 after
-the cameras, `weather-staging` PVC and `weather-media-s3-writer` exist.
+the cameras, `weather-staging` PVC and both bucket writer keys exist.
 
 ## Throughput check
 

@@ -291,9 +291,9 @@ class HookedPublisher(Publisher):
             await hook()
         return await super().publish(*args, **kwargs)
 
-    async def commit(self, staged: Any) -> Any:
+    async def commit(self, staged: Any, then: Any = None) -> Any:
         self.kill_commit.check()  # objects uploaded and read back, intent registered
-        return await super().commit(staged)
+        return await super().commit(staged, then)
 
 
 def test_stopped_camera_is_unavailable_and_others_publish_exactly_once(

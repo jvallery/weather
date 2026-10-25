@@ -308,9 +308,10 @@ def test_publication_schema_privacy_and_grants() -> None:
                 async with api.connect() as connection:
                     await rejects(connection, "SELECT * FROM weather.media_asset", {}, "42501")
                     assert await scalar(connection, "SELECT count(*) FROM public_api.videos") == 0
-                    # The still is public; the original next to it never is.
+                    # The original is never public, and a still image only through an active
+                    # selection (0009, #38), which this bare row lacks.
                     classes = await connection.execute(text("SELECT class FROM public_api.assets"))
-                    assert classes.scalars().all() == ["still"]
+                    assert classes.scalars().all() == []
                 # Withdrawal is one-way and an asset's embargo is fixed, even for the owner.
                 async with admin.begin() as connection:
                     await rejects(
@@ -676,7 +677,8 @@ def test_still_and_keogram_publish_without_a_video(tmp_path: Path) -> None:
                     .scalars()
                     .all()
                 )
-                assert public == {"still", "keogram"}
+                # A still image is public only through an active selection (0009, #38).
+                assert public == {"keogram"}
             # A video of another segment publishes with its keogram pending; the keogram's
             # own segment shows it.
             pending = await publisher.publish(

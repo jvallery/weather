@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { test, expect, type APIResponse, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-const paths = ["/", "/about/", "/archive/?month=2026-10", "/archive/2026/10/", "/day/2026-10-31/", "/timelapses/skycam_east/2026-10-31/daytime/", "/timelapses/skycam_west/2026-10-31/overnight/", "/weather/history/", "/weather/almanac/", "/events/", "/search/"];
+const paths = ["/", "/about/", "/archive/?month=2026-10", "/archive/2026/10/", "/day/2026-10-31/", "/timelapses/skycam_east/2026-10-31/daytime/", "/timelapses/skycam_west/2026-10-31/overnight/", "/weather/history/", "/weather/almanac/", "/events/", "/stills/?camera=skycam_east&date=2026-11-01", "/stills/?camera=skycam_east&date=2026-11-01&hour=1", "/search/"];
 test.beforeEach(async ({ request, page }) => {
   await page.addInitScript(() => { const violations: string[] = []; (window as Window & { cspViolations?: string[] }).cspViolations = violations; document.addEventListener("securitypolicyviolation", (event) => violations.push(event.effectiveDirective)); }); await request.post("http://localhost:4174/__control", { data: {} }); });
 for (const width of [320, 768, 1440]) for (const path of paths) {
@@ -453,4 +453,34 @@ test("the same UTC interval from two cameras shows identical, shared station val
   const east = await summary(EAST_DAY), west = await summary("/timelapses/skycam_west/2026-10-31/daytime/");
   expect(east).toBe(west); expect(east).toContain("Temperature mean:");
   await expect(page.getByRole("heading", { name: "Station measurements · shared by all cameras" })).toBeVisible();
+});
+test("hourly stills: day and hour navigation, the repeated 01:00 and missing slots, without JavaScript", async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto("/day/2026-11-01/");
+  await expect(page.getByRole("heading", { name: "Hourly stills · calendar day 2026-11-01" })).toBeVisible();
+  await page.getByRole("link", { name: "View the day's stills" }).first().click();
+  await expect(page).toHaveURL(/\/stills\/\?camera=skycam_east&date=2026-11-01$/);
+  // Both 01:00 slots of the fall change, with their own offsets, and an explicit missing slot.
+  await expect(page.getByRole("heading", { name: "01:00 UTC-06:00", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "01:00 UTC-07:00 (repeated hour)" })).toBeVisible();
+  const cards = page.locator(".still");
+  await expect(cards.getByText("Missing · no_eligible_capture")).toBeVisible();
+  await expect(cards.getByText(/Off target · nearest capture in the hour/)).toBeVisible();
+  await expect(page.getByText(/\+11 min 0\.0 s from :30/)).toBeVisible();
+  await page.getByRole("link", { name: "Next day" }).click();
+  await expect(page).toHaveURL(/date=2026-11-02/);
+  await page.goto("/stills/?camera=skycam_east&date=2026-11-01");
+  await page.getByRole("link", { name: /Compare East sky at 01:00 UTC-06:00 across dates/ }).click();
+  await expect(page).toHaveURL(/hour=1/);
+  // The same clock hour across dates: actual capture times, offsets and the missing day.
+  await expect(page.getByRole("heading", { name: "2026-10-31 · 01:00 UTC-06:00" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "2026-10-30 · 01:00 UTC-06:00" })).toBeVisible();
+  await expect(page.locator(".still").getByText("Missing · no_capture")).toBeVisible();
+  await expect(page.getByText(/\+12\.4 s from :30/)).toBeVisible();
+  await expect(page.getByText(/same clock hour is not the same solar phase/)).toBeVisible();
+  for (const image of await page.locator(".still img").all()) expect(await image.getAttribute("src")).toMatch(/^\/media\/[A-Za-z0-9_-]+$/);
+  await page.getByRole("link", { name: "Next hour" }).click();
+  await expect(page).toHaveURL(/hour=2/);
+  await context.close();
 });

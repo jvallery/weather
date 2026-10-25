@@ -2316,6 +2316,246 @@
         "title": "Seek",
         "type": "object"
       },
+      "Still": {
+        "additionalProperties": false,
+        "properties": {
+          "calendar_date": {
+            "format": "date",
+            "title": "Calendar Date",
+            "type": "string"
+          },
+          "camera": {
+            "title": "Camera",
+            "type": "string"
+          },
+          "cycle_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The winner's solar cycle; not the calendar day",
+            "title": "Cycle Date"
+          },
+          "day_id": {
+            "description": "The calendar day the slot belongs to",
+            "format": "date",
+            "title": "Day Id",
+            "type": "string"
+          },
+          "fold": {
+            "description": "1 for the repeated hour after the fall change",
+            "title": "Fold",
+            "type": "integer"
+          },
+          "images": {
+            "items": {
+              "$ref": "#/components/schemas/StillImage"
+            },
+            "maxItems": 6,
+            "title": "Images",
+            "type": "array"
+          },
+          "local_label": {
+            "description": "Local slot start with its UTC offset",
+            "title": "Local Label",
+            "type": "string"
+          },
+          "offset_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Source time minus slot start + 30 min",
+            "title": "Offset Seconds"
+          },
+          "policy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "segment": {
+            "anyOf": [
+              {
+                "enum": [
+                  "daytime",
+                  "overnight"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Segment"
+          },
+          "slot_id": {
+            "description": "The slot's UTC start, e.g. 2026-11-01T07:00:00Z",
+            "title": "Slot Id",
+            "type": "string"
+          },
+          "slot_interval": {
+            "$ref": "#/components/schemas/weather__api__stills__Interval"
+          },
+          "source_interval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/weather__api__stills__Interval"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Source time to capture upper bound"
+          },
+          "state": {
+            "enum": [
+              "on_target",
+              "off_target",
+              "missing",
+              "pending",
+              "withdrawn"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "utc_offset_minutes": {
+            "title": "Utc Offset Minutes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "camera",
+          "slot_id",
+          "day_id",
+          "calendar_date",
+          "cycle_date",
+          "segment",
+          "local_label",
+          "utc_offset_minutes",
+          "fold",
+          "slot_interval",
+          "state",
+          "reason",
+          "policy",
+          "revision",
+          "source_interval",
+          "offset_seconds",
+          "images"
+        ],
+        "title": "Still",
+        "type": "object"
+      },
+      "StillImage": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "format": "uuid",
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "bytes": {
+            "title": "Bytes",
+            "type": "integer"
+          },
+          "height": {
+            "title": "Height",
+            "type": "integer"
+          },
+          "mime": {
+            "enum": [
+              "image/jpeg",
+              "image/webp"
+            ],
+            "title": "Mime",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "width": {
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "asset_id",
+          "url",
+          "mime",
+          "bytes",
+          "width",
+          "height"
+        ],
+        "title": "StillImage",
+        "type": "object"
+      },
+      "StillPage": {
+        "additionalProperties": false,
+        "properties": {
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Still"
+            },
+            "maxItems": 100,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "generated_at",
+          "items"
+        ],
+        "title": "StillPage",
+        "type": "object"
+      },
       "Timelapse": {
         "additionalProperties": false,
         "properties": {
@@ -2618,6 +2858,27 @@
         "title": "Interval",
         "type": "object"
       },
+      "weather__api__stills__Interval": {
+        "additionalProperties": false,
+        "properties": {
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "Interval",
+        "type": "object"
+      },
       "weather__api__timelapses__Interval": {
         "additionalProperties": false,
         "properties": {
@@ -2906,6 +3167,134 @@
           }
         },
         "summary": "Search"
+      }
+    },
+    "/api/v1/stills": {
+      "get": {
+        "operationId": "listStills",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "camera",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Camera"
+            }
+          },
+          {
+            "description": "Calendar date (America/Denver)",
+            "in": "query",
+            "name": "date",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Calendar date (America/Denver)",
+              "title": "Date"
+            }
+          },
+          {
+            "description": "First calendar date",
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "First calendar date",
+              "title": "From"
+            }
+          },
+          {
+            "description": "Last calendar date, inclusive",
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Last calendar date, inclusive",
+              "title": "To"
+            }
+          },
+          {
+            "description": "Local clock hour, 0 to 23",
+            "in": "query",
+            "name": "hour",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Local clock hour, 0 to 23",
+              "title": "Hour"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StillPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Invalid request."
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The catalog is temporarily unavailable."
+          }
+        },
+        "summary": "List Stills"
       }
     },
     "/api/v1/timelapses": {

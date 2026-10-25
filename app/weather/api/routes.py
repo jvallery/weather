@@ -31,6 +31,7 @@ from .models import (
 from .registry import PublicError, unavailable
 from .search import SearchService
 from .service import WeatherService
+from .stills import router as stills
 from .timelapses import router as timelapses
 
 ERRORS: dict[int | str, dict[str, Any]] = {
@@ -48,6 +49,7 @@ ROUTES = {
     "/api/v1/weather/aggregates": "aggregates",
     "/api/v1/weather/almanac": "almanac",
     "/api/v1/timelapses": "timelapses",
+    "/api/v1/stills": "stills",
     SEARCH: "search",
     "/api/v1/events": "events",
 }
@@ -208,6 +210,7 @@ def _problem(status: int, problem: Problem) -> JSONResponse:
 def install(app: FastAPI) -> None:
     app.include_router(router)
     app.include_router(timelapses)
+    app.include_router(stills)
 
     @app.exception_handler(RequestValidationError)
     async def invalid(_request: Request, _error: RequestValidationError) -> JSONResponse:

@@ -62,3 +62,28 @@ DEADLINES = Counter(
     "Segments still unpublished two hours after their boundary",
     ["camera"],
 )
+STILL_SLOTS = Counter(
+    "weather_stills_slots_total",
+    "Hour slots finalized by selection state (on_target, off_target, missing)",
+    ["camera", "state"],
+)
+STILL_ARCHIVED = Counter(
+    "weather_stills_archived_total",
+    "Originals archived and read back, with their derivatives and selection row",
+    ["camera"],
+)
+STILL_PENDING = Gauge(
+    "weather_stills_pending_slots",
+    "Closed hour slots of the last 12 h without an active selection",
+    ["camera"],
+)
+STILL_OLDEST = Gauge(
+    "weather_stills_oldest_pending_seconds",
+    "Seconds since the end of the oldest closed hour slot without a selection",
+    ["camera"],
+)
+STILL_FAILURES = Counter(
+    "weather_stills_failures_total",
+    "Hourly failures by stage (select, bind, archive, catalog); the slot retries",
+    ["camera", "stage"],
+)
