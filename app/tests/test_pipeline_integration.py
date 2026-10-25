@@ -171,9 +171,8 @@ def test_schedule_freezes_days_ahead_matches_time_model_and_is_idempotent() -> N
                 )
             )
             # A cycle that cannot start there (dusk before the frozen dawn) fails visibly.
-            impossible = replace(moved_day, dusk=frozen[-1].next_dawn - timedelta(seconds=1))
             with pytest.raises(ScheduleError, match="frozen previous"):
-                schedule.anchored(impossible, frozen[-1].next_dawn)
+                schedule.anchored(moved_day, moved_day.dusk + timedelta(seconds=1))
             # Overlapping current segments of one camera are refused by the database.
             with pytest.raises(Exception, match="ex_segment_current_overlap"):
                 async with worker.begin() as connection:
@@ -316,7 +315,9 @@ def test_stopped_camera_is_unavailable_and_others_publish_exactly_once(
         allocation=allocate_frames(120, 120),
         config_hash="0" * 64,
     )
-    for camera in ("skycam_east", "frontyard_1"):
+    # East captures at 1 Hz, frontyard at the commissioned 0.5 Hz (#4).
+    cadence = {"skycam_east": 1000, "frontyard_1": 2000}
+    for camera, cadence_ms in cadence.items():
         synthetic.write_chunks(
             tmp_path,
             camera,
@@ -325,9 +326,10 @@ def test_stopped_camera_is_unavailable_and_others_publish_exactly_once(
                     int(dawn.timestamp() + s) * synthetic.NS,
                     synthetic.jpeg(synthetic.sky(W, H, s)),
                 )
-                for s in range(240)
+                for s in range(0, 240, cadence_ms // 1000)
             ],
             geometry=(W, H),
+            cadence_ms=cadence_ms,
             pod=camera.replace("_", "-"),
         )
     assert len(list((tmp_path / "sealed/skycam_east").iterdir())) == 2  # two hour directories
@@ -341,7 +343,7 @@ def test_stopped_camera_is_unavailable_and_others_publish_exactly_once(
             config = PipelineConfig(
                 camera=camera,
                 staging=tmp_path,
-                expected=Expected(camera, 1000, 0, W, H),
+                expected=Expected(camera, cadence[camera], 0, W, H),
                 recipe=Recipe(),
             )
             return Worker(config, worker_db, publisher, AggregateWeather(worker_db))
@@ -417,6 +419,8 @@ def test_stopped_camera_is_unavailable_and_others_publish_exactly_once(
                     assert row.mezzanine_durable_at is not None
                     assert row.mezzanine_through == row.ends_at
                     assert row.render_result["frames"] == 3600
+                    assert row.render_result["slots"]["expected"] == 120_000 // cadence[camera]
+                    assert row.render_result["slots"]["fraction"] == 1.0
             published = {
                 (p.camera_id, p.product_key): (p.n, p.r, p.states)
                 for p in await rows(

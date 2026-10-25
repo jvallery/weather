@@ -59,7 +59,7 @@ spec:
         - name: WEATHER_PIPELINE_GEOMETRY
           value: 4096x1856
         - name: WEATHER_PIPELINE_CADENCE_MS
-          value: '1000'
+          value: '2000'
         - name: WEATHER_PIPELINE_SHUTTER_DEGREES
           value: '180'
         - name: WEATHER_IMAGE_DIGEST
@@ -188,7 +188,7 @@ spec:
         - name: WEATHER_PIPELINE_GEOMETRY
           value: 4096x1856
         - name: WEATHER_PIPELINE_CADENCE_MS
-          value: '1000'
+          value: '2000'
         - name: WEATHER_PIPELINE_SHUTTER_DEGREES
           value: '180'
         - name: WEATHER_IMAGE_DIGEST
@@ -317,7 +317,7 @@ spec:
         - name: WEATHER_PIPELINE_GEOMETRY
           value: 4096x1856
         - name: WEATHER_PIPELINE_CADENCE_MS
-          value: '1000'
+          value: '2000'
         - name: WEATHER_PIPELINE_SHUTTER_DEGREES
           value: '180'
         - name: WEATHER_IMAGE_DIGEST

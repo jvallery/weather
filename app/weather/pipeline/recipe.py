@@ -22,7 +22,9 @@ MEZZANINE = "libx264rgb-intra-qp12/v1"
 SHUTTERS = (180, 270, 360)
 MAX_BLOCK = 60
 CAMERAS = ("skycam_east", "skycam_west", "frontyard_1")
-# Collector defaults (capture.config.CaptureConfig.load); the pipeline must agree with them.
+# The commissioned capture cadence (#4: 0.5 Hz) and the collector's per-camera phases
+# (capture.config.CaptureConfig.load); the pipeline must agree with capture.json.
+DEFAULT_CADENCE_MS = 2000
 DEFAULT_PHASE_MS = {"skycam_east": 0, "skycam_west": 333, "frontyard_1": 667}
 DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
 

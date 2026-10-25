@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: MIT
 """`weather pipeline bench`: synthetic throughput, for the in-cluster Job only.
 
-Per camera, in parallel processes: (1) streaming: seal `--seconds` of 1 Hz synthetic sky
-frames and time the renderer over them (target >= 3x real time); (2) finalize: build a
+Per camera, in parallel processes: (1) streaming: seal `--seconds` of synthetic sky frames
+at `--cadence-ms` (default 2000, the commissioned 0.5 Hz) and time the renderer (target
+>= 3x real time); (2) finalize: build a
 `--finalize-frames` intra mezzanine and time concat + three encodes + validation + posters,
 extrapolated to 4,200 frames (target <= 2 h with three cameras at once). Prints one JSON line
 per camera and exits 1 when a target is missed. Never run it on a workstation: at native
@@ -25,7 +26,7 @@ import numpy as np
 from . import ffmpeg, synthetic
 from .finalize import prepare
 from .intake import ChunkIndex, Expected
-from .recipe import CAMERAS, Recipe
+from .recipe import CAMERAS, DEFAULT_CADENCE_MS, Recipe
 from .render import SegmentJob, SegmentRenderer, canonical, durable_write, file_sha256, micros
 
 TARGET_FACTOR = 3
@@ -35,14 +36,15 @@ START = datetime(2026, 6, 21, 12, tzinfo=UTC)
 
 
 def _stream(
-    work: Path, camera: str, seconds: int, width: int, height: int, recipe: Recipe
+    work: Path, camera: str, seconds: int, width: int, height: int, recipe: Recipe, cadence_ms: int
 ) -> float:
     pool = [synthetic.jpeg(synthetic.sky(width, height, seed)) for seed in range(12)]
+    step = cadence_ms // 1000
     frames = [
         synthetic.Frame(int(START.timestamp() + i) * synthetic.NS, pool[i % len(pool)])
-        for i in range(seconds)
+        for i in range(0, seconds, step)
     ]
-    synthetic.write_chunks(work, camera, frames, geometry=(width, height))
+    synthetic.write_chunks(work, camera, frames, geometry=(width, height), cadence_ms=cadence_ms)
     # A typical daytime step: one output frame per 12 s of source.
     job = SegmentJob(
         camera,
@@ -53,7 +55,7 @@ def _stream(
         START + timedelta(seconds=seconds),
         max(1, seconds // 12),
     )
-    expected = Expected(camera, 1000, 0, width, height)
+    expected = Expected(camera, cadence_ms, 0, width, height)
     renderer = SegmentRenderer(
         job, staging=work, expected=expected, recipe=recipe, index=ChunkIndex(work, expected)
     )
@@ -63,7 +65,7 @@ def _stream(
 
 
 def _finalize(
-    work: Path, camera: str, frames: int, width: int, height: int, recipe: Recipe
+    work: Path, camera: str, frames: int, width: int, height: int, recipe: Recipe, cadence_ms: int
 ) -> tuple[float, str]:
     job = SegmentJob(
         camera,
@@ -74,7 +76,7 @@ def _finalize(
         START + timedelta(days=1, seconds=frames * 12),
         frames,
     )
-    expected = Expected(camera, 1000, 0, width, height)
+    expected = Expected(camera, cadence_ms, 0, width, height)
     renderer = SegmentRenderer(
         job, staging=work, expected=expected, recipe=recipe, index=ChunkIndex(work, expected)
     )
@@ -94,6 +96,8 @@ def _finalize(
         meta = {
             "schema_version": 1,
             "recipe": recipe.id,
+            "encoder": recipe.encoder,
+            "image": recipe.image,
             "first": first,
             "last": last,
             "mkv_sha256": file_sha256(path),
@@ -111,13 +115,15 @@ def _finalize(
     return time.monotonic() - started, prepared.result.state
 
 
-def run_camera(args: tuple[str, str, int, int, int, int, int]) -> dict[str, Any]:
-    root, camera, seconds, finalize_frames, width, height, shutter = args
+def run_camera(args: tuple[str, str, int, int, int, int, int, int]) -> dict[str, Any]:
+    root, camera, seconds, finalize_frames, width, height, shutter, cadence_ms = args
     recipe = replace(Recipe(shutter_degrees=shutter), encoder=ffmpeg.version())
     work = Path(root) / camera
     work.mkdir(parents=True, exist_ok=True)
-    factor = _stream(work / "stream", camera, seconds, width, height, recipe)
-    elapsed, state = _finalize(work / "finalize", camera, finalize_frames, width, height, recipe)
+    factor = _stream(work / "stream", camera, seconds, width, height, recipe, cadence_ms)
+    elapsed, state = _finalize(
+        work / "finalize", camera, finalize_frames, width, height, recipe, cadence_ms
+    )
     return {
         "camera": camera,
         "stream_realtime_factor": round(factor, 2),
@@ -137,6 +143,7 @@ def main(argv: list[str]) -> None:
     parser.add_argument("--width", type=int, default=4096)
     parser.add_argument("--height", type=int, default=1856)
     parser.add_argument("--shutter", type=int, default=180)
+    parser.add_argument("--cadence-ms", type=int, default=DEFAULT_CADENCE_MS, choices=(1000, 2000))
     args = parser.parse_args(argv)
     if not 12 <= args.seconds <= 7200 or not 1 <= args.finalize_frames <= REFERENCE_FRAMES:
         parser.exit(2, "Out-of-range benchmark size\n")
@@ -149,6 +156,7 @@ def main(argv: list[str]) -> None:
             args.width,
             args.height,
             args.shutter,
+            args.cadence_ms,
         )
         for camera in CAMERAS[: args.cameras]
     ]

@@ -182,8 +182,8 @@ def test_duplicate_slots_keep_one_best_attempt() -> None:
     assert window.rejected == {F(14): (F("14.1"), "unknown_timing")}
 
 
-def _expected(camera: str = "skycam_east") -> Expected:
-    return Expected(camera, 1000, 0, W, H)
+def _expected(camera: str = "skycam_east", cadence_ms: int = 1000) -> Expected:
+    return Expected(camera, cadence_ms, 0, W, H)
 
 
 def _frames(seconds: range, offset_ns: int = 100_000_000, **kw: object) -> list[synthetic.Frame]:
@@ -386,12 +386,13 @@ def _job(seconds: int, frames: int, kind: str = "daytime") -> SegmentJob:
 
 def _renderer(staging: Path, job: SegmentJob, **kw: object) -> SegmentRenderer:
     recipe = kw.pop("recipe", Recipe())
+    expected = _expected(cadence_ms=int(kw.pop("cadence_ms", 1000)))  # type: ignore[call-overload]
     return SegmentRenderer(
         job,
         staging=staging,
-        expected=_expected(),
+        expected=expected,
         recipe=recipe,  # type: ignore[arg-type]
-        index=ChunkIndex(staging, _expected()),
+        index=ChunkIndex(staging, expected),
         **kw,  # type: ignore[arg-type]
     )
 
@@ -686,6 +687,7 @@ def _at(text: str) -> datetime:
 def _frames_at(
     start: datetime, seconds: range, offset_ns: int = 100_000_000
 ) -> list[synthetic.Frame]:
+    """One frame per slot second in `seconds` (use a range step for slower cadences)."""
     return [
         synthetic.Frame(
             int(start.timestamp() + s) * NS,
@@ -712,41 +714,6 @@ def test_refresh_reads_every_hour_a_window_touches(tmp_path: Path) -> None:
     window = index.window(lo, hi)
     assert len(window.frames) == 13 * 60
     assert window.frames[-1].slot == hi - 1
-
-
-def test_release_point_never_drops_a_frame_the_next_block_reads(tmp_path: Path) -> None:
-    start = _at("2026-10-23T10:00:00+00:00")
-    # Captures trailing their slot by up to the whole lag budget: 0.5 s late start + 5 s.
-    frames = [
-        synthetic.Frame(
-            int(start.timestamp() + s) * NS,
-            synthetic.jpeg(synthetic.sky(W, H, 1)),
-            offset_ns=offset,
-        )
-        for s, offset in zip(
-            range(600), [100_000_000, 2_500_000_000, 5_400_000_000] * 200, strict=True
-        )
-    ]
-    synthetic.write_chunks(tmp_path, "skycam_east", frames, geometry=(W, H))
-    job = SegmentJob(
-        "skycam_east", date(2026, 10, 23), "daytime", 1, start, start + timedelta(seconds=600), 50
-    )
-    renderer = _renderer(tmp_path, job)
-    assert renderer.released_through() is None
-    renderer.metas = [{"first": 0, "last": 20}]
-    through = renderer.released_through()
-    assert through is not None
-    first, last = renderer.next_block() or (0, 0)
-    g = renderer.geometry
-    owned = g.owned(first, last)
-    lo = max(g.start, min(g.shutter(first)[0], owned[0]) - 2 * _expected().interval)
-    hi = min(g.end, max(g.shutter(last - 1)[1], owned[1]) + 2 * _expected().interval)
-    renderer.index.refresh(lo, hi)
-    read = renderer.index.window(lo, hi).frames
-    assert read and min(c.slot for c in read) >= through
-    assert through == lo - _expected().max_lag
-    renderer.metas = [{"first": 0, "last": 50}]
-    assert renderer.released_through() == g.end
 
 
 def test_unavailable_video_needs_no_assets_but_others_do() -> None:
@@ -799,35 +766,6 @@ def test_an_io_error_aborts_the_block_for_retry_instead_of_a_changed_hole(
 
 
 @needs_ffmpeg
-def test_hour_straddling_segment_off_the_hour_renders_every_frame(tmp_path: Path) -> None:
-    start = _at("2026-10-23T10:59:00+00:00")
-    synthetic.write_chunks(tmp_path, "skycam_east", _frames_at(start, range(120)), geometry=(W, H))
-    job = SegmentJob(
-        "skycam_east", date(2026, 10, 23), "daytime", 1, start, start + timedelta(seconds=120), 60
-    )
-    renderer = _renderer(tmp_path, job, block=7)
-    renderer.advance(FAR_FUTURE)
-    prepared = prepare(renderer, weather=None, expected_revision=0)
-    assert prepared.result.slots.accepted == 120 and prepared.result.exposure.gaps == []
-
-
-@needs_ffmpeg
-def test_a_slot_before_b_captured_after_b_counts_for_its_own_segment(tmp_path: Path) -> None:
-    frames = _frames_at(T0, range(19)) + [
-        synthetic.Frame(
-            int(T0.timestamp() + 19) * NS,
-            synthetic.jpeg(synthetic.sky(W, H, 9)),
-            offset_ns=1_200_000_000,
-        )
-    ]
-    synthetic.write_chunks(tmp_path, "skycam_east", frames, geometry=(W, H))
-    renderer = _renderer(tmp_path, _job(20, 10))
-    renderer.advance(FAR_FUTURE)
-    prepared = prepare(renderer, weather=None, expected_revision=0)
-    assert prepared.result.slots.accepted == 20 and prepared.result.slots.missing == 0
-
-
-@needs_ffmpeg
 def test_each_block_records_the_build_that_rendered_it(tmp_path: Path) -> None:
     _corpus(tmp_path, 240)
     job = _job(240, 120)
@@ -847,3 +785,132 @@ def test_each_block_records_the_build_that_rendered_it(tmp_path: Path) -> None:
     resumed.advance(FAR_FUTURE)
     builds = prepare(resumed, weather=None, expected_revision=0).result.mezzanine_builds
     assert [(b.image[-1], b.first, b.last) for b in builds] == [("1", 0, 60), ("2", 60, 120)]
+
+
+CADENCES = pytest.mark.parametrize("cadence_ms", [1000, 2000], ids=["1Hz", "0.5Hz"])
+
+
+@CADENCES
+def test_release_point_never_drops_a_frame_the_next_block_reads(
+    tmp_path: Path, cadence_ms: int
+) -> None:
+    start = _at("2026-10-23T10:00:00+00:00")
+    expected = _expected(cadence_ms=cadence_ms)
+    step = cadence_ms // 1000
+    # Captures trailing their slot by up to the whole lag budget: half a period late + 5 s.
+    worst = int((expected.max_lag - Fraction(1, 10)) * NS)
+    frames = [
+        synthetic.Frame(
+            int(start.timestamp() + s) * NS,
+            synthetic.jpeg(synthetic.sky(W, H, 1)),
+            offset_ns=offset,
+        )
+        for s, offset in zip(
+            range(0, 600, step), [100_000_000, worst // 2, worst] * 300, strict=False
+        )
+    ]
+    synthetic.write_chunks(tmp_path, "skycam_east", frames, geometry=(W, H), cadence_ms=cadence_ms)
+    job = SegmentJob(
+        "skycam_east", date(2026, 10, 23), "daytime", 1, start, start + timedelta(seconds=600), 50
+    )
+    renderer = _renderer(tmp_path, job, cadence_ms=cadence_ms)
+    assert renderer.released_through() is None
+    renderer.metas = [{"first": 0, "last": 20}]
+    through = renderer.released_through()
+    assert through is not None
+    first, last = renderer.next_block() or (0, 0)
+    g = renderer.geometry
+    owned = g.owned(first, last)
+    lo = max(g.start, min(g.shutter(first)[0], owned[0]) - 2 * expected.interval)
+    hi = min(g.end, max(g.shutter(last - 1)[1], owned[1]) + 2 * expected.interval)
+    renderer.index.refresh(lo, hi)
+    read = renderer.index.window(lo, hi).frames
+    assert read and min(c.slot for c in read) >= through
+    assert through == lo - expected.max_lag == lo - (Fraction(cadence_ms, 2000) + 5)
+    # The slot of the most-delayed frame the next block reads is still kept.
+    assert any(c.time - c.slot > expected.max_lag - 1 for c in read)
+    renderer.metas = [{"first": 0, "last": 50}]
+    assert renderer.released_through() == g.end
+
+
+def test_slow_grid_and_default_cadence() -> None:
+    from weather.pipeline.worker import PipelineConfig
+
+    start = instant("2026-10-23T10:00:00Z")
+    grid = Expected("skycam_west", 2000, 333, W, H).grid(start, start + 60)
+    assert len(grid) == 30 and grid[0] == start + F("0.333")
+    assert all((key - F("0.333")) % 2 == 0 for key in grid)
+    config = PipelineConfig.from_environment("skycam_west", {})
+    assert (config.expected.cadence_ms, config.expected.phase_ms) == (2000, 333)
+    assert config.expected.max_lag == 6
+
+
+@needs_ffmpeg
+@CADENCES
+def test_hour_straddling_segment_off_the_hour_renders_every_frame(
+    tmp_path: Path, cadence_ms: int
+) -> None:
+    start = _at("2026-10-23T10:59:00+00:00")
+    step = cadence_ms // 1000
+    synthetic.write_chunks(
+        tmp_path,
+        "skycam_east",
+        _frames_at(start, range(0, 120, step)),
+        geometry=(W, H),
+        cadence_ms=cadence_ms,
+    )
+    job = SegmentJob(
+        "skycam_east", date(2026, 10, 23), "daytime", 1, start, start + timedelta(seconds=120), 10
+    )
+    # A realistic 12 s step; blocks of 3 straddle 11:00.
+    renderer = _renderer(tmp_path, job, block=3, cadence_ms=cadence_ms)
+    renderer.advance(FAR_FUTURE)
+    prepared = prepare(renderer, weather=None, expected_revision=0)
+    assert prepared.result.slots.expected == 120 // step
+    assert prepared.result.slots.accepted == 120 // step and prepared.result.exposure.gaps == []
+
+
+@needs_ffmpeg
+@CADENCES
+def test_a_slot_before_b_captured_after_b_counts_for_its_own_segment(
+    tmp_path: Path, cadence_ms: int
+) -> None:
+    step = cadence_ms // 1000
+    last = 20 - step
+    frames = _frames_at(T0, range(0, last, step)) + [
+        synthetic.Frame(
+            int(T0.timestamp() + last) * NS,
+            synthetic.jpeg(synthetic.sky(W, H, 9)),
+            offset_ns=(step * 1000 + 200) * 1_000_000,  # lands 0.2 s after b
+        )
+    ]
+    synthetic.write_chunks(tmp_path, "skycam_east", frames, geometry=(W, H), cadence_ms=cadence_ms)
+    renderer = _renderer(tmp_path, _job(20, 10), cadence_ms=cadence_ms)
+    renderer.advance(FAR_FUTURE)
+    prepared = prepare(renderer, weather=None, expected_revision=0)
+    assert prepared.result.slots.accepted == 20 // step and prepared.result.slots.missing == 0
+
+
+@needs_ffmpeg
+def test_half_hertz_coverage_one_missed_slot_is_one_gap_frame(tmp_path: Path) -> None:
+    """At 0.5 Hz a capture supports +-1 s, so a 6 s shutter (12 s step, 180 degrees) that
+    loses one slot keeps 4 s of 6: below 0.90, a slate at that frame's own PTS only."""
+    seconds = [s for s in range(0, 240, 2) if s != 102]
+    synthetic.write_chunks(
+        tmp_path,
+        "skycam_east",
+        _frames_at(T0, seconds, offset_ns=0),
+        geometry=(W, H),
+        cadence_ms=2000,
+    )
+    renderer = _renderer(tmp_path, _job(240, 20), cadence_ms=2000)
+    renderer.advance(FAR_FUTURE)
+    frames = [f for meta in renderer.metas for f in meta["frames"]]
+    assert len(frames) == 20
+    # Frame 8's shutter is [99, 105): the capture at 102 supported [101, 103).
+    assert [k for k, f in enumerate(frames) if f["slate"]] == [8]
+    assert frames[8]["coverage"] == round(4 / 6, 6)
+    assert all(f["coverage"] == 1.0 for k, f in enumerate(frames) if k != 8)
+    prepared = prepare(renderer, weather=None, expected_revision=0)
+    assert (prepared.result.slots.expected, prepared.result.slots.accepted) == (120, 119)
+    assert prepared.result.exposure.gaps == [(8, 9)]

@@ -160,7 +160,7 @@ The pipeline deletes nothing. For #19:
 |---|---|---|
 | `WEATHER_STAGING` | `/staging` | Staging share mount |
 | `WEATHER_PIPELINE_GEOMETRY` | `4096x1856` | Commissioned frame geometry |
-| `WEATHER_PIPELINE_CADENCE_MS` / `_PHASE_MS` | 1000 / collector default | Capture grid |
+| `WEATHER_PIPELINE_CADENCE_MS` / `_PHASE_MS` | 2000 (0.5 Hz, #4) / collector default | Capture grid; must equal `capture.json`, or every frame is a `settings` reject |
 | `WEATHER_PIPELINE_SHUTTER_DEGREES` | 180 | 180, 270 or 360 |
 | `WEATHER_PIPELINE_BLOCK_FRAMES` | 60 | 1–60; resources only |
 | `WEATHER_CAPTURE_CHUNK_SECONDS` | 60 | Collector chunk length |
@@ -185,7 +185,8 @@ the cameras, `weather-staging` PVC and `weather-media-s3-writer` exist.
 
 `deploy/k8s/pipeline/bench-job.yaml` runs `weather pipeline bench` in
 `weather` as a disposable Job (no Secret, no network): per camera, in parallel,
-it times the streaming renderer over 600 s of synthetic 4096×1856 1 Hz frames
+it times the streaming renderer over 600 s of synthetic 4096×1856 frames at the
+commissioned 0.5 Hz (`--cadence-ms 1000` for 1 Hz)
 (target ≥ 3× real time) and a 1,200-frame finalize extrapolated to 4,200
 frames with three cameras at once (target ≤ 2 h), within the three pipelines'
 combined limits. Set the image digest under test and the expiry date, apply,

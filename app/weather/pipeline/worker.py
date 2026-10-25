@@ -32,7 +32,14 @@ from weather.timemodel._instant import epoch_seconds
 from . import ffmpeg, metrics, schedule
 from .finalize import RESULT, Prepared, prepare, publish, rebase
 from .intake import ChunkIndex, Expected, utc
-from .recipe import CAMERAS, DEFAULT_PHASE_MS, MAX_BLOCK, Recipe, from_environment
+from .recipe import (
+    CAMERAS,
+    DEFAULT_CADENCE_MS,
+    DEFAULT_PHASE_MS,
+    MAX_BLOCK,
+    Recipe,
+    from_environment,
+)
 from .render import ChunkStage, SegmentRenderer
 from .summary import AggregateWeather, WeatherSummaryProvider
 
@@ -63,7 +70,8 @@ class PipelineConfig:
             )
             expected = Expected(
                 camera=camera,
-                cadence_ms=int(env.get("WEATHER_PIPELINE_CADENCE_MS", "1000")),
+                # The commissioned capture grid (#4: 0.5 Hz); must equal capture.json.
+                cadence_ms=int(env.get("WEATHER_PIPELINE_CADENCE_MS", str(DEFAULT_CADENCE_MS))),
                 phase_ms=int(env.get("WEATHER_PIPELINE_PHASE_MS", str(DEFAULT_PHASE_MS[camera]))),
                 width=width,
                 height=height,
