@@ -170,6 +170,83 @@ kubectl --context vallery -n weather exec deploy/api -- python -c \
 | GET and HEAD 503 | `weather-pg` unreachable or slow | `kubectl cnpg status weather-pg -n weather` |
 | 404 for a listed asset | Embargo not yet over, or withdrawn | Compare `public_not_before` and `withdrawn` in `weather.media_asset` |
 
+## Previews
+
+Delayed current previews (#39), [policy](../contracts/preview-policy-contract.md). Not in
+Garage or custody: disposable files on the staging share plus `camera_preview` pointer rows
+(migration `0007_previews`).
+
+- **Producer.** Each `pipeline-<camera>` runs `app/weather/preview/producer.py` beside its
+  renderer. Every 15 s it lists `sealed/<camera>/` for the current and previous UTC hour (never
+  `tmp/`), reads new sealed chunks once, and in each UTC minute publishes the newest frame
+  whose `capture_upper_bound + 600 s + skew_margin` has passed, if it is newer than the last
+  one. Repeats of the same camera bytes (`duplicate_hash`, or the last published source hash)
+  are skipped, so a frozen camera's preview goes stale, then `too_old`. Derivatives `large` (≤1280 px) and `small` (≤480 px) are decoded, resized and
+  re-encoded with no EXIF, XMP, GPS, ICC or comment, written tmp → fsync → rename to
+  `previews/<camera>/<generation>-<variant>.jpg`, then both rows commit with
+  `first_published_at` from the database clock. Rows are deleted at `expires_at`
+  (capture + 3,600 s), files about 65 minutes after their generation.
+- **Serving.** Deployment `weather-preview` (`weather preview`, same image) is the only
+  public-path pod that mounts staging, and only `previews/` read-only at `/previews`. It reads
+  `public_api.previews` as `weather_api`. IngressRoute `weather` sends
+  `/api/v1/cameras/<camera>/preview` and `/media/previews/` to it (priority 110). Bytes reuse
+  `origin.py`: every denial is the identical 404, responses are `no-store`, no 304.
+  `api` has no NFS volume and never imports the preview routes, so a NAS outage cannot touch
+  `/api/v1/weather/current`.
+- **Health.** `/healthz` touches neither the database nor the share; the pod stays ready and
+  answers `unavailable` honestly. File reads run on 4 threads with a 2 s deadline; once all
+  are stuck on a stalled mount, requests answer at once.
+- **First deploy.** The `previews` subPath must exist before the pod starts (kubelet would
+  otherwise create it root-owned). It was created as UID 1025 / GID 100, mode 2775, with the
+  first rollout; the producer creates the per-camera directories.
+
+| Symptom | Likely cause | Action |
+|---|---|---|
+| Pointer `no_preview` for every camera | Pipelines not running (#49), no sealed input, or every frame's timing unknown | `kubectl -n weather get deploy -l app.kubernetes.io/component=pipeline`; `weather_preview_failures_total`; collector metrics |
+| Pointer `too_old` | No new eligible frame for 30 min: collectors paused, NAS writes refused, or clock offset | [capture runbook](capture.md); [clock offset](#clock-offset) |
+| Pointer `media_unavailable` | `previews/` missing, stalled, or a file differs from its row | `weather_preview_file_failures_total{reason}`; check the NAS (storage-infra); the next generation recovers by itself |
+| 503 on the pointer | `weather-pg` unreachable | `kubectl cnpg status weather-pg -n weather` |
+| `weather_preview_failures_total{stage="catalog"}` rising | Database refuses rows: usually its clock is behind the collectors' | [clock offset](#clock-offset) |
+
+**Withdraw** a preview immediately (it would expire within the hour anyway):
+`UPDATE weather.camera_preview SET withdrawn_at = clock_timestamp() WHERE camera_id = '<camera>'
+AND generation >= <first>` as the migrator through `kubectl cnpg psql`. The view denies it on
+the next request; pointer and bytes answer `no_preview` and 404.
+
+### Clock offset
+
+The embargo depends on two clocks: the collector's (capture bounds) and the database's
+(`first_published_at`, request-time eligibility). Node clocks are owned by
+proxmox-infrastructure and alerted by `WeatherNodeClockOffset` (monitoring-stack#1072); there is
+no clock adapter (P14).
+
+- `skew_margin` is 30 s by default (`WEATHER_PREVIEW_SKEW_SECONDS` on the pipelines, ≥ 30). The
+  database floor is fixed at 630 s; raising the margin only delays publication.
+- **Collector clock ahead** of true time: capture bounds are later than reality, so frames
+  publish later than needed. Safe; previews age toward stale.
+- **Collector clock behind** true time: capture bounds are earlier than reality. The 30 s
+  margin absorbs that much, so 600 s of real delay still holds. Beyond it the real delay
+  shortens by the excess, because both the producer and the database judge eligibility from
+  the collector's bounds. When `WeatherNodeClockOffset` fires for a collector node, raise
+  `WEATHER_PREVIEW_SKEW_SECONDS` to at least the offset (Git, then Argo sync), or scale
+  the pipelines to 0 until the node is fixed.
+- **Database clock behind**: inserts fail the CHECK (`stage="catalog"` failures) and previews
+  go `too_old`; nothing is published early.
+- Future, reversed, unknown (`clock_discontinuity`) or wider-than-300 s bounds are never
+  eligible.
+
+| Metric | Meaning |
+|---|---|
+| `weather_preview_age_seconds{camera}` | Now minus the capture lower bound of the newest published preview (`-1` before the first); healthy about 11–12 min |
+| `weather_preview_generations_total{camera}` | Generations published (about one a minute) |
+| `weather_preview_failures_total{camera,stage}` | `scan`, `derive`, `catalog`, `cleanup` |
+| `weather_preview_pointer_total{camera,state}` | Pointer responses by state |
+| `weather_preview_embargo_violations_total{route}` | Rows the view admitted that the request-time re-check refused; always denied, so nothing is served before its embargo. A rare increment at an exact boundary is the two clock reads differing by microseconds; a steady rate means the view and `policy.py` disagree: investigate |
+| `weather_preview_file_failures_total{reason}` | `missing`, `mismatch`, `timeout`, `busy`, `error` |
+| `weather_media_*{route="preview"}` | The shared origin metrics for preview bytes |
+
+Alert rules and the scrape belong to monitoring-stack at #49.
+
 ## Reconcile
 
 ```sh

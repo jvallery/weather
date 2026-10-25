@@ -136,9 +136,10 @@ from 10 s doubling to 30 min, so it never starves the camera's live segment.
   blocks/NNNNN.json, NNNNN.mkv, mezzanine.ffconcat     durable mezzanine
   out/{native,web,mobile}.mp4, poster*.{jpg,webp}      validated outputs
   result.json                                          prepared publication
+/staging/previews/<camera>/<generation>-<variant>.jpg delayed previews (#39), about 1 h
 ```
 
-The pipeline deletes nothing. For #19:
+The renderer deletes nothing; the preview producer prunes only its own `previews/<camera>/` ([previews](media.md#previews)). For #19:
 
 - `segment.mezzanine_through` is a slot key: the segment will never read
   another frame whose slot is earlier. The pipeline advances it after each
@@ -170,6 +171,7 @@ The pipeline deletes nothing. For #19:
 | `WEATHER_CAPTURE_CHUNK_SECONDS` | 60 | Collector chunk length |
 | `WEATHER_IMAGE_DIGEST` | `unpinned` | Recorded in every RenderResult; #49 sets it to the app pin |
 | `WEATHER_FFMPEG` | `ffmpeg` on PATH | Tests only |
+| `WEATHER_PREVIEW_SKEW_SECONDS` | 30 | Preview skew margin, 30–600 ([clock offset](media.md#clock-offset)) |
 
 Database (`weather-pg-worker`) and Garage (`weather-media-s3-writer` and
 `weather-originals-s3-writer`, projected to `/var/run/weather-garage/<bucket>/`) credentials

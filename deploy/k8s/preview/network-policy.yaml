@@ -1,0 +1,34 @@
+# Ingress from traefik-apps (public paths) and observability (metrics) only. Under default-deny,
+# its only egress is DNS and weather-pg through weather-database-clients (label
+# database-role: api): no camera, Garage or other destination exists for this pod.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: weather-preview
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: weather
+      app.kubernetes.io/component: preview
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik-apps
+    ports:
+    - protocol: TCP
+      port: 8000
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: observability
+    ports:
+    - protocol: TCP
+      port: 9000

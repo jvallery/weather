@@ -38,6 +38,8 @@ export type EventVideo = Schemas["EventVideo"];
 export type Still = Schemas["Still"];
 export type StillImage = Schemas["StillImage"];
 export type StillPage = Schemas["StillPage"];
+export type Preview = Schemas["Preview"];
+export type PreviewImage = Schemas["PreviewImage"];
 
 const text = z.string();
 // A new server enum value degrades that one field instead of rejecting the whole response.
@@ -163,6 +165,25 @@ const still = z.object({
   images: z.array(stillImage.nullable().catch(null)).transform((items) => items.filter((item) => item !== null)),
 });
 const stills = z.object({ generated_at: text, items: z.array(still) });
+// Delayed previews (#39): an unknown state is unavailable; images only ever come from the
+// same-origin preview path, and an unavailable response never carries any.
+const previewImage = z.object({
+  variant: z.enum(["large", "small"]), url: z.string().regex(/^\/media\/previews\/[0-9a-f-]{36}$/),
+  content_type: z.literal("image/jpeg"), width: z.number().int().min(1), height: z.number().int().min(1), bytes: z.number().int().min(1),
+});
+const previewInterval = z.object({ start: text, end: text });
+const preview = z.object({
+  schema_version: z.literal(1), camera, generated_at: text,
+  state: lenient(["fresh", "stale", "unavailable"], "unavailable"),
+  reason: z.enum(["no_preview", "too_old", "media_unavailable"]).nullable().catch("no_preview"),
+  refresh_seconds: z.number(), fresh_seconds: z.number(), stale_seconds: z.number(),
+  minimum_delay_seconds: z.number(), skew_margin_seconds: z.number(), generation: z.number().nullable(),
+  source_interval: previewInterval.nullable(), exposure_upper_bound: text.nullable(), public_not_before: text.nullable(),
+  first_published_at: text.nullable(), expires_at: text.nullable(), age_seconds: z.number().nullable(),
+  images: z.array(previewImage),
+}).transform((value) => value.state === "unavailable" || value.age_seconds === null || value.source_interval === null || value.images.length === 0
+  ? { ...value, state: "unavailable" as const, reason: value.reason ?? ("no_preview" as const), images: [] }
+  : value);
 
 // The parsed shapes must stay assignable to the generated types; tsc fails on drift.
 const checks: [
@@ -174,7 +195,8 @@ const checks: [
   (value: z.infer<typeof events>) => Events,
   (value: z.infer<typeof timelapses>) => TimelapsePage,
   (value: z.infer<typeof stills>) => StillPage,
-] = [(value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value];
+  (value: z.infer<typeof preview>) => Preview,
+] = [(value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value];
 void checks;
 
 export type Parser<T> = (value: unknown) => T | null;
@@ -195,3 +217,4 @@ export function playable(video: Timelapse): boolean {
   return (video.state === "published" || video.state === "partial") && !video.withdrawn && roles.size === 3 && video.poster !== null && video.native_download_url !== null;
 }
 export const parseStills: Parser<StillPage> = parser(stills);
+export const parsePreview: Parser<Preview> = parser(preview);

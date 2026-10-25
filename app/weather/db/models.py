@@ -862,3 +862,50 @@ still_derivative = Table(
     ),
 )
 Index("ix_still_derivative_asset_id", still_derivative.c.asset_id)
+# 0007_previews (#39): delayed camera preview pointers, one row per generation and variant.
+camera_preview = Table(
+    "camera_preview",
+    metadata,
+    _identity(),
+    Column("camera_id", String(32), nullable=False),
+    Column("generation", BigInteger, nullable=False),
+    Column("variant", String(8), nullable=False),
+    Column("width", Integer, nullable=False),
+    Column("height", Integer, nullable=False),
+    Column("bytes", Integer, nullable=False),
+    Column("sha256", String(64), nullable=False),
+    Column("source_sha256", String(64), nullable=False),
+    Column("path", String(96), nullable=False),
+    _instant("captured_lower"),
+    _instant("captured_upper"),
+    _instant("public_not_before"),
+    _instant("first_published_at"),
+    _instant("expires_at"),
+    _instant("withdrawn_at", True),
+    _created(),
+    UniqueConstraint("camera_id", "generation", "variant"),
+    CheckConstraint(
+        f"camera_id IN ({CAMERA_IDS}) AND generation > 0 AND variant IN ('large','small')",
+        name="identity",
+    ),
+    CheckConstraint(
+        "width BETWEEN 1 AND 1280 AND height BETWEEN 1 AND 16384 "
+        "AND bytes BETWEEN 1 AND 2097152 AND sha256 ~ '^[0-9a-f]{64}$' "
+        "AND source_sha256 ~ '^[0-9a-f]{64}$'",
+        name="image",
+    ),
+    CheckConstraint(
+        "path = 'previews/' || camera_id || '/' || generation || '-' || variant || '.jpg'",
+        name="path",
+    ),
+    CheckConstraint("captured_lower <= captured_upper", name="capture"),
+    CheckConstraint(
+        "public_not_before >= captured_upper + interval '630 seconds'", name="embargo"
+    ),
+    CheckConstraint(
+        "first_published_at >= public_not_before AND first_published_at < expires_at",
+        name="published",
+    ),
+    CheckConstraint("expires_at = captured_lower + interval '3600 seconds'", name="expiry"),
+    CheckConstraint("to_timestamp(generation * 60) <= first_published_at", name="generation"),
+)

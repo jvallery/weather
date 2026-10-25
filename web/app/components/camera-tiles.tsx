@@ -4,6 +4,7 @@ import { CAMERA_LABELS, dateShift } from "../lib/format";
 import type { Camera } from "../lib/contracts";
 import { playable, type Timelapse } from "../lib/weather-api";
 import { Status } from "./common";
+import { PreviewTile } from "./camera-previews";
 
 const SEGMENTS = [["daytime", "Daytime"], ["overnight", "Overnight"]] as const;
 const path = (video: Timelapse) => `/timelapses/${video.camera}/${video.cycle_date}/${video.segment}/`;
@@ -27,8 +28,8 @@ function Tile({ camera, segment, label, video }: { camera: Camera; segment: stri
 /** Today's camera cards: delayed preview (#39), then the latest video, poster, keogram and state per segment. */
 export function CameraTiles({ media }: { media: readonly Timelapse[] | null }) {
   const latest = latestMedia(media || []);
-  return <section aria-labelledby="cameras-title"><h2 id="cameras-title">Three cameras, one day</h2><p>Camera previews are delayed at least 10 minutes. This is an observational archive, not a forecast.</p>
+  return <section aria-labelledby="cameras-title"><h2 id="cameras-title">Three cameras, one day</h2><p>Camera previews are delayed at least 10 minutes and refresh about once a minute. The time shown is when the frame was captured. This is an observational archive, not a forecast.</p>
     {media === null && <p className="fault">Recording API unavailable. Latest videos and keograms cannot be listed; nothing is shown in their place.</p>}
-    <div className="grid three">{(Object.keys(CAMERA_LABELS) as Camera[]).map((camera) => <article className="card" key={camera}><h3>{CAMERA_LABELS[camera]}</h3><div className="preview-placeholder"><p>Preview coming soon</p></div><p>Delayed preview · coming soon.</p>
+    <div className="grid three">{(Object.keys(CAMERA_LABELS) as Camera[]).map((camera) => <article className="card" key={camera}><h3>{CAMERA_LABELS[camera]}</h3><PreviewTile camera={camera} />
       <ul className="media-tiles">{SEGMENTS.map(([segment, label]) => <Tile key={segment} camera={camera} segment={segment} label={label} video={latest.get(`${camera}/${segment}`)} />)}</ul></article>)}</div></section>;
 }

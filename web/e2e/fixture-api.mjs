@@ -119,6 +119,24 @@ function file(req, res, path, mime, download = false) {
   if (req.method === "HEAD") return res.end();
   createReadStream(path, { start, end }).pipe(res);
 }
+const PREVIEW_AGES = { skycam_east: 700, skycam_west: 1500 };
+function preview(camera) {
+  const now = Date.now(), age = (state.previewAges || PREVIEW_AGES)[camera];
+  const base = { schema_version: 1, camera, generated_at: new Date(now).toISOString(), refresh_seconds: 60, fresh_seconds: 1200, stale_seconds: 1800, minimum_delay_seconds: 600, skew_margin_seconds: 30 };
+  const none = { generation: null, source_interval: null, exposure_upper_bound: null, public_not_before: null, first_published_at: null, expires_at: null, age_seconds: null, images: [] };
+  if (age === undefined) return { ...base, ...none, state: "unavailable", reason: "no_preview" };
+  const lower = now - age * 1000, iso = (ms) => new Date(ms).toISOString();
+  const id = (n) => `${n}0000000-0000-4000-8000-${camera === "skycam_east" ? "000000000001" : "000000000002"}`;
+  return {
+    ...base, state: age <= 1200 ? "fresh" : "stale", reason: null, generation: Math.floor(now / 60_000),
+    source_interval: { start: iso(lower), end: iso(lower + 1000) }, exposure_upper_bound: iso(lower + 1000),
+    public_not_before: iso(lower + 631_000), first_published_at: iso(lower + 640_000), expires_at: iso(lower + 3_600_000), age_seconds: age,
+    images: [
+      { variant: "large", url: `/media/previews/${id(1)}`, content_type: "image/jpeg", width: 320, height: 180, bytes: statSync(poster).size },
+      { variant: "small", url: `/media/previews/${id(2)}`, content_type: "image/jpeg", width: 320, height: 180, bytes: statSync(poster).size },
+    ],
+  };
+}
 createServer(async (req, res) => {
   const url = new URL(req.url, "http://localhost");
   if (url.pathname === "/__control" && req.method === "POST") {
@@ -174,6 +192,10 @@ createServer(async (req, res) => {
     const value = snapshot().items.find((video) => video.video_id === url.pathname.split("/").at(-1));
     return json(res, value || { code: "not-found" }, value ? 200 : 404);
   }
+  // Delayed previews (#39): east fresh, west stale, front yard unavailable (no eligible preview).
+  const previewMatch = /^\/api\/v1\/cameras\/([a-z0-9_]+)\/preview$/.exec(url.pathname);
+  if (previewMatch) return json(res, preview(previewMatch[1]));
+  if (url.pathname.startsWith("/media/previews/")) return file(req, res, poster, "image/jpeg");
   if (url.pathname.startsWith("/media/")) {
     const found = asset(url.pathname.slice("/media/".length));
     if (!found) return json(res, { code: "not_found" }, 404);

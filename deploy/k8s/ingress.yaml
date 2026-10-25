@@ -72,6 +72,18 @@ spec:
     services:
     - name: api
       port: 80
+  # Delayed camera previews (#39): the pointer and its bytes go to weather-preview, the only
+  # public-path pod that reads staging previews/. Above the /api/ and /media/ rules.
+  - match: Host(`weather.vallery.net`) && (PathRegexp(`^/api/v1/cameras/[a-z0-9_]+/preview$`) || PathPrefix(`/media/previews/`))
+    priority: 110
+    kind: Rule
+    middlewares:
+    - name: weather-rate-limit
+    - name: weather-media-in-flight
+    - name: weather-security-headers
+    services:
+    - name: weather-preview
+      port: 80
   # Same-origin media and native downloads (#20), streamed by the api, never the web.
   - match: Host(`weather.vallery.net`) && (PathPrefix(`/media/`) || PathPrefix(`/downloads/`))
     priority: 100

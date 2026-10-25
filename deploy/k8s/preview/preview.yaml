@@ -1,0 +1,154 @@
+# weather-preview (#39, C17): serves eligible delayed previews only. The only public-path pod
+# that mounts staging, and only `previews/`, read-only. Health never touches the database or
+# the share, so a NAS or database outage makes previews unavailable without unreadying or
+# restarting the pod. Runbook: docs/operations/media.md#previews.
+# replicas: 0 until the promote commit pins an app image that has the `weather preview` role
+# (the current pin predates it and would crash-loop); that commit sets replicas: 1.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-preview
+  namespace: weather
+  annotations:
+    # After the wave-1 migrate hook; DB clients run at wave >= 2.
+    argocd.argoproj.io/sync-wave: '2'
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  replicas: 0
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: weather-preview
+      app.kubernetes.io/part-of: weather
+      app.kubernetes.io/component: preview
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: weather-preview
+        app.kubernetes.io/part-of: weather
+        app.kubernetes.io/component: preview
+        # Reads public_api.previews as weather_api (weather-database-clients NetworkPolicy).
+        weather.vallery.net/database-role: api
+    spec:
+      serviceAccountName: weather-preview
+      priorityClassName: estate-app
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      imagePullSecrets:
+      - name: zot-origin-cluster-pull
+      # The staging share's owner (storage-infra#1106); the mount is read-only regardless.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1025
+        runAsGroup: 100
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: preview
+        image: weather-app
+        command:
+        - weather
+        - preview
+        ports:
+        - name: http
+          containerPort: 8000
+        - name: metrics
+          containerPort: 9000
+        env:
+        - name: PORT
+          value: '8000'
+        - name: METRICS_PORT
+          value: '9000'
+        - name: WEATHER_PREVIEW_ROOT
+          value: /previews
+        - name: DATABASE_CREDENTIAL_DIRECTORY
+          value: /var/run/weather-db
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 384Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        startupProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          periodSeconds: 5
+          failureThreshold: 30
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          periodSeconds: 20
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: database
+          mountPath: /var/run/weather-db
+          readOnly: true
+        - name: staging
+          mountPath: /previews
+          subPath: previews
+          readOnly: true
+      volumes:
+      - name: tmp
+        emptyDir:
+          sizeLimit: 16Mi
+      - name: database
+        projected:
+          defaultMode: 288
+          sources:
+          - secret:
+              name: weather-pg-api
+              items:
+              - key: username
+                path: username
+              - key: password
+                path: password
+          - secret:
+              name: weather-pg-ca
+              items:
+              - key: ca.crt
+                path: ca.crt
+      - name: staging
+        persistentVolumeClaim:
+          claimName: weather-staging
+          readOnly: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: weather-preview
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  selector:
+    app.kubernetes.io/name: weather-preview
+    app.kubernetes.io/part-of: weather
+    app.kubernetes.io/component: preview
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+  - name: metrics
+    port: 9000
+    targetPort: metrics

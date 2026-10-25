@@ -257,8 +257,12 @@ def install(app: FastAPI) -> None:
 
 def public_openapi() -> dict[str, Any]:
     """The generated contract: problem responses as application/problem+json, no 422."""
+    from weather.preview.server import router as previews
+
     app = FastAPI(title="Weather public API", version="1", docs_url=None, redoc_url=None)
     install(app)
+    # Served by `weather-preview` (#39), never by the api; one public contract for both.
+    app.include_router(previews)
     document = app.openapi()
     for path in document["paths"].values():
         for operation in path.values():

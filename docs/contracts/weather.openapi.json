@@ -1716,6 +1716,264 @@
         "title": "Predicate",
         "type": "object"
       },
+      "Preview": {
+        "additionalProperties": false,
+        "description": "The camera's latest eligible preview, judged at `generated_at` by the database clock.\n\nAge is `generated_at - source_interval.start`. Clients age a received preview locally from\n`age_seconds` and stop showing it as current past `stale_seconds`, even when polls fail.\nUnavailable carries a reason and no images.",
+        "properties": {
+          "age_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Seconds"
+          },
+          "camera": {
+            "enum": [
+              "skycam_east",
+              "skycam_west",
+              "frontyard_1"
+            ],
+            "title": "Camera",
+            "type": "string"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "exposure_upper_bound": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exposure Upper Bound"
+          },
+          "first_published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Published At"
+          },
+          "fresh_seconds": {
+            "title": "Fresh Seconds",
+            "type": "integer"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "generation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation"
+          },
+          "images": {
+            "items": {
+              "$ref": "#/components/schemas/PreviewImage"
+            },
+            "maxItems": 2,
+            "title": "Images",
+            "type": "array"
+          },
+          "minimum_delay_seconds": {
+            "title": "Minimum Delay Seconds",
+            "type": "integer"
+          },
+          "public_not_before": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Not Before"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "no_preview",
+                  "too_old",
+                  "media_unavailable"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "refresh_seconds": {
+            "title": "Refresh Seconds",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "skew_margin_seconds": {
+            "title": "Skew Margin Seconds",
+            "type": "integer"
+          },
+          "source_interval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PreviewInterval"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stale_seconds": {
+            "title": "Stale Seconds",
+            "type": "integer"
+          },
+          "state": {
+            "enum": [
+              "fresh",
+              "stale",
+              "unavailable"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "camera",
+          "generated_at",
+          "state",
+          "reason",
+          "refresh_seconds",
+          "fresh_seconds",
+          "stale_seconds",
+          "minimum_delay_seconds",
+          "skew_margin_seconds",
+          "generation",
+          "source_interval",
+          "exposure_upper_bound",
+          "public_not_before",
+          "first_published_at",
+          "expires_at",
+          "age_seconds",
+          "images"
+        ],
+        "title": "Preview",
+        "type": "object"
+      },
+      "PreviewImage": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "minimum": 1.0,
+            "title": "Bytes",
+            "type": "integer"
+          },
+          "content_type": {
+            "const": "image/jpeg",
+            "title": "Content Type",
+            "type": "string"
+          },
+          "height": {
+            "minimum": 1.0,
+            "title": "Height",
+            "type": "integer"
+          },
+          "url": {
+            "pattern": "^/media/previews/[0-9a-f-]{36}$",
+            "title": "Url",
+            "type": "string"
+          },
+          "variant": {
+            "enum": [
+              "large",
+              "small"
+            ],
+            "title": "Variant",
+            "type": "string"
+          },
+          "width": {
+            "minimum": 1.0,
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "variant",
+          "url",
+          "content_type",
+          "width",
+          "height",
+          "bytes"
+        ],
+        "title": "PreviewImage",
+        "type": "object"
+      },
+      "PreviewInterval": {
+        "additionalProperties": false,
+        "description": "Closed capture interval [lower, upper] of one snapshot request.",
+        "properties": {
+          "end": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "End",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "PreviewInterval",
+        "type": "object"
+      },
       "Problem": {
         "additionalProperties": false,
         "properties": {
@@ -2908,6 +3166,55 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/cameras/{camera}/preview": {
+      "get": {
+        "operationId": "getCameraPreview",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "camera",
+            "required": true,
+            "schema": {
+              "title": "Camera",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No such camera."
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The preview catalog is temporarily unavailable."
+          }
+        },
+        "summary": "Get Preview"
+      }
+    },
     "/api/v1/events": {
       "get": {
         "operationId": "getEvents",

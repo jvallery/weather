@@ -76,7 +76,17 @@ test("placeholders, About topics, repeated hour, source-only network and reduced
   const unexpected: string[] = [];
   page.on("request", (request) => { if (!new URL(request.url()).hostname.includes("localhost")) unexpected.push(request.url()); });
   await page.emulateMedia({ reducedMotion: "reduce" }); await page.goto("/");
-  await expect(page.locator(".preview-placeholder")).toHaveCount(3);
+  // Delayed previews (#39): honest capture age, stale and unavailable tiles.
+  const tiles = page.locator("[data-preview-state]");
+  await expect(tiles).toHaveCount(3);
+  await expect(tiles.nth(0)).toHaveAttribute("data-preview-state", "fresh");
+  await expect(page.getByRole("img", { name: /^East sky camera, captured \d\d:\d\d \(11 min ago\)$/ })).toBeVisible();
+  await expect(tiles.nth(1)).toHaveAttribute("data-preview-state", "stale");
+  await expect(tiles.nth(1).getByText("Stale", { exact: true })).toBeVisible();
+  await expect(tiles.nth(1).getByText(/captured \d\d:\d\d \(25 min ago\)/)).toBeVisible();
+  await expect(tiles.nth(2)).toHaveAttribute("data-preview-state", "unavailable");
+  await expect(tiles.nth(2).getByText("Preview unavailable. No eligible preview yet.")).toBeVisible();
+  await expect(tiles.nth(2).getByRole("img")).toHaveCount(0);
   // Today media tiles (#40): the latest poster/video and keogram per camera and segment; no latest-media placeholder.
   await expect(page.getByRole("link", { name: /^Poster frame, .*Watch/ })).toHaveCount(6);
   await expect(page.getByRole("link", { name: "Keogram, East sky · daytime · 2026-10-31" })).toBeVisible();
@@ -91,6 +101,20 @@ test("placeholders, About topics, repeated hour, source-only network and reduced
   for (const topic of [/Tempest/, /east sky/, /west sky/, /front yard/, /6°/, /7,200/, /not measurements/, /private notes/, /no forecast/]) await expect(page.getByText(topic).first()).toBeVisible();
   await page.goto("/weather/history/"); await expect(page.getByText(/GMT-06:00/).first()).toBeVisible(); await expect(page.getByText(/GMT-07:00/).first()).toBeVisible();
   expect(unexpected).toEqual([]);
+});
+test("preview tiles age locally past 1,800 s while the network is blocked", async ({ page }) => {
+  await page.clock.install();
+  await page.goto("/");
+  const east = page.locator("[data-preview-state]").first();
+  await expect(east).toHaveAttribute("data-preview-state", "fresh");
+  await page.route(/\/api\/v1\/cameras\//, (route) => route.abort());
+  // 700 s at receipt + 10 min = 1,300 s: stale. + 20 min = 1,900 s: unavailable, no image.
+  await page.clock.fastForward("10:00");
+  await expect(east).toHaveAttribute("data-preview-state", "stale");
+  await page.clock.fastForward("10:00");
+  await expect(east).toHaveAttribute("data-preview-state", "unavailable");
+  await expect(east.getByRole("img")).toHaveCount(0);
+  await expect(east.getByText("Preview unavailable. The last capture is more than 30 minutes old.")).toBeVisible();
 });
 test("event bookmarks seek via ?t=, day and video strips, feed provenance and recent events", async ({ page }) => {
   await page.goto("/timelapses/skycam_east/2026-10-31/daytime/");
