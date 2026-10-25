@@ -339,3 +339,77 @@ def test_chunk_boundaries_never_change_the_keogram_and_assembly_needs_no_raw_chu
     gaps = results[0][3]
     assert sum(b - a for a, b in gaps) == BINS - 210
     assert max(b - a for a, b in gaps) >= 30 * 6 - 6
+
+
+def test_a_bin_split_across_blocks_keeps_its_best_capture_in_either_order() -> None:
+    segment = job()  # bin 5 is [5, 6) s
+    better, worse = candidate(at(segment, F(54, 10)), "b"), candidate(at(segment, F(59, 10)), "w")
+    for order in ((worse, better), (better, worse)):
+        store = Store()
+        stage = KeogramStage(REGION, store)
+        for block, item in enumerate(order):  # one capture per block commit
+            stage.frame(segment, item, solid(10 + block))
+            stage.commit(segment, 60 * block, 60 * (block + 1))
+        assert store.bins[5].capture_id == "b"
+
+
+def test_only_transient_store_errors_defer_the_block() -> None:
+    segment = job()
+
+    def refused(*_: Any) -> None:
+        raise ValueError("invalid input for type")
+
+    def lost(*_: Any) -> None:
+        raise ConnectionResetError("connection lost")
+
+    stage = KeogramStage(REGION, refused)
+    stage.frame(segment, candidate(at(segment, 3)), solid(5))
+    stage.commit(segment, 0, 60)  # never raises: the keogram fails, the video carries on
+    assert stage.failed[segment.key] == "store"
+    stage = KeogramStage(REGION, lost)
+    with pytest.raises(ConnectionResetError):
+        stage.commit(segment, 0, 60)
+    assert segment.key not in stage.failed
+
+
+def test_upper_bounds_round_up_and_capture_times_down() -> None:
+    segment = job()
+    store = Store()
+    stage = KeogramStage(REGION, store)
+    time = at(segment, 3) + F(1, 3_000_000)
+    stage.frame(segment, candidate(time, upper=time + F(1, 3_000_000)), solid(5))
+    stage.commit(segment, 0, 60)
+    sample = store.bins[3]
+    assert sample.captured == micros(segment.starts_at) + 3_000_000
+    assert sample.upper == micros(segment.starts_at) + 3_000_001
+
+
+def test_a_bad_region_file_disables_keograms_without_stopping_the_camera(tmp_path: Path) -> None:
+    from weather.pipeline.worker import PipelineConfig
+
+    good = PipelineConfig.from_environment("frontyard_1", {})
+    assert good.region is not None and not good.region_error
+    broken = tmp_path / "regions.json"
+    broken.write_text("{not json")
+    for env in (
+        {"WEATHER_KEOGRAM_REGIONS": str(broken)},
+        {"WEATHER_KEOGRAM_REGIONS": str(tmp_path / "missing.json")},
+        {"WEATHER_PIPELINE_GEOMETRY": "1920x1080"},  # regions chosen for another geometry
+    ):
+        config = PipelineConfig.from_environment("frontyard_1", env)
+        assert config.region is None and config.region_error, env
+
+
+def test_connectivity_errors_are_told_apart_from_data_errors() -> None:
+    from sqlalchemy.exc import DBAPIError, InterfaceError, OperationalError
+    from weather.pipeline.keogram_publish import connectivity
+
+    data = DBAPIError("INSERT", {}, Exception("value too long for type character varying(64)"))
+    assert not connectivity(data)  # asyncpg data errors arrive as a plain DBAPIError
+    assert not connectivity(ValueError("bad strip"))
+    assert connectivity(OperationalError("SELECT", {}, Exception("server closed")))
+    assert connectivity(TimeoutError()) and connectivity(ConnectionRefusedError())
+    dropped = InterfaceError("SELECT", {}, Exception("connection is closed"),
+                             connection_invalidated=True)
+    assert connectivity(dropped)
+    assert not connectivity(InterfaceError("SELECT", {}, Exception("cursor already closed")))

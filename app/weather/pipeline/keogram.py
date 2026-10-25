@@ -237,7 +237,16 @@ def _floor_micros(value: Fraction) -> int:
     return value.numerator * 1_000_000 // value.denominator
 
 
+def _ceil_micros(value: Fraction) -> int:
+    """An upper bound rounds up, so the embargo never starts early."""
+    return -(-value.numerator * 1_000_000 // value.denominator)
+
+
 Sink = Callable[[SegmentJob, Region, list[Sample], str | None], None]
+
+
+def _never(error: BaseException) -> bool:
+    return isinstance(error, (OSError, TimeoutError))
 
 
 class KeogramStage:
@@ -246,10 +255,13 @@ class KeogramStage:
 
     The sink merges by the same key (nearest, earlier, capture ID), so re-rendering a block
     after a crash, or a bin that spans two blocks, converges to the same selection. A failure
-    here never stops the video: the segment's keogram is reported failed instead."""
+    here never stops the video: the segment's keogram is reported failed instead. Only an
+    error `transient` accepts (lost connectivity) propagates, deferring the block for retry."""
 
-    def __init__(self, region: Region, sink: Sink) -> None:
-        self.region, self.sink = region, sink
+    def __init__(
+        self, region: Region, sink: Sink, transient: Callable[[BaseException], bool] = _never
+    ) -> None:
+        self.region, self.sink, self.transient = region, sink, transient
         self.pending: dict[str, dict[int, Sample]] = {}
         self.failed: dict[str, str] = {}
 
@@ -272,7 +284,7 @@ class KeogramStage:
                 distance=key[0],
                 captured=captured,
                 capture_id=candidate.attempt_id,
-                upper=_floor_micros(candidate.upper),
+                upper=_ceil_micros(candidate.upper),
                 uncertainty_ms=candidate.uncertainty_ms,
                 strip=column(rgb, self.region),
             )
@@ -284,7 +296,14 @@ class KeogramStage:
 
     def commit(self, job: SegmentJob, first: int, last: int) -> None:
         samples = sorted(self.pending.pop(job.key, {}).values(), key=lambda s: s.bin)
-        self.sink(job, self.region, samples, self.failed.get(job.key))
+        try:
+            self.sink(job, self.region, samples, self.failed.get(job.key))
+        except Exception as error:
+            if self.transient(error):
+                raise
+            # The bins of this block are lost: the keogram cannot be complete, so it fails.
+            LOG.error("Keogram bins refused (%s, %s)", job.camera, type(error).__name__)
+            self.failed[job.key] = "store"
 
     def forget(self, job: SegmentJob) -> None:
         self.pending.pop(job.key, None)

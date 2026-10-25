@@ -71,6 +71,8 @@ class PipelineConfig:
     skew_seconds: int = 30
     # The camera's keogram region (#37); None renders no keogram.
     region: Region | None = None
+    # The region file was refused: no keogram is extracted, and each one fails `region_config`.
+    region_error: bool = False
 
     @classmethod
     def from_environment(cls, camera: str, environ: dict[str, str] | None = None) -> PipelineConfig:
@@ -98,11 +100,6 @@ class PipelineConfig:
                 chunk_seconds=int(env.get("WEATHER_CAPTURE_CHUNK_SECONDS", "60")),
                 metrics_port=int(env.get("METRICS_PORT", "9000")),
                 skew_seconds=int(env.get("WEATHER_PREVIEW_SKEW_SECONDS", "30")),
-                region=load_regions(
-                    Path(env["WEATHER_KEOGRAM_REGIONS"])
-                    if "WEATHER_KEOGRAM_REGIONS" in env
-                    else None
-                ).region(camera, width, height),
             )
         except ValueError, OSError:
             raise ValueError("Invalid pipeline configuration") from None
@@ -116,7 +113,16 @@ class PipelineConfig:
             or not (0 < width <= 16384 and 0 < height <= 16384)
         ):
             raise ValueError("Invalid pipeline configuration")
-        return config
+        try:
+            region = load_regions(
+                Path(env["WEATHER_KEOGRAM_REGIONS"]) if "WEATHER_KEOGRAM_REGIONS" in env else None
+            ).region(camera, width, height)
+        except (ValueError, OSError) as error:
+            # A bad region never stops the camera's videos, stills or previews (#37).
+            metrics.KEOGRAM_REGION_ERRORS.labels(camera).inc()
+            LOG.error("Keogram region configuration refused (%s, %s)", camera, type(error).__name__)
+            return replace(config, region_error=True)
+        return replace(config, region=region)
 
 
 class ReleaseAhead(RuntimeError):
@@ -173,7 +179,8 @@ class Worker:
                 index=self.index,
                 block=self.config.block,
                 chunk_seconds=self.config.chunk_seconds,
-                stages=self.stages + ((self.keograms.stage,) if self.keograms else ()),
+                stages=self.stages
+                + ((self.keograms.stage,) if self.keograms and self.keograms.stage else ()),
             )
             self._guard(row, created)
             self.renderers[row.id] = found = created
@@ -198,7 +205,8 @@ class Worker:
 
     async def step(self, now: datetime) -> None:
         camera = self.config.camera
-        if self.config.region is not None and self.keograms is None:
+        keograms = self.config.region is not None or self.config.region_error
+        if keograms and self.keograms is None:
             self.keograms = Keograms(
                 self.engine, self.publisher, self.config.region, asyncio.get_running_loop()
             )
@@ -281,7 +289,7 @@ class Worker:
                 metrics.COVERAGE.labels(camera).set(prepared.result.slots.fraction)
                 metrics.LATENCY.labels(camera).observe((now - row.job.ends_at).total_seconds())
                 del self.renderers[row.id]
-                if self.keograms is not None:
+                if self.keograms is not None and self.keograms.stage is not None:
                     self.keograms.stage.forget(row.job)
                 self.durable.discard(row.id)
                 self.backoff.pop(row.id, None)

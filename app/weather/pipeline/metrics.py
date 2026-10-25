@@ -132,3 +132,8 @@ KEOGRAM_LAG = Histogram(
     ["camera"],
     buckets=(300, 600, 900, 1800, 3600, 5400, 7200, 10800),
 )
+KEOGRAM_REGION_ERRORS = Counter(
+    "weather_pipeline_keogram_region_errors_total",
+    "Keogram region files refused at start-up; the camera runs without keograms",
+    ["camera"],
+)

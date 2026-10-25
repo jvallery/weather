@@ -21,7 +21,7 @@ from typing import Any, cast
 from uuid import UUID
 
 from sqlalchemy import text
-from sqlalchemy.exc import DataError, IntegrityError, ProgrammingError
+from sqlalchemy.exc import DBAPIError, OperationalError
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from weather.publish import catalog
@@ -47,8 +47,14 @@ LOG = logging.getLogger("weather.pipeline")
 MAX_ATTEMPTS = 3
 SINK_TIMEOUT = 120
 PUBLISH_DEADLINE = timedelta(hours=1)
-# Deterministic database refusals: retrying the block cannot help, so the keogram fails alone.
-REFUSED = (IntegrityError, DataError, ProgrammingError)
+
+
+def connectivity(error: BaseException) -> bool:
+    """Lost connectivity, which the block retries (the video needs the database too). Any other
+    error, including a data error asyncpg reports as a plain DBAPIError, fails the keogram."""
+    return isinstance(error, (OperationalError, TimeoutError, OSError)) or (
+        isinstance(error, DBAPIError) and error.connection_invalidated
+    )
 
 SEGMENT = """SELECT id FROM weather.segment WHERE camera_id=:camera AND cycle_date=:cycle_date
              AND kind=:kind AND revision=:revision"""
@@ -90,9 +96,25 @@ async def write_bins(
     lower-ID) capture, so re-rendered blocks and bins split across blocks converge."""
     await connection.execute(
         text(f"""
-        INSERT INTO weather.keogram (segment_id,region_version,region)
-        SELECT id,CAST(:version AS varchar),CAST(:region AS jsonb) FROM ({SEGMENT}) s
+        INSERT INTO weather.keogram (segment_id) SELECT id FROM ({SEGMENT}) s
         ON CONFLICT (segment_id) DO NOTHING
+    """),
+        _segment(job),
+    )
+    # A segment that missed its deadline and renders late gets its keogram back.
+    await connection.execute(
+        text(f"""
+        UPDATE weather.keogram SET state='pending',reason=NULL,updated_at=clock_timestamp()
+        WHERE segment_id=({SEGMENT}) AND state='unavailable' AND reason='deadline_missed'
+    """),
+        _segment(job),
+    )
+    # The first block records the region; every later block must use the same one.
+    await connection.execute(
+        text(f"""
+        UPDATE weather.keogram SET region_version=:version,region=CAST(:region AS jsonb),
+          updated_at=clock_timestamp()
+        WHERE segment_id=({SEGMENT}) AND region_version IS NULL AND state='pending'
     """),
         {**_segment(job), "version": region.version, "region": json.dumps(region.record())},
     )
@@ -149,7 +171,7 @@ class BinStore:
     """The keogram stage's sink, called from the render thread; it runs on the event loop.
 
     Connectivity errors propagate, so the block is retried (the video needs the database
-    too). A refusal by the database fails only this segment's keogram."""
+    too). Any other database error fails only this segment's keogram."""
 
     def __init__(self, engine: AsyncEngine, loop: asyncio.AbstractEventLoop) -> None:
         self.engine, self.loop = engine, loop
@@ -168,7 +190,9 @@ class BinStore:
         try:
             async with self.engine.begin() as connection:
                 await write_bins(connection, job, region, samples, failed)
-        except REFUSED as error:
+        except Exception as error:
+            if connectivity(error):
+                raise
             metrics.KEOGRAMS.labels(job.camera, "failed").inc()
             LOG.error("Keogram bins refused (%s, %s)", job.camera, type(error).__name__)
             async with self.engine.begin() as connection:
@@ -186,26 +210,31 @@ class Due:
     expected_revision: int | None
     video_synced: bool
     finalized: bool
-    region: Region
+    current: bool
+    region: Region | None
+    public_not_before: datetime | None
     job: SegmentJob
 
 
 async def due(engine: AsyncEngine, camera: str) -> list[Due]:
-    """This camera's keograms with work left: a pending keogram whose video is finalized (or
-    whose segment is past the late-render window), or a final status not yet in its finalized
-    video's sidecar (never before: the video's own publish must not race a sidecar revision)."""
+    """This camera's keograms with work left: a pending keogram whose video is finalized, whose
+    segment is past the late-render window or was superseded by a newer revision; or a final
+    status not yet in its finalized video's sidecar (never before: the video's own publish must
+    not race a sidecar revision, nor the sidecar claim a keogram that is still embargoed)."""
     async with engine.connect() as connection:
         rows = await connection.execute(
             text("""
             SELECT k.segment_id,k.state,k.reason,k.attempts,k.expected_revision,k.video_synced,
-              k.region,s.finalized_at IS NOT NULL AS finalized,s.cycle_date,s.kind,s.revision,
-              s.starts_at,s.ends_at,s.frames
+              k.region,k.public_not_before,s.finalized_at IS NOT NULL AS finalized,s.current,
+              s.cycle_date,s.kind,s.revision,s.starts_at,s.ends_at,s.frames
             FROM weather.keogram k JOIN weather.segment s ON s.id=k.segment_id
-            WHERE s.camera_id=:camera AND s.current
-              AND ((k.state='pending' AND (s.finalized_at IS NOT NULL
+            WHERE s.camera_id=:camera
+              AND ((k.state='pending' AND (NOT s.current OR s.finalized_at IS NOT NULL
                      OR s.ends_at < clock_timestamp() - CAST(:late AS interval)))
-                   OR (k.state<>'pending' AND NOT k.video_synced
-                       AND s.finalized_at IS NOT NULL))
+                   OR (s.current AND k.state<>'pending' AND NOT k.video_synced
+                       AND s.finalized_at IS NOT NULL
+                       AND (k.public_not_before IS NULL
+                            OR k.public_not_before <= clock_timestamp())))
             ORDER BY s.starts_at LIMIT 12
         """),
             {"camera": camera, "late": schedule.LATE_RENDER},
@@ -219,7 +248,9 @@ async def due(engine: AsyncEngine, camera: str) -> list[Due]:
                 expected_revision=row.expected_revision,
                 video_synced=bool(row.video_synced),
                 finalized=bool(row.finalized),
-                region=Region.model_validate(row.region),
+                current=bool(row.current),
+                region=Region.model_validate(row.region) if row.region is not None else None,
+                public_not_before=row.public_not_before,
                 job=SegmentJob(
                     camera=camera,
                     cycle_date=row.cycle_date,
@@ -282,11 +313,17 @@ class Keograms:
         self,
         engine: AsyncEngine,
         publisher: Publisher,
-        region: Region,
+        region: Region | None,
         loop: asyncio.AbstractEventLoop,
     ) -> None:
+        """`region` None means the region configuration was refused: nothing is extracted and
+        every finished segment's keogram fails with reason `region_config`."""
         self.engine, self.publisher, self.region = engine, publisher, region
-        self.stage = KeogramStage(region, BinStore(engine, loop))
+        self.stage = (
+            KeogramStage(region, BinStore(engine, loop), connectivity)
+            if region is not None
+            else None
+        )
         self.backoff: dict[UUID, datetime] = {}
 
     async def sweep(self, camera: str, now: datetime) -> None:
@@ -326,27 +363,42 @@ class Keograms:
         return True
 
     async def process(self, item: Due) -> None:
-        state, reason = item.state, item.reason
+        state, reason, embargoed = item.state, item.reason, item.public_not_before
         if state == "pending":
-            state, reason = await self.finish(item)
-        if state != "pending" and not item.video_synced:
+            state, reason, embargoed = await self.finish(item)
+        # The video's sidecar never names a keogram that is still embargoed; a later pass does.
+        visible = embargoed is None or embargoed <= datetime.now(UTC)
+        if item.current and state != "pending" and not item.video_synced and visible:
             await self.sync_video(item, state, reason)
 
-    async def finish(self, item: Due) -> tuple[str, str | None]:
+    async def _final(
+        self, item: Due, reason: str, state: str = "failed"
+    ) -> tuple[str, str | None, None]:
+        async with self.engine.begin() as connection:
+            await fail(connection, item.segment_id, reason, state=state)
+        metrics.KEOGRAMS.labels(item.job.camera, state).inc()
+        return state, reason, None
+
+    async def finish(self, item: Due) -> tuple[str, str | None, datetime | None]:
         job = item.job
+        if not item.current:
+            # A clock correction replaced this segment revision; its successor gets its own.
+            return await self._final(item, "superseded")
         if not item.finalized:
             # The segment never finished rendering inside its late-render window.
-            async with self.engine.begin() as connection:
-                await fail(connection, item.segment_id, "deadline_missed")
-            metrics.KEOGRAMS.labels(job.camera, "failed").inc()
-            return "failed", "deadline_missed"
+            return await self._final(item, "deadline_missed", "unavailable")
+        if self.stage is None:
+            return await self._final(item, "region_config")
+        lost = self.stage.failed.get(job.key)
+        if lost is not None:
+            # Bins this process could not store: the keogram cannot be complete.
+            return await self._final(item, lost)
         samples = await load_bins(self.engine, item.segment_id)
         if not samples:
-            async with self.engine.begin() as connection:
-                await fail(connection, item.segment_id, "no_observations", state="unavailable")
-            metrics.KEOGRAMS.labels(job.camera, "unavailable").inc()
-            return "unavailable", "no_observations"
+            return await self._final(item, "no_observations", "unavailable")
         region = item.region
+        if region is None:
+            raise KeogramError("Bins without a recorded region")
         assembled = await asyncio.to_thread(assemble, samples, region.height)
         state, reason = assembled.state
         public_not_before = embargo(job, assembled)
@@ -392,7 +444,7 @@ class Keograms:
             except catalog.Withdrawn:
                 # Its video was withdrawn: the keogram never publishes; its bins go too.
                 await self._resolve(item, "unavailable", "withdrawn", None, None)
-                return "unavailable", "withdrawn"
+                return "unavailable", "withdrawn", None
             except catalog.RevisionConflict:
                 # Another revision committed under us: the next attempt builds on it.
                 async with self.engine.begin() as connection:
@@ -411,7 +463,7 @@ class Keograms:
         metrics.KEOGRAM_LAG.labels(job.camera).observe(
             (datetime.now(UTC) - job.ends_at).total_seconds()
         )
-        return state, reason
+        return state, reason, public_not_before
 
     async def _expected_revision(self, item: Due) -> int:
         """Recorded once, before the first upload, so a retry after a lost acknowledgement is

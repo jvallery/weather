@@ -103,9 +103,10 @@ dedicated `weather` database. Revision `0001_baseline` (#74) holds the
 slice-1 schema, `0002_api` (#14) adds the API's views, `0003_publication`
 (#18) the publication catalog, `0004_search` (#25) the search tables, `0005_events` (#41)
 weather events, `0006_render` (#15) the frozen solar schedule and render segments, `0009_stills`
-(#38) hour slots, archived originals and comparison stills, `0010_cleanup` (#19) the staging
-inventory and the deletion and object-lifecycle audits, `0011_gc_kept` (#19) its `gc_kept`
-marker, and `0008_keograms` (#37, chained after `0011_gc_kept`) keogram status and bins; all are
+(#38) hour slots, archived originals and comparison stills, `0007_previews` (#39) delayed
+previews, `0010_cleanup` (#19) the staging inventory and the deletion and object-lifecycle
+audits, `0011_gc_kept` (#19) its `gc_kept` marker, and `0008_keograms` (#37, chained after
+`0011_gc_kept`) keogram status and bins; all are
 inline DDL and import no application module. The restore-drill schema `weather_recovery_drill` is not Alembic's;
 the baseline and `alembic check` leave it alone.
 

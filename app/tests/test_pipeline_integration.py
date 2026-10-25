@@ -563,7 +563,7 @@ def test_keograms_publish_after_their_videos_and_drop_their_bins(tmp_path: Path)
                 for r in await rows(
                     admin,
                     "SELECT s.kind,k.* FROM weather.keogram k JOIN weather.segment s "
-                    "ON s.id=k.segment_id",
+                    "ON s.id=k.segment_id WHERE s.camera_id='skycam_east'",
                 )
             }
             assert set(keograms) == {"daytime", "overnight"}
@@ -612,7 +612,8 @@ def test_keograms_publish_after_their_videos_and_drop_their_bins(tmp_path: Path)
                     await connection.execute(
                         text(
                             "SELECT segment,state,image_asset_id,thumbnail_asset_id,"
-                            "sidecar_asset_id,observed,gaps,video_id FROM public_api.keograms"
+                            "sidecar_asset_id,observed,gaps,video_id FROM public_api.keograms "
+                            "WHERE camera_id='skycam_east'"
                         )
                     )
                 )
@@ -664,7 +665,11 @@ def test_a_failed_keogram_leaves_its_video_published(tmp_path: Path) -> None:
             worker = east_worker(tmp_path, worker_db, KeogramFails(worker_db, buckets))
             for attempt in range(3):  # every attempt fails; the third is final
                 await worker.step(now + timedelta(minutes=2 * attempt))
-            states = await rows(admin, "SELECT state,reason,attempts FROM weather.keogram")
+            states = await rows(
+                admin,
+                "SELECT k.state,k.reason,k.attempts FROM weather.keogram k JOIN weather.segment s "
+                "ON s.id=k.segment_id WHERE s.camera_id='skycam_east'",
+            )
             assert {(s.state, s.reason, s.attempts) for s in states} == {
                 ("failed", "publish_failed", 3)
             }
@@ -677,7 +682,10 @@ def test_a_failed_keogram_leaves_its_video_published(tmp_path: Path) -> None:
                 )
                 keograms = list(
                     await connection.execute(
-                        text("SELECT state,reason,image_asset_id FROM public_api.keograms")
+                        text(
+                            "SELECT state,reason,image_asset_id FROM public_api.keograms "
+                            "WHERE camera_id='skycam_east'"
+                        )
                     )
                 )
             assert {(v.state, v.keogram_state, v.native_asset_id is not None) for v in videos} == {
@@ -705,7 +713,9 @@ def test_a_failed_keogram_leaves_its_video_published(tmp_path: Path) -> None:
 
 def test_a_fresh_keogram_is_embargoed_from_its_newest_bin(tmp_path: Path) -> None:
     now = datetime.now(UTC).replace(microsecond=0)
-    dawn = now - timedelta(seconds=200)
+    # The segment ended 700 s ago (past its end + 630 s guard), and its newest capture's upper
+    # bound is 120 s past the end, so now lies inside that bound's own 630 s embargo.
+    dawn = now - timedelta(seconds=700 + 144)
     cycle = SolarCycle(
         cycle_date=day_for(dawn).local_date,
         dawn=dawn,
@@ -741,7 +751,7 @@ def test_a_fresh_keogram_is_embargoed_from_its_newest_bin(tmp_path: Path) -> Non
             )
             start = int(segment.starts_at.timestamp()) * 1_000_000
             # Every 0.1 s bin observed; the newest capture's upper bound is after the end.
-            upper_last = int(segment.ends_at.timestamp()) * 1_000_000 + 4_000_000
+            upper_last = int(segment.ends_at.timestamp()) * 1_000_000 + 120_000_000
             samples = [
                 Sample(
                     b,
@@ -770,10 +780,16 @@ def test_a_fresh_keogram_is_embargoed_from_its_newest_bin(tmp_path: Path) -> Non
                 "JOIN weather.publication_asset pa ON pa.publication_id=p.id "
                 "JOIN weather.media_asset m ON m.id=pa.asset_id WHERE p.product='keogram'",
             )
-            expected = segment.ends_at + timedelta(seconds=4 + 630)
+            expected = segment.ends_at + timedelta(seconds=120 + 630)
+            assert segment.ends_at + timedelta(seconds=630) < datetime.now(UTC) < expected
             assert len(published) == 3
             assert all(item.public_not_before == expected for item in published)
-            state = (await rows(admin, "SELECT state,observed FROM weather.keogram"))[0]
+            state = (
+                await rows(
+                    admin, "SELECT state,observed FROM weather.keogram WHERE segment_id=:id",
+                    id=segment.id,
+                )
+            )[0]
             assert (state.state, state.observed) == ("published", 1440)
             async with api.connect() as connection:
                 visible = list(
@@ -784,13 +800,110 @@ def test_a_fresh_keogram_is_embargoed_from_its_newest_bin(tmp_path: Path) -> Non
                         {"ids": [item.id for item in published]},
                     )
                 )
-                listed = list(await connection.execute(text("SELECT * FROM public_api.keograms")))
-            assert visible == [] and listed == []
+                listed = list(
+                    await connection.execute(
+                        text(
+                            "SELECT state,image_asset_id,thumbnail_asset_id,observed,gaps "
+                            "FROM public_api.keograms WHERE id=:id"
+                        ),
+                        {"id": segment.id},
+                    )
+                )
+            # Past the segment's own guard the row lists, but as pending with no file or
+            # metadata until the newest bin's embargo lapses.
+            assert visible == []
+            assert [tuple(row) for row in listed] == [("pending", None, None, None, None)]
         finally:
             for store in buckets.values():
                 await store.aclose()
             await admin.dispose()
             await worker_db.dispose()
             await api.dispose()
+
+    asyncio.run(check())
+
+
+def test_bin_merge_keeps_the_best_capture_and_superseded_segments_fail(tmp_path: Path) -> None:
+    """`write_bins` merges by (distance, capture time, capture ID): a worse sample never replaces
+    a better one, whichever block (or re-render) delivers it. A superseded segment's keogram
+    fails and its bins go."""
+    now = datetime.now(UTC).replace(microsecond=0)
+    cycle = past_cycle(now)
+
+    async def check() -> None:
+        admin, worker_db = engine(), engine("weather_worker")
+        try:
+            async with worker_db.begin() as connection:
+                await schedule.freeze(connection, SITE, [cycle])
+            segment = (
+                await rows(
+                    admin,
+                    "SELECT * FROM weather.segment WHERE camera_id='skycam_east' "
+                    "AND kind='daytime'",
+                )
+            )[0]
+            job = schedule.SegmentJob(
+                "skycam_east",
+                segment.cycle_date,
+                "daytime",
+                segment.revision,
+                segment.starts_at,
+                segment.ends_at,
+                segment.frames,
+            )
+            start = int(segment.starts_at.timestamp()) * 1_000_000
+
+            def sample(distance: int, offset_us: int, capture_id: str, value: int) -> Sample:
+                captured = start + offset_us
+                return Sample(5, distance, captured, capture_id, captured + 1, None,
+                              bytes([value]) * (H * 3))
+
+            async def write(*samples: Sample) -> Any:
+                # Each call is one block's commit; bin 5 spans all of them.
+                for item in samples:
+                    async with worker_db.begin() as connection:
+                        await write_bins(connection, job, REGION, [item], None)
+                return (
+                    await rows(
+                        admin,
+                        "SELECT distance,capture_id,strip FROM weather.keogram_bin "
+                        "WHERE segment_id=:id AND bin=5",
+                        id=segment.id,
+                    )
+                )[0]
+
+            kept = await write(sample(10, 300, "w1", 1), sample(2, 400, "b", 2),
+                               sample(5, 500, "w2", 3))
+            assert (kept.distance, kept.capture_id, bytes(kept.strip)[:1]) == (2, "b", b"\x02")
+            # Equal distance: the earlier capture; equal time too: the lower ID (C collation).
+            kept = await write(sample(2, 350, "z", 4), sample(2, 350, "a10", 5),
+                               sample(2, 350, "a9", 6))
+            assert (kept.capture_id, bytes(kept.strip)[:1]) == ("a10", b"\x05")
+            # A clock correction supersedes the segment: its keogram fails and its bins go.
+            async with admin.begin() as connection:
+                await connection.execute(
+                    text("UPDATE weather.segment SET current=false WHERE id=:id"),
+                    {"id": segment.id},
+                )
+            keograms = Keograms(
+                worker_db, Publisher(worker_db, {}), REGION, asyncio.get_running_loop()
+            )
+            await keograms.sweep("skycam_east", now)
+            state = (
+                await rows(
+                    admin, "SELECT state,reason FROM weather.keogram WHERE segment_id=:id",
+                    id=segment.id,
+                )
+            )[0]
+            assert (state.state, state.reason) == ("failed", "superseded")
+            assert (
+                await rows(
+                    admin, "SELECT count(*) AS n FROM weather.keogram_bin WHERE segment_id=:id",
+                    id=segment.id,
+                )
+            )[0].n == 0
+        finally:
+            await admin.dispose()
+            await worker_db.dispose()
 
     asyncio.run(check())

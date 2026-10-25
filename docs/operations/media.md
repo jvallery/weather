@@ -86,7 +86,7 @@ before the segment's video publishes. Sidecar bytes are also kept inline in
 | `keogram`, `keogram_bin`, `public_api.keograms` | Keogram status, streamed bins and the public view (0008, #37; [pipeline](pipeline.md#keograms)) |
 | `video` | Current state of each (camera, cycle date, segment); `public_not_before >= ends_at + 630 s`; withdrawal tombstone |
 | `withdrawal`, `product_tombstone` | Append-only audit of withdrawals, and the withdrawn products every later commit is checked against |
-| `public_api.assets` | Security barrier: public classes in `weather-media`, available, not withdrawn, past embargo; a still image only through an active, untombstoned selection (0009) |
+| `public_api.assets` | Security barrier: public classes in `weather-media`, available, not withdrawn, past embargo; a still image only through an active, untombstoned selection (0009); no file of a withdrawn keogram (0008) |
 | `public_api.videos` | Security barrier: past `public_not_before` and `ends_at + 630 s`; renditions only when all four are public; a withdrawn video lists with no media |
 
 The pipeline uses the `weather_worker` role, with UPDATE only on the columns

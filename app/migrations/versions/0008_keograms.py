@@ -7,7 +7,8 @@ committed and read back). `keogram` is the per-segment status. The keogram itsel
 through #18's catalog as product `keogram`; `public_api.keograms` is a security barrier that
 shows nothing before `ends_at + 630 s` and no asset or metadata before the publication's
 embargo. `public_api.videos` is replaced with the same columns so its `keogram_state` also
-reports a failed or unavailable keogram.
+reports a failed or unavailable keogram, and `public_api.assets` (as 0009 left it) so that no
+file of a withdrawn keogram (its thumbnail or sidecar, not only the withdrawn PNG) is served.
 """
 
 from alembic import op
@@ -18,6 +19,8 @@ branch_labels = None
 depends_on = None
 
 STATES = "'pending','published','partial','unavailable','failed'"
+CLASSES = "'video','poster','keogram','still','sidecar'"
+STILL_KEY = """to_char(s.slot_starts_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24"\\:00Z"')"""
 VIDEO_ROLES = ("native", "web", "mobile", "poster")
 
 
@@ -84,6 +87,33 @@ def videos_view() -> str:
           AND v.ends_at + interval '630 seconds' <= clock_timestamp()"""
 
 
+def assets_view() -> str:
+    """0009's `public_api.assets`, column for column, plus: nothing published by a withdrawn
+    keogram. Withdrawing one keogram file tombstones the keogram (#18), and that takes its
+    thumbnail and sidecar off the media origin too."""
+    return f"""CREATE OR REPLACE VIEW public_api.assets WITH (security_barrier=true) AS
+        SELECT m.id,m.class,m.sha256,m.extension,m.bytes,m.content_type,m.width,m.height,
+          m.public_not_before
+        FROM weather.media_asset m
+        WHERE m.class IN ({CLASSES}) AND m.bucket='weather-media' AND m.visibility='public'
+          AND m.state='available' AND NOT m.withdrawn AND m.withdrawn_at IS NULL
+          AND m.public_not_before <= clock_timestamp()
+          AND m.published_at <= clock_timestamp()
+          AND (m.class <> 'still' OR EXISTS (
+            SELECT 1 FROM weather.still_derivative d
+            JOIN weather.archival_still s ON s.id = d.archival_still_id
+            WHERE d.asset_id = m.id AND d.state = 'published' AND s.active
+              AND NOT EXISTS (SELECT 1 FROM weather.product_tombstone pt
+                WHERE pt.product='still' AND pt.camera_id=s.camera_id
+                  AND pt.product_key = {STILL_KEY})))
+          AND (m.class NOT IN ('keogram','sidecar') OR NOT EXISTS (
+            SELECT 1 FROM weather.publication_asset pa
+            JOIN weather.publication p ON p.id = pa.publication_id
+            JOIN weather.product_tombstone kt ON kt.product = 'keogram'
+              AND kt.camera_id = p.camera_id AND kt.product_key = p.product_key
+            WHERE pa.asset_id = m.id AND p.product = 'keogram'))"""
+
+
 def statements() -> list[str]:
     asset = (
         "(SELECT a.id FROM weather.publication_asset pa JOIN public_api.assets a"
@@ -94,8 +124,8 @@ def statements() -> list[str]:
             segment_id uuid NOT NULL,
             state varchar(16) DEFAULT 'pending' NOT NULL,
             reason varchar(64),
-            region_version varchar(32) NOT NULL,
-            region jsonb NOT NULL,
+            region_version varchar(32),
+            region jsonb,
             attempts integer DEFAULT 0 NOT NULL,
             expected_revision integer,
             observed integer,
@@ -111,8 +141,11 @@ def statements() -> list[str]:
               REFERENCES weather.segment (id) ON DELETE RESTRICT,
             CONSTRAINT ck_keogram_state CHECK (state IN ({STATES})
               AND (state IN ('pending','published')) = (reason IS NULL)),
-            CONSTRAINT ck_keogram_region CHECK (jsonb_typeof(region) = 'object'
-              AND octet_length(region::text) <= 4096),
+            -- Recorded by the first stored bins; a published keogram always has its region.
+            CONSTRAINT ck_keogram_region CHECK ((region_version IS NULL) = (region IS NULL)
+              AND (region IS NULL OR (jsonb_typeof(region) = 'object'
+                AND octet_length(region::text) <= 4096))
+              AND (state NOT IN ('published','partial') OR region IS NOT NULL)),
             CONSTRAINT ck_keogram_counters CHECK (attempts >= 0
               AND (expected_revision IS NULL OR expected_revision >= 0)),
             -- A published keogram has every bin; a partial one has at least one.
@@ -136,7 +169,7 @@ def statements() -> list[str]:
             bin smallint NOT NULL,
             distance bigint NOT NULL,
             captured_at timestamptz NOT NULL,
-            capture_id varchar(64) COLLATE "C" NOT NULL,
+            capture_id varchar(128) COLLATE "C" NOT NULL,
             capture_upper_bound timestamptz NOT NULL,
             uncertainty_ms double precision,
             strip bytea NOT NULL,
@@ -152,6 +185,7 @@ def statements() -> list[str]:
             CONSTRAINT ck_keogram_bin_strip CHECK (octet_length(strip) BETWEEN 3 AND 1536
               AND octet_length(strip) % 3 = 0)
         )""",
+        assets_view(),
         videos_view(),
         f"""CREATE VIEW public_api.keograms WITH (security_barrier=true) AS
             SELECT k.segment_id AS id,s.camera_id,s.cycle_date,s.kind AS segment,s.starts_at,
@@ -201,8 +235,8 @@ def statements() -> list[str]:
               AND v.cycle_date = s.cycle_date AND v.segment = s.kind
             WHERE s.ends_at + interval '630 seconds' <= clock_timestamp()""",
         "GRANT SELECT,INSERT ON weather.keogram,weather.keogram_bin TO weather_worker",
-        "GRANT UPDATE (state,reason,attempts,expected_revision,observed,gaps,lineage_sha256,"
-        "capture_upper_bound,public_not_before,video_synced,updated_at)"
+        "GRANT UPDATE (state,reason,region_version,region,attempts,expected_revision,observed,"
+        "gaps,lineage_sha256,capture_upper_bound,public_not_before,video_synced,updated_at)"
         " ON weather.keogram TO weather_worker",
         # Bins are working state: replaced by a nearer capture, deleted once published.
         "GRANT UPDATE (distance,captured_at,capture_id,capture_upper_bound,uncertainty_ms,strip)"

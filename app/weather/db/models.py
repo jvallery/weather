@@ -912,6 +912,7 @@ camera_preview = Table(
     ),
     CheckConstraint("expires_at = captured_lower + interval '3600 seconds'", name="expiry"),
     CheckConstraint("to_timestamp(generation * 60) <= first_published_at", name="generation"),
+)
 # 0008_keograms (#37): per-segment keogram status and its streamed bins (private working state,
 # deleted once the PNG is committed). The keogram itself is a `publication` product.
 Table(
@@ -925,8 +926,8 @@ Table(
     ),
     Column("state", String(16), nullable=False, server_default=text("'pending'")),
     Column("reason", String(64)),
-    Column("region_version", String(32), nullable=False),
-    Column("region", JSONB, nullable=False),
+    Column("region_version", String(32)),
+    Column("region", JSONB),
     Column("attempts", Integer, nullable=False, server_default=text("0")),
     Column("expected_revision", Integer),
     Column("observed", Integer),
@@ -948,7 +949,10 @@ Table(
         name="state",
     ),
     CheckConstraint(
-        "jsonb_typeof(region) = 'object' AND octet_length(region::text) <= 4096", name="region"
+        "(region_version IS NULL) = (region IS NULL) AND (region IS NULL OR "
+        "(jsonb_typeof(region) = 'object' AND octet_length(region::text) <= 4096)) "
+        "AND (state NOT IN ('published','partial') OR region IS NOT NULL)",
+        name="region",
     ),
     CheckConstraint(
         "attempts >= 0 AND (expected_revision IS NULL OR expected_revision >= 0)",
@@ -983,7 +987,7 @@ Table(
     Column("bin", SmallInteger, primary_key=True),
     Column("distance", BigInteger, nullable=False),
     _instant("captured_at"),
-    Column("capture_id", String(64, collation="C"), nullable=False),
+    Column("capture_id", String(128, collation="C"), nullable=False),
     _instant("capture_upper_bound"),
     Column("uncertainty_ms", DOUBLE_PRECISION),
     Column("strip", LargeBinary, nullable=False),

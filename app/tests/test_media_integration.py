@@ -763,3 +763,51 @@ def test_catalog_outage_or_timeout_is_503(tmp_path: Path) -> None:
             assert_unavailable(reply)
             assert seconds < 3
         assert http(running.port, target).status == 200
+
+
+def test_a_withdrawn_keogram_takes_its_thumbnail_and_sidecar_off_the_origin(
+    tmp_path: Path,
+) -> None:
+    """Withdrawing the keogram PNG tombstones the keogram (#18); 0008 then stops serving the
+    keogram's other files too (#37), not only the withdrawn bytes."""
+
+    async def publish() -> dict[str, UUID]:
+        db = engine("weather_worker")
+        media = store()
+        try:
+            committed = await Publisher(db, {"weather-media": media}).publish(
+                Product.keogram(
+                    camera_id="frontyard_1",
+                    cycle_date=(END - timedelta(hours=10)).date(),
+                    segment="overnight",
+                    source_start=END - timedelta(hours=10),
+                    source_end=END,
+                    public_not_before=END + timedelta(seconds=630),
+                    state="partial",
+                    reason="gaps",
+                    files=(
+                        ProductFile(role="keogram", extension="png",
+                                    path=write(tmp_path, "keogram.png", 9_000), width=1440,
+                                    height=512),
+                        ProductFile(role="keogram_thumb", extension="png",
+                                    path=write(tmp_path, "thumb.png", 3_000), width=360,
+                                    height=128),
+                        ProductFile.sidecar({"schema_version": 1, "product": "keogram"}),
+                    ),
+                ),
+                expected_revision=0,
+                deadline=DEADLINE,
+            )
+        finally:
+            await media.aclose()
+            await db.dispose()
+        return {role: asset for role, asset in committed.assets.items()}
+
+    assets = asyncio.run(publish())
+    with serving() as running:
+        for role in ("keogram", "keogram_thumb", "sidecar"):
+            assert http(running.port, f"/media/{assets[role]}").status == 200, role
+        asyncio.run(withdraw(assets["keogram"]))
+        for role in ("keogram", "keogram_thumb", "sidecar"):
+            reply = http(running.port, f"/media/{assets[role]}")
+            assert reply.status == 404 and reply.header("etag") is None, role

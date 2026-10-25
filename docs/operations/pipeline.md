@@ -147,25 +147,32 @@ Keograms (#37, `keogram.py`, `keogram_publish.py`) come from the same decode as 
   any node. The spatial axis is at most 512 px (box-averaged) and never upscaled.
 - **Streaming.** The renderer calls the keogram stage for every accepted owned frame; before a
   block becomes durable its bins are merged into `keogram_bin` (a stored bin is only replaced
-  by a better capture), so a raw chunk's keogram duty is done with its block (#19). A database
-  connectivity error defers the block; a database refusal or an extraction error fails only
-  the keogram.
+  by a better capture), so a raw chunk's keogram duty is done with its block (#19). Only lost
+  connectivity (`OperationalError`, an invalidated connection, a timeout or `OSError`) defers
+  the block; any other database error (asyncpg reports data errors as a plain `DBAPIError`)
+  or an extraction error fails only the keogram, and the video carries on.
 - **Boundary.** After the segment's video is finalized, the keogram is assembled from the
   stored bins alone (the raw chunks may be gone): a 1,440 × ≤512 PNG (column i is bin i, time
   left to right, missing bins as a checkered grey gap column `checker-64-112-4px/v1`) and a
   360-wide thumbnail, plus a sidecar with the bin map, per-bin capture times, gaps, lineage
   digest (bins and capture times only), coverage, recipe and region. They publish through #18
   as product `keogram` (roles `keogram`, `keogram_thumb`, `sidecar`) with
-  `public_not_before = max(b, newest bin capture upper bound) + 630 s`. Once the commit
+  `public_not_before = max(b, newest bin capture upper bound, rounded up to the microsecond)
+  + 630 s`. Once the commit
   returns the read-back assets, the segment's `keogram_bin` rows are deleted in the same
   transaction that records the status.
-- **Status** per segment in `weather.keogram`: `pending`, `published` (every bin observed),
-  `partial` (reason `gaps`), `unavailable` (`no_observations`, `withdrawn`) or `failed`
-  (`extraction`, `store`, `region_changed`, `publish_failed` after 3 attempts a minute apart,
-  `deadline_missed` when the segment never finished within the late-render window). The video
-  never waits for its keogram: it publishes with `"keogram": {"state": "pending"}` in its
-  sidecar, and the final status follows as a sidecar-only video revision. Keograms follow the
-  stills lifecycle, not the video expiry (C13).
+- **Status** per segment in `weather.keogram`, created `pending` when the schedule freezes the
+  segment: `published` (every bin observed), `partial` (reason `gaps`), `unavailable`
+  (`no_observations`, `withdrawn`, or `deadline_missed`: the deadline job marks a segment that
+  never rendered a block, as it does its video, and a late render revives it; the pipeline
+  marks one still unfinished after the late-render window) or `failed` (`extraction`, `store`,
+  `region_changed`, `region_config`, `superseded` for a segment a clock correction replaced,
+  `publish_failed` after 3 attempts a minute apart). A final status other than pending drops the
+  segment's bins. The video never waits for its keogram: it publishes with
+  `"keogram": {"state": "pending"}` in its sidecar, and the final status follows as a
+  sidecar-only video revision once the keogram's embargo has lapsed. Withdrawing any keogram
+  file withdraws the keogram: `public_api.assets` then serves none of its files. Keograms
+  follow the stills lifecycle, not the video expiry (C13).
 
 ### Keogram regions
 
@@ -173,7 +180,9 @@ Keograms (#37, `keogram.py`, `keogram_publish.py`) come from the same decode as 
 one versioned region per camera for the commissioned geometry: half-open pixel spans `x` and
 `y`, `orientation` (`vertical` keeps rows as the keogram's axis, `horizontal` keeps columns)
 and `mask` (`none` only). The schema rejects an empty, reversed or out-of-frame region, a
-missing camera, or regions chosen for another geometry, and the pipeline then fails to start.
+missing camera, or regions chosen for another geometry. A refused file never stops the camera:
+the pipeline logs it, counts `weather_pipeline_keogram_region_errors_total{camera}`, runs
+without keograms, and each finished segment's keogram fails with reason `region_config`.
 The shipped values are fixtures; #49 replaces them from the camera corpus by the procedure in
 [media operations](media.md#keogram-regions). A changed region needs a new `version`; a
 segment whose bins began under another version reports `failed`/`region_changed`.
@@ -278,6 +287,7 @@ issue and delete the Job. Never run it on a workstation.
 | `weather_pipeline_keograms_total{camera,state}` | Final keogram statuses; compare with segments for expected vs published. `failed` needs the log's stage and type |
 | `weather_pipeline_keogram_missing_bins{camera}` | Gap columns in the last published keogram |
 | `weather_pipeline_keogram_publish_latency_seconds{camera}` | Boundary to committed keogram; target ≤ 2 h |
+| `weather_pipeline_keogram_region_errors_total{camera}` | Region file refused at start-up; fix `keogram-regions.json` (or `WEATHER_KEOGRAM_REGIONS`) and restart the pipeline |
 | `weather_schedule_failures_total{reason}`, `weather_schedule_site_configured`, `weather_schedule_anchored_total` | Schedule freezing |
 | `weather_segments_deadline_missed_total{camera}` | Segments still unpublished at boundary + 2 h |
 
