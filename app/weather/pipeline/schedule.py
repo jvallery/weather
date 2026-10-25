@@ -401,6 +401,9 @@ class SegmentRow:
     id: UUID
     state: str
     job: SegmentJob
+    # The durable release point (#19) and the recipe whose blocks it describes.
+    mezzanine_through: datetime | None = None
+    mezzanine_recipe: str | None = None
 
 
 async def active(engine: AsyncEngine, camera: str, now: datetime) -> list[SegmentRow]:
@@ -413,7 +416,8 @@ async def active(engine: AsyncEngine, camera: str, now: datetime) -> list[Segmen
     async with engine.connect() as connection:
         rows = await connection.execute(
             text("""
-            SELECT id,state,cycle_date,kind,revision,starts_at,ends_at,frames
+            SELECT id,state,cycle_date,kind,revision,starts_at,ends_at,frames,mezzanine_through,
+              mezzanine_recipe
             FROM weather.segment WHERE current AND camera_id=:camera AND starts_at <= :now
               AND (state IN ('scheduled','processing')
                    OR (finalized_at IS NULL AND ends_at > CAST(:late AS timestamptz)))
@@ -434,6 +438,8 @@ async def active(engine: AsyncEngine, camera: str, now: datetime) -> list[Segmen
                     ends_at=row.ends_at,
                     frames=int(row.frames),
                 ),
+                mezzanine_through=row.mezzanine_through,
+                mezzanine_recipe=row.mezzanine_recipe,
             )
             for row in rows
         ]
@@ -450,16 +456,23 @@ async def mark_processing(engine: AsyncEngine, segment: UUID) -> None:
         )
 
 
-async def mark_through(engine: AsyncEngine, segment: UUID, through: datetime) -> None:
+async def mark_through(
+    engine: AsyncEngine, segment: UUID, through: datetime, recipe: str | None = None
+) -> None:
     """No later block will read a frame captured before `through` (#19 may release those
-    chunks' video duty). Only ever moves forward."""
+    chunks' video duty). Only ever moves forward, and only for the recipe whose durable blocks
+    it describes: a renderer of another recipe can never advance it."""
     async with engine.begin() as connection:
         await connection.execute(
             text("""
-            UPDATE weather.segment SET mezzanine_through=:through,updated_at=clock_timestamp()
+            UPDATE weather.segment SET mezzanine_through=:through,
+              mezzanine_recipe=COALESCE(CAST(:recipe AS text),mezzanine_recipe),
+              updated_at=clock_timestamp()
             WHERE id=:id AND (mezzanine_through IS NULL OR mezzanine_through < :through)
+              AND (CAST(:recipe AS text) IS NULL OR mezzanine_recipe IS NULL
+                   OR mezzanine_recipe = CAST(:recipe AS text))
         """),
-            {"id": segment, "through": through},
+            {"id": segment, "through": through, "recipe": recipe},
         )
 
 

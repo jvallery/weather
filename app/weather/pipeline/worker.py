@@ -13,6 +13,7 @@ import asyncio
 import logging
 import os
 import signal
+import time
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
@@ -29,6 +30,8 @@ from weather.publish import catalog
 from weather.publish.model import MEDIA_BUCKET, ORIGINALS_BUCKET
 from weather.publish.objects import ObjectStore
 from weather.publish.publisher import Publisher
+from weather.scheduler.cleanup import Cleanup, CleanupSettings, Housekeeping, SqlCatalog
+from weather.scheduler.pressure import Pressure
 from weather.timemodel._instant import epoch_seconds
 
 from . import ffmpeg, metrics, schedule
@@ -105,6 +108,10 @@ class PipelineConfig:
         return config
 
 
+class ReleaseAhead(RuntimeError):
+    """The segment's release point is ahead of its durable blocks: an incident."""
+
+
 class Worker:
     def __init__(
         self,
@@ -115,8 +122,10 @@ class Worker:
         *,
         stages: Sequence[ChunkStage] = (),
         archive_hours: bool = False,
+        housekeeping: Housekeeping | None = None,
     ) -> None:
         self.config, self.engine, self.publisher, self.weather = config, engine, publisher, weather
+        self.housekeeping = housekeeping
         self.stages = tuple(stages)
         self.index = ChunkIndex(config.staging, config.expected)
         self.hourly = (
@@ -136,10 +145,13 @@ class Worker:
         # Per-segment retry backoff: (consecutive failures, wall time of the next attempt).
         self.backoff: dict[UUID, tuple[int, datetime]] = {}
 
+    def render_allowed(self) -> bool:
+        return self.housekeeping is None or self.housekeeping.render_allowed()
+
     def renderer(self, row: schedule.SegmentRow) -> SegmentRenderer:
         found = self.renderers.get(row.id)
         if found is None:
-            found = SegmentRenderer(
+            created = SegmentRenderer(
                 row.job,
                 staging=self.config.staging,
                 expected=self.config.expected,
@@ -149,8 +161,26 @@ class Worker:
                 chunk_seconds=self.config.chunk_seconds,
                 stages=self.stages,
             )
-            self.renderers[row.id] = found
+            self._guard(row, created)
+            self.renderers[row.id] = found = created
         return found
+
+    def _guard(self, row: schedule.SegmentRow, renderer: SegmentRenderer) -> None:
+        """Refuse to resume below the durable release point (#19): cleanup may already have
+        deleted that input, so re-rendering it would replace frames with gaps. The renderer
+        is not cached, so the next loop re-checks (e.g. once the share lists again)."""
+        if row.mezzanine_through is None:
+            return
+        released = renderer.released_through()
+        if row.mezzanine_recipe not in (None, renderer.recipe.id) or (
+            released is None or utc(released) < row.mezzanine_through
+        ):
+            metrics.RELEASE_INCIDENTS.labels(self.config.camera).inc()
+            LOG.error(
+                "Durable blocks are behind the release point; not rendering (%s)",
+                self.config.camera,
+            )
+            raise ReleaseAhead("On-disk mezzanine is behind segment.mezzanine_through")
 
     async def step(self, now: datetime) -> None:
         camera = self.config.camera
@@ -167,6 +197,11 @@ class Worker:
             stage = "render"
             try:
                 renderer = self.renderer(row)
+                if not renderer.complete and not self.render_allowed():
+                    # Render stop (>= 97 %, #19): add no mezzanine blocks to the share.
+                    # Complete mezzanines still finalize and publish, which frees them.
+                    metrics.PRESSURE_PAUSED.labels(camera).inc()
+                    continue
                 rendered_through = (
                     renderer.geometry.owned(0, renderer.rendered)[1] if renderer.rendered else None
                 )
@@ -184,7 +219,9 @@ class Worker:
                 if await asyncio.to_thread(renderer.advance, current):
                     released = renderer.released_through()
                     if released is not None:
-                        await schedule.mark_through(self.engine, row.id, utc(released))
+                        await schedule.mark_through(
+                            self.engine, row.id, utc(released), renderer.recipe.id
+                        )
                 if not renderer.complete:
                     continue
                 if row.id not in self.durable:
@@ -273,6 +310,9 @@ class Worker:
 
     async def run(self, stop: asyncio.Event) -> None:
         while not stop.is_set():
+            if self.housekeeping is not None:
+                # Staging cleanup (#19) runs ahead of rendering; it never raises.
+                await self.housekeeping.tick(time.monotonic())
             try:
                 await self.step(datetime.now(UTC))
             except Exception as error:
@@ -297,12 +337,30 @@ async def main_async(config: PipelineConfig) -> None:
         loop.add_signal_handler(sig, stop.set)
     try:
         await wait_for_database(engine)
+        cleanup = Cleanup(
+            config.camera,
+            config.staging,
+            SqlCatalog(engine),
+            CleanupSettings.from_environment(),
+            lag=timedelta(seconds=float(config.expected.max_lag)),
+            expected=(
+                config.expected.cadence_ms,
+                config.expected.phase_ms,
+                config.expected.width,
+                config.expected.height,
+            ),
+        )
         worker = Worker(
             config,
             engine,
             Publisher(engine, {MEDIA_BUCKET: store, ORIGINALS_BUCKET: originals}),
             AggregateWeather(engine),
             archive_hours=True,
+            # statvfs on a path that is the share itself: each pod mounts only its camera's
+            # subPaths, so /staging is not on NFS.
+            housekeeping=Housekeeping(
+                cleanup, Pressure(config.camera, config.staging / "sealed" / config.camera)
+            ),
         )
         # Previews (#39) run beside the renderer, so a long finalize never stalls them.
         previews = PreviewProducer(

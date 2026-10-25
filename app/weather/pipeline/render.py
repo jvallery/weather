@@ -133,8 +133,11 @@ class SegmentRenderer:
         self.directory = staging / "render" / job.camera / f"{job.key}-{recipe.id}"
         self.blocks_dir = self.directory / "blocks"
         self.blocks_dir.mkdir(parents=True, exist_ok=True)
-        for stale in self.blocks_dir.glob(".tmp-*"):
-            stale.unlink()
+        # os.scandir raises on a failing share; Path.glob would silently list nothing and a
+        # restart would resume at frame 0 over input #19 may already have released.
+        for name in self._listing():
+            if name.startswith(".tmp-"):
+                (self.blocks_dir / name).unlink(missing_ok=True)
         self.metas = self._load()
         self.slate = np.full(
             (expected.height, expected.width, 3), SLATE_RGB, dtype=np.uint8
@@ -142,15 +145,18 @@ class SegmentRenderer:
 
     # Durable state -------------------------------------------------------------------------
 
+    def _listing(self) -> list[str]:
+        with os.scandir(self.blocks_dir) as entries:
+            return sorted(entry.name for entry in entries)
+
     def _load(self) -> list[dict[str, Any]]:
-        """Contiguous durable blocks from frame 0; anything after a hole is re-rendered."""
+        """Contiguous durable blocks from frame 0; anything after a hole is re-rendered.
+        Every listing or stat error propagates: only a definite absence is a hole."""
         metas = []
-        for path in sorted(self.blocks_dir.glob("*.json")):
-            meta = json.loads(path.read_text())
-            if (
-                meta.get("recipe") != self.recipe.id
-                or not (self.blocks_dir / f"{path.stem}.mkv").exists()
-            ):
+        names = set(self._listing())
+        for name in sorted(n for n in names if n.endswith(".json") and not n.startswith(".")):
+            meta = json.loads((self.blocks_dir / name).read_text())
+            if meta.get("recipe") != self.recipe.id or f"{name[:-5]}.mkv" not in names:
                 continue
             metas.append(meta)
         metas.sort(key=lambda meta: int(meta["first"]))
@@ -378,9 +384,20 @@ class SegmentRenderer:
         }
         if len(frames_meta) != last - first:
             raise RuntimeError("Block frame count mismatch")
-        # Metadata first, then the block itself: the .mkv rename is the commit point.
+        # Metadata first, then the block itself: the .mkv link is the commit point. A durable
+        # block is never replaced (link fails with EEXIST): a resume that lost sight of it
+        # must not overwrite good frames with slates.
+        target = self.blocks_dir / f"{first:05d}.mkv"
+        try:
+            os.lstat(target)  # any error but a definite absence propagates
+        except FileNotFoundError:
+            pass
+        else:
+            tmp.unlink(missing_ok=True)
+            raise FileExistsError("Durable block already exists")
         durable_write(self.blocks_dir / f"{first:05d}.json", canonical(meta))
-        os.replace(tmp, self.blocks_dir / f"{first:05d}.mkv")
+        os.link(tmp, target)
+        tmp.unlink()
         fsync_dir(self.blocks_dir)
         self.metas.append(meta)
         metrics.LAG.labels(self.job.camera).set(time.time() - float(owned[1]))

@@ -412,6 +412,15 @@ class ObjectStore:
             raise
         return True
 
+    async def bucket_exists(self) -> bool:
+        """HEAD the bucket itself: 404 means it is gone (or not this store's)."""
+        response = await self._send("bucket head", "HEAD", None, ok={200, 404})
+        return response.status_code == 200
+
+    async def delete(self, key: str) -> None:
+        """Remove one object (#19 GC and hard purge only). An absent key is a no-op."""
+        await self._send("delete", "DELETE", key, ok={200, 204, 404})
+
     async def abort_multipart(self, key: str, upload_id: str) -> None:
         try:
             await self._send(

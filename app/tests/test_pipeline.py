@@ -658,6 +658,10 @@ def test_pipeline_deployments_ship_disabled_with_only_their_inputs() -> None:
         container = spec["containers"][0]
         assert container["securityContext"]["readOnlyRootFilesystem"] is True
         assert container["command"][:3] == ["weather", "pipeline", "run"]
+        # Staging cleanup (#19) ships as a dry run.
+        env = {e["name"]: e.get("value") for e in container["env"]}
+        assert env["WEATHER_CLEANUP_ENABLED"] == "false"
+        assert not any(name.startswith(("WEATHER_GC_", "WEATHER_RETENTION")) for name in env)
         secrets = {
             source["secret"]["name"]
             for volume in spec["volumes"]
@@ -676,6 +680,16 @@ def test_pipeline_deployments_ship_disabled_with_only_their_inputs() -> None:
             if "persistentVolumeClaim" in v
         }
         assert claims == {"weather-staging"}
+        # Each pod mounts only its own camera's staging directories (#19).
+        camera = container["command"][-1]
+        mounts = {
+            (m["mountPath"], m.get("subPath"))
+            for m in container["volumeMounts"]
+            if m["name"] == "staging"
+        }
+        assert mounts == {
+            (f"/staging/{d}/{camera}", f"{d}/{camera}") for d in ("sealed", "tmp", "render")
+        }
     # The pipeline writes render/ on the share the collectors write sealed/ to, as them.
     collector = yaml.safe_load((root / "capture/skycam-east.yaml").read_text())
     identity = {

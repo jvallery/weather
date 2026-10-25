@@ -329,8 +329,10 @@ Table(
         "AND encode(pg_catalog.sha256(sidecar),'hex') = sha256))",
         name="sidecar",
     ),
-    CheckConstraint("state IN ('available','unavailable')", name="state"),
+    CheckConstraint("state IN ('available','unavailable','expired')", name="state"),
     CheckConstraint(WITHDRAWAL, name="withdrawal"),
+    # 0010_cleanup (#19): when the state last changed, for the GC grace period.
+    _instant("state_changed_at", True),
 )
 intent = Table(
     "upload_intent",
@@ -706,6 +708,8 @@ segment = Table(
     Column("reason", String(64)),
     Column("slot_coverage", DOUBLE_PRECISION),
     _instant("mezzanine_through", True),
+    # 0010_cleanup (#19): the recipe whose durable blocks mezzanine_through describes.
+    Column("mezzanine_recipe", String(80)),
     _instant("mezzanine_durable_at", True),
     Column("render_result", JSONB),
     _instant("finalized_at", True),
@@ -909,3 +913,91 @@ camera_preview = Table(
     CheckConstraint("expires_at = captured_lower + interval '3600 seconds'", name="expiry"),
     CheckConstraint("to_timestamp(generation * 60) <= first_published_at", name="generation"),
 )
+# 0010_cleanup (#19): staging chunk inventory, staging deletion audit, object lifecycle audit.
+staging_chunk = Table(
+    "staging_chunk",
+    metadata,
+    _identity(),
+    Column("camera_id", String(32), nullable=False),
+    Column("name", String(192), nullable=False, unique=True),
+    _instant("window_start"),
+    _instant("window_end"),
+    _instant("newest_capture_at"),
+    Column("frames", Integer, nullable=False),
+    Column("bytes", BigInteger, nullable=False),
+    Column("manifest_sha256", String(64), nullable=False),
+    Column("cadence_ms", Integer, nullable=False),
+    Column("phase_ms", Integer, nullable=False),
+    Column("width", Integer, nullable=False),
+    Column("height", Integer, nullable=False),
+    Column("state", String(16), nullable=False, server_default=text("'present'")),
+    Column(
+        "discovered_at",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP"),
+    ),
+    _instant("resolved_at", True),
+    CheckConstraint(
+        f"camera_id IN ({CAMERA_IDS}) AND window_start < window_end "
+        "AND newest_capture_at >= window_end AND frames >= 0 AND bytes > 0 "
+        "AND manifest_sha256 ~ '^[0-9a-f]{64}$'",
+        name="identity",
+    ),
+    CheckConstraint(
+        "state IN ('present','deleted','missing') AND (state = 'present') = (resolved_at IS NULL)",
+        name="state",
+    ),
+)
+Index(
+    "ix_staging_chunk_camera_id",
+    staging_chunk.c.camera_id,
+    staging_chunk.c.window_start,
+    postgresql_where=text("state = 'present'"),
+)
+staging_deletion = Table(
+    "staging_deletion",
+    metadata,
+    _identity(),
+    Column("class", String(16), nullable=False),
+    Column("camera_id", String(32), nullable=False),
+    Column("name", String(192), nullable=False, unique=True),
+    _ref("chunk_id", "staging_chunk", True),
+    _ref("segment_id", "segment", True),
+    Column("sha256", String(64)),
+    Column("bytes", BigInteger, nullable=False),
+    Column("reason", String(64), nullable=False),
+    Column(
+        "decided_at",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP"),
+    ),
+    _instant("unlinked_at", True),
+    CheckConstraint(
+        "class IN ('chunk','tmp','render') AND (class = 'chunk') = (chunk_id IS NOT NULL) "
+        "AND (class = 'render') = (segment_id IS NOT NULL)",
+        name="target",
+    ),
+)
+Index(
+    "ix_staging_deletion_camera_id",
+    staging_deletion.c.camera_id,
+    postgresql_where=text("unlinked_at IS NULL"),
+)
+object_event = Table(
+    "object_event",
+    metadata,
+    _identity(),
+    Column("action", String(16), nullable=False),
+    Column("bucket", String(32), nullable=False),
+    Column("object_key", String(96), nullable=False),
+    _ref("asset_id", "media_asset", True),
+    Column("reason", String(64), nullable=False),
+    Column("actor", String(64), nullable=False),
+    _created(),
+    CheckConstraint(
+        "action IN ('unavailable','expired','gc_deleted','purged')", name="action"
+    ),
+)
+Index("ix_object_event_object_key", object_event.c.object_key)

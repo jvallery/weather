@@ -280,6 +280,17 @@ async def _asset(
     if int(existing.bytes) != item.size:
         raise PublishError("Catalog size differs for a content address")
     if existing.state != "available":
+        if (
+            await connection.execute(
+                text("""
+            SELECT 1 FROM weather.object_event WHERE object_key=:key
+              AND action IN ('gc_deleted','purged') LIMIT 1
+        """),
+                {"key": item.key},
+            )
+        ).one_or_none():
+            # #19 GC or a hard purge removed these bytes; a racing upload must not revive them.
+            raise PublishError("Asset bytes were garbage-collected")
         # The object was just verified in the store again.
         await connection.execute(
             text("UPDATE weather.media_asset SET state='available' WHERE id=:id"),

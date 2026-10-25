@@ -87,3 +87,13 @@ STILL_FAILURES = Counter(
     "Hourly failures by stage (select, bind, archive, catalog); the slot retries",
     ["camera", "stage"],
 )
+PRESSURE_PAUSED = Counter(
+    "weather_pipeline_pressure_paused_total",
+    "Segment loops that added no mezzanine block because staging is past the render stop (97%)",
+    ["camera"],
+)
+RELEASE_INCIDENTS = Counter(
+    "weather_pipeline_release_incidents_total",
+    "Renderer refused to resume: durable blocks (or recipe) behind segment.mezzanine_through",
+    ["camera"],
+)
