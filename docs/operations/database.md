@@ -104,7 +104,8 @@ slice-1 schema, `0002_api` (#14) adds the API's views, `0003_publication`
 (#18) the publication catalog, `0004_search` (#25) the search tables, `0005_events` (#41)
 weather events, `0006_render` (#15) the frozen solar schedule and render segments, `0009_stills`
 (#38) hour slots, archived originals and comparison stills, and `0010_cleanup` (#19) the staging
-inventory and the deletion and object-lifecycle audits; all are
+inventory and the deletion and object-lifecycle audits, and `0011_gc_kept` (#19) its `gc_kept`
+marker; all are
 inline DDL and import no application module. The restore-drill schema `weather_recovery_drill` is not Alembic's;
 the baseline and `alembic check` leave it alone.
 
@@ -125,7 +126,7 @@ the baseline and `alembic check` leave it alone.
 | `public_api.search_documents`, `public_api.search_vectors`, `public_api.search_lexical()` | Security-barrier search views (0004): current public documents past their embargo, and their vectors; a SECURITY DEFINER full-text function with the same filter, so the partial GIN index serves `@@` |
 | `hour_slot`, `archival_still`, `still_derivative`, `public_api.stills` | Hourly stills (0009, #38): UTC hour slots keyed by `starts_at` with the `weather_day` FK (a trigger keeps each inside its day); one selection revision per (camera, slot) with the same-day composite FK, its segment, its camera's still publication and the original's (id, class, sha256), one active per (camera, slot); sanitized derivatives keyed by (still, role). See [media operations](media.md#hourly-originals-and-comparison-stills) |
 | `solar_cycle`, `segment` | Frozen civil-twilight schedule keyed on `(site, cycle_date)` and one render segment per camera and kind (0006, #15); current segments of a camera never overlap (`btree_gist` exclusion). See [pipeline operations](pipeline.md) |
-| `staging_chunk`, `staging_deletion`, `object_event` | Staging inventory (one row per sealed chunk, kept after deletion), the two-phase staging deletion audit, and the append-only object lifecycle audit (`unavailable`, `expired`, `gc_deleted`, `purged`); `media_asset.state` gains `expired` and `state_changed_at` (0010, #19). See [media operations](media.md#staging-cleanup-and-pressure) |
+| `staging_chunk`, `staging_deletion`, `object_event` | Staging inventory (one row per sealed chunk, kept after deletion), the two-phase staging deletion audit, and the append-only object lifecycle audit (`unavailable`, `expired`, `gc_deleted`, `gc_kept` (0011), `purged`); `media_asset.state` gains `expired` and `state_changed_at` (0010, #19). See [media operations](media.md#staging-cleanup-and-pressure) |
 
 `obs_st` and `rapid_wind` also carry `inserted_at` (0002; `clock_timestamp()` on insert, `-infinity` for older rows), which export cursors snapshot on. They carry a btree on `source_ts`, so current conditions
 (#14) read the newest row by index. The other families use BRIN.
@@ -177,7 +178,7 @@ migrator creates, so a later function is private until granted.
 
 ## Expand/contract migrations
 
-The head is `0010_cleanup`. `0001_baseline` has run on production, so every change is
+The head is `0011_gc_kept`. `0001_baseline` has run on production, so every change is
 expand/contract. Add a new revision with inline DDL; never edit an applied
 revision or import current application modules into one. `models.metadata`
 describes the current schema for `alembic check` and must change in the same

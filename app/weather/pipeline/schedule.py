@@ -494,6 +494,27 @@ async def mark_durable(engine: AsyncEngine, segment: UUID) -> None:
         )
 
 
+async def abandon(engine: AsyncEngine, segment: UUID, actor: str) -> bool:
+    """Operator resolution of a segment that can never finalize (#19): its durable blocks are
+    behind its release point, it was superseded mid-render, or its publish fails for good.
+    Records it finalized `unavailable`/`abandoned`, so the pipeline stops selecting it and
+    cleanup may release its chunks and render directory. Only on Jason's instruction: the
+    unpublished frames are given up. The actor is stored in `render_result`. Returns False if
+    it was already finalized or has not ended yet."""
+    async with engine.begin() as connection:
+        updated = await connection.execute(
+            text("""
+            UPDATE weather.segment SET state='unavailable',reason='abandoned',
+              render_result=jsonb_build_object('abandoned_by',CAST(:actor AS text),
+                'abandoned_at',clock_timestamp()),
+              finalized_at=clock_timestamp(),updated_at=clock_timestamp()
+            WHERE id=:id AND finalized_at IS NULL AND ends_at < clock_timestamp()
+        """),
+            {"id": segment, "actor": actor},
+        )
+    return updated.rowcount == 1
+
+
 async def finish(
     engine: AsyncEngine,
     segment: UUID,

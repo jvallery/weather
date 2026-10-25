@@ -51,6 +51,8 @@ from .summary import AggregateWeather, WeatherSummaryProvider
 
 LOG = logging.getLogger("weather.pipeline")
 LOOP_SECONDS = 10
+# Rendering per segment per loop stops after this long; the next loop starts at once.
+RENDER_BUDGET_SECONDS = 30
 MAX_BACKOFF = 1800
 WEATHER_PATIENCE = timedelta(hours=1)
 
@@ -126,6 +128,7 @@ class Worker:
     ) -> None:
         self.config, self.engine, self.publisher, self.weather = config, engine, publisher, weather
         self.housekeeping = housekeeping
+        self.catching_up = False
         self.stages = tuple(stages)
         self.index = ChunkIndex(config.staging, config.expected)
         self.hourly = (
@@ -208,7 +211,7 @@ class Worker:
                 for chunk in self.index.refresh(
                     renderer.geometry.start, min(renderer.geometry.end, current)
                 ):
-                    if rendered_through is not None:
+                    if rendered_through is not None and not chunk.readded:
                         late = sum(
                             1
                             for c in chunk.candidates
@@ -216,12 +219,21 @@ class Worker:
                         )
                         if late:
                             metrics.LATE.labels(camera).inc(late)
-                if await asyncio.to_thread(renderer.advance, current):
+                # One block at a time within a time budget, so housekeeping and the pressure
+                # checks keep running while a backlog catches up (#19); the loop then
+                # returns at once instead of sleeping.
+                budget = time.monotonic() + RENDER_BUDGET_SECONDS
+                while await asyncio.to_thread(renderer.advance, current, limit=1):
                     released = renderer.released_through()
                     if released is not None:
                         await schedule.mark_through(
                             self.engine, row.id, utc(released), renderer.recipe.id
                         )
+                    if renderer.complete or not self.render_allowed():
+                        break
+                    if time.monotonic() >= budget:
+                        self.catching_up = True
+                        break
                 if not renderer.complete:
                     continue
                 if row.id not in self.durable:
@@ -271,8 +283,14 @@ class Worker:
             except Exception as error:
                 metrics.STILL_FAILURES.labels(camera, "catalog").inc()
                 LOG.error("Hourly pass failed (%s, %s)", camera, type(error).__name__)
-        if rows:
-            self.index.prune(min(epoch_seconds(row.job.starts_at) for row in rows) - 3600)
+        # A segment in backoff (possibly stuck for days) must not hold every chunk since its
+        # start in memory: only segments that render now set the prune floor.
+        rendering = [r for r in rows if not (r.id in self.backoff and now < self.backoff[r.id][1])]
+        if rendering:
+            self.index.prune(min(epoch_seconds(r.job.starts_at) for r in rendering) - 3600)
+        elif rows:
+            # Every segment is backing off: keep only the last hour in memory.
+            self.index.prune(current - 3600)
 
     async def _publish(
         self, row: schedule.SegmentRow, renderer: SegmentRenderer, prepared: Prepared
@@ -310,6 +328,7 @@ class Worker:
 
     async def run(self, stop: asyncio.Event) -> None:
         while not stop.is_set():
+            self.catching_up = False
             if self.housekeeping is not None:
                 # Staging cleanup (#19) runs ahead of rendering; it never raises.
                 await self.housekeeping.tick(time.monotonic())
@@ -319,7 +338,7 @@ class Worker:
                 metrics.FAILURES.labels(self.config.camera, "loop").inc()
                 LOG.error("Pipeline loop failed (%s)", type(error).__name__)
             try:
-                await asyncio.wait_for(stop.wait(), LOOP_SECONDS)
+                await asyncio.wait_for(stop.wait(), 0 if self.catching_up else LOOP_SECONDS)
             except TimeoutError:
                 pass
 

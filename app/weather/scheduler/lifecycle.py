@@ -393,9 +393,11 @@ WHERE (CASE WHEN k.class = 'original' THEN 'weather-originals' ELSE 'weather-med
     WHERE {KEY_OF} = k.object_key
       AND (r.state IN ('pending','committed') OR r.resolved_at >= grace.t))
   AND NOT EXISTS (SELECT 1 FROM weather.object_event e
-                  WHERE e.object_key = k.object_key
-                    AND (e.action = 'purged'
-                         OR (e.action = 'gc_deleted' AND e.created_at >= k.orphaned_at)))
+                  WHERE e.object_key = k.object_key AND e.action = 'purged')
+  AND (SELECT e.action FROM weather.object_event e
+       WHERE e.object_key = k.object_key AND e.action IN ('gc_deleted','gc_kept')
+         AND e.created_at >= k.orphaned_at
+       ORDER BY e.created_at DESC, e.action DESC LIMIT 1) IS DISTINCT FROM 'gc_deleted'
   AND (CAST(:only AS text) IS NULL OR k.object_key = CAST(:only AS text))
 ORDER BY k.object_key LIMIT :limit
 """
@@ -408,9 +410,11 @@ WHERE a.bucket = :bucket AND a.state = 'expired'
     SELECT 1 FROM weather.upload_intent r, jsonb_array_elements(r.manifest->'objects') o
     WHERE {KEY_OF} = a.object_key AND r.state = 'pending')
   AND NOT EXISTS (SELECT 1 FROM weather.object_event e
-                  WHERE e.object_key = a.object_key
-                    AND (e.action = 'purged'
-                         OR (e.action = 'gc_deleted' AND e.created_at >= a.state_changed_at)))
+                  WHERE e.object_key = a.object_key AND e.action = 'purged')
+  AND (SELECT e.action FROM weather.object_event e
+       WHERE e.object_key = a.object_key AND e.action IN ('gc_deleted','gc_kept')
+         AND e.created_at >= a.state_changed_at
+       ORDER BY e.created_at DESC, e.action DESC LIMIT 1) IS DISTINCT FROM 'gc_deleted'
   AND (CAST(:only AS text) IS NULL OR a.object_key = CAST(:only AS text))
 ORDER BY a.object_key LIMIT :limit
 """
@@ -449,7 +453,8 @@ async def gc(
     2. under the lock again, delete only if no pending intent and no live row references the
        key, then release. An intent registered meanwhile makes step 2 keep the bytes (the
        audit row then records a decision whose bytes remain: the safe failure), and one
-       registered after step 2 sees the key gone and re-uploads."""
+       registered after step 2 sees the key gone and re-uploads. A kept key gets a `gc_kept`
+       row that supersedes its `gc_deleted` row (the latest GC event decides)."""
     check_grace(settings)
     if store.bucket not in BUCKETS:
         raise ValueError("Unknown bucket")
@@ -496,6 +501,17 @@ async def gc(
                     )
                 ).scalar_one()
                 if not free:
+                    # Supersedes the gc_deleted row: the bytes stayed, and the key may be
+                    # collected again once nothing references it.
+                    await _event(
+                        connection,
+                        "gc_kept",
+                        store.bucket,
+                        key,
+                        row.id if tombstone else None,
+                        "referenced",
+                        "gc",
+                    )
                     counts["kept_after_audit"] += 1
                     continue
                 await store.delete(key)

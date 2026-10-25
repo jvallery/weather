@@ -99,6 +99,17 @@ OLDEST_PINNED = Gauge(
     "Age of the oldest chunk kept by each condition (its first unmet one); 0 if none",
     ["camera", "condition"],
 )
+OLDEST_UNFINALIZED = Gauge(
+    "weather_staging_oldest_unfinalized_segment_seconds",
+    "Age past its end of the oldest started (release point set) but unfinalized segment,"
+    " current or superseded; its render directory is kept until it finalizes. 0 if none",
+    ["camera"],
+)
+UNFINALIZED_BYTES = Gauge(
+    "weather_staging_unfinalized_render_bytes",
+    "Render-directory bytes of started but unfinalized segments (kept by cleanup)",
+    ["camera"],
+)
 PINNED_BYTES = Gauge(
     "weather_staging_pinned_bytes",
     "Bytes of present chunks kept by each condition (their first unmet one)",
@@ -343,10 +354,15 @@ class SegmentSpan:
     ends_at: datetime
     mezzanine_through: datetime | None
     mezzanine_durable: bool
+    # Finalized: the pipeline never selects the segment again, so it reads nothing more. That
+    # is a published or terminal result, or an operator's `weather pipeline abandon`.
+    finalized: bool = False
 
     def complete(self) -> bool:
-        return self.mezzanine_durable or (
-            self.mezzanine_through is not None and self.mezzanine_through >= self.ends_at
+        return (
+            self.finalized
+            or self.mezzanine_durable
+            or (self.mezzanine_through is not None and self.mezzanine_through >= self.ends_at)
         )
 
     def released(self, slot_end: datetime) -> bool:
@@ -416,8 +432,10 @@ ConditionQuery = Callable[
     [AsyncConnection, str, Sequence[ChunkRow], timedelta], Awaitable[set[UUID]]
 ]
 HOUR = timedelta(hours=1)
-# #38 missing reasons that prove the hour had no usable input (stills.policy.choose).
-NO_INPUT = ("no_capture", "no_eligible_capture")
+# #38 missing reasons that prove the hour had no usable input (stills.policy.choose), plus
+# `no_segment`: the backlog's terminal record for an hour older than the lookback that no
+# frozen segment covers, so no still can ever bind there (pipeline.hourly._backlog).
+NO_INPUT = ("no_capture", "no_eligible_capture", "no_segment")
 
 
 def hour_slots(chunk: ChunkRow, lag: timedelta) -> list[datetime]:
@@ -437,9 +455,10 @@ async def hourly_finalized(
     """#38: every hour slot the chunk overlaps has an active `archival_still` that is either
     archived (its still publication committed, the publisher having read the original back,
     and its original asset still `available` in `weather-originals`) or `missing` for a reason
-    that proves there was no input (`no_capture`, `no_eligible_capture`). `selection_expired`
-    only means no selection ran for 12 h (a Garage or pipeline outage): unmet, so the chunk is
-    kept and the 48 h pinned alert fires. A slot without an active row is unfinalized."""
+    that proves there was no input (`no_capture`, `no_eligible_capture`, `no_segment`).
+    `selection_expired` only means no selection ran for 12 h (a Garage or pipeline outage):
+    unmet, so the chunk is kept and the 48 h pinned alert fires. A slot without an active row
+    is unfinalized."""
     if not chunks:
         return set()
     low = min(c.window_start for c in chunks) - HOUR
@@ -534,6 +553,7 @@ class Catalog(Protocol):
     async def renders(
         self, camera: str, keys: Sequence[tuple[date, str, int]]
     ) -> dict[tuple[date, str, int], RenderState]: ...
+    async def oldest_unfinalized(self, camera: str, now: datetime) -> float: ...
 
 
 class SqlCatalog:
@@ -656,14 +676,17 @@ class SqlCatalog:
             rows = await connection.execute(
                 text("""
                 SELECT starts_at,ends_at,mezzanine_through,mezzanine_durable_at IS NOT NULL
-                  AS durable
+                  AS durable,finalized_at IS NOT NULL AS finalized
                 FROM weather.segment
                 WHERE current AND camera_id=:camera AND starts_at < :high AND ends_at > :low
             """),
                 {"camera": camera, "low": low, "high": high},
             )
             spans = [
-                SegmentSpan(r.starts_at, r.ends_at, r.mezzanine_through, bool(r.durable))
+                SegmentSpan(
+                    r.starts_at, r.ends_at, r.mezzanine_through, bool(r.durable),
+                    bool(r.finalized),
+                )
                 for r in rows
             ]
             wired: dict[str, set[UUID] | None] = {}
@@ -755,6 +778,9 @@ class SqlCatalog:
                 {"id": deletion.id},
             )
 
+    async def oldest_unfinalized(self, camera: str, now: datetime) -> float:
+        return await _oldest_unfinalized(self.engine, camera, now)
+
     async def renders(
         self, camera: str, keys: Sequence[tuple[date, str, int]]
     ) -> dict[tuple[date, str, int], RenderState]:
@@ -802,6 +828,21 @@ class SqlCatalog:
                     started=bool(row.started),
                 )
         return result
+
+
+async def _oldest_unfinalized(engine: AsyncEngine, camera: str, now: datetime) -> float:
+    async with engine.connect() as connection:
+        ends = (
+            await connection.execute(
+                text("""
+            SELECT min(ends_at) FROM weather.segment
+            WHERE camera_id=:camera AND finalized_at IS NULL AND ends_at < :now
+              AND (mezzanine_through IS NOT NULL OR mezzanine_durable_at IS NOT NULL)
+        """),
+                {"camera": camera, "now": now},
+            )
+        ).scalar_one()
+    return 0.0 if ends is None else max(0.0, (now - ends).total_seconds())
 
 
 def _chunk(row: Any) -> ChunkRow:
@@ -988,6 +1029,8 @@ class Cleanup:
         self.healthy = True
         self._sizes: dict[str, tuple[tuple[int, ...], int]] = {}
         ENABLED.labels(camera).set(int(settings.enabled))
+        OLDEST_UNFINALIZED.labels(camera)
+        UNFINALIZED_BYTES.labels(camera)
         for name in CONDITIONS:
             OLDEST_PINNED.labels(camera, name)
             PINNED_BYTES.labels(camera, name)
@@ -1194,10 +1237,12 @@ class Cleanup:
         # 6. Render directories of finished segments.
         found = await self._thread(scan_render, self.staging, camera)
         states = await self.catalog.renders(camera, [key for _, key in found])
-        render_bytes = 0
+        render_bytes = stuck_bytes = 0
         for name, key in found:
             size = await self._thread(self._render_bytes, name)
             state = states.get(key)
+            if state is not None and state.started and not state.finalized:
+                stuck_bytes += size
             if state is None or not render_deletable(state, now):
                 render_bytes += size
                 continue
@@ -1220,6 +1265,9 @@ class Cleanup:
             else:
                 render_bytes += size
         BYTES.labels(camera, "render").set(render_bytes)
+        UNFINALIZED_BYTES.labels(camera).set(stuck_bytes)
+        oldest = await self.catalog.oldest_unfinalized(camera, now)
+        OLDEST_UNFINALIZED.labels(camera).set(oldest)
         LOG.info("Staging cleanup pass (%s, %s): %s", camera, "apply" if apply else "dry-run",
                  json.dumps(report.as_dict(), sort_keys=True))
 

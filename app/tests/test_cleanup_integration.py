@@ -773,7 +773,178 @@ def test_a_started_segment_stays_active_past_late_render_until_finalized() -> No
                 {"state": "partial", "reason": "low_coverage", "slots": {"fraction": 0.6}},
             )
             assert not [r for r in await schedule.active(worker, CAMERA, NOW) if r.id == daytime.id]
+            # A stuck one is resolved by an operator's abandon, which records who did it.
+            [overnight] = await rows(
+                worker,
+                "SELECT id,starts_at FROM weather.segment WHERE camera_id=:c AND cycle_date=:d "
+                "AND kind='overnight'",
+                c=CAMERA,
+                d=day,
+            )
+            await schedule.mark_through(worker, overnight.id, overnight.starts_at)
+            assert await schedule.abandon(worker, overnight.id, "jason")
+            assert not await schedule.abandon(worker, overnight.id, "jason")
+            [row] = await rows(
+                worker,
+                "SELECT state,reason,render_result->>'abandoned_by' AS actor,finalized_at "
+                "FROM weather.segment WHERE id=:id",
+                id=overnight.id,
+            )
+            assert (row.state, row.reason, row.actor) == ("unavailable", "abandoned", "jason")
+            assert not [
+                r for r in await schedule.active(worker, CAMERA, NOW) if r.id == overnight.id
+            ]
         finally:
+            await worker.dispose()
+
+    asyncio.run(check())
+
+
+def test_hourly_backlog_reselects_expired_and_rowless_slots_with_sealed_input(
+    tmp_path: Path,
+) -> None:
+    """After an outage longer than 12 h, slots left `selection_expired` (or with no row) are
+    selected again while their sealed input is still on staging, so cleanup can release it."""
+    from weather.pipeline.hourly import HourlyArchive
+    from weather.pipeline.intake import ChunkIndex, Expected
+    from weather.stills import catalog as stills
+    from weather.timemodel import slot_for
+
+    async def check() -> None:
+        worker, buckets = engine("weather_worker"), stores()
+        expected = Expected(CAMERA, 2000, 0, W, H)
+        archive = HourlyArchive(
+            CAMERA, worker, Publisher(worker, buckets), ChunkIndex(tmp_path, expected), expected
+        )
+        base = (NOW - timedelta(days=3)).replace(minute=0, second=0)
+        expired, withdrawn = base, base + timedelta(hours=2)
+        # No directory of its own: the hour after a sealed hour can hold its captures.
+        rowless, after = base + timedelta(hours=1), base + timedelta(hours=3)
+        uncovered = (NOW - timedelta(days=10)).replace(minute=0, second=0)
+        for hour in (expired, withdrawn, uncovered):
+            # Sealed hour directories without any capture: selection finds no input.
+            (tmp_path / "sealed" / CAMERA / hour.strftime("%Y-%m-%dT%HZ")).mkdir(parents=True)
+        try:
+            from weather.stills.policy import Choice
+
+            # Segments cover the days around `base` only; `uncovered` has none.
+            first = (base - timedelta(days=2)).date()
+            async with worker.begin() as connection:
+                await schedule.freeze(
+                    connection, SITE, [cycle_for(first + timedelta(days=n)) for n in range(4)]
+                )
+
+            async with worker.begin() as connection:
+                for slot, reason in ((expired, "selection_expired"), (withdrawn, "withdrawn")):
+                    await stills.record(
+                        connection,
+                        camera=CAMERA,
+                        slot=slot_for(slot),
+                        choice=Choice("missing", reason, None, None, 0),
+                    )
+            async with worker.connect() as connection:
+                assert await stills.reselectable(
+                    connection, CAMERA, [expired, rowless, withdrawn]
+                ) == {expired, rowless}
+            await archive._backlog(NOW, set(), 3)
+            active = {
+                r.slot_starts_at: (r.revision, r.reason)
+                for r in await rows(
+                    worker,
+                    "SELECT slot_starts_at,revision,reason FROM weather.archival_still "
+                    "WHERE active AND camera_id=:c",
+                    c=CAMERA,
+                )
+            }
+            # The expired slot is corrected (revision 2), the row-less one selected, and the
+            # withdrawn one is final.
+            assert active == {
+                expired: (2, "no_capture"),
+                rowless: (1, "no_capture"),
+                withdrawn: (1, "withdrawn"),
+                after: (1, "no_capture"),
+                # Recorded terminally before any decode: nothing could bind it.
+                uncovered: (1, "no_segment"),
+                uncovered + timedelta(hours=1): (1, "no_segment"),
+            }
+            async with worker.connect() as connection:
+                assert not await stills.reselectable(connection, CAMERA, list(active))
+        finally:
+            for store in buckets.values():
+                await store.aclose()
+            await worker.dispose()
+
+    asyncio.run(check())
+
+
+def test_gc_kept_supersedes_gc_deleted_when_a_publish_intervenes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import weather.scheduler.lifecycle as lifecycle
+
+    async def check() -> None:
+        worker, buckets = engine("weather_worker"), stores()
+        media = buckets[MEDIA_BUCKET]
+        enabled = LifecycleSettings(
+            gc_enabled=True, pitr_window_days=30, b2_version_retention_days=40
+        )
+        try:
+            data = secrets.token_bytes(64)
+            sha = hashlib.sha256(data).hexdigest()
+            key = f"poster/{sha}.jpg"
+            await media.put(key, sha256=sha, size=64, content_type="image/jpeg", data=data)
+            manifest = json.dumps(
+                {
+                    "objects": [
+                        {"role": "poster", "class": "poster", "sha256": sha, "bytes": 64,
+                         "extension": "jpg", "width": 1, "height": 1}
+                    ]
+                }
+            )
+            insert = """
+                INSERT INTO weather.upload_intent (fence,product,camera_id,product_key,
+                  expected_revision,manifest,state,reason,deadline,created_at,resolved_at)
+                VALUES (nextval('weather.publication_fence'),'video',:c,:k,0,
+                  CAST(:m AS jsonb),CAST(:state AS varchar),:reason,
+                  clock_timestamp() - make_interval(days => :age) + interval '1 hour',
+                  clock_timestamp() - make_interval(days => :age),
+                  CASE WHEN CAST(:state AS varchar) = 'pending' THEN NULL
+                       ELSE clock_timestamp() - make_interval(days => :age) END)
+            """
+            await admin(insert, c=CAMERA, k="2020-02-01/daytime", m=manifest, state="orphan",
+                        reason="deadline", age=100)
+            real = lifecycle._event
+
+            async def racing(connection: Any, action: str, *args: Any) -> None:
+                await real(connection, action, *args)
+                if action == "gc_deleted":
+                    # A publisher registers an intent for the same bytes in between.
+                    await admin(insert, c=CAMERA, k="2020-02-02/daytime", m=manifest,
+                                state="pending", reason=None, age=0)
+
+            monkeypatch.setattr(lifecycle, "_event", racing)
+            done = await gc(worker, media, enabled)
+            assert done["deleted"] == 0 and done["kept_after_audit"] == 1
+            assert await media.head(key) is not None
+            monkeypatch.setattr(lifecycle, "_event", real)
+            events = [
+                r.action
+                for r in await rows(
+                    worker, "SELECT action FROM weather.object_event ORDER BY created_at"
+                )
+            ]
+            assert events == ["gc_deleted", "gc_kept"]
+            # That intent later fails for good and its grace passes: gc_kept is the latest GC
+            # event, so the key is a candidate again and is collected.
+            await admin(
+                "UPDATE weather.upload_intent SET state='orphan',reason='deadline',"
+                "resolved_at=clock_timestamp() - interval '95 days' WHERE state='pending'"
+            )
+            again = await gc(worker, media, enabled)
+            assert again["deleted"] == 1 and await media.head(key) is None
+        finally:
+            for store in buckets.values():
+                await store.aclose()
             await worker.dispose()
 
     asyncio.run(check())

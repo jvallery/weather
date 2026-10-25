@@ -93,6 +93,10 @@ coverage 0.90 inclusive, slot thresholds 99/90/50.
   the FFmpeg build and image that rendered it; a mezzanine resumed across an
   upgrade lists every build in `mezzanine_builds`), fsynced and renamed. Decoded frames do not depend on block size or restarts.
 
+Each loop renders one segment's blocks one at a time for at most 30 s
+(`RENDER_BUDGET_SECONDS`), then moves on and starts the next loop at once, so staging cleanup,
+the watermark checks and the hourly pass keep running while a backlog catches up (#19).
+
 ## Finalize and publish
 
 When the last block is durable the pipeline sets `mezzanine_durable_at`,
