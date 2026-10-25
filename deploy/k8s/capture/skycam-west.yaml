@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: collector-skycam-west
+  namespace: weather
+  labels: &labels
+    app.kubernetes.io/part-of: weather
+    app.kubernetes.io/component: collector
+    app.kubernetes.io/name: collector-skycam-west
+    app.kubernetes.io/instance: skycam-west
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+spec:
+  # Pause or stop this camera by setting 0 here (docs/operations/capture.md).
+  replicas: 1
+  revisionHistoryLimit: 3
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels: *labels
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      priorityClassName: estate-app
+      serviceAccountName: collector-skycam-west
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: 30
+      imagePullSecrets:
+      - name: zot-origin-cluster-pull
+      # The staging share is owned by UID 1025 / GID 100 (storage-infra#1106).
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1025
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: collector
+        image: weather-app
+        command: [weather, capture, collect, --camera, skycam_west]
+        ports:
+        - name: metrics
+          containerPort: 9000
+        livenessProbe:
+          httpGet:
+            path: /livez
+            port: metrics
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 4
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: metrics
+          periodSeconds: 10
+          timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 50m
+            memory: 96Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: config
+          mountPath: /etc/weather/capture
+          readOnly: true
+        - name: camera
+          mountPath: /run/secrets/camera
+          readOnly: true
+        - name: staging
+          mountPath: /staging
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: config
+        projected:
+          defaultMode: 292
+          sources:
+          - configMap:
+              name: collector-capture
+              items:
+              - key: capture.json
+                path: capture.json
+          - downwardAPI:
+              items:
+              - path: POD_UID
+                fieldRef:
+                  fieldPath: metadata.uid
+      - name: camera
+        secret:
+          secretName: weather-camera-skycam-west
+          defaultMode: 288
+          items:
+          - key: CAMERA_HOST
+            path: CAMERA_HOST
+          - key: CAMERA_PORT
+            path: CAMERA_PORT
+          - key: CAMERA_USER
+            path: CAMERA_USER
+          - key: CAMERA_PASSWORD
+            path: CAMERA_PASSWORD
+      - name: staging
+        persistentVolumeClaim:
+          claimName: weather-staging
+      - name: tmp
+        emptyDir:
+          sizeLimit: 16Mi

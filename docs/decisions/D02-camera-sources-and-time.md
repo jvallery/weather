@@ -28,6 +28,13 @@ The three successful samples total 6,971,099 bytes. If those exact sizes occurre
 
 Preserve the 1 Hz commissioning target with one in-flight request per camera, bounded total deadlines, staggered phases and skipped overdue slots. A response exceeding a second does not trigger overlapping requests or a catch-up burst. Qualify connect/read/total deadlines and the 16 MiB initial payload ceiling against all lighting regimes. Rate/size limits must fail visibly; do not lower camera resolution or omit native originals to fit a presumed budget.
 
+## Commissioned measurements
+
+Config epoch **2026-10-25: `cadence_ms` 2000 (0.5 Hz)**, phases 0/333/667 ms, 60 s chunks,
+geometry 4096 × 1856 (Jason's decision, #4). Reason: staging capacity before #19 cleanup
+exists; at the default 180° shutter rule the 60 fps timelapse loses no quality at 0.5 Hz.
+1 Hz is the target once #19 runs. Runbook: [capture](../operations/capture.md#cadence-config-epoch).
+
 ## Time and derived products
 
 Use the [capture contract](../contracts/capture-contract.md) for slot, wall-clock and monotonic epochs, source-time estimate, uncertainty, freshness evidence and manifest ownership. HTTP Date and arrival time do not establish exposure time; equal JPEG hashes alone do not establish staleness. A camera timestamp needs validation; otherwise measure caching/latency and calibrate the request-midpoint estimate. Record unbounded uncertainty honestly and deny public image eligibility while its latest plausible exposure cannot be trusted.
