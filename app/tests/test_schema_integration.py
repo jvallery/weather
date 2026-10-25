@@ -270,15 +270,31 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     assert not await table(role, "public_api.previews", "SELECT")
                 # AI descriptions (#23): the worker writes; only the filtered view is public, and
                 # raw model replies are deletable diagnostics no other role can read.
+                async def column(name: str, privilege: str) -> bool:
+                    return bool(
+                        await scalar(
+                            connection,
+                            "SELECT has_column_privilege('weather_worker',"
+                            "'weather.analysis_revision',:column,:privilege)",
+                            column=name,
+                            privilege=privilege,
+                        )
+                    )
+
                 for name in ANALYSIS:
                     relation = f"weather.{name}"
-                    assert await table("weather_worker", relation, "INSERT")
+                    # Revisions: column-level INSERT that excludes author_kind (C18, #44).
+                    assert await table("weather_worker", relation, "INSERT") is (
+                        name != "analysis_revision"
+                    )
                     assert await table("weather_worker", relation, "DELETE") is (
                         name == "ai_raw_response"
                     )
                     assert not await table("weather_worker", relation, "TRUNCATE")
                     for role in ("weather_ingest", "weather_api", "weather_editor"):
                         assert not await table(role, relation, "SELECT")
+                assert await column("summary", "INSERT")
+                assert not await column("author_kind", "INSERT")
                 # No editorial functions exist yet; weather_editor has no schema access (#44).
                 for role, schema in (
                     ("weather_api", "weather"),

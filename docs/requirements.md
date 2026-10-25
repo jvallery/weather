@@ -996,6 +996,8 @@ If native video fails qualification, extract ordered frames **from that complete
 
 **Stage B — deterministic measured summary.** The application calculates §10.5 aggregates, coverage, and stable metric evidence IDs. No LLM computes totals, maxima, unit conversions, or precipitation boundary allocation.
 
+> **Amended by C18 (2026-10-25):** no model-written prose is published. Stage A returns structured enums only; Stage C is deterministic server-side template rendering from validated observations and station aggregates, with no model call. The §13.6 prompt is retired. See the [takeover re-plan](decisions/2026-10-24-takeover-replan.md).
+
 **Stage C — grounded synthesis.** Supply validated visual observations plus deterministic weather evidence to a bounded text synthesis request on the same qualified route. Produce a concise weather narrative and event list with explicit evidence/basis. Keep measured values and visual claims separate when they disagree. Do not turn an absence of visual evidence into an absence of weather.
 
 Analysis is per camera and segment. Measured station statistics may be reused for cameras sharing the identical interval, but retain camera-specific visual findings. A short overview across the three cameras may be generated from their validated summaries; it must reference them and must not invent a new observation.
@@ -1073,6 +1075,8 @@ interface VisualAnalysis {
 Require an explicit precipitation and visibility assessment when assessable; allow `not_assessable` at night/obstruction. `not_observed` means no evidence in the reviewed media, not a meteorological assertion about the entire source period. Rebind generated observation IDs to deterministic application IDs to avoid collisions across clips.
 
 ### 13.6 Exact synthesis system prompt template
+
+> Retired by C18: there is no synthesis call; public text comes from fixed templates.
 
 ```text
 Create a weather summary from two supplied evidence sets: validated visual

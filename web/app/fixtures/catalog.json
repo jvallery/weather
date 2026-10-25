@@ -78,6 +78,7 @@
       "keogram": null,
       "analysis": {
         "label": "AI-generated · sampled-frame analysis",
+        "author": "ai",
         "state": "complete",
         "reason": null,
         "stale": false,
@@ -200,6 +201,7 @@
       "keogram": null,
       "analysis": {
         "label": "AI-generated · sampled-frame analysis",
+        "author": "ai",
         "state": "complete",
         "reason": null,
         "stale": false,
@@ -322,6 +324,7 @@
       "keogram": null,
       "analysis": {
         "label": "AI-generated · sampled-frame analysis",
+        "author": "ai",
         "state": "complete",
         "reason": null,
         "stale": false,
@@ -452,6 +455,7 @@
       },
       "analysis": {
         "label": "AI-generated · sampled-frame analysis",
+        "author": "ai",
         "state": "complete",
         "reason": null,
         "stale": false,
@@ -574,6 +578,7 @@
       "keogram": null,
       "analysis": {
         "label": "AI-generated · sampled-frame analysis",
+        "author": "ai",
         "state": "complete",
         "reason": null,
         "stale": false,
@@ -696,6 +701,7 @@
       "keogram": null,
       "analysis": {
         "label": "AI-generated · sampled-frame analysis",
+        "author": "ai",
         "state": "complete",
         "reason": null,
         "stale": false,
@@ -818,6 +824,7 @@
       "keogram": null,
       "analysis": {
         "label": "AI-generated · sampled-frame analysis",
+        "author": "ai",
         "state": "complete",
         "reason": null,
         "stale": false,

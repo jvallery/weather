@@ -100,6 +100,7 @@ These remain sound and are **kept**:
 | **C14** | **Remove the ceremony** (#76): evidence tooling, verifier scripts, commissioning probe policies, the rollout harness, stale contracts, ADRs and the generated backlog. Branch and worktree pruning needs Jason's explicit OK. | — |
 | **C15** | **Right-size the database.** `weather-pg` starts near the options-pg pattern, about 250m/1Gi requests, and grows from observed working sets. | 1 CPU/2Gi ×3 |
 | **C17** | **The api never mounts NFS.** Delayed previews are served by a small `weather-preview` Deployment (same image and origin code), the only public-path pod that mounts staging `previews/` read-only (#39). A NAS outage therefore can't block api start-up or current conditions (SLO 2). | api `previews/` subPath |
+| **C18** | **No model-written prose is ever published** (2026-10-25, #23 review). Stage A returns strict structured JSON per hour window (category, assessment, confidence, optional intensity and sky-cover enums, limitation codes, supplied evidence IDs); free text is rejected and survives only in the 24 h private raw table. There is no Stage C model call: public summaries, claims, limitations and search text are rendered by fixed server-side templates from accepted observations and station aggregates, with numbers formatted by code. `possible` (and low-confidence `visible`) always renders hedged; absence is worded only from a full-coverage measured zero or an explicit "not visible in the frames". A block-list validator over free model prose can't be both safe and usable. | Free-text descriptions and the Stage C synthesis call, gated by lexical validation |
 | **C16** | **Use issue numbers.** Drop WX- keys from titles and new text; WX-n is issue n+1, which caused confusion. | WX keys |
 
 ## Requirement amendments (v4.2)
@@ -110,6 +111,7 @@ These remain sound and are **kept**:
 - **§12.3 browser matrix:** narrowed to P19, which is Chromium, WebKit and Firefox in fleet CI plus Jason's real iPhone Safari check at slice 2. Resumed downloads are covered by #20's range tests.
 - **§18.2 acceptance matrix:** superseded by the issue acceptance lists. #36 traces R01–R38 against issues, not against §18.2.
 - **Migrations (P5):** an Argo **Sync** hook Job at wave 1, after the Cluster. Every DB-client workload runs at wave ≥2.
+- **§§13.3–13.7 (#23), per C18:** Stage A output is structured enums only and Stage C is deterministic template rendering, not a model call; the §13.6 synthesis prompt and the WeatherNarrative candidate are retired. "Validated AI description" means template text from validated observations.
 - **R26 failure tests:** a NAS-outage test means one safe live NAS-unavailability check at #49, plus fakes in unit tests.
 
 ## Critical path and order

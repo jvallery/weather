@@ -3,17 +3,20 @@
 
 Expand-only and inline DDL; never import application modules here. `analysis` is one head row
 per video (state machine and CAS base); `analysis_revision` is append-only and pinned to its
-media SHA-256, model, prompt/schema hashes and evidence hash, and records its author so model
-output never replaces a human (#44) revision. `ai_raw_response` keeps private
-model replies for at most 24 h (a CHECK, not just the purge) and no public role can read it.
-The API reads one security-barrier view that shows a revision only for a public, unwithdrawn
-video and only while it describes the video's current media.
+media SHA-256, model, prompt/template/schema hashes and evidence hash. Its summary, claims and
+limitations are rendered by server-side templates; no model-written prose is stored there
+(C18). `author_kind` says who wrote it, so model output never replaces a human (#44) revision;
+the worker cannot set it (its INSERT grant excludes the column, so every worker row is
+`model`). `ai_raw_response` keeps private model replies for at most 24 h (a CHECK, not just
+the purge) and no public role can read it. The API reads one security-barrier view that shows
+a revision only for a public, unwithdrawn video and only while it describes the video's
+current media, with its author.
 """
 
 from alembic import op
 
 revision = "0011_analysis"
-down_revision = "0007_previews"
+down_revision = "0010_cleanup"
 branch_labels = None
 depends_on = None
 
@@ -139,7 +142,7 @@ def statements() -> list[str]:
             SELECT a.video_id,a.state,a.reason,a.stale,a.updated_at,r.revision,
               r.state AS revision_state,r.refresh,r.model_route,r.model,r.prompt_sha256,
               r.schema_sha256,r.evidence_count,r.summary,r.claims,r.limitations,r.coverage,
-              r.inputs,r.created_at AS generated_at
+              r.inputs,r.author_kind,r.created_at AS generated_at
             FROM weather.analysis a
             JOIN public_api.videos v ON v.id = a.video_id AND NOT v.withdrawn
             LEFT JOIN weather.analysis_revision r ON r.video_id = a.video_id
@@ -148,7 +151,13 @@ def statements() -> list[str]:
         "REVOKE ALL ON weather.analysis,weather.analysis_revision,weather.ai_raw_response"
         " FROM PUBLIC",
         "REVOKE ALL ON public_api.video_analyses FROM PUBLIC",
-        "GRANT SELECT,INSERT ON weather.analysis,weather.analysis_revision TO weather_worker",
+        "GRANT SELECT,INSERT ON weather.analysis TO weather_worker",
+        "GRANT SELECT ON weather.analysis_revision TO weather_worker",
+        # Every column but author_kind: worker rows are always the model's.
+        "GRANT INSERT (id,video_id,revision,publication_id,media_sha256,state,reason,refresh,"
+        "visual_id,model_route,model,prompt_sha256,schema_sha256,evidence_hash,evidence_count,"
+        "summary,claims,observations,limitations,coverage,inputs,event_keys,calls)"
+        " ON weather.analysis_revision TO weather_worker",
         "GRANT UPDATE (publication_id,media_sha256,state,reason,revision,stale,runs,calls,"
         "refreshes,attempt_calls,pending_since,next_attempt_at,evidence_checked_at,updated_at)"
         " ON weather.analysis TO weather_worker",
