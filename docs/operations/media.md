@@ -240,7 +240,7 @@ no clock adapter (P14).
 | `weather_preview_generations_total{camera}` | Generations published (about one a minute) |
 | `weather_preview_failures_total{camera,stage}` | `scan`, `derive`, `catalog`, `cleanup` |
 | `weather_preview_pointer_total{camera,state}` | Pointer responses by state |
-| `weather_preview_embargo_violations_total{route}` | Rows the view admitted that the re-check refused; always denied; must stay 0 |
+| `weather_preview_embargo_violations_total{route}` | Rows the view admitted that the request-time re-check refused; always denied, so nothing is served before its embargo. A rare increment at an exact boundary is the two clock reads differing by microseconds; a steady rate means the view and `policy.py` disagree: investigate |
 | `weather_preview_file_failures_total{reason}` | `missing`, `mismatch`, `timeout`, `busy`, `error` |
 | `weather_media_*{route="preview"}` | The shared origin metrics for preview bytes |
 
