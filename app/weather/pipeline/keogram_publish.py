@@ -121,8 +121,9 @@ async def write_bins(
         text("""
         INSERT INTO weather.keogram_bin AS b (segment_id,bin,distance,captured_at,capture_id,
           capture_upper_bound,uncertainty_ms,strip)
-        SELECT CAST(:id AS uuid),* FROM unnest(CAST(:bins AS smallint[]),CAST(:distances AS bigint[]),
-          CAST(:captured AS timestamptz[]),CAST(:ids AS text[]),CAST(:uppers AS timestamptz[]),
+        SELECT CAST(:id AS uuid),* FROM unnest(CAST(:bins AS smallint[]),
+          CAST(:distances AS bigint[]),CAST(:captured AS timestamptz[]),CAST(:ids AS text[]),
+          CAST(:uppers AS timestamptz[]),
           CAST(:uncertainty AS double precision[]),CAST(:strips AS bytea[]))
         ON CONFLICT (segment_id,bin) DO UPDATE SET distance=EXCLUDED.distance,
           captured_at=EXCLUDED.captured_at,capture_id=EXCLUDED.capture_id,
