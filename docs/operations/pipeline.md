@@ -153,12 +153,15 @@ it relies on:
   every current segment whose read range `[starts_at − lag, ends_at)` its
   window overlaps, so staging holds only each segment's unrendered tail. The
   keogram and preview conditions of P3 still apply, and every overlapping hour slot needs an
-  active `archival_still` row (its original archived and read back, or recorded missing);
-- a render directory is deletable once its segment has `finalized_at` set
-  (the pipeline recorded its RenderResult), or, for a segment made terminal by
-  the deadline sweep without one, once `ends_at` is more than 12 h past
-  (`LATE_RENDER`). A `deadline_missed` or sweep-reconciled segment is still
-  rendered, published and finalized within those 12 h;
+  active `archival_still` row: its original archived and read back, or recorded missing for
+  lack of input (`no_capture`, `no_eligible_capture`; `selection_expired` keeps the chunk);
+- a render directory is deletable once its segment has `finalized_at` set and
+  its renditions are committed (or its result is `unavailable`). An unfinalized
+  directory whose segment has a release point is never deleted: such a segment
+  stays active past `LATE_RENDER` until the renderer completes it from what is
+  still on staging (gaps become slates) and publishes it, superseding the
+  deadline placeholder. A segment the pipeline never started drops out after
+  12 h, and its directory (if any) goes 13 h after `ends_at`;
 - `.tmp-*` files belong to an in-progress write; the pipeline removes its own
   on restart.
 

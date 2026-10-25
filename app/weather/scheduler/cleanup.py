@@ -68,6 +68,8 @@ PREVIEW_WINDOW = timedelta(seconds=1800)
 LATE_RENDER = timedelta(hours=12)
 # active() decides on the pipeline pod's clock, cleanup on the database's: keep a margin.
 CLOCK_MARGIN = timedelta(hours=1)
+# Under urgent pressure cleanup runs ahead of rendering, but at most this often (seconds).
+URGENT_INTERVAL = 60.0
 MAX_MANIFEST_BYTES = 1024 * 1024
 HOUR_DIR = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}Z\Z")
 SEALED_FILE = re.compile(r"[A-Za-z0-9_-]{1,120}\.tar\Z")
@@ -95,6 +97,11 @@ OLDEST_ELIGIBLE = Gauge(
 OLDEST_PINNED = Gauge(
     "weather_staging_oldest_pinned_chunk_seconds",
     "Age of the oldest chunk kept by each condition (its first unmet one); 0 if none",
+    ["camera", "condition"],
+)
+PINNED_BYTES = Gauge(
+    "weather_staging_pinned_bytes",
+    "Bytes of present chunks kept by each condition (their first unmet one)",
     ["camera", "condition"],
 )
 UNINDEXED = Gauge(
@@ -409,6 +416,8 @@ ConditionQuery = Callable[
     [AsyncConnection, str, Sequence[ChunkRow], timedelta], Awaitable[set[UUID]]
 ]
 HOUR = timedelta(hours=1)
+# #38 missing reasons that prove the hour had no usable input (stills.policy.choose).
+NO_INPUT = ("no_capture", "no_eligible_capture")
 
 
 def hour_slots(chunk: ChunkRow, lag: timedelta) -> list[datetime]:
@@ -426,9 +435,11 @@ async def hourly_finalized(
     connection: AsyncConnection, camera: str, chunks: Sequence[ChunkRow], lag: timedelta
 ) -> set[UUID]:
     """#38: every hour slot the chunk overlaps has an active `archival_still` that is either
-    `missing` (including `selection_expired`) or archived: its still publication committed
-    (the publisher read the original back before committing) and its original asset still
-    `available` in `weather-originals`. A slot without an active row is unfinalized."""
+    archived (its still publication committed, the publisher having read the original back,
+    and its original asset still `available` in `weather-originals`) or `missing` for a reason
+    that proves there was no input (`no_capture`, `no_eligible_capture`). `selection_expired`
+    only means no selection ran for 12 h (a Garage or pipeline outage): unmet, so the chunk is
+    kept and the 48 h pinned alert fires. A slot without an active row is unfinalized."""
     if not chunks:
         return set()
     low = min(c.window_start for c in chunks) - HOUR
@@ -438,12 +449,13 @@ async def hourly_finalized(
         SELECT s.slot_starts_at FROM weather.archival_still s
         WHERE s.active AND s.camera_id=:camera AND s.slot_starts_at >= :low
           AND s.slot_starts_at < :high
-          AND (s.state = 'missing' OR (s.publication_id IS NOT NULL AND EXISTS (
+          AND ((s.state = 'missing' AND s.reason = ANY(CAST(:no_input AS text[])))
+               OR (s.publication_id IS NOT NULL AND EXISTS (
             SELECT 1 FROM weather.media_asset a
             WHERE a.id = s.original_asset_id AND a.class = 'original'
               AND a.state = 'available')))
     """),
-        {"camera": camera, "low": low, "high": high},
+        {"camera": camera, "low": low, "high": high, "no_input": list(NO_INPUT)},
     )
     done = {row.slot_starts_at for row in rows}
     return {
@@ -470,19 +482,21 @@ class RenderState:
     ends_at: datetime
     finalized: bool
     published: bool  # a committed publication with all three renditions (read back by #18)
-    durable: bool = False  # the whole mezzanine is fsynced (`mezzanine_durable_at`)
+    started: bool = False  # a release point exists: blocks whose input may already be gone
 
 
 def render_deletable(render: RenderState, now: datetime) -> bool:
     """pipeline.md's release rule. A finalized segment's directory goes once its renditions
     are committed (the publisher reads every byte back before it commits), or once its
     result is terminal without media. An unfinalized segment's directory goes only when the
-    pipeline can no longer select it: terminal (or superseded) and LATE_RENDER past its end,
-    plus a margin for the pipeline pod's clock. A complete but unpublished mezzanine is kept:
-    it is the only copy of frames whose raw input may already be gone."""
+    pipeline can no longer select it: never started (no release point), terminal or superseded,
+    and LATE_RENDER past its end plus a margin for the pipeline pod's clock. An unfinalized
+    directory with a release point is never deleted: its blocks are the only copy of frames
+    whose raw input cleanup may already have removed. The pipeline keeps such a segment active
+    until it finalizes and publishes it (`pipeline.schedule.active`)."""
     if render.finalized:
         return render.published or render.state == "unavailable"
-    if render.durable or render.ends_at + LATE_RENDER + CLOCK_MARGIN >= now:
+    if render.started or render.ends_at + LATE_RENDER + CLOCK_MARGIN >= now:
         return False
     return not render.current or render.state in {"published", "partial", "unavailable"}
 
@@ -744,42 +758,49 @@ class SqlCatalog:
     async def renders(
         self, camera: str, keys: Sequence[tuple[date, str, int]]
     ) -> dict[tuple[date, str, int], RenderState]:
+        """One query for every render directory found (#19 review: no per-directory query)."""
         result: dict[tuple[date, str, int], RenderState] = {}
         if not keys:
             return result
         async with self.engine.connect() as connection:
-            for cycle_date, kind, revision in keys:
-                row = (
-                    await connection.execute(
-                        text("""
-                    SELECT s.id,s.current,s.state,s.ends_at,s.finalized_at IS NOT NULL AS done,
-                      s.mezzanine_durable_at IS NOT NULL AS durable,
-                      EXISTS (
-                        SELECT 1 FROM weather.video v
-                        JOIN weather.publication p ON p.id = v.publication_id
-                        WHERE v.camera_id = s.camera_id AND v.cycle_date = s.cycle_date
-                          AND v.segment = s.kind AND p.state IN ('published','partial')
-                          AND (SELECT count(*) FROM weather.publication_asset pa
-                               WHERE pa.publication_id = p.id
-                                 AND pa.role IN ('native','web','mobile')) = 3
-                      ) AS published
-                    FROM weather.segment s
-                    WHERE s.camera_id=:camera AND s.cycle_date=:day AND s.kind=:kind
-                      AND s.revision=:revision
-                """),
-                        {"camera": camera, "day": cycle_date, "kind": kind, "revision": revision},
-                    )
-                ).one_or_none()
-                if row is not None:
-                    result[(cycle_date, kind, revision)] = RenderState(
-                        segment_id=row.id,
-                        current=bool(row.current),
-                        state=str(row.state),
-                        ends_at=row.ends_at,
-                        finalized=bool(row.done),
-                        published=bool(row.published),
-                        durable=bool(row.durable),
-                    )
+            rows = await connection.execute(
+                text("""
+                SELECT s.cycle_date,s.kind,s.revision,s.id,s.current,s.state,s.ends_at,
+                  s.finalized_at IS NOT NULL AS done,
+                  (s.mezzanine_through IS NOT NULL OR s.mezzanine_durable_at IS NOT NULL)
+                    AS started,
+                  EXISTS (
+                    SELECT 1 FROM weather.video v
+                    JOIN weather.publication p ON p.id = v.publication_id
+                    WHERE v.camera_id = s.camera_id AND v.cycle_date = s.cycle_date
+                      AND v.segment = s.kind AND p.state IN ('published','partial')
+                      AND (SELECT count(*) FROM weather.publication_asset pa
+                           WHERE pa.publication_id = p.id
+                             AND pa.role IN ('native','web','mobile')) = 3
+                  ) AS published
+                FROM weather.segment s
+                JOIN unnest(CAST(:days AS date[]),CAST(:kinds AS text[]),
+                            CAST(:revisions AS integer[])) AS k(cycle_date,kind,revision)
+                  ON s.cycle_date = k.cycle_date AND s.kind = k.kind AND s.revision = k.revision
+                WHERE s.camera_id = :camera
+            """),
+                {
+                    "camera": camera,
+                    "days": [k[0] for k in keys],
+                    "kinds": [k[1] for k in keys],
+                    "revisions": [k[2] for k in keys],
+                },
+            )
+            for row in rows:
+                result[(row.cycle_date, str(row.kind), int(row.revision))] = RenderState(
+                    segment_id=row.id,
+                    current=bool(row.current),
+                    state=str(row.state),
+                    ends_at=row.ends_at,
+                    finalized=bool(row.done),
+                    published=bool(row.published),
+                    started=bool(row.started),
+                )
         return result
 
 
@@ -965,13 +986,32 @@ class Cleanup:
         self.camera, self.staging, self.catalog, self.settings = camera, staging, catalog, settings
         self.lag, self.remover, self.expected = lag, remover, expected
         self.healthy = True
+        self._sizes: dict[str, tuple[tuple[int, ...], int]] = {}
         ENABLED.labels(camera).set(int(settings.enabled))
         for name in CONDITIONS:
             OLDEST_PINNED.labels(camera, name)
+            PINNED_BYTES.labels(camera, name)
             CHUNKS.labels(camera, name)
         CHUNKS.labels(camera, "eligible")
         for kind in ("chunk", "tmp", "render"):
             DELETIONS.labels(camera, kind)
+
+    def _render_bytes(self, name: str) -> int:
+        """Directory size, re-walked only when the directory or its blocks/ and out/ change
+        (a finished segment's directory is static), so frequent urgent passes stay cheap."""
+        path = self.staging / name
+        stamp = []
+        for part in (path, path / "blocks", path / "out"):
+            try:
+                stamp.append(os.stat(part).st_mtime_ns)
+            except FileNotFoundError:
+                stamp.append(0)
+        cached = self._sizes.get(name)
+        if cached is not None and cached[0] == tuple(stamp):
+            return cached[1]
+        size = tree_bytes(path)
+        self._sizes[name] = (tuple(stamp), size)
+        return size
 
     async def _thread(self, function: Callable[..., Any], *args: Any) -> Any:
         return await asyncio.to_thread(function, *args)
@@ -1109,6 +1149,7 @@ class Cleanup:
         for name, kept in pinned.items():
             CHUNKS.labels(camera, name).set(len(kept))
             OLDEST_PINNED.labels(camera, name).set(age(kept))
+            PINNED_BYTES.labels(camera, name).set(sum(c.bytes for c in kept))
             report.add(f"pinned_{name}", len(kept))
         report.add("eligible", len(eligible))
         sealed_bytes = sum(row.bytes for row in rows)
@@ -1155,7 +1196,7 @@ class Cleanup:
         states = await self.catalog.renders(camera, [key for _, key in found])
         render_bytes = 0
         for name, key in found:
-            size = await self._thread(tree_bytes, self.staging / name)
+            size = await self._thread(self._render_bytes, name)
             state = states.get(key)
             if state is None or not render_deletable(state, now):
                 render_bytes += size
@@ -1190,6 +1231,7 @@ class Housekeeping:
     def __init__(self, cleanup: Cleanup, pressure: Pressure) -> None:
         self.cleanup, self.pressure = cleanup, pressure
         self.next_pass = 0.0
+        self.last_pass = float("-inf")
         self._statvfs: asyncio.Task[Any] | None = None
 
     async def _level(self) -> None:
@@ -1213,8 +1255,11 @@ class Housekeeping:
 
     async def tick(self, monotonic: float) -> None:
         await self._level()
-        if not (self.pressure.urgent or monotonic >= self.next_pass):
+        if monotonic < self.next_pass and not (
+            self.pressure.urgent and monotonic >= self.last_pass + URGENT_INTERVAL
+        ):
             return
+        self.last_pass = monotonic
         self.next_pass = monotonic + self.cleanup.settings.interval_seconds
         try:
             await self.cleanup.run()

@@ -97,6 +97,17 @@ async def _lock(connection: AsyncConnection, product: str, camera_id: str, key: 
     )
 
 
+async def lock_objects(connection: AsyncConnection, keys: list[str]) -> None:
+    """Per object key transaction lock shared with #19's GC: an intent registered, or a commit
+    made, while GC is deleting a key waits for it, so an upload that follows sees the key
+    gone and re-uploads, and GC re-checks for a pending intent under the same lock."""
+    for key in sorted(set(keys)):
+        await connection.execute(
+            text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 29))"),
+            {"key": f"object:{key}"},
+        )
+
+
 async def register_intent(
     connection: AsyncConnection,
     product: Product,
@@ -108,6 +119,7 @@ async def register_intent(
     """Record the attempt before any byte is uploaded; it takes a new fencing token."""
     if deadline.tzinfo is None or expected_revision < 0:
         raise ProductError("Invalid intent")
+    await lock_objects(connection, [item.key for item in objects])
     row = (
         await connection.execute(
             text("""
@@ -283,17 +295,20 @@ async def _asset(
         if (
             await connection.execute(
                 text("""
-            SELECT 1 FROM weather.object_event WHERE object_key=:key
-              AND action IN ('gc_deleted','purged') LIMIT 1
+            SELECT 1 FROM weather.object_event WHERE object_key=:key AND action='purged' LIMIT 1
         """),
                 {"key": item.key},
             )
         ).one_or_none():
-            # #19 GC or a hard purge removed these bytes; a racing upload must not revive them.
-            raise PublishError("Asset bytes were garbage-collected")
-        # The object was just verified in the store again.
+            # A hard purge (#19, third-party privacy) is final for those bytes.
+            raise PublishError("Asset bytes were purged")
+        # The object was just verified in the store again. Bytes #19's GC removed may come
+        # back this way: the shared key lock orders this upload after the GC delete.
         await connection.execute(
-            text("UPDATE weather.media_asset SET state='available' WHERE id=:id"),
+            text("""
+            UPDATE weather.media_asset SET state='available',state_changed_at=clock_timestamp()
+            WHERE id=:id
+        """),
             {"id": existing.id},
         )
     return cast(UUID, existing.id)
@@ -389,6 +404,7 @@ async def commit(connection: AsyncConnection, staged: Staged) -> Committed:
             ).scalar_one()
         ):
             raise PrivateReference("Sidecar names an original's hash")
+    await lock_objects(connection, [item.key for item in staged.objects])
     for item in staged.objects:
         sidecar = staged.sidecar if item.asset_class == "sidecar" else None
         assets[item.role] = (await _asset(connection, item, product, sidecar), item.asset_class)

@@ -373,12 +373,15 @@ async def expire(
 # GC -------------------------------------------------------------------------------------------
 
 KEY_OF = "(o->>'class') || '/' || (o->>'sha256') || '.' || (o->>'extension')"
+# A key already collected after it became a candidate is skipped; bytes re-published after a
+# GC (the asset revived, or a new orphan) become a candidate again from that later time.
 GC_ORPHANS = f"""
 WITH grace AS (SELECT clock_timestamp() - make_interval(days => CAST(:grace AS integer)) AS t),
 keys AS (
-  SELECT DISTINCT o->>'class' AS class, {KEY_OF} AS object_key
+  SELECT o->>'class' AS class, {KEY_OF} AS object_key, max(i.resolved_at) AS orphaned_at
   FROM weather.upload_intent i, grace, jsonb_array_elements(i.manifest->'objects') o
   WHERE i.state = 'orphan' AND i.resolved_at < grace.t
+  GROUP BY 1, 2
 )
 SELECT k.class, k.object_key FROM keys k, grace
 WHERE (CASE WHEN k.class = 'original' THEN 'weather-originals' ELSE 'weather-media' END)
@@ -390,7 +393,9 @@ WHERE (CASE WHEN k.class = 'original' THEN 'weather-originals' ELSE 'weather-med
     WHERE {KEY_OF} = k.object_key
       AND (r.state IN ('pending','committed') OR r.resolved_at >= grace.t))
   AND NOT EXISTS (SELECT 1 FROM weather.object_event e
-                  WHERE e.object_key = k.object_key AND e.action IN ('gc_deleted','purged'))
+                  WHERE e.object_key = k.object_key
+                    AND (e.action = 'purged'
+                         OR (e.action = 'gc_deleted' AND e.created_at >= k.orphaned_at)))
   AND (CAST(:only AS text) IS NULL OR k.object_key = CAST(:only AS text))
 ORDER BY k.object_key LIMIT :limit
 """
@@ -403,10 +408,30 @@ WHERE a.bucket = :bucket AND a.state = 'expired'
     SELECT 1 FROM weather.upload_intent r, jsonb_array_elements(r.manifest->'objects') o
     WHERE {KEY_OF} = a.object_key AND r.state = 'pending')
   AND NOT EXISTS (SELECT 1 FROM weather.object_event e
-                  WHERE e.object_key = a.object_key AND e.action IN ('gc_deleted','purged'))
+                  WHERE e.object_key = a.object_key
+                    AND (e.action = 'purged'
+                         OR (e.action = 'gc_deleted' AND e.created_at >= a.state_changed_at)))
   AND (CAST(:only AS text) IS NULL OR a.object_key = CAST(:only AS text))
 ORDER BY a.object_key LIMIT :limit
 """
+# Phase two re-check, under the key lock, after the audit row exists.
+STILL_UNREFERENCED = f"""
+SELECT NOT EXISTS (
+    SELECT 1 FROM weather.upload_intent r, jsonb_array_elements(r.manifest->'objects') o
+    WHERE {KEY_OF} = :key AND r.state = 'pending')
+  AND CASE WHEN :tombstone
+    THEN EXISTS (SELECT 1 FROM weather.media_asset a WHERE a.object_key = :key
+                 AND a.state = 'expired')
+    ELSE NOT EXISTS (SELECT 1 FROM weather.media_asset a WHERE a.object_key = :key) END
+"""
+
+
+async def lock_object(connection: AsyncConnection, key: str) -> None:
+    # The same lock `publish.catalog.lock_objects` takes for intents and commits.
+    await connection.execute(
+        text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 29))"),
+        {"key": f"object:{key}"},
+    )
 
 
 async def gc(
@@ -417,8 +442,14 @@ async def gc(
     dry_run: bool = False,
     limit: int = 1000,
 ) -> dict[str, int]:
-    """Refuses before reading anything if the grace guard fails. Each deletion re-checks its
-    candidate under a row lock in the transaction that writes its audit row."""
+    """Refuses before reading anything if the grace guard fails. Each deletion is fenced by the
+    object key lock the publisher also takes when it registers an intent and when it commits:
+
+    1. under the lock, re-check the candidate and commit its `gc_deleted` audit row;
+    2. under the lock again, delete only if no pending intent and no live row references the
+       key, then release. An intent registered meanwhile makes step 2 keep the bytes (the
+       audit row then records a decision whose bytes remain: the safe failure), and one
+       registered after step 2 sees the key gone and re-uploads."""
     check_grace(settings)
     if store.bucket not in BUCKETS:
         raise ValueError("Unknown bucket")
@@ -436,41 +467,38 @@ async def gc(
     GC_CANDIDATES.labels(store.bucket, "tombstone").set(len(tombstones))
     counts = {"orphan_candidates": len(orphans), "tombstone_candidates": len(tombstones)}
     counts["deleted"] = 0
+    counts["kept_after_audit"] = 0
     if dry_run or not settings.gc_enabled:
         return counts
     for reason, rows in (("orphan", orphans), ("tombstone", tombstones)):
+        tombstone = reason == "tombstone"
+        query = GC_TOMBSTONES if tombstone else GC_ORPHANS
         for row in rows:
             key = str(row.object_key)
             async with engine.begin() as connection:
-                if reason == "tombstone":
-                    # Serializes with a publish commit that would revive this asset row.
-                    locked = (
-                        await connection.execute(
-                            text(
-                                "SELECT 1 FROM weather.media_asset WHERE id=:id "
-                                "AND state='expired' FOR UPDATE"
-                            ),
-                            {"id": row.id},
-                        )
-                    ).one_or_none()
-                    if locked is None:
-                        continue
-                query = GC_TOMBSTONES if reason == "tombstone" else GC_ORPHANS
+                await lock_object(connection, key)
                 if not (await connection.execute(text(query), {**params, "only": key})).all():
                     continue
-                # The audit row commits before the bytes go: a crash or a failed delete leaves
-                # an audited key whose bytes remain (safe), never deleted bytes without a row.
-                # A publish never revives an expired row once this event exists.
                 await _event(
                     connection,
                     "gc_deleted",
                     store.bucket,
                     key,
-                    row.id if reason == "tombstone" else None,
+                    row.id if tombstone else None,
                     reason,
                     "gc",
                 )
-            await store.delete(key)
+            async with engine.begin() as connection:
+                await lock_object(connection, key)
+                free = (
+                    await connection.execute(
+                        text(STILL_UNREFERENCED), {"key": key, "tombstone": tombstone}
+                    )
+                ).scalar_one()
+                if not free:
+                    counts["kept_after_audit"] += 1
+                    continue
+                await store.delete(key)
             counts["deleted"] += 1
             GC_DELETIONS.labels(store.bucket, reason).inc()
     return counts

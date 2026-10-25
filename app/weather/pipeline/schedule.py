@@ -412,7 +412,11 @@ async def active(engine: AsyncEngine, camera: str, now: datetime) -> list[Segmen
     A segment made terminal by the deadline sweep (a placeholder, or a committed video whose
     acknowledgement was lost) is not finalized; it stays here for LATE_RENDER after its end, so
     the pipeline still publishes (superseding a placeholder, or a no-op duplicate) and records
-    its RenderResult and `finalized_at`."""
+    its RenderResult and `finalized_at`. A segment whose mezzanine has started (a release
+    point exists, so #19 may already have deleted its input) stays here until it is finalized:
+    the renderer completes it from what is still on staging (gaps become slates) and publishes
+    it as a partial or unavailable video, superseding the deadline placeholder. Only then may
+    cleanup release its render directory."""
     async with engine.connect() as connection:
         rows = await connection.execute(
             text("""
@@ -420,7 +424,8 @@ async def active(engine: AsyncEngine, camera: str, now: datetime) -> list[Segmen
               mezzanine_recipe
             FROM weather.segment WHERE current AND camera_id=:camera AND starts_at <= :now
               AND (state IN ('scheduled','processing')
-                   OR (finalized_at IS NULL AND ends_at > CAST(:late AS timestamptz)))
+                   OR (finalized_at IS NULL AND (ends_at > CAST(:late AS timestamptz)
+                       OR mezzanine_through IS NOT NULL)))
             ORDER BY starts_at
         """),
             {"camera": camera, "now": now, "late": now - LATE_RENDER},

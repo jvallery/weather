@@ -177,11 +177,17 @@ def test_render_directory_release_rule() -> None:
     almost = now - timedelta(hours=12, minutes=59)
     assert not render_deletable(state(finalized=False, state="unavailable", ends_at=almost), now)
     late = now - timedelta(hours=13, seconds=1)
+    # A segment never started (no release point) may go once the pipeline dropped it.
     assert render_deletable(state(finalized=False, state="unavailable", ends_at=late), now)
-    # A complete mezzanine that never published is the only copy of its frames: kept.
-    assert not render_deletable(
-        state(finalized=False, state="unavailable", ends_at=late, durable=True), now
-    )
+    # Started but unfinalized (a deadline-missed partial mezzanine, complete or not): its
+    # blocks may be the only copy of released input. Kept however late, whatever the state.
+    for kept in ("unavailable", "published", "partial", "processing"):
+        for current in (True, False):
+            assert not render_deletable(
+                state(finalized=False, state=kept, ends_at=late - timedelta(days=30),
+                      started=True, current=current),
+                now,
+            )
     assert not render_deletable(state(finalized=False, state="processing", ends_at=late), now)
     assert render_deletable(
         state(finalized=False, state="processing", ends_at=late, current=False), now
@@ -588,9 +594,12 @@ def test_pressure_never_deletes_pinned_input_and_runs_cleanup_every_loop(
 
     async def loops() -> None:
         await housekeeping.tick(0.0)
-        # Urgent pressure: the next loop (10 s later, inside the interval) cleans again.
+        # Urgent pressure: a loop 10 s later does not clean again (at most once a minute),
+        # one 60 s later does, inside the normal interval.
         catalog.segments = [SegmentSpan(at(-60), at(600), at(4), False)]
         await housekeeping.tick(10.0)
+        assert sealed(tmp_path) == {p.name for p in paths[3:]}
+        await housekeeping.tick(60.0)
 
     asyncio.run(loops())
     assert pressure.level is Level.STOP
@@ -601,7 +610,7 @@ def test_pressure_never_deletes_pinned_input_and_runs_cleanup_every_loop(
     catalog.segments = [SegmentSpan(at(-60), at(600), None, True)]
     asyncio.run(housekeeping.tick(20.0))
     assert pressure.level is Level.NORMAL and len(sealed(tmp_path)) == 6
-    asyncio.run(housekeeping.tick(320.0))
+    asyncio.run(housekeeping.tick(360.0))
     assert sealed(tmp_path) == set()
 
 

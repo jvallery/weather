@@ -312,20 +312,32 @@ def test_sql_catalog_keeps_a_dusk_spanning_chunk_until_both_segments_release_it(
             report = await pass_().run()
             assert report["pinned_hourly"] == len(released) and "deleted_chunk" not in report
             first_hour = stored[0].window_start.replace(minute=0, second=0, microsecond=0)
-            # Finalize every hour the corpus can touch as `missing` (#38's selection_expired).
             last_hour = (stored[-1].window_end + LAG).replace(
                 minute=0, second=0, microsecond=0
             ) + timedelta(hours=1)
-            await admin(
-                """
+            insert = """
                 INSERT INTO weather.archival_still (camera_id,slot_starts_at,local_date,revision,
                   state,reason,policy,eligible,retain_until)
-                SELECT :camera,h.starts_at,h.local_date,1,'missing','selection_expired',
+                SELECT :camera,h.starts_at,h.local_date,:revision,'missing',:reason,
                   'nearest-half-hour/v1',0,h.local_date + 1826
                 FROM weather.hour_slot h WHERE h.starts_at >= :low AND h.starts_at < :high
-                """,
+            """
+            # `selection_expired` only says no selection ran for 12 h (an outage): kept.
+            await admin(
+                insert, camera=CAMERA, revision=1, reason="selection_expired", low=first_hour,
+                high=last_hour,
+            )
+            report = await pass_().run()
+            assert report["pinned_hourly"] == len(released) and "deleted_chunk" not in report
+            assert all((tmp_path / r.name).exists() for r in released)
+            # A correction to `no_capture` (no input in those hours) finalizes them.
+            await admin(
+                "UPDATE weather.archival_still SET active=false,retired_at=clock_timestamp() "
+                "WHERE camera_id=:camera AND active",
                 camera=CAMERA,
-                low=first_hour,
+            )
+            await admin(
+                insert, camera=CAMERA, revision=2, reason="no_capture", low=first_hour,
                 high=last_hour,
             )
             calls = 0
@@ -654,7 +666,12 @@ def test_gc_deletes_only_unreferenced_objects_past_grace_and_refuses_unguarded(
                 ids=[str(v) for v in made["old_video"].assets.values()],
             )
             dry = await gc(worker, media, GUARDED)
-            assert dry == {"orphan_candidates": 1, "tombstone_candidates": 5, "deleted": 0}
+            assert dry == {
+                "orphan_candidates": 1,
+                "tombstone_candidates": 5,
+                "deleted": 0,
+                "kept_after_audit": 0,
+            }
             assert await media.head(orphan_keys[0]) is not None
             enabled = LifecycleSettings(
                 gc_enabled=True, pitr_window_days=30, b2_version_retention_days=40
@@ -718,6 +735,45 @@ def test_hard_purge_needs_a_withdrawn_asset_and_leaves_an_audit_row(tmp_path: Pa
         finally:
             for store in buckets.values():
                 await store.aclose()
+            await worker.dispose()
+
+    asyncio.run(check())
+
+
+def test_a_started_segment_stays_active_past_late_render_until_finalized() -> None:
+    """A deadline-missed segment with a release point keeps rendering (from what is still on
+    staging) and publishes, so neither its released input nor its blocks are lost."""
+
+    async def check() -> None:
+        worker = engine("weather_worker")
+        day = (NOW - timedelta(days=5)).date()
+        try:
+            async with worker.begin() as connection:
+                await schedule.freeze(connection, SITE, [cycle_for(day)])
+            await admin(
+                "UPDATE weather.segment SET state='unavailable',reason='deadline_missed' "
+                "WHERE camera_id=:c AND cycle_date=:d",
+                c=CAMERA,
+                d=day,
+            )
+            [daytime] = await rows(
+                worker,
+                "SELECT id,starts_at FROM weather.segment WHERE camera_id=:c AND cycle_date=:d "
+                "AND kind='daytime'",
+                c=CAMERA,
+                d=day,
+            )
+            assert not [r for r in await schedule.active(worker, CAMERA, NOW) if r.id == daytime.id]
+            await schedule.mark_through(worker, daytime.id, daytime.starts_at + timedelta(hours=1))
+            [row] = [r for r in await schedule.active(worker, CAMERA, NOW) if r.id == daytime.id]
+            assert row.mezzanine_through == daytime.starts_at + timedelta(hours=1)
+            await schedule.finish(
+                worker,
+                daytime.id,
+                {"state": "partial", "reason": "low_coverage", "slots": {"fraction": 0.6}},
+            )
+            assert not [r for r in await schedule.active(worker, CAMERA, NOW) if r.id == daytime.id]
+        finally:
             await worker.dispose()
 
     asyncio.run(check())
