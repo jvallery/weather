@@ -243,9 +243,18 @@ def test_numbers_must_be_supplied_renderings_of_cited_metrics() -> None:
     for text in ("A gust of 27.74 mph.", "A gust of 28 mph.", "A gust of 12.4 m/s at 3 pm."):
         with pytest.raises(Rejected):
             validate.numbers_grounded(text, [gust])
-    # A true value cited for another quantity does not ground the text.
+    # A true value cited for another quantity does not ground the text, and subjects match
+    # whole words only.
     with pytest.raises(Rejected):
         validate.numbers_grounded("Rain totalled 12.4 m/s.", [rain])
+    with pytest.raises(Rejected) as rejected:
+        validate.numbers_grounded("Over the terrain, 0.0 mm.", [rain])
+    assert rejected.value.code == "irrelevant_number"
+    high = PACKET.find("temperature", "max")
+    assert high is not None
+    with pytest.raises(Rejected):
+        validate.numbers_grounded("The low dropped to 14.8°C.", [high])
+    assert validate.numbers_grounded("The high reached 14.8°C.", [high]) == 1
     # "No rain" needs a full-coverage measured zero that the claim cites.
     partial = build_packet("p", T0, T0 + timedelta(hours=2), station(T0, T0 + timedelta(hours=2)))
     claim = {"text": "No rain fell.", "basis": "instrument", "evidence_ids": []}
