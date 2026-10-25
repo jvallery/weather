@@ -130,7 +130,7 @@ def seal(staging: Path, camera: str, captures: list[tuple[datetime, bytes]]) -> 
     synthetic.write_chunks(
         staging,
         camera,
-        [synthetic.Frame(int(at.timestamp() * 1000) * 1_000_000, data) for at, data in captures],
+        [synthetic.Frame(round(at.timestamp() * 1000) * 1_000_000, data) for at, data in captures],
         geometry=(W, H),
         cadence_ms=2000,
         phase_ms=PHASE[camera],

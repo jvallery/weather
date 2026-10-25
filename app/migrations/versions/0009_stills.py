@@ -26,7 +26,8 @@ CAPTURE = (
     "segment_revision,original_asset_id,original_class,sha256,bytes,width,height,publication_id,"
     "publication_product"
 )
-STILL_KEY = """to_char(s.slot_starts_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24":00Z"')"""
+# The still product key, e.g. 2026-11-01T07:00Z; the colon is escaped from SQLAlchemy binds.
+STILL_KEY = """to_char(s.slot_starts_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24"\\:00Z"')"""
 
 
 def statements() -> list[str]:
@@ -122,7 +123,7 @@ def statements() -> list[str]:
               AND (reason IS NULL OR reason ~ '^[a-z][a-z0-9_]{{0,63}}$')),
             CONSTRAINT ck_archival_still_capture CHECK (CASE WHEN state = 'missing'
               THEN num_nonnulls({CAPTURE}) = 0 ELSE num_nulls({CAPTURE}) = 0 END),
-            -- Never borrowed from another hour; on target means within 60 s of :30.
+            -- Never borrowed from another hour; on target means within 60 s of half past.
             CONSTRAINT ck_archival_still_hour CHECK (source_ts IS NULL OR (
               source_ts >= slot_starts_at AND source_ts < slot_starts_at + interval '1 hour'
               AND capture_upper >= source_ts
