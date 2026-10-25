@@ -260,8 +260,8 @@ def visual(
 
 # Words that tie a number to its metric; a true value cited for the wrong quantity fails.
 SUBJECTS = {
-    ("temperature", "min"): ("low", "minimum", "coolest", "coldest", "ranged", "range", "from"),
-    ("temperature", "max"): ("high", "maximum", "warmest", "hottest", "peak", "ranged", "to"),
+    ("temperature", "min"): ("low", "minimum", "coolest", "coldest", "ranged", "range"),
+    ("temperature", "max"): ("high", "maximum", "warmest", "hottest", "peak", "ranged", "range"),
     ("temperature", "mean"): ("average", "mean"),
     ("humidity", "mean"): ("humidity",),
     ("wind_avg", "mean"): ("average wind", "mean wind", "sustained", "average speed"),
@@ -317,8 +317,9 @@ def _unit(unit: str) -> str:
 
 
 def _about(lowered: str, metric: Metric) -> bool:
+    """Whole-word subject match: "rain" is not in "terrain", "low" not in "below"."""
     words = SUBJECTS[(metric.metric, metric.statistic)]
-    subject = any(word in lowered for word in words)
+    subject = any(re.search(rf"\b{re.escape(word)}", lowered) for word in words)
     if metric.metric == "temperature":
         return subject and any(word in lowered for word in TEMPERATURE_WORDS)
     return subject
