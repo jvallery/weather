@@ -57,6 +57,8 @@ export function binAt(bins: readonly PlotBin[], at: Instant | null): number | nu
 }
 const STAT_LABELS: Record<string, string> = { mean: "mean", max: "maximum", sum: "total" };
 export function seriesLabel(metric: string, statistic: string, registry: MetricRegistry | null): string {
+  // A per-report rain amount summed over an interval is that interval's rain total.
+  if (metric === "precipitation" && statistic === "sum") return "Rain total";
   return `${metricLabel(metric, definitionOf(metric, registry))} ${STAT_LABELS[statistic] || statistic}`;
 }
 const definitionOf = (metric: string, registry: MetricRegistry | null): MetricDefinition | undefined => registry?.metrics.find((item) => item.metric === metric);
