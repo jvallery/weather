@@ -1,0 +1,121 @@
+{
+  "complete": {
+    "label": "AI-generated · sampled-frame analysis",
+    "state": "complete",
+    "reason": null,
+    "stale": false,
+    "revision": 2,
+    "generated_at": "2026-11-01T09:00:00Z",
+    "description": "Synthetic fixture: broken clouds drifted across the sky through the morning. Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+    "claims": [
+      {
+        "text": "Synthetic fixture: broken clouds drifted across the sky through the morning.",
+        "basis": "visual"
+      },
+      {
+        "text": "Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+        "basis": "instrument"
+      }
+    ],
+    "limitations": [
+      "Some hours could not be reviewed visually."
+    ],
+    "coverage": {
+      "algorithm_revision": "hour-windows-v1",
+      "reviewed_seconds": 39600,
+      "expected_seconds": 45000,
+      "fraction": 0.88,
+      "windows_reviewed": 11,
+      "windows_total": 13,
+      "gaps": [
+        {
+          "start": "2026-10-31T23:00:00Z",
+          "end": "2026-11-01T01:00:00Z"
+        }
+      ]
+    },
+    "provenance": {
+      "model_route": "llm.primary.longctx.mm",
+      "model": "synthetic-model",
+      "prompt_revision": "1f2e3d4c5b6a7980",
+      "schema_revision": "0a1b2c3d4e5f6071",
+      "refresh": "full",
+      "evidence_count": 750,
+      "frames_sampled": 88,
+      "keogram_used": true
+    }
+  },
+  "degraded": {
+    "label": "AI-generated · sampled-frame analysis",
+    "state": "degraded",
+    "reason": "synthesis_invalid",
+    "stale": false,
+    "revision": 2,
+    "generated_at": "2026-11-01T09:00:00Z",
+    "description": "Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F). Synthetic fixture: broken clouds cover much of the sky.",
+    "claims": [
+      {
+        "text": "Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+        "basis": "instrument"
+      },
+      {
+        "text": "Synthetic fixture: broken clouds cover much of the sky.",
+        "basis": "visual"
+      }
+    ],
+    "limitations": [
+      "Some hours could not be reviewed visually."
+    ],
+    "coverage": {
+      "algorithm_revision": "hour-windows-v1",
+      "reviewed_seconds": 39600,
+      "expected_seconds": 45000,
+      "fraction": 0.88,
+      "windows_reviewed": 11,
+      "windows_total": 13,
+      "gaps": [
+        {
+          "start": "2026-10-31T23:00:00Z",
+          "end": "2026-11-01T01:00:00Z"
+        }
+      ]
+    },
+    "provenance": {
+      "model_route": "llm.primary.longctx.mm",
+      "model": "synthetic-model",
+      "prompt_revision": "1f2e3d4c5b6a7980",
+      "schema_revision": "0a1b2c3d4e5f6071",
+      "refresh": "full",
+      "evidence_count": 750,
+      "frames_sampled": 88,
+      "keogram_used": false
+    },
+    "raw_response": "RAW-MODEL-TEXT-SENTINEL"
+  },
+  "pending": {
+    "label": "AI-generated · sampled-frame analysis",
+    "revision": null,
+    "generated_at": null,
+    "description": null,
+    "claims": [],
+    "limitations": [],
+    "coverage": null,
+    "provenance": null,
+    "stale": false,
+    "state": "pending",
+    "reason": "cortex_unavailable"
+  },
+  "failed": {
+    "label": "AI-generated · sampled-frame analysis",
+    "revision": null,
+    "generated_at": null,
+    "description": null,
+    "claims": [],
+    "limitations": [],
+    "coverage": null,
+    "provenance": null,
+    "stale": false,
+    "state": "failed",
+    "reason": "cortex_unavailable"
+  }
+}

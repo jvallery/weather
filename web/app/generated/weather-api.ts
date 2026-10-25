@@ -292,6 +292,91 @@ export interface components {
             /** Unit */
             readonly unit: string | null;
         };
+        /**
+         * Analysis
+         * @description The labelled AI description of the current media; never raw model text.
+         */
+        readonly Analysis: {
+            /** Claims */
+            readonly claims: readonly components["schemas"]["AnalysisClaim"][];
+            readonly coverage: components["schemas"]["AnalysisCoverage"] | null;
+            /** Description */
+            readonly description: string | null;
+            /** Generated At */
+            readonly generated_at: string | null;
+            /**
+             * Label
+             * @default AI-generated · sampled-frame analysis
+             * @constant
+             */
+            readonly label: "AI-generated · sampled-frame analysis";
+            /** Limitations */
+            readonly limitations: readonly string[];
+            readonly provenance: components["schemas"]["AnalysisProvenance"] | null;
+            /** Reason */
+            readonly reason: string | null;
+            /** Revision */
+            readonly revision: number | null;
+            /** Stale */
+            readonly stale: boolean;
+            /**
+             * State
+             * @enum {string}
+             */
+            readonly state: "pending" | "complete" | "degraded" | "failed" | "unavailable";
+        };
+        /** AnalysisClaim */
+        readonly AnalysisClaim: {
+            /**
+             * Basis
+             * @enum {string}
+             */
+            readonly basis: "visual" | "instrument" | "inference";
+            /** Text */
+            readonly text: string;
+        };
+        /**
+         * AnalysisCoverage
+         * @description Reviewed source time: hour windows whose sampled frames passed validation.
+         */
+        readonly AnalysisCoverage: {
+            /** Algorithm Revision */
+            readonly algorithm_revision: string;
+            /** Expected Seconds */
+            readonly expected_seconds: number;
+            /** Fraction */
+            readonly fraction: number;
+            /** Gaps */
+            readonly gaps: readonly components["schemas"]["weather__api__timelapses__Interval"][];
+            /** Reviewed Seconds */
+            readonly reviewed_seconds: number;
+            /** Windows Reviewed */
+            readonly windows_reviewed: number;
+            /** Windows Total */
+            readonly windows_total: number;
+        };
+        /** AnalysisProvenance */
+        readonly AnalysisProvenance: {
+            /** Evidence Count */
+            readonly evidence_count: number;
+            /** Frames Sampled */
+            readonly frames_sampled: number;
+            /** Keogram Used */
+            readonly keogram_used: boolean;
+            /** Model */
+            readonly model: string;
+            /** Model Route */
+            readonly model_route: string;
+            /** Prompt Revision */
+            readonly prompt_revision: string;
+            /**
+             * Refresh
+             * @enum {string}
+             */
+            readonly refresh: "full" | "synthesis";
+            /** Schema Revision */
+            readonly schema_revision: string;
+        };
         /** Asset */
         readonly Asset: {
             /**
@@ -1045,6 +1130,7 @@ export interface components {
         readonly Timelapse: {
             /** Allocated Frames */
             readonly allocated_frames: number;
+            readonly analysis: components["schemas"]["Analysis"];
             /** Camera */
             readonly camera: string;
             /**

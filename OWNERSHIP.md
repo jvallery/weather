@@ -26,7 +26,11 @@ What this repository owns and its state: **live** (running or applied), **disabl
 | Job `weather-pipeline-bench` (disposable throughput check) | `pipeline/bench-job.yaml`, never in a kustomization | applied by hand, then deleted |
 | StatefulSets `collector-skycam-east`, `-skycam-west`, `-frontyard-1` ×1, ConfigMap `collector-capture-<hash>`, NetworkPolicy `collector`, PVC `weather-staging` (binds the storage-infra PV; `Prune=false,Delete=false`) | `capture/`; runbook [capture](docs/operations/capture.md) | live (#4, 0.5 Hz epoch) |
 | Deployment `tempest-receiver` ×1 (Recreate, node6/node7), ConfigMap `tempest-receiver`, PVC `tempest-receiver-spool` (1 GiB `longhorn-v1-rwo`, `Prune=false,Delete=false`), NetworkPolicy `tempest-receiver` | `receiver/`; runbook [tempest-ingest](docs/operations/tempest-ingest.md) | live (#5) |
-| `weather-preview`, `intel` | — | planned (#39, #23) |
+| Deployment `intel` ×1 (Recreate; worker DB role, `weather-cortex`, `weather-media-s3-reader`) and NetworkPolicy `intel` (Cortex and Garage via traefik-apps only) | `intel/`; runbook [intelligence](docs/operations/intelligence.md) | disabled (#23); #50 enables |
+| Schema `0011_analysis`: `analysis`, `analysis_revision` (append-only), `ai_raw_response` (24 h, worker only), view `public_api.video_analyses` | `app/migrations/versions/0011_analysis.py`, `app/weather/ai/` | source (#23); applied with the next app pin |
+| Job kinds `analysis.describe`, `analysis.synthesize` (claimed by `intel`, queued by the scheduler's `media.changed` hook and intel's nightly retry); `search.embed` claimed by `intel` | `app/weather/ai/`, `app/weather/scheduler/handlers.py` | source (#23) |
+| Job and NetworkPolicy `weather-intel-smoke` (disposable one-call Cortex check) | `intel/smoke-job.yaml`, never in a kustomization | applied by hand, then deleted |
+| `weather-preview` | — | planned (#39) |
 | Images `weather-app`, `weather-web` (digests in `kustomization.yaml`) | `registry.vallery.net/jvallery/` | live |
 | Images `weather-python-base`, `weather-node-base`, `weather-ci` | `registry.vallery.net/jvallery/` | live |
 
@@ -38,10 +42,10 @@ Disposable restore-drill resources (`weather-drill-*`) are created by `scripts/r
 |---|---|---|
 | Secrets `weather-pg-api`, `-editor`, `-ingest`, `-migrator`, `-worker` (database roles) | DB clients | live |
 | Secrets `weather-pg-backup-b2-writer`, `weather-pg-backup-b2-reader` | `weather-pg` backups, restore drills | live |
-| Secret `weather-media-s3-reader` | api media origin | live |
+| Secret `weather-media-s3-reader` | api media origin, intel (#23) | live |
 | Secrets `weather-media-s3-writer`, `weather-originals-s3-writer`, `weather-custody-restore-reader` | pipelines, custody drill (#77) | live |
 | Secrets `weather-camera-skycam-east`, `-skycam-west`, `-frontyard-1` | collectors | live |
-| Secret `weather-cortex` | api search, intel | live (unused until #25 is enabled) |
+| Secret `weather-cortex` | api search, intel, `weather-intel-smoke` | live (unused until #25 and #50 enable them) |
 | Secret `weather-api-cursor` | api | live |
 | Secret `weather-tempest` (hub and device serials) | `tempest-receiver` | live |
 | Secret `weather-site` (almanac sun/moon position) | api | planned |

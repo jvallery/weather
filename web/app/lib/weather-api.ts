@@ -38,6 +38,7 @@ export type EventVideo = Schemas["EventVideo"];
 export type Still = Schemas["Still"];
 export type StillImage = Schemas["StillImage"];
 export type StillPage = Schemas["StillPage"];
+export type Analysis = Schemas["Analysis"];
 
 const text = z.string();
 // A new server enum value degrades that one field instead of rejecting the whole response.
@@ -110,6 +111,32 @@ const archiveEntry = z.object({
   state: lenient(["published", "partial", "unavailable", "withdrawn"], "unavailable"), reason: text.nullable().default(null),
 });
 const archive = z.object({ items: z.array(archiveEntry), next_cursor: text.nullable() });
+// The AI description (#23). Only validated text fields are read; anything else is dropped, and an
+// unparseable analysis degrades to "unavailable" without sinking its recording.
+export const ANALYSIS_LABEL = "AI-generated · sampled-frame analysis";
+const analysisCoverage = z.object({
+  algorithm_revision: text, reviewed_seconds: z.number(), expected_seconds: z.number(), fraction: z.number(),
+  windows_reviewed: z.number(), windows_total: z.number(), gaps: z.array(interval).default([]),
+});
+const analysisProvenance = z.object({
+  model_route: text, model: text, prompt_revision: text, schema_revision: text, refresh: lenient(["full", "synthesis"], "synthesis"),
+  evidence_count: z.number(), frames_sampled: z.number(), keogram_used: z.boolean(),
+});
+export const analysisSchema = z.object({
+  label: z.literal(ANALYSIS_LABEL).catch(ANALYSIS_LABEL),
+  state: lenient(["pending", "complete", "degraded", "failed", "unavailable"], "unavailable"),
+  reason: text.nullable().default(null), stale: z.boolean().default(false), revision: z.number().nullable().default(null),
+  generated_at: text.nullable().default(null), description: text.nullable().default(null),
+  claims: z.array(z.object({ text, basis: lenient(["visual", "instrument", "inference"], "inference") })).default([]),
+  limitations: z.array(text).default([]),
+  coverage: analysisCoverage.nullable().default(null).catch(null), provenance: analysisProvenance.nullable().default(null).catch(null),
+});
+const unavailableAnalysis: z.infer<typeof analysisSchema> = {
+  label: ANALYSIS_LABEL, state: "unavailable", reason: null, stale: false, revision: null, generated_at: null,
+  description: null, claims: [], limitations: [], coverage: null, provenance: null,
+};
+export const analysisField = analysisSchema.catch(unavailableAnalysis);
+
 // Full catalog entries (#18) for the day, video and Today pages. Media URLs must be same-origin
 // opaque paths; an asset that is not is dropped, so the entry degrades instead of linking out.
 const media = z.object({
@@ -126,6 +153,7 @@ const timelapse = z.object({
   poster: optionalMedia, sidecar: optionalMedia, keogram: optionalMedia,
   native_download_url: text.regex(/^\/downloads\/[0-9a-f-]{36}\/native$/).nullable().catch(null).default(null),
   keogram_state: lenient(["pending", "published", "partial", "unavailable", "withdrawn"], "unavailable"),
+  analysis: analysisField.default(unavailableAnalysis),
 });
 // One malformed entry is dropped, never the page.
 const timelapses = z.object({
@@ -174,7 +202,8 @@ const checks: [
   (value: z.infer<typeof events>) => Events,
   (value: z.infer<typeof timelapses>) => TimelapsePage,
   (value: z.infer<typeof stills>) => StillPage,
-] = [(value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value];
+  (value: z.infer<typeof analysisSchema>) => Analysis,
+] = [(value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value, (value) => value];
 void checks;
 
 export type Parser<T> = (value: unknown) => T | null;

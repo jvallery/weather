@@ -166,6 +166,33 @@ test("safe interpretation text, lifecycle states and quality preservation", asyn
     await expect(page.getByText(new RegExp(`^${state[0].toUpperCase() + state.slice(1)}`)).first()).toBeVisible();
   }
 });
+test("AI description: label, model/prompt provenance, state and coverage on video and day pages", async ({ page, request }) => {
+  const cases = [["complete", "Complete"], ["degraded", "Degraded"], ["pending", "Pending"], ["failed", "Failed"]] as const;
+  for (const [state, label] of cases) {
+    await request.post("http://localhost:4174/__control", { data: { analysis: state } });
+    for (const path of ["/timelapses/skycam_east/2026-10-31/daytime/", "/day/2026-10-31/"]) {
+      const response = await page.goto(path);
+      await expect(page.getByText("AI-generated · sampled-frame analysis").first()).toBeVisible();
+      await expect(page.getByText(new RegExp(`· ${label}`)).first()).toBeVisible();
+      // Only validated fields render; an unknown raw field in the API response never does.
+      expect(await response?.text()).not.toContain("RAW-MODEL-TEXT-SENTINEL");
+    }
+    await page.goto("/timelapses/skycam_east/2026-10-31/daytime/");
+    if (state === "complete" || state === "degraded") {
+      await expect(page.getByText(/^Model llm\.primary\.longctx\.mm \(synthetic-model\) · prompt 1f2e3d4c5b6a7980/)).toBeVisible();
+      await expect(page.getByText(/^Analysis coverage: 88% of the source interval reviewed · 11 of 13 hour windows/)).toBeVisible();
+      await expect(page.getByText(state === "complete" ? "Visual" : "Measured", { exact: true }).first()).toBeVisible();
+    } else {
+      await expect(page.getByText("No AI description is available.")).toBeVisible();
+      await expect(page.getByText(/retried nightly for 7 days/)).toBeVisible();
+    }
+  }
+  // Description text is escaped text, never markup.
+  await request.post("http://localhost:4174/__control", { data: { analysis: "complete", description: "<script>window.SYNTHETIC_XSS=1</script>" } });
+  await page.goto("/timelapses/skycam_east/2026-10-31/daytime/");
+  expect(await page.evaluate(() => (window as Window & { SYNTHETIC_XSS?: number }).SYNTHETIC_XSS)).toBeUndefined();
+  await expect(page.getByText("<script>window.SYNTHETIC_XSS=1</script>")).toBeVisible();
+});
 test("concurrent SSR requests have isolated query state and expose no private upstream", async ({ request }) => {
   await request.post("http://localhost:4174/__control", { data: { unique: true } });
   const bodies = await Promise.all(Array.from({ length: 4 }, async () => (await request.get("http://localhost:4173/")).text()));

@@ -376,6 +376,265 @@
         "title": "Almanac",
         "type": "object"
       },
+      "Analysis": {
+        "additionalProperties": false,
+        "description": "The labelled AI description of the current media; never raw model text.",
+        "properties": {
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisClaim"
+            },
+            "maxItems": 16,
+            "title": "Claims",
+            "type": "array"
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisCoverage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 8000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "generated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generated At"
+          },
+          "label": {
+            "const": "AI-generated \u00b7 sampled-frame analysis",
+            "default": "AI-generated \u00b7 sampled-frame analysis",
+            "title": "Label",
+            "type": "string"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "title": "Limitations",
+            "type": "array"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "stale": {
+            "title": "Stale",
+            "type": "boolean"
+          },
+          "state": {
+            "enum": [
+              "pending",
+              "complete",
+              "degraded",
+              "failed",
+              "unavailable"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "reason",
+          "stale",
+          "revision",
+          "generated_at",
+          "description",
+          "claims",
+          "limitations",
+          "coverage",
+          "provenance"
+        ],
+        "title": "Analysis",
+        "type": "object"
+      },
+      "AnalysisClaim": {
+        "additionalProperties": false,
+        "properties": {
+          "basis": {
+            "enum": [
+              "visual",
+              "instrument",
+              "inference"
+            ],
+            "title": "Basis",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "basis"
+        ],
+        "title": "AnalysisClaim",
+        "type": "object"
+      },
+      "AnalysisCoverage": {
+        "additionalProperties": false,
+        "description": "Reviewed source time: hour windows whose sampled frames passed validation.",
+        "properties": {
+          "algorithm_revision": {
+            "title": "Algorithm Revision",
+            "type": "string"
+          },
+          "expected_seconds": {
+            "minimum": 0.0,
+            "title": "Expected Seconds",
+            "type": "number"
+          },
+          "fraction": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Fraction",
+            "type": "number"
+          },
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/weather__api__timelapses__Interval"
+            },
+            "maxItems": 48,
+            "title": "Gaps",
+            "type": "array"
+          },
+          "reviewed_seconds": {
+            "minimum": 0.0,
+            "title": "Reviewed Seconds",
+            "type": "number"
+          },
+          "windows_reviewed": {
+            "minimum": 0.0,
+            "title": "Windows Reviewed",
+            "type": "integer"
+          },
+          "windows_total": {
+            "minimum": 0.0,
+            "title": "Windows Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "algorithm_revision",
+          "reviewed_seconds",
+          "expected_seconds",
+          "fraction",
+          "windows_reviewed",
+          "windows_total",
+          "gaps"
+        ],
+        "title": "AnalysisCoverage",
+        "type": "object"
+      },
+      "AnalysisProvenance": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence_count": {
+            "minimum": 0.0,
+            "title": "Evidence Count",
+            "type": "integer"
+          },
+          "frames_sampled": {
+            "minimum": 0.0,
+            "title": "Frames Sampled",
+            "type": "integer"
+          },
+          "keogram_used": {
+            "title": "Keogram Used",
+            "type": "boolean"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "model_route": {
+            "title": "Model Route",
+            "type": "string"
+          },
+          "prompt_revision": {
+            "title": "Prompt Revision",
+            "type": "string"
+          },
+          "refresh": {
+            "enum": [
+              "full",
+              "synthesis"
+            ],
+            "title": "Refresh",
+            "type": "string"
+          },
+          "schema_revision": {
+            "title": "Schema Revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_route",
+          "model",
+          "prompt_revision",
+          "schema_revision",
+          "refresh",
+          "evidence_count",
+          "frames_sampled",
+          "keogram_used"
+        ],
+        "title": "AnalysisProvenance",
+        "type": "object"
+      },
       "Asset": {
         "additionalProperties": false,
         "properties": {
@@ -2563,6 +2822,9 @@
             "title": "Allocated Frames",
             "type": "integer"
           },
+          "analysis": {
+            "$ref": "#/components/schemas/Analysis"
+          },
           "camera": {
             "title": "Camera",
             "type": "string"
@@ -2705,7 +2967,8 @@
           "sidecar",
           "native_download_url",
           "keogram_state",
-          "keogram"
+          "keogram",
+          "analysis"
         ],
         "title": "Timelapse",
         "type": "object"
