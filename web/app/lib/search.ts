@@ -219,6 +219,8 @@ export type Outcome =
 /** One response, classified. 429 is busy (with its Retry-After), anything else not 2xx/400 is unavailable. */
 export async function readOutcome(response: Response): Promise<Outcome> {
   if (response.status === 429) {
+    // Bodies that are not read are released, so the connection does not stay open.
+    void response.body?.cancel().catch(() => undefined);
     const seconds = Number(response.headers.get("Retry-After"));
     return { kind: "busy", retryAfter: Number.isInteger(seconds) && seconds > 0 && seconds <= 3600 ? seconds : null };
   }
@@ -227,7 +229,7 @@ export async function readOutcome(response: Response): Promise<Outcome> {
     const code = z.object({ code: text }).safeParse(body);
     return { kind: "invalid", code: code.success && code.data.code === "range_too_large" ? "range_too_large" : "invalid_request" };
   }
-  if (response.status !== 200) return { kind: "unavailable" };
+  if (response.status !== 200) { void response.body?.cancel().catch(() => undefined); return { kind: "unavailable" }; }
   const data = parseSearchResults(await response.json().catch(() => null));
   return data ? { kind: "results", data } : { kind: "unavailable" };
 }
