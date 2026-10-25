@@ -74,7 +74,7 @@ test("without JavaScript: archive to day to video, times, text and native downlo
 });
 test("placeholders, About topics, repeated hour, source-only network and reduced motion", async ({ page }) => {
   const unexpected: string[] = [];
-  page.on("request", (request) => { if (!new URL(request.url()).hostname.includes("localhost")) unexpected.push(request.url()); });
+  page.on("request", (request) => { const url = new URL(request.url()); if (url.protocol !== "blob:" && url.protocol !== "data:" && !url.hostname.includes("localhost")) unexpected.push(request.url()); });
   await page.emulateMedia({ reducedMotion: "reduce" }); await page.goto("/");
   // Delayed previews (#39): honest capture age, stale and unavailable tiles.
   const tiles = page.locator("[data-preview-state]");
