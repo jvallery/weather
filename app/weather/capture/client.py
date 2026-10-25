@@ -136,7 +136,9 @@ class SnapshotClient:
             # Includes both Digest exchanges, response headers and every body byte.
             async with asyncio.timeout(self.config.total_seconds):
                 for attempt in range(2):
-                    if self._last_exchange_ns is not None:
+                    # Pace polls, not the Digest pair inside one poll: the commissioned cameras
+                    # issue single-use nonces, so every frame is a 401 then an authorized retry.
+                    if attempt == 0 and self._last_exchange_ns is not None:
                         delay = (
                             self._last_exchange_ns
                             + self.config.cadence_ms * 1_000_000
