@@ -25,6 +25,7 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, create_async_engine
 from weather.db.days import ensure_days
 from weather.db.models import metadata
+from weather.media.catalog import CatalogResolver
 from weather.pipeline import schedule, synthetic
 from weather.pipeline.hourly import HourlyArchive
 from weather.pipeline.intake import ChunkIndex, Expected
@@ -32,6 +33,7 @@ from weather.publish import catalog as publish_catalog
 from weather.publish.model import EMBARGO, MEDIA_BUCKET, ORIGINALS_BUCKET, Product, ProductFile
 from weather.publish.objects import ObjectStore
 from weather.publish.publisher import Publisher
+from weather.publish.reconcile import reconcile
 from weather.stills import catalog
 from weather.stills.policy import Choice
 from weather.stills.sanitize import metadata as scan
@@ -142,6 +144,12 @@ def archive_for(db: AsyncEngine, publisher: Publisher, staging: Path, camera: st
     expected = Expected(camera, 2000, PHASE[camera], W, H)
     # A fresh index each time: nothing in memory survives a restart.
     return HourlyArchive(camera, db, publisher, ChunkIndex(staging, expected), expected)
+
+
+async def drain(archive: HourlyArchive, now: datetime) -> None:
+    """Enough loops for every due slot (two selections per loop); a failed slot backs off."""
+    for _ in range(10):
+        await archive.step(now)
 
 
 def member_bytes(staging: Path, camera: str, sha256: str) -> bytes:
@@ -408,7 +416,7 @@ def test_hour_archive_exact_bytes_dusk_binding_crash_correction_and_expiry(
                 raise ConnectionResetError("killed before commit")
 
             monkeypatch.setattr(Publisher, "commit", crash)
-            await archive_for(worker, publisher, tmp_path, "skycam_east").step(now)
+            await drain(archive_for(worker, publisher, tmp_path, "skycam_east"), now)
             monkeypatch.setattr(Publisher, "commit", original_commit)
             # Only database-only missing slots committed; no archived selection exists.
             assert (
@@ -417,8 +425,12 @@ def test_hour_archive_exact_bytes_dusk_binding_crash_correction_and_expiry(
                 )
                 == []
             )
+            # The reconciler never commits a still bare: it orphans the intent for the rerun.
+            counts = await reconcile(worker, buckets, older_than=timedelta(0))
+            assert counts["committed"] == 0 and counts["orphaned"] >= 1
+            assert await rows(admin, "SELECT 1 FROM weather.publication") == []
             for camera in ("skycam_east", "skycam_east", "skycam_west", "frontyard_1"):
-                await archive_for(worker, publisher, tmp_path, camera).step(now)
+                await drain(archive_for(worker, publisher, tmp_path, camera), now)
 
             selections = {
                 r.camera_id: r
@@ -435,7 +447,13 @@ def test_hour_archive_exact_bytes_dusk_binding_crash_correction_and_expiry(
                     "SELECT count(*) AS n FROM weather.archival_still "
                     "WHERE camera_id='skycam_east' AND active",
                 )
-            )[0].n == 12  # every due slot of the lookback, each exactly once (11 missing)
+            )[0].n == 48  # every slot of the 48 h expiry window, each exactly once
+            expired = await rows(
+                admin,
+                "SELECT count(*) AS n FROM weather.archival_still WHERE camera_id='skycam_east' "
+                "AND active AND reason='selection_expired'",
+            )
+            assert expired[0].n == 36  # unselected past the 12 h lookback: recorded, not lost
             e, w, f = (selections[c] for c in ("skycam_east", "skycam_west", "frontyard_1"))
             # East: on target, overnight; west: off target, daytime; same solar cycle.
             assert (e.state, e.segment_kind, e.revision) == ("on_target", "overnight", 1)
@@ -463,11 +481,19 @@ def test_hour_archive_exact_bytes_dusk_binding_crash_correction_and_expiry(
                 "AND product_key=:key ORDER BY fence",
                 key=catalog.product_key(slot_for(slot)),
             )
-            assert [i.state for i in intents] == ["pending", "committed"]
+            assert [i.state for i in intents] == ["orphan", "committed"]
+            reasons = await rows(
+                admin,
+                "SELECT reason FROM weather.upload_intent WHERE state='orphan' AND product_key=:key"
+                " AND camera_id='skycam_east'",
+                key=catalog.product_key(slot_for(slot)),
+            )
+            assert [r.reason for r in reasons] == ["still_selection"]
             # Derivatives: six sanitized images, embargoed from the capture upper bound.
             derivatives = await rows(
                 admin,
-                "SELECT d.role,d.state,m.class AS asset_class,m.bucket,m.sha256,m.extension,"
+                "SELECT d.role,d.state,d.asset_id,m.class AS asset_class,m.bucket,m.sha256,"
+                "m.extension,"
                 "m.public_not_before "
                 "FROM weather.still_derivative d JOIN weather.media_asset m ON m.id=d.asset_id "
                 "WHERE d.archival_still_id=:id ORDER BY d.role",
@@ -554,6 +580,45 @@ def test_hour_archive_exact_bytes_dusk_binding_crash_correction_and_expiry(
             )
             assert await buckets[ORIGINALS_BUCKET].head(f"original/{e.sha256}.jpg") is not None
 
+            # The media origin serves the active selection's images.
+            resolver = CatalogResolver(api)
+            east_ids = [d.asset_id for d in derivatives]
+            for asset_id in east_ids:
+                assert await resolver.asset(asset_id) is not None
+            # Withdrawing one image tombstones its still: every sibling leaves the media
+            # origin and the stills view lists the slot withdrawn, with no images.
+            west_ids = [
+                r.asset_id
+                for r in await rows(
+                    admin,
+                    "SELECT asset_id FROM weather.still_derivative WHERE archival_still_id=:id",
+                    id=w.id,
+                )
+            ]
+            assert len(west_ids) == 6 and await resolver.asset(west_ids[0]) is not None
+            async with worker.begin() as connection:
+                await publish_catalog.withdraw(
+                    connection, west_ids[-1], reason="privacy", actor="test"
+                )
+            for asset_id in west_ids:
+                assert await resolver.asset(asset_id) is None
+            async with api.connect() as connection:
+                west_view = (
+                    await connection.execute(
+                        text(
+                            "SELECT state,reason,asset_ids FROM public_api.stills "
+                            "WHERE camera_id='skycam_west' AND slot_starts_at=:slot"
+                        ),
+                        {"slot": slot},
+                    )
+                ).one()
+            assert (west_view.state, west_view.reason, list(west_view.asset_ids)) == (
+                "withdrawn",
+                "withdrawn",
+                [],
+            )
+            # The private original is never served, by ID or otherwise.
+            assert await resolver.asset(e.original_asset_id) is None
             # A correction is a new revision; the old one and its derivatives are retired.
             async with worker.begin() as connection:
                 revision = await catalog.record(
@@ -577,6 +642,9 @@ def test_hour_archive_exact_bytes_dusk_binding_crash_correction_and_expiry(
                 id=e.id,
             )
             assert [s.state for s in states] == ["retired"]
+            # Retired images leave the media origin at once.
+            for asset_id in east_ids:
+                assert await resolver.asset(asset_id) is None
             async with worker.begin() as connection:
                 await rejected(
                     connection,

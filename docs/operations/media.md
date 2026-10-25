@@ -85,7 +85,7 @@ before the segment's video publishes. Sidecar bytes are also kept inline in
 | `publication`, `publication_asset` | Append-only revision log of every product (video, keogram, still) with its roles; `publication.public_not_before >= source_end + 630 s` |
 | `video` | Current state of each (camera, cycle date, segment); `public_not_before >= ends_at + 630 s`; withdrawal tombstone |
 | `withdrawal`, `product_tombstone` | Append-only audit of withdrawals, and the withdrawn products every later commit is checked against |
-| `public_api.assets` | Security barrier: public classes in `weather-media`, available, not withdrawn, past embargo |
+| `public_api.assets` | Security barrier: public classes in `weather-media`, available, not withdrawn, past embargo; a still image only through an active, untombstoned selection (0009) |
 | `public_api.videos` | Security barrier: past `public_not_before` and `ends_at + 630 s`; renditions only when all four are public; a withdrawn video lists with no media |
 
 The pipeline uses the `weather_worker` role, with UPDATE only on the columns
@@ -184,8 +184,8 @@ pipeline pod. It is idempotent and prints counts:
   the revision still matches) is committed through the same fenced commit.
 - `orphaned`: any other stale intent is marked `orphan` with a fixed reason:
   `superseded`, `deadline`, `revision_conflict`, `withdrawn`,
-  `private_reference`, `missing_object` (absent) or `object_mismatch` (present
-  with other bytes). Orphans are reported, never deleted here. #19's GC may
+  `private_reference`, `missing_object` (absent), `object_mismatch` (present
+  with other bytes) or `still_selection` (a still commits only with its selection, #38). Orphans are reported, never deleted here. #19's GC may
   delete an orphan's object only after the grace period, and only when no
   `media_asset` row **and no pending intent's manifest** references the key:
   a retry can share a key with an orphaned attempt and commit it later.
@@ -212,19 +212,23 @@ and the day page.
   (`offset_us`). No eligible capture is `missing` (`no_capture` or `no_eligible_capture`,
   with per-reason rejection counts). Only source time decides membership: a capture never
   fills another hour.
-- **When.** Each pipeline loop selects every slot of the last 12 h that ended at least
-  `max_lag + chunk_seconds + 60 s` ago (about 2 min) and has no active selection, re-reading
-  the sealed chunks, so a restart selects the same capture. A chunk that fails to read defers
-  the slot.
+- **When.** Each pipeline loop selects up to two slots of the last 12 h, oldest first, that
+  ended at least `max_lag + chunk_seconds + 60 s` ago (about 2 min) and have no active
+  selection, re-reading the sealed chunks, so a restart selects the same capture. A chunk that
+  fails to read, an FFmpeg timeout or a decode that exits cleanly but reports errors defers the
+  slot (only a failed decode is a persisted `decode` reject). A slot still unselected after
+  12 h is recorded `missing`/`selection_expired` (while it is under 48 h old); older unselected
+  slots the API reports as `missing`/`not_selected`.
 - **Archive.** One still product (`<camera>`, `YYYY-MM-DDTHH:00Z`) through the publisher:
   role `original` is the TAR member's exact bytes (EXIF included) in private
   `weather-originals`, roles `still`, `still_960`, `still_480`, `still_webp`, `still_webp960`,
   `still_webp480` are the sanitized derivatives in `weather-media`. The `archival_still` row
   (source chunk and member, source time and capture upper bound, segment and solar cycle,
   size, SHA-256, geometry, policy, retain-until date) commits in the same transaction as the
-  publication. A crash before that commit leaves only a pending intent (the reconciler orphans
-  it as `superseded`) and content-addressed objects; the rerun commits exactly one active
-  selection. A missing slot is a database-only row.
+  publication. A crash before that commit leaves only a pending intent and content-addressed
+  objects; the reconciler never commits a still intent bare (it orphans it, `superseded` or
+  `still_selection`), and the rerun commits exactly one active selection. A missing slot is a
+  database-only row.
 - **Dusk.** The winner binds to the current #15 segment that contains its source time, so an
   hour straddling civil twilight may archive a daytime or an overnight capture. No segment yet
   (schedule not frozen) retries (`stage="bind"`).
@@ -243,6 +247,10 @@ and the day page.
   withdrawal withdraws only video and keogram assets. No deletion job exists (#79).
 - **Withdraw.** `weather media withdraw <asset_id>` on a derivative tombstones that hour's still
   product: the API lists the slot as `withdrawn` with no images, and it is never republished.
+- **Media origin gate.** `0009_stills` redefines `public_api.assets` so a `still` image is
+  served only while its derivative row is `published`, its selection is active and its still
+  is not tombstoned. Withdrawing one image therefore removes all six, and a correction removes
+  the retired images, from the next request on.
 
 | Metric | Meaning and action |
 |---|---|

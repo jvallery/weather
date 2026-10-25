@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MIT
 """The pipeline's hourly pass (#38): one private native original per camera and UTC hour.
 
-Each loop, every hour slot that ended within the last 12 h, whose chunks have had time to seal
-and that has no active selection, is selected from the camera's sealed captures
+Each loop, up to two hour slots that ended within the last 12 h, whose chunks have had time to
+seal and that have no active selection, are selected from the camera's sealed captures
 (`weather.stills.policy`). The choice is re-derived from the sealed chunks, not from in-memory
 renderer state, so a restart selects the same capture. A winner's exact TAR member bytes are
 archived to private `weather-originals` and its sanitized derivatives to `weather-media`
@@ -10,6 +10,7 @@ through #18's publish, with the selection row (bound to its slot, calendar day, 
 solar cycle) committed in the same transaction. A missing slot is recorded with its reason and
 no upload. A crash anywhere before that commit leaves no selection, and the rerun converges on
 one: objects are content-addressed and never overwritten, and an older intent is fenced.
+A slot still unselected after 12 h (up to 48 h back) is recorded missing, `selection_expired`.
 """
 
 import asyncio
@@ -32,14 +33,19 @@ from weather.timemodel import HourSlot, slot_for
 from weather.timemodel._instant import epoch_seconds
 
 from . import metrics
-from .ffmpeg import decode_jpeg
+from .ffmpeg import decode_capture
 from .intake import Candidate, ChunkIndex, Expected, IntakeError, read_frame, utc
 from .render import SEAL_MARGIN
 
 LOG = logging.getLogger("weather.pipeline")
 LOOKBACK = timedelta(hours=12)
+# A slot still unselected after LOOKBACK is recorded missing (`selection_expired`) while it is
+# within EXPIRY; older slots the API reports as missing/not_selected.
+EXPIRY = timedelta(hours=48)
 PUBLISH_DEADLINE = timedelta(hours=1)
 MAX_BACKOFF = 1800
+# Selections per loop, oldest first, so a backlog after a restart never starves rendering.
+MAX_SLOTS_PER_STEP = 2
 LOOP_SECONDS = 10
 MICROSECOND = Fraction(1, 1_000_000)
 
@@ -66,9 +72,10 @@ class HourlyArchive:
         seconds = self.expected.max_lag + self.chunk_seconds + 2 * SEAL_MARGIN
         return timedelta(seconds=float(seconds))
 
-    def due(self, now: datetime) -> list[datetime]:
+    def due(self, now: datetime, window: timedelta = LOOKBACK) -> list[datetime]:
+        """Closed, sealed slots that ended within `window`, oldest first."""
         last = slot_for(now - self.settle).start - timedelta(hours=1)
-        first = slot_for(now - LOOKBACK).start
+        first = slot_for(now - window).start
         slots = []
         while last >= first:
             slots.append(last)
@@ -80,7 +87,7 @@ class HourlyArchive:
             data = read_frame(candidate)  # the sealed member, re-verified against its sha256
         except IntakeError:
             return "changed"
-        rgb = decode_jpeg(data, self.expected.width, self.expected.height)
+        rgb = decode_capture(data, self.expected.width, self.expected.height)
         return (data, rgb) if rgb is not None else "decode"
 
     def select(self, slot: datetime) -> Choice:
@@ -93,20 +100,34 @@ class HourlyArchive:
         return choose(candidates, start, self._decode)
 
     async def step(self, now: datetime) -> None:
-        slots = self.due(now)
-        if not slots:
+        candidates = self.due(now, EXPIRY)
+        if not candidates:
             return
         async with self.engine.connect() as connection:
-            done = await catalog.selected(connection, self.camera, slots[0], slots[-1])
+            done = await catalog.selected(connection, self.camera, candidates[0], candidates[-1])
+        recent = set(self.due(now))
+        for slot in [s for s in candidates if s not in done and s not in recent]:
+            # Failed or unprocessed for the whole lookback: never silently dropped.
+            expired = Choice("missing", "selection_expired", None, None, 0)
+            async with self.engine.begin() as connection:
+                await catalog.record(
+                    connection, camera=self.camera, slot=slot_for(slot), choice=expired
+                )
+            metrics.STILL_SLOTS.labels(self.camera, "missing").inc()
+        slots = sorted(recent)
         pending = [slot for slot in slots if slot not in done]
         self.backoff = {k: v for k, v in self.backoff.items() if k in pending}
         metrics.STILL_PENDING.labels(self.camera).set(len(pending))
         metrics.STILL_OLDEST.labels(self.camera).set(
             (now - pending[0] - timedelta(hours=1)).total_seconds() if pending else 0
         )
+        attempted = 0
         for slot in pending:
             if slot in self.backoff and now < self.backoff[slot][1]:
                 continue
+            if attempted == MAX_SLOTS_PER_STEP:
+                break
+            attempted += 1
             stage = "select"
             try:
                 choice = await asyncio.to_thread(self.select, slot)

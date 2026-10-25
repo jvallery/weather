@@ -442,7 +442,7 @@ def test_eligibility_matrix(tmp_path: Path) -> None:
     soon = asyncio.run(put_asset(secrets.token_bytes(500), embargo="clock_timestamp() + "
                                  "interval '15 seconds'"))
     catalog_rows = asyncio.run(rows())
-    public = [*seeded.video.values(), seeded.still["still"], seeded.keogram["keogram"]]
+    public = [*seeded.video.values(), seeded.keogram["keogram"]]
     original = seeded.still["original"]
     native = catalog_rows[seeded.video["native"]]
     with serving() as running:
@@ -466,6 +466,8 @@ def test_eligibility_matrix(tmp_path: Path) -> None:
         denied = [
             f"/media/{uuid4()}",
             f"/media/{original}",
+            # A still image without an active selection (0009, #38) is never served.
+            f"/media/{seeded.still['still']}",
             f"/media/{unpublished}",
             f"/media/{unavailable}",
             f"/media/{soon}",

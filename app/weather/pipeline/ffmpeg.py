@@ -63,41 +63,61 @@ def _base() -> list[str]:
     return [binary(), "-nostdin", "-hide_banner", "-loglevel", "error"]
 
 
+def _decode(data: bytes) -> subprocess.CompletedProcess[bytes]:
+    """One bit-exact JPEG decode to RGB24; raises TimeoutExpired."""
+    return subprocess.run(
+        [
+            *_base(),
+            "-flags",
+            "+bitexact",
+            "-idct",
+            "simple",
+            "-err_detect",
+            "+crccheck+bitstream+buffer+explode",
+            "-f",
+            "jpeg_pipe",
+            "-i",
+            "pipe:0",
+            "-frames:v",
+            "1",
+            "-sws_flags",
+            DECODE_SWS,
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgb24",
+            "pipe:1",
+        ],
+        input=data,
+        capture_output=True,
+        timeout=DECODE_SECONDS,
+        check=False,
+    )
+
+
 def decode_jpeg(data: bytes, width: int, height: int) -> bytes | None:
     """RGB24 pixels, or None when FFmpeg cannot decode the frame cleanly (a per-slot reject)."""
     try:
-        result = subprocess.run(
-            [
-                *_base(),
-                "-flags",
-                "+bitexact",
-                "-idct",
-                "simple",
-                "-err_detect",
-                "+crccheck+bitstream+buffer+explode",
-                "-f",
-                "jpeg_pipe",
-                "-i",
-                "pipe:0",
-                "-frames:v",
-                "1",
-                "-sws_flags",
-                DECODE_SWS,
-                "-f",
-                "rawvideo",
-                "-pix_fmt",
-                "rgb24",
-                "pipe:1",
-            ],
-            input=data,
-            capture_output=True,
-            timeout=DECODE_SECONDS,
-            check=False,
-        )
+        result = _decode(data)
     except subprocess.TimeoutExpired:
         return None
     if result.returncode or result.stderr.strip() or len(result.stdout) != width * height * 3:
         return None
+    return result.stdout
+
+
+def decode_capture(data: bytes, width: int, height: int) -> bytes | None:
+    """For the hourly archive (#38), whose rejects are persisted: None only when FFmpeg
+    exits with an error or a short frame. A timeout, or a clean exit that still reported
+    errors, raises FFmpegError so the slot retries instead of recording a reject."""
+    try:
+        result = _decode(data)
+    except subprocess.TimeoutExpired:
+        raise FFmpegError("decode") from None
+    if result.returncode or len(result.stdout) != width * height * 3:
+        return None
+    if result.stderr.strip():
+        raise FFmpegError("decode")
     return result.stdout
 
 

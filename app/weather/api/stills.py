@@ -101,13 +101,19 @@ def invalid(message: str) -> PublicError:
     return PublicError("invalid_request", message)
 
 
+FIRST_DATE, LAST_DATE = date(2000, 1, 1), date(2100, 12, 31)
+
+
 def _date(value: str, name: str) -> date:
     try:
         if not DATE.fullmatch(value):
             raise ValueError
-        return date.fromisoformat(value)
+        parsed = date.fromisoformat(value)
+        if not FIRST_DATE <= parsed <= LAST_DATE:
+            raise ValueError
+        return parsed
     except ValueError:
-        raise invalid(f"Invalid {name}.") from None
+        raise invalid(f"Invalid {name}; dates run from 2000 to 2100.") from None
 
 
 def parse_query(params: dict[str, str]) -> StillQuery:

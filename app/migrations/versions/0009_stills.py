@@ -20,6 +20,7 @@ branch_labels = None
 depends_on = None
 
 CAMERAS = "'skycam_east','skycam_west','frontyard_1'"
+CLASSES = "'video','poster','keogram','still','sidecar'"
 # Every column a selected (non-missing) row must carry, and a missing row must not.
 CAPTURE = (
     "attempt_id,chunk,member,source_ts,capture_upper,offset_us,cycle_date,segment_kind,"
@@ -178,6 +179,25 @@ def statements() -> list[str]:
                 FOR EACH ROW EXECUTE FUNCTION weather.guard_still_retirement()"""
             for table in ("archival_still", "still_derivative")
         ),
+        # A still image is public only through an active, untombstoned selection whose
+        # derivative row is published: withdrawing one image (which tombstones its still) or
+        # correcting a selection takes every sibling and retired image off the media origin,
+        # whatever the asset row says. Same columns and other rules as 0003's view.
+        f"""CREATE OR REPLACE VIEW public_api.assets WITH (security_barrier=true) AS
+            SELECT m.id,m.class,m.sha256,m.extension,m.bytes,m.content_type,m.width,m.height,
+              m.public_not_before
+            FROM weather.media_asset m
+            WHERE m.class IN ({CLASSES}) AND m.bucket='weather-media' AND m.visibility='public'
+              AND m.state='available' AND NOT m.withdrawn AND m.withdrawn_at IS NULL
+              AND m.public_not_before <= clock_timestamp()
+              AND m.published_at <= clock_timestamp()
+              AND (m.class <> 'still' OR EXISTS (
+                SELECT 1 FROM weather.still_derivative d
+                JOIN weather.archival_still s ON s.id = d.archival_still_id
+                WHERE d.asset_id = m.id AND d.state = 'published' AND s.active
+                  AND NOT EXISTS (SELECT 1 FROM weather.product_tombstone pt
+                    WHERE pt.product='still' AND pt.camera_id=s.camera_id
+                      AND pt.product_key = {STILL_KEY})))""",
         # The active selection per (camera, slot): sanitized images only, never before the
         # capture upper bound (and so its source time) + 630 s; a withdrawn still lists bare.
         # No original, hash, chunk, member or attempt leaves the weather schema.

@@ -6,6 +6,7 @@ import asyncio
 import io
 import json
 import re
+import subprocess
 from datetime import UTC, date, datetime, timedelta
 from fractions import Fraction
 from pathlib import Path
@@ -215,17 +216,71 @@ def test_derivatives_carry_no_exif_xmp_iptc_icc_comment_or_gps() -> None:
     assert [d.width for d in small] == [600, 600, 600, 600, 480, 480]
 
 
-def test_the_scanner_flags_metadata_in_webp_and_malformed_files() -> None:
-    image = Image.new("RGB", (16, 8), (10, 20, 30))
-    buffer = io.BytesIO()
-    image.save(buffer, format="WEBP", exif=b"Exif\x00\x00II*\x00", xmp=b"<x/>")
-    assert {"exif", "xmp"} <= set(metadata(buffer.getvalue())) | {"flags"}
-    assert metadata(buffer.getvalue())
-    assert metadata(b"GIF89a") == ["format"]
+def segment(marker: int, payload: bytes) -> bytes:
+    return bytes([0xFF, marker]) + (len(payload) + 2).to_bytes(2, "big") + payload
+
+
+def chunk(fourcc: bytes, payload: bytes) -> bytes:
+    padded = payload + (b"\x00" if len(payload) % 2 else b"")
+    return fourcc + len(payload).to_bytes(4, "little") + padded
+
+
+def riff(*chunks: bytes) -> bytes:
+    body = b"WEBP" + b"".join(chunks)
+    return b"RIFF" + len(body).to_bytes(4, "little") + body
+
+
+@pytest.mark.parametrize(
+    ("marker", "payload", "found"),
+    [
+        (0xE1, b"Exif\x00\x00MM\x00*" + b"GPS" * 4, "exif"),
+        (0xE1, b"http://ns.adobe.com/xap/1.0/\x00<x:xmpmeta/>", "xmp"),
+        (0xED, b"Photoshop 3.0\x008BIM\x04\x04", "iptc"),
+        (0xE2, b"ICC_PROFILE\x00\x01\x01" + b"\x00" * 16, "icc"),
+        (0xEB, b"JP\x00\x00", "app"),
+        (0xFE, b"camera address", "comment"),
+        (0xE0, b"JFXX\x00\x10", "app0"),
+    ],
+)
+def test_the_jpeg_scanner_finds_each_metadata_segment(
+    marker: int, payload: bytes, found: str
+) -> None:
     clean = io.BytesIO()
-    image.save(clean, format="JPEG")
-    assert metadata(clean.getvalue()) == []
-    assert "trailing" in metadata(clean.getvalue() + b"tail")
+    Image.new("RGB", (16, 8), (10, 20, 30)).save(clean, format="JPEG")
+    data = clean.getvalue()
+    assert metadata(data) == []
+    # Spliced after the JFIF header, as a camera writes it; the scan still walks the scan data.
+    jfif_end = 4 + int.from_bytes(data[4:6], "big")
+    assert metadata(data[:jfif_end] + segment(marker, payload) + data[jfif_end:]) == [found]
+    assert "trailing" in metadata(data + b"tail")
+    assert "structure" in metadata(data[:-2])
+
+
+def test_the_webp_scanner_finds_metadata_chunks_and_flags() -> None:
+    clean = io.BytesIO()
+    Image.new("RGB", (16, 8), (10, 20, 30)).save(clean, format="WEBP")
+    data = clean.getvalue()
+    assert metadata(data) == []
+    image = data[12:]  # the VP8 chunk
+    vp8x = chunk(
+        b"VP8X", bytes([0, 0, 0, 0]) + (15).to_bytes(3, "little") + (7).to_bytes(3, "little")
+    )
+    assert metadata(riff(vp8x, image)) == []
+    for fourcc, found in (
+        (b"EXIF", "exif"),
+        (b"XMP ", "xmp"),
+        (b"ICCP", "icc"),
+        (b"META", "chunk"),
+    ):
+        assert metadata(riff(vp8x, image, chunk(fourcc, b"GPS 39.7"))) == [found]
+    for flag in (0x20, 0x08, 0x04):
+        flagged = chunk(b"VP8X", bytes([flag, 0, 0, 0]) + bytes(6))
+        assert metadata(riff(flagged, image)) == ["flags"]
+    # Pillow's own EXIF/XMP WebP output is caught too.
+    tagged = io.BytesIO()
+    Image.new("RGB", (16, 8)).save(tagged, format="WEBP", exif=b"Exif\x00\x00II*\x00", xmp=b"<x/>")
+    assert {"exif", "xmp"} <= set(metadata(tagged.getvalue()))
+    assert metadata(b"GIF89a") == ["format"] and metadata(data[:-3]) == ["structure"]
 
 
 # The public API ------------------------------------------------------------------------------
@@ -332,6 +387,9 @@ def test_recent_unselected_slots_are_pending() -> None:
         {"date": "2026-11-01", "hour": "24"},
         {"date": "2026-11-01", "camera": "doorbell"},
         {"date": "2026-11-01", "original": "1"},
+        {"date": "1999-12-31"},
+        {"date": "2101-01-01"},
+        {"date": "9999-12-31"},
     ],
 )
 def test_invalid_or_unbounded_queries_are_rejected(params: dict[str, str]) -> None:
@@ -346,3 +404,39 @@ def test_a_compare_query_is_one_camera_hour_over_at_most_31_days() -> None:
     assert (query.first, query.last, query.hour) == (date(2026, 10, 2), date(2026, 11, 1), 1)
     # 31 days with one fall-back day: 32 slots, well inside the 100-item bound.
     assert len(slots(query)) == 32
+
+
+def test_extreme_dates_are_a_problem_400_not_a_500() -> None:
+    app = build_app()
+    app.state.stills = Source([], {})
+    response = TestClient(app).get("/api/v1/stills", params={"date": "9999-12-31"})
+    assert response.status_code == 400
+    assert response.headers["content-type"].startswith("application/problem+json")
+
+
+def test_hourly_decode_retries_timeouts_and_stderr_but_rejects_real_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from weather.pipeline import ffmpeg
+
+    def run(code: int, out: bytes, err: bytes) -> Any:
+        return lambda _data: subprocess.CompletedProcess([], code, out, err)
+
+    monkeypatch.setattr(ffmpeg, "_decode", run(0, b"x" * 6, b""))
+    assert ffmpeg.decode_capture(b"", 2, 1) == b"x" * 6
+    monkeypatch.setattr(ffmpeg, "_decode", run(1, b"", b"Invalid data"))
+    assert ffmpeg.decode_capture(b"", 2, 1) is None
+    monkeypatch.setattr(ffmpeg, "_decode", run(0, b"x" * 3, b""))
+    assert ffmpeg.decode_capture(b"", 2, 1) is None
+    monkeypatch.setattr(ffmpeg, "_decode", run(0, b"x" * 6, b"warning"))
+    with pytest.raises(ffmpeg.FFmpegError):
+        ffmpeg.decode_capture(b"", 2, 1)
+
+    def timeout(_data: bytes) -> Any:
+        raise subprocess.TimeoutExpired("ffmpeg", 30)
+
+    monkeypatch.setattr(ffmpeg, "_decode", timeout)
+    with pytest.raises(ffmpeg.FFmpegError):
+        ffmpeg.decode_capture(b"", 2, 1)
+    # The renderer keeps its per-slot reject for the same cases.
+    assert ffmpeg.decode_jpeg(b"", 2, 1) is None
