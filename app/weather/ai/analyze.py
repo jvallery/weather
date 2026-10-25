@@ -32,20 +32,19 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from weather.api.source import SourceUnavailable
+from weather.editorial import projection
 from weather.events.rules import Candidate
 from weather.events.store import record
 from weather.scheduler.registry import JobContext, Registry
-from weather.search import documents
-from weather.search.documents import StaleRevision, VideoText, WindowText
+from weather.search.documents import VideoText
 
 from . import render, store, validate
 from .client import MODEL_ROUTE, Cortex, CortexError, Reply, request_body
-from .effective import LABEL
 from .evidence import AggregateSource, Packet, read_packet
 from .media import MediaError, MediaReader, Source, StoredObject, WindowMedia
 from .slot import CortexSlot, SlotBusy
 from .validate import Observation, Rejected, VisualResult
-from .windows import FPS, Window, hour_windows
+from .windows import Window, hour_windows
 
 LOG = logging.getLogger("weather.ai")
 CONTRACTS = validate.CONTRACTS
@@ -65,11 +64,7 @@ VISUAL_TOKENS = 1024
 EVIDENCE_LOOKBACK = timedelta(days=3)
 EVIDENCE_INTERVAL = timedelta(minutes=15)
 MAX_REFRESHES = 3
-CAMERA_LABELS = {
-    "skycam_east": "East sky camera",
-    "skycam_west": "West sky camera",
-    "frontyard_1": "Front yard camera",
-}
+CAMERA_LABELS = projection.CAMERA_LABELS
 SCENES = {
     "skycam_east": "Fixed sky camera looking east; mostly sky above a low horizon.",
     "skycam_west": "Fixed sky camera looking west; mostly sky above a low horizon.",
@@ -771,22 +766,9 @@ class Analyzer:
         summary: str | None,
         now: datetime,
     ) -> None:
-        poster = (
-            await connection.execute(
-                text("""SELECT pa.asset_id FROM weather.publication_asset pa
-                WHERE pa.publication_id=:publication AND pa.role='poster'"""),
-                {"publication": row["publication_id"]},
-            )
-        ).scalar_one_or_none()
-        try:
-            await documents.replace(
-                connection,
-                video_text(row, revision, result, summary, poster),
-                profile_id=self.profile_id,
-                now=now,
-            )
-        except StaleRevision:
-            LOG.info("Search document already newer; not replaced")
+        # The shared projection (#44): an active human description stays the searchable text
+        # across a rerun on unchanged evidence; a media or evidence change withdraws it.
+        await projection.project(connection, row["video_id"], profile_id=self.profile_id, now=now)
 
     # Periodic -----------------------------------------------------------------------------------
 
@@ -894,49 +876,20 @@ def video_text(
     row: dict[str, Any], revision: int, result: Result, summary: str | None, poster: UUID | None
 ) -> VideoText:
     """The search projection of a published description (#25's replace hook)."""
-    coverage = result.coverage
-    keogram = "with keogram" if result.inputs.get("keogram") else "frames only"
-    quality = (
-        f"{LABEL}; {result.state}; {coverage['windows_reviewed']} of "
-        f"{coverage['windows_total']} hour windows reviewed, {keogram}"
-    )
-    by_window: dict[datetime, list[Observation]] = {}
-    for item in result.observations:
-        by_window.setdefault(result.event_windows[item["id"]][0], []).append(
-            Observation.from_record(item)
-        )
-    windows = []
-    for window in hour_windows(row["starts_at"], row["ends_at"], row["frames"]):
-        note = render.window_text(by_window.get(window.start, ()))
-        if not window.available or note is None:
-            continue
-        windows.append(
-            WindowText(
-                window.start,
-                window.end,
-                note,
-                "Sampled-frame visual observations",
-                window.first_frame / FPS,
-                window.end_frame / FPS,
-            )
-        )
-    return VideoText(
-        video_id=row["video_id"],
-        camera_id=row["camera_id"],
-        camera_label=CAMERA_LABELS.get(row["camera_id"], row["camera_id"]),
-        segment=row["segment"],
-        video_start=row["starts_at"],
-        video_end=row["ends_at"],
-        public_not_before=row["public_not_before"],
-        media_revision=row["video_revision"],
+    return projection.video_text(
+        row,
         description_revision=revision,
         editorial_revision=0,
-        analysis_mode="sampled_frames",
-        observed_conditions=summary or "No supported description.",
-        evidence_quality=quality,
-        media_seconds=row["frames"] / FPS,
-        poster_asset_id=poster,
-        windows=tuple(windows),
+        poster=poster,
+        state=result.state,
+        coverage=result.coverage,
+        inputs=result.inputs,
+        observations=[
+            {**item, "start": result.event_windows[item["id"]][0]}
+            for item in result.observations
+            if item["id"] in result.event_windows
+        ],
+        summary=summary,
     )
 
 

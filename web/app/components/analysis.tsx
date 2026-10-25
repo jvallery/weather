@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { ANALYSIS_LABEL, EDITOR_LABEL, type Analysis } from "../lib/weather-api";
+import { ANALYSIS_LABEL, EDITOR_LABEL, type Analysis, type Editorial } from "../lib/weather-api";
 
 /** The labelled description (#23): server-rendered template text (C18), as escaped text nodes. An
  * editor's revision (#44) is labelled as the editor's and shows no model provenance. */
@@ -28,6 +28,15 @@ const BASIS = { visual: "Visual", instrument: "Measured", inference: "Inference"
 function reason(analysis: Analysis): string | null {
   if (!analysis.reason) return null;
   return REASONS[analysis.reason] || (analysis.reason.startsWith("media_") ? REASONS.media_unavailable : null);
+}
+
+/** The operator's public tags (#44); plain escaped text, never HTML. An edited description itself
+ * arrives as the analysis with author `editor`, under the editor's label. */
+export function EditorialPanel({ editorial }: { editorial: Editorial }) {
+  if (editorial.tags.length === 0) return null;
+  return <div className="editorial">
+    <ul className="tag-list" aria-label="Tags">{editorial.tags.map((tag) => <li key={tag} className="badge">{tag}</li>)}</ul>
+  </div>;
 }
 
 export function AnalysisPanel({ analysis, compact = false }: { analysis: Analysis; compact?: boolean }) {

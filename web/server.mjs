@@ -16,7 +16,7 @@ function routeName(path) {
   if (/^\/day\/\d{4}-\d\d-\d\d\/?$/.test(path)) return "/day/:date/";
   if (/^\/timelapses\/[^/]+\/[^/]+\/[^/]+\/?$/.test(path)) return "/timelapses/:camera/:date/:segment/";
   if (/^\/archive\/\d{4}\/\d\d\/?$/.test(path)) return "/archive/:year/:month/";
-  return ["/", "/about/", "/archive/", "/weather/history/", "/weather/almanac/", "/events/", "/search/", "/embed/weather/", "/healthz", "/readyz"].includes(path) ? path : "/other";
+  return ["/", "/about/", "/archive/", "/weather/history/", "/weather/almanac/", "/events/", "/search/", "/embed/weather/", "/editor/", "/healthz", "/readyz"].includes(path) ? path : "/other";
 }
 app.use((req, res, next) => {
   const nonce = randomBytes(24).toString("base64");
@@ -48,9 +48,10 @@ let rendering = 0;
 const renderFailures = new Counter({ name: "weather_web_ssr_failures_total", help: "Bounded SSR failures by cause", labelNames: ["reason"] });
 for (const reason of ["overloaded", "deadline", "render_error"]) renderFailures.labels(reason).inc(0);
 const activeRenders = new Gauge({ name: "weather_web_ssr_inflight", help: "Active bounded document/data responses" });
-// Only routes whose loaders read the API take a slot. Loader-less pages, their data requests and
+// Only routes whose loaders read the API take a slot. Loader-less pages (the editor fetches its
+// private data in the browser, #44), their data requests and
 // the lazy route manifest never wait behind API work.
-const UNMETERED = /^\/(?:(?:about|search)(?:\/|\/_\.data|\.data)?|__manifest)$/;
+const UNMETERED = /^\/(?:(?:about|search|editor)(?:\/|\/_\.data|\.data)?|__manifest)$/;
 app.use((req, res, next) => {
   if (UNMETERED.test(req.path)) return next();
   // A hydrated client turns a plain 503 on its single-fetch .data request into a route error response

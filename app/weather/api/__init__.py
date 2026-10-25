@@ -1,11 +1,15 @@
 # SPDX-License-Identifier: MIT
 """Public Weather API. Liveness never touches the database; readiness does (#14)."""
 
+import asyncio
+import contextlib
 import logging
-from collections.abc import AsyncIterator
+import signal
+from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from prometheus_client import REGISTRY, CollectorRegistry
@@ -167,3 +171,59 @@ def create_app(settings: Settings, registry: CollectorRegistry = REGISTRY) -> Fa
     app.state.stills = StillSource(engine)
     app.router.lifespan_context = lifespan
     return app
+
+
+def create_operator(settings: Settings, registry: CollectorRegistry = REGISTRY) -> FastAPI:
+    """The operator listener (#44) as weather_editor; 503 until the editor credentials exist."""
+    from weather.db.connection import DatabaseConfigurationError, create_database_engine
+    from weather.editorial.api import EDITOR_CREDENTIALS, create_operator_app
+
+    try:
+        engine = create_database_engine(
+            pool_size=2,
+            pool_timeout=2,
+            directory=EDITOR_CREDENTIALS,
+            server_settings={
+                "application_name": "weather-editor",
+                "statement_timeout": "10000",
+                "idle_in_transaction_session_timeout": "15000",
+            },
+        )
+    except DatabaseConfigurationError:
+        log.warning("Editor credentials are absent or invalid; the operator API answers 503")
+        engine = None
+    return create_operator_app(
+        engine,
+        origin=str(settings.public_origin).rstrip("/"),
+        cursor_key=read_cursor_key(),
+        profile_id=settings.search_profile,
+        registry=registry,
+    )
+
+
+class _Server(uvicorn.Server):
+    """One process serves both listeners; the shared handler below stops them together."""
+
+    @contextlib.contextmanager
+    def capture_signals(self) -> Iterator[None]:
+        yield
+
+
+async def serve(settings: Settings) -> None:
+    """The public listener on PORT and the operator listener on OPERATOR_PORT."""
+    servers = [
+        _Server(uvicorn.Config(app, host="0.0.0.0", port=port, access_log=False))
+        for app, port in (
+            (create_app(settings), settings.port),
+            (create_operator(settings), settings.operator_port),
+        )
+    ]
+
+    def stop() -> None:
+        for server in servers:
+            server.should_exit = True
+
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, stop)
+    await asyncio.gather(*(server.serve() for server in servers))

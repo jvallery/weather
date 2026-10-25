@@ -185,8 +185,11 @@ def test_event_schema_grants_views_and_constraints() -> None:
                 name = f"weather.{relation}"
                 assert await table("weather_worker", name, "INSERT")
                 assert not await table("weather_worker", name, "DELETE")
-                for role in ("weather_api", "weather_ingest", "weather_editor"):
+                for role in ("weather_api", "weather_ingest"):
                     assert not await table(role, name, "SELECT")
+                # #44: the operator hooks append as weather_editor; nobody deletes.
+                assert await table("weather_editor", name, "INSERT")
+                assert not await table("weather_editor", name, "DELETE")
             assert not await table("weather_worker", "weather.weather_event_revision", "UPDATE")
             for view in ("event_revisions", "event_revision_markers", "event_days"):
                 name = f"public_api.{view}"

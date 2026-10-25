@@ -30,8 +30,12 @@ def create_database_engine(
     pool_size: int = 5,
     pool_timeout: float = 30,
     server_settings: dict[str, str] | None = None,
+    directory: Path | None = None,
 ) -> AsyncEngine:
-    """TLS verify-full engine for the mounted role; the API passes a smaller read-only budget."""
+    """TLS verify-full engine for the mounted role; the API passes a smaller read-only budget.
+
+    The API's operator listener passes the separately mounted weather_editor directory (#44).
+    """
     settings = {"timezone": "UTC", **(server_settings or {})}
     # Only the cluster integration fixture may use its isolated test endpoint.
     test_url = os.environ.get("WEATHER_CI_DATABASE_URL")
@@ -46,7 +50,7 @@ def create_database_engine(
             pool_timeout=pool_timeout,
             connect_args={"server_settings": settings},
         )
-    directory = Path(
+    directory = directory or Path(
         os.environ.get("DATABASE_CREDENTIAL_DIRECTORY", "/var/run/weather-db")
     )
     try:
@@ -62,6 +66,7 @@ def create_database_engine(
         "weather_ingest",
         "weather_worker",
         "weather_api",
+        "weather_editor",
     }:
         raise DatabaseConfigurationError("Invalid database username")
     if not password or password.lower() in {"changeme", "placeholder", "password"}:

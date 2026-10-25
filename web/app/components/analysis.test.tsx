@@ -55,3 +55,12 @@ test("an editor's revision is labelled as the editor's, never as AI output, and 
   expect(renderToStaticMarkup(<AnalysisPanel analysis={parse({ ...variants.complete, author: "editor", label: 7 })} />)).toContain(EDITOR_LABEL);
   expect(parse({ ...variants.complete, author: undefined }).author).toBe("ai");
 });
+test("public tags are shown as escaped text and an absent or malformed editorial block shows nothing", async () => {
+  const { EditorialPanel } = await import("./analysis");
+  const { editorialField } = await import("../lib/weather-api");
+  const tagged = editorialField.parse({ revision: 2, description: "Edited", human_edited: true, tags: ["<b>snow</b>"] });
+  expect(renderToStaticMarkup(<EditorialPanel editorial={tagged} />)).toContain("&lt;b&gt;snow&lt;/b&gt;</li>");
+  expect(editorialField.parse(undefined)).toEqual({ revision: 0, description: null, human_edited: false, tags: [] });
+  expect(editorialField.parse({ human_edited: "yes" }).human_edited).toBe(false);
+  expect(renderToStaticMarkup(<EditorialPanel editorial={editorialField.parse(undefined)} />)).toBe("");
+});

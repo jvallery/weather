@@ -29,7 +29,9 @@ from .cortex import Embedder, EmbeddingUnavailable, vector_text
 
 EMBED_KIND = "search.embed"
 MAX_FIELD = 2000
-MAX_TEXT = 8000
+# A description (automated or human, #44) may be 8,000 characters and is indexed whole.
+MAX_DESCRIPTION = 8000
+MAX_TEXT = 9000
 EMBED_TIMEOUT_SECONDS = 30
 TOKEN = re.compile(r"^[a-z][a-z0-9_]{0,31}$")
 Segment = Literal["daytime", "overnight"]
@@ -77,10 +79,10 @@ class VideoText:
         return (self.media_revision, self.description_revision, self.editorial_revision)
 
 
-def _field(value: str) -> str:
+def _field(value: str, limit: int = MAX_FIELD) -> str:
     """One line per field; over-long text is rejected, never silently truncated."""
     line = " ".join(value.split())
-    if not line or len(line) > MAX_FIELD:
+    if not line or len(line) > limit:
         raise ValueError("Search document field is empty or too long")
     return line
 
@@ -101,7 +103,7 @@ def canonical_text(
             f"Interval: {_utc(start)} to {_utc(end)}",
             f"Segment: {video.segment}",
             f"Analysis mode: {video.analysis_mode}",
-            f"Observed conditions: {_field(observed)}",
+            f"Observed conditions: {_field(observed, MAX_DESCRIPTION)}",
             f"Evidence quality: {_field(quality)}",
         )
     )

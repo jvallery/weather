@@ -9,7 +9,7 @@ What this repository owns and its state: **live** (running or applied), **disabl
 | Namespace `weather` (PSA restricted), ResourceQuota `weather-budget`, LimitRange `weather-defaults` | `namespace.yaml`, `guardrails.yaml` | live |
 | Tokenless ServiceAccounts `api`, `web`, `migrate`, `scheduler`, `intel`, `tempest-receiver`, `collector-<camera>` ×3, `pipeline-<camera>` ×3, `weather-preview` | `serviceaccounts.yaml` | live |
 | NetworkPolicies `default-deny`, `api-ingress`, `api-garage-egress`, `web-ingress`, `web-egress` | `network-policy.yaml` | live |
-| Deployments `api` ×2 and `web` ×2, their Services and PDBs | `application.yaml` | live |
+| Deployments `api` ×2 and `web` ×2, their Services and PDBs; Service `api-operator` (the api's operator port 8001 only, #44) | `application.yaml` | live; `api-operator` source (#44) |
 | IngressRoute `weather` (incl. `/media/` and `/downloads/` to api, `/api/v1/cameras/<camera>/preview` and `/media/previews/` to `weather-preview`), Middlewares `weather-rate-limit`, `weather-security-headers`, `weather-media-in-flight` (`weather.vallery.net`) | `ingress.yaml` | live |
 | CNPG Cluster `weather-pg` (3 instances, PVCs `weather-pg-1..3`), ObjectStore `weather-pg-b2`, ScheduledBackup `weather-pg-daily`, ConfigMap `weather-database-policy`, NetworkPolicies `weather-pg`, `weather-database-clients`; `Prune=false,Delete=false` | `database/` | live |
 | CNPG-generated Secrets `weather-pg-ca`, `-server`, `-replication`, `-pull`, Roles/RoleBindings `weather-pg`, `weather-pg-barman-cloud`, PDBs `weather-pg`, `weather-pg-primary` | operator-owned children of `weather-pg` | live |
@@ -32,6 +32,8 @@ What this repository owns and its state: **live** (running or applied), **disabl
 | Preview producer in each `pipeline-<camera>`; files `previews/<camera>/` on the staging share (about 1 h) | `app/weather/preview/` | source (#39); runs when #49 enables the pipelines |
 | Deployment `intel` ×1 (Recreate; worker DB role, `weather-cortex`, `weather-media-s3-reader`) and NetworkPolicy `intel` (Cortex and Garage via traefik-apps only) | `intel/`; runbook [intelligence](docs/operations/intelligence.md) | disabled (#23); #50 enables |
 | Schema `0011_analysis`: `analysis`, `analysis_revision` (append-only), `ai_raw_response` (24 h, worker only), view `public_api.video_analyses` | `app/migrations/versions/0011_analysis.py`, `app/weather/ai/` | source (#23); applied with the next app pin |
+| Editor (#44): IngressRoute `weather-editor` (`/editor`, `/api/v1/operator/*` behind `apps-strip-auth-headers` and `ak-forwardauth`), the api's operator listener (8001, `weather_editor` role, `weather-pg-editor` mount), web `/editor/`, scheduler job kind `editorial.changed` | `editor-ingress.yaml`, `application.yaml`, `app/weather/editorial/`; runbook [editor](docs/operations/editor.md) | source (#44); live with the next app and web pins |
+| Schema `0012_editorial`: `editorial_operator` (one-user allowlist), `editorial_subject`, `editorial_revision` and `editorial_audit` (append-only), views `weather.video_editorial_state` and `public_api.video_editorial`, `telemetry_receipt.inserted_at`, `weather_editor` grants | `app/migrations/versions/0012_editorial.py` | source (#44); applied with the next app pin |
 | Job kinds `analysis.describe`, `analysis.synthesize` (claimed by `intel`, queued by the scheduler's `media.changed` hook and intel's nightly retry); `search.embed` claimed by `intel` | `app/weather/ai/`, `app/weather/scheduler/handlers.py` | source (#23) |
 | Job and NetworkPolicy `weather-intel-smoke` (disposable one-call Cortex check) | `intel/smoke-job.yaml`, never in a kustomization | applied by hand, then deleted |
 | Images `weather-app`, `weather-web` (digests in `kustomization.yaml`) | `registry.vallery.net/jvallery/` | live |
@@ -65,6 +67,7 @@ Secret `zot-origin-cluster-pull` is reflected from `agent-fleet-runners` for ima
 | Garage buckets `weather-media`, `weather-originals` and custody mirrors (Weather owns their objects and catalog) | storage-infra#1107 | live |
 | B2 bucket for CNPG archives | storage-infra#1112 | live |
 | NFS PV `weather-staging` | storage-infra#1106 | live (bound to PVC `weather/weather-staging`) |
-| Hostname record, `ak-forwardauth` | network-infra | live |
+| Hostname record, `apps-strip-auth-headers`, `ak-forwardauth` | network-infra | live |
+| Authentik application and provider `weather-editor` (Jason-only, MFA) | agents#5366 | live |
 | Scrape, probes, alert rules, dashboards | monitoring-stack#1072 | live (slice 1) |
 | Cameras (sentinel), Tempest hub (homeassistant), Cortex routes (cortex-ai-compute), vallery.net homepage (VerdifyConsultancy/wordpress) | — | — |

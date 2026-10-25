@@ -228,8 +228,12 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                         )
                 for relation in ("weather.job", "weather.outbox"):
                     assert await table("weather_worker", relation, "UPDATE")
-                    for role in ("weather_ingest", "weather_api", "weather_editor"):
+                    for role in ("weather_ingest", "weather_api"):
                         assert not await table(role, relation, "SELECT")
+                    # The editor appends its outbox rows and embedding jobs, never claims them.
+                    assert await table("weather_editor", relation, "INSERT")
+                    for privilege in ("UPDATE", "DELETE"):
+                        assert not await table("weather_editor", relation, privilege)
                 assert await table("weather_worker", "weather.weather_day", "INSERT")
                 assert not await table("weather_worker", "weather.weather_day", "UPDATE")
                 # The renderer's sidecar weather block (#15) reads the two public telemetry
@@ -291,14 +295,20 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                         name == "ai_raw_response"
                     )
                     assert not await table("weather_worker", relation, "TRUNCATE")
-                    for role in ("weather_ingest", "weather_api", "weather_editor"):
+                    for role in ("weather_ingest", "weather_api"):
                         assert not await table(role, relation, "SELECT")
+                    # The editor reads the automated text it shows and re-projects (#44), never
+                    # the raw replies, and writes none of it.
+                    assert await table("weather_editor", relation, "SELECT") is (
+                        name != "ai_raw_response"
+                    )
+                    assert not await table("weather_editor", relation, "INSERT")
                 assert await column("summary", "INSERT")
                 assert not await column("author_kind", "INSERT")
-                # No editorial functions exist yet; weather_editor has no schema access (#44).
+                # weather_editor uses the weather schema for editorial writes (#44), never the
+                # public views; weather_api never touches the weather schema.
                 for role, schema in (
                     ("weather_api", "weather"),
-                    ("weather_editor", "weather"),
                     ("weather_editor", "public_api"),
                     ("weather_ingest", "public_api"),
                 ):

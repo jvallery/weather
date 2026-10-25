@@ -147,5 +147,10 @@ kubectl --context vallery -n weather get ingressroute weather-search
 - Hydration joins `public_api.videos`, so a hit whose media is unavailable or withdrawn drops
   or loses its seek even before #18's withdrawal calls `withdraw`.
 - #23 wires `register(registry, embedder)` into the worker that holds Cortex egress and calls
-  `replace`; #44 calls `replace`/`withdraw` on editorial changes; the UI is #27 ([web](web.md#search-27)).
+  `replace`; the UI is #27 ([web](web.md#search-27)).
+- #44: `weather.editorial.projection.project` is the one projection the AI path, the editor and
+  the `editorial.changed` handler call. An active human description replaces the automated text
+  and its hour windows (`analysis_mode` `human_edited`); a document's text may reach 9,000
+  characters so an 8,000-character description is indexed whole. New web bytes withdraw a
+  video's documents at once.
 - Live 429 bursts, seek checks and relevance on the real corpus are #50.

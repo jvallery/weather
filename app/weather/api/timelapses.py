@@ -25,7 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from weather.ai.effective import (
     EDITOR_LABEL,
     LABEL,
-    effective_description,
+    automated_description,
     public_author,
     public_model,
 )
@@ -126,6 +126,16 @@ class Analysis(Model):
     provenance: AnalysisProvenance | None
 
 
+class Editorial(Model):
+    """The effective public description (#44): a human-edited revision while it is bound to the
+    current rendition and evidence, else the validated AI description. Public tags only."""
+
+    revision: int = Field(ge=0)
+    description: str | None = Field(max_length=8000)
+    human_edited: bool
+    tags: list[str] = Field(max_length=32)
+
+
 class Timelapse(Model):
     schema_version: Literal[1] = 1
     video_id: UUID
@@ -146,6 +156,7 @@ class Timelapse(Model):
     keogram_state: Literal["pending", "published", "partial", "unavailable", "withdrawn"]
     keogram: Asset | None
     analysis: Analysis
+    editorial: Editorial
 
 
 class TimelapsePage(Model):
@@ -262,6 +273,8 @@ class Source(Protocol):
 
     async def analyses(self, ids: list[UUID]) -> dict[UUID, dict[str, Any]]: ...
 
+    async def editorials(self, ids: list[UUID]) -> dict[UUID, dict[str, Any]]: ...
+
 
 VIDEO_COLUMNS = (
     "id,camera_id,cycle_date,segment,starts_at,ends_at,frames,revision,committed_at,withdrawn,"
@@ -344,6 +357,18 @@ class DatabaseSource:
             raise CatalogUnavailable("Catalog unavailable") from None
 
 
+    async def editorials(self, ids: list[UUID]) -> dict[UUID, dict[str, Any]]:
+        if not ids:
+            return {}
+        try:
+            async with self._engine.connect() as connection:
+                rows = await connection.execute(text(EDITORIAL_SQL), {"ids": ids})
+                return {row.video_id: dict(row._mapping) for row in rows}
+        except Exception:
+            raise CatalogUnavailable("Catalog unavailable") from None
+
+EDITORIAL_SQL = """SELECT video_id,revision,description,human_edited,tags
+FROM public_api.video_editorial WHERE video_id = ANY(CAST(:ids AS uuid[]))"""
 ANALYSIS_COLUMNS = (
     "video_id,state,reason,stale,updated_at,revision,revision_state,refresh,model_route,model,"
     "prompt_sha256,schema_sha256,evidence_count,summary,claims,limitations,coverage,inputs,"
@@ -366,9 +391,31 @@ def _no_analysis(state: Literal["pending", "unavailable"], reason: str | None) -
     )
 
 
-def build_analysis(row: dict[str, Any] | None, playable: bool) -> Analysis:
+def build_analysis(
+    row: dict[str, Any] | None, playable: bool, human: str | None = None
+) -> Analysis:
     """Pending until intel reports; unavailable without playable media. Content appears only
-    with a validated revision of the current media; the state is the head's own."""
+    with a validated revision of the current media; the state is the head's own. An active
+    human revision (#44) replaces the AI text: the author is then `editor`, under the editor's
+    label, with no AI claims, coverage or model provenance."""
+    analysis = _automated_analysis(row, playable)
+    if human is None or not playable:
+        return analysis
+    return analysis.model_copy(
+        update={
+            "label": EDITOR_LABEL,
+            "author": "editor",
+            "description": human,
+            "claims": [],
+            "limitations": [],
+            "coverage": None,
+            "provenance": None,
+            "stale": False,
+        }
+    )
+
+
+def _automated_analysis(row: dict[str, Any] | None, playable: bool) -> Analysis:
     if not playable:
         return _no_analysis("unavailable", "media_unavailable")
     if row is None:
@@ -389,7 +436,7 @@ def build_analysis(row: dict[str, Any] | None, playable: bool) -> Analysis:
         stale=bool(row["stale"]) and content,
         revision=row["revision"] if content else None,
         generated_at=row["generated_at"] if content else None,
-        description=effective_description(row),
+        description=automated_description(row),
         claims=[
             AnalysisClaim(text=claim["text"], basis=claim["basis"])
             for claim in (row["claims"] if content else [])
@@ -434,10 +481,25 @@ def _asset(row: dict[str, Any] | None) -> Asset | None:
     )
 
 
+def build_editorial(
+    analysis: dict[str, Any] | None, editorial: dict[str, Any] | None, playable: bool
+) -> Editorial:
+    human = bool(playable and editorial and editorial["human_edited"] and editorial["description"])
+    return Editorial(
+        revision=int(editorial["revision"]) if editorial else 0,
+        description=editorial["description"] if human and editorial else (
+            automated_description(analysis) if playable else None
+        ),
+        human_edited=human,
+        tags=list(editorial["tags"]) if editorial else [],
+    )
+
+
 def build(
     row: dict[str, Any],
     assets: dict[UUID, dict[str, Any]],
     analysis: dict[str, Any] | None = None,
+    editorial: dict[str, Any] | None = None,
 ) -> Timelapse:
     def pick(column: str) -> Asset | None:
         return _asset(assets.get(row[column])) if row[column] is not None else None
@@ -454,6 +516,7 @@ def build(
     if state in {"published", "partial"} and not playable:
         state, reason = "unavailable", "media_unavailable"
     keogram = pick("keogram_asset_id")
+    edited = build_editorial(analysis, editorial, playable)
     return Timelapse(
         video_id=row["id"],
         camera=row["camera_id"],
@@ -475,7 +538,10 @@ def build(
         if row["keogram_state"] in {"published", "partial"} and keogram is None
         else row["keogram_state"],
         keogram=keogram,
-        analysis=build_analysis(analysis, playable),
+        analysis=build_analysis(
+            analysis, playable, edited.description if edited.human_edited else None
+        ),
+        editorial=edited,
     )
 
 
@@ -494,8 +560,12 @@ async def _hydrate(source: Source, rows: list[dict[str, Any]]) -> list[Timelapse
         if row[column] is not None
     ]
     assets = await source.assets(ids)
-    analyses = await source.analyses([row["id"] for row in rows])
-    return [build(row, assets, analyses.get(row["id"])) for row in rows]
+    videos = [row["id"] for row in rows]
+    analyses = await source.analyses(videos)
+    editorials = await source.editorials(videos)
+    return [
+        build(row, assets, analyses.get(row["id"]), editorials.get(row["id"])) for row in rows
+    ]
 
 
 class Catalog:
