@@ -348,6 +348,16 @@ def test_markers_geometry_and_truncation_without_decoding() -> None:
         validate_jpeg(data, (32, 16), len(data) - 1)
 
 
+def test_extraneous_bytes_before_a_marker_are_skipped() -> None:
+    # Camera quirk: a COM length that undercounts its payload, then stray bytes (with a
+    # stuffed 0xFF00) before the next marker. Decoders skip to the marker; so does the check.
+    sof = b"\xff\xc0\x00\x08\x08\x00\x10\x00\x20\x00"
+    data = b"\xff\xd8\xff\xfe\x00\x04ab" + b"\x01\x02\xff\x00\x03" + sof + b"\xff\xd9"
+    assert marker_geometry(data) == (32, 16)
+    with pytest.raises(CaptureFailure, match="jpeg_markers"):
+        marker_geometry(b"\xff\xd8\xff\xfe\x00\x04ab\x01\x02\xff\x00\x03\xff\xd9")
+
+
 def test_atomic_chunk_native_bytes_and_concurrent_names(tmp_path: Path) -> None:
     cfg, body = config(tmp_path), b"synthetic original bytes, not a decoded image"
     paths = []

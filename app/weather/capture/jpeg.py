@@ -8,13 +8,29 @@ from .client import CaptureFailure
 SOF = {0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF}
 
 
+def _next_marker(body: bytes, offset: int) -> int:
+    """Offset of the next 0xFF that starts a marker, skipping stuffed 0xFF00 like libjpeg."""
+    while True:
+        offset = body.find(b"\xff", offset)
+        if offset < 0 or offset + 1 >= len(body):
+            return -1
+        if body[offset + 1] not in (0x00, 0xFF):
+            return offset
+        offset += 1
+
+
 def marker_geometry(body: bytes) -> tuple[int, int]:
     if not body.startswith(b"\xff\xd8") or not body.endswith(b"\xff\xd9"):
         raise CaptureFailure("jpeg_markers", 200)
     offset = 2
     while offset < len(body) - 2:
         if body[offset] != 0xFF:
-            raise CaptureFailure("jpeg_markers", 200)
+            # The commissioned cameras write a COM segment whose length undercounts its payload,
+            # leaving extraneous bytes before the next marker. libjpeg and FFmpeg skip them.
+            offset = _next_marker(body, offset)
+            if offset < 0:
+                break
+            continue
         while offset < len(body) and body[offset] == 0xFF:
             offset += 1
         if offset >= len(body):
