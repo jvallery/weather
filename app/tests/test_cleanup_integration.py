@@ -313,7 +313,7 @@ def test_sql_catalog_keeps_a_dusk_spanning_chunk_until_both_segments_release_it(
             # is durable), so it pins nothing the mezzanine released (#37).
             report = await pass_().run()
             assert report["pinned_hourly"] == len(released) and "deleted_chunk" not in report
-            assert "pinned_keogram" not in report
+            assert report.get("pinned_keogram", 0) == 0
             first_hour = stored[0].window_start.replace(minute=0, second=0, microsecond=0)
             last_hour = (stored[-1].window_end + LAG).replace(
                 minute=0, second=0, microsecond=0
