@@ -178,8 +178,9 @@ class Harness:
         self.metrics = PreviewMetrics(CollectorRegistry())
         self.files = Files(root, self.metrics, **files)
         self.service = PreviewService(self.source, self.files, self.metrics)
+        self.registry = CollectorRegistry()
         origin = MediaOrigin(
-            preview_routes(self.service.resolve), FileBody(), MediaMetrics(CollectorRegistry())
+            preview_routes(self.service.resolve), FileBody(), MediaMetrics(self.registry)
         )
         self.client = TestClient(build_preview_app(self.service, origin))
 
@@ -323,6 +324,41 @@ def test_repeated_identical_bytes_never_reset_capture_time_or_age(harness: Harne
     one = harness.client.get(f"/media/previews/{rows['small'].id}")
     two = harness.client.get(f"/media/previews/{rows['small'].id}")
     assert one.content == two.content and one.headers["etag"] == two.headers["etag"]
+
+
+def _served_before(harness: Harness) -> float:
+    return sum(
+        item.value
+        for metric in harness.registry.collect()
+        for item in metric.samples
+        if item.name == "weather_embargo_served_before_total"
+        and item.labels["product"] == "preview"
+    )
+
+
+def test_breach_detector_rechecks_preview_bytes_from_the_capture_bound(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    rows = harness.publish()
+    large = rows["large"]
+    url = f"/media/previews/{large.id}"
+    harness.source.now = large.timing.first_published_at
+    found = asyncio.run(harness.service.resolve(large.id))
+    assert found is not None and (found.product, found.captured_upper, found.resolved_at) == (
+        "preview", large.timing.captured_upper, harness.source.now)
+    assert harness.client.get(url).status_code == 200
+    assert _served_before(harness) == 0
+    # A denied request is not a breach.
+    harness.source.now = large.timing.public_not_before - MS
+    assert harness.client.get(url).status_code == 404
+    assert _served_before(harness) == 0
+    # If the request-time policy ever admitted bytes 599 s after capture, the origin counts it.
+    monkeypatch.setattr(policy, "servable", lambda _timing, _now: True)
+    harness.source.now = large.timing.captured_upper + timedelta(seconds=599)
+    assert harness.client.head(url).status_code == 200
+    assert _served_before(harness) == 0
+    assert harness.client.get(url).status_code == 200
+    assert _served_before(harness) == 1
 
 
 def test_bytes_get_head_range_and_validators_are_authorized_each_time(harness: Harness) -> None:

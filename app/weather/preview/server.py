@@ -290,15 +290,19 @@ class PreviewService:
         found = await self.source.one(identity)
         if found is None or not self._servable(found[1], found[0], "media"):
             return None
-        row = found[1]
+        now, row = found
         data = await self.files.read(row.path, row.bytes, row.sha256)
         if data is None:
             return None
+        # The capture bound and database clock let the origin's breach detector re-check (#49).
         return Loaded(
             locator=row.path,
             length=row.bytes,
             sha256=row.sha256,
             content_type="image/jpeg",
+            product="preview",
+            captured_upper=row.timing.captured_upper,
+            resolved_at=now,
             data=data,
         )
 

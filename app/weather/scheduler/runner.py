@@ -155,12 +155,15 @@ async def run() -> None:
 
 
 def main() -> None:
+    from weather.pipeline import metrics as pipeline_metrics
+
     logging.basicConfig(level=logging.INFO)
     try:
         port = int(os.environ.get("METRICS_PORT", "9000"))
         if not 1 <= port <= 65535:
             raise ValueError("metrics port")
         start_http_server(port)
+        pipeline_metrics.zero_scheduler()
         asyncio.run(run())
     except Exception as error:
         LOG.error("Scheduler startup failed (%s)", type(error).__name__)

@@ -3,6 +3,8 @@
 
 from prometheus_client import Counter, Gauge, Histogram
 
+from .recipe import CAMERAS
+
 FRAMES = Counter(
     "weather_pipeline_output_frames_total",
     "Output frames written to a mezzanine, by result",
@@ -67,6 +69,23 @@ STILL_SLOTS = Counter(
     "Hour slots finalized by selection state (on_target, off_target, missing)",
     ["camera", "state"],
 )
+STILL_STATES = ("on_target", "off_target", "missing")
+
+
+# A labelled series is born at its first increment, which Prometheus reads as the starting
+# value, so increase() would miss a new pod's first event. Each process zeroes what it reports
+# at start (#49).
+def zero_scheduler() -> None:
+    for camera in CAMERAS:
+        DEADLINES.labels(camera)
+
+
+def zero_pipeline(camera: str) -> None:
+    LATENCY.labels(camera)
+    for state in STILL_STATES:
+        STILL_SLOTS.labels(camera, state)
+
+
 STILL_ARCHIVED = Counter(
     "weather_stills_archived_total",
     "Originals archived and read back, with their derivatives and selection row",
