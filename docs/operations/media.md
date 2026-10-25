@@ -402,17 +402,14 @@ condition holds; a kept chunk reports the first unmet one:
 |---|---|---|
 | `config` | The chunk header's cadence, phase and geometry equal the pipeline's. A `capture.json` mismatch makes every frame a `settings` reject, and the renderer's slates must never release the input | here |
 | `mezzanine` | Every current segment whose read range `[starts_at − lag, ends_at)` overlaps the chunk has `mezzanine_through` (a slot key) at or past the chunk's slot-window end, or a complete mezzanine, and the frozen schedule covers the range. A dusk-spanning chunk waits for both segments | here |
-| `keogram` | Its keogram bins are committed | #37 |
+| `keogram` | Its keogram bins are committed: every current segment its frames can belong to has released its slot window (the keogram stage commits a block's bins before the block becomes durable, and the release point only passes durable blocks) or has a final keogram (bins deleted), over a schedule that covers the range | here (`keogram_committed`, #37) |
 | `hourly` | Every UTC hour slot the chunk's frames can be selected for has an active `archival_still`: archived with its still publication committed (read back first) and its original asset still `available`, or `missing` for lack of input (`no_capture`, `no_eligible_capture`). `selection_expired` (no selection ran for 12 h, e.g. a Garage or pipeline outage) keeps the chunk until the hourly backlog re-selects the slot from its sealed input (the 48 h pinned alert fires meanwhile) | here, against #38's `archival_still` |
 | `preview` | Its newest capture is more than 1,800 s plus one refresh (`WEATHER_CLEANUP_PREVIEW_REFRESH_SECONDS`, 60) old | here (#39's window) |
 
-`keogram` is unmet until #37 registers its query in `cleanup.CONDITION_QUERIES`: an async
-function `(connection, camera, chunks, lag)` returning the ids of the given `ChunkRow`s whose
-condition holds, read in the same connection as the segment rows, plus a row in the table
-test (`hourly_finalized` is the model). Until then, `WEATHER_CLEANUP_KEOGRAM=vacuous` waives
-it; set it only while #37 is not deployed, in the reviewed change that enables cleanup. A
-vacuous mode for a registered query fails start-up, and the rule evaluates a wired condition
-regardless. `config`, `mezzanine`, `hourly` and `preview` cannot be waived.
+Both feature conditions are registered in `cleanup.CONDITION_QUERIES` (`keogram_committed`,
+`hourly_finalized`), so neither can be waived: a vacuous mode for a registered query fails
+start-up, and the rule evaluates a wired condition regardless. `config`, `mezzanine`,
+`hourly`, `keogram` and `preview` are all required.
 
 Released input is gone for good, so the release point is tied to the blocks on disk:
 `segment.mezzanine_recipe` records the recipe whose durable blocks `mezzanine_through`
@@ -481,7 +478,7 @@ the next pass retries.
 | `WEATHER_CLEANUP_ENABLED` | `false` | Delete; otherwise every pass is a dry run that inventories, evaluates and exports metrics |
 | `WEATHER_CLEANUP_INTERVAL_SECONDS` | 300 | Pass interval at normal pressure |
 | `WEATHER_CLEANUP_TMP_HOURS` | 6 | Age of another incarnation's tmp file before removal |
-| `WEATHER_CLEANUP_KEOGRAM`, `_HOURLY` | `required` | `vacuous` waives an unwired (undeployed) feature's condition; refused once its query is registered (hourly already is) |
+| `WEATHER_CLEANUP_KEOGRAM`, `_HOURLY` | `required` | `vacuous` waives an unwired feature's condition; both queries are registered, so `vacuous` fails start-up |
 | `WEATHER_CLEANUP_BATCH` | 2000 | New chunks inventoried per pass |
 
 **Watermarks** (D16, `scheduler/pressure.py`): `statvfs` on `/staging/sealed/<camera>` (the

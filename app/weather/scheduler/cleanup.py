@@ -19,8 +19,8 @@ the order a pinned chunk reports:
 4. `preview`: its newest capture is more than 1,800 s plus one preview refresh old (#39).
 
 `config`, `mezzanine` and `preview` are implemented here and always required. `hourly`
-(#38) is registered here against `archival_still`; `keogram` (#37) is registered by its
-feature PR in `CONDITION_QUERIES`. An unregistered condition is unmet (the chunk is kept)
+(#38) is registered here against `archival_still` and `keogram` (#37) against `keogram` and
+the segments' release points. An unregistered condition is unmet (the chunk is kept)
 unless its mode is `vacuous` (`WEATHER_CLEANUP_KEOGRAM=vacuous`). Vacuous is honoured only
 while the query is unregistered: a vacuous setting for a registered query fails start-up, and
 the rule evaluates a wired condition regardless. The default is `required`.
@@ -427,7 +427,7 @@ def preview_passed(chunk: ChunkRow, now: datetime, refresh_seconds: int) -> bool
 
 
 # Feature conditions. A query returns the ids of the given chunks whose condition holds; `lag`
-# is how far a frame's source time can trail its slot key. #37 registers "keogram".
+# is how far a frame's source time can trail its slot key.
 ConditionQuery = Callable[
     [AsyncConnection, str, Sequence[ChunkRow], timedelta], Awaitable[set[UUID]]
 ]
@@ -484,8 +484,38 @@ async def hourly_finalized(
     }
 
 
+async def keogram_committed(
+    connection: AsyncConnection, camera: str, chunks: Sequence[ChunkRow], lag: timedelta
+) -> set[UUID]:
+    """#37: the keogram stage merges a block's bins into `keogram_bin` before the block becomes
+    durable, and the release point only advances past durable blocks, so a segment that has
+    released a chunk's slot window has committed that chunk's bins. A segment whose keogram is
+    final (published, partial, unavailable or failed; its bins are deleted) needs none. Every
+    current segment the chunk's frames can belong to must be one or the other, over a frozen
+    schedule that covers the chunk's whole range, exactly as for `mezzanine`."""
+    if not chunks:
+        return set()
+    low = min(c.window_start for c in chunks)
+    high = max(c.window_end for c in chunks) + lag
+    rows = await connection.execute(
+        text("""
+        SELECT s.starts_at,s.ends_at,s.mezzanine_through,
+          s.mezzanine_durable_at IS NOT NULL AS durable,
+          COALESCE(k.state,'pending') <> 'pending' AS final
+        FROM weather.segment s LEFT JOIN weather.keogram k ON k.segment_id=s.id
+        WHERE s.current AND s.camera_id=:camera AND s.starts_at < :high AND s.ends_at > :low
+    """),
+        {"camera": camera, "low": low, "high": high},
+    )
+    spans = [
+        SegmentSpan(r.starts_at, r.ends_at, r.mezzanine_through, bool(r.durable or r.final))
+        for r in rows
+    ]
+    return {c.id for c in chunks if c.id is not None and mezzanine_released(c, spans, lag)}
+
+
 CONDITION_QUERIES: dict[str, ConditionQuery | None] = {
-    "keogram": None,
+    "keogram": keogram_committed,
     "hourly": hourly_finalized,
 }
 

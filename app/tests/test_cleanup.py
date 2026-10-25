@@ -98,11 +98,11 @@ def test_an_unwired_feature_keeps_every_chunk_unless_declared_vacuous() -> None:
     assert decide(Facts(False, True, True, True), vacuous) == "mezzanine"
     with pytest.raises(ValueError):
         CleanupSettings(modes={**REQUIRED, "mezzanine": Mode.VACUOUS})
-    # #38's hourly query is registered; #37's keogram is not yet. Both default to required,
-    # and the registered hourly condition can no longer be waived.
-    from weather.scheduler.cleanup import hourly_finalized
+    # #38's hourly and #37's keogram queries are registered. Both default to required, and a
+    # registered condition can no longer be waived.
+    from weather.scheduler.cleanup import hourly_finalized, keogram_committed
 
-    assert CONDITION_QUERIES == {"keogram": None, "hourly": hourly_finalized}
+    assert CONDITION_QUERIES == {"keogram": keogram_committed, "hourly": hourly_finalized}
     with pytest.raises(ValueError, match="wired"):
         Cleanup(
             CAMERA,

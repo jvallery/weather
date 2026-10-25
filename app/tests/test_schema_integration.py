@@ -128,7 +128,8 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                 ) == ("0008_keograms")
                 # Slice-1 relations, the observations view, the API's views (0002), the
                 # publication catalog (0003), search (0004), events (0005), the render
-                # schedule (0006), stills (0009), previews (0007) and keograms (0008, after 0007).
+                # schedule (0006), stills (0009), previews (0007), cleanup (0010) and keograms
+                # (0008, after 0010).
                 relations = (
                     await connection.execute(
                         text("""
