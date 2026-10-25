@@ -637,11 +637,13 @@ def test_schedule_job_without_the_site_secret_fails_visibly(
     assert schedule.hour_key(T0 + timedelta(minutes=59)) == "2026-10-23T15Z"
 
 
-def test_pipeline_deployments_ship_disabled_with_only_their_inputs() -> None:
+def test_pipeline_deployments_run_with_only_their_inputs() -> None:
     import yaml
 
     root = Path(__file__).resolve().parents[2] / "deploy/k8s"
-    assert "pipeline" not in yaml.safe_load((root / "kustomization.yaml").read_text())["resources"]
+    kustomization = yaml.safe_load((root / "kustomization.yaml").read_text())
+    assert "pipeline" in kustomization["resources"]
+    app_pin = next(i["digest"] for i in kustomization["images"] if i["name"] == "weather-app")
     deployments = list(yaml.safe_load_all((root / "pipeline/deployments.yaml").read_text()))
     policy = yaml.safe_load((root / "pipeline/network-policy.yaml").read_text())
     assert {d["metadata"]["name"] for d in deployments} == {
@@ -651,7 +653,11 @@ def test_pipeline_deployments_ship_disabled_with_only_their_inputs() -> None:
     }
     for deployment in deployments:
         spec = deployment["spec"]["template"]["spec"]
-        assert deployment["spec"]["replicas"] == 0
+        assert deployment["spec"]["replicas"] == 1
+        assert spec["priorityClassName"] == "estate-app"
+        env = {e["name"]: e.get("value") for e in spec["containers"][0]["env"]}
+        # RenderResult records the image that rendered; keep it equal to the app pin.
+        assert env["WEATHER_IMAGE_DIGEST"] == app_pin
         labels = deployment["spec"]["template"]["metadata"]["labels"]
         assert policy["spec"]["podSelector"]["matchLabels"].items() <= labels.items()
         assert spec["automountServiceAccountToken"] is False

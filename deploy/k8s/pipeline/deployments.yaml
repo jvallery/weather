@@ -1,4 +1,4 @@
-# Disabled (#15): replicas 0, and the pipeline directory is not in the root kustomization.
+# Enabled 2026-10-25 (#15, ahead of #49): one replica per camera, cleanup not yet deployed (#19).
 # #49 enables them once the cameras (#4), the staging PVC and the weather-media and
 # weather-originals writer keys (storage-infra#1107) exist. WEATHER_IMAGE_DIGEST must then
 # equal the app digest pin, so every RenderResult records the image that produced it. Runbook: docs/operations/pipeline.md.
@@ -17,7 +17,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: '2'
 spec:
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   revisionHistoryLimit: 3
@@ -28,6 +28,7 @@ spec:
       labels: *id001
     spec:
       enableServiceLinks: false
+      priorityClassName: estate-app
       automountServiceAccountToken: false
       serviceAccountName: pipeline-skycam-east
       imagePullSecrets:
@@ -70,7 +71,7 @@ spec:
         - name: WEATHER_CLEANUP_ENABLED
           value: 'false'
         - name: WEATHER_IMAGE_DIGEST
-          value: unpinned
+          value: sha256:34a7171933df05694df8cd0ae4718f467739dd91187fc85097685b264d77ab16
         - name: METRICS_PORT
           value: '9000'
         - name: TMPDIR
@@ -174,7 +175,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: '2'
 spec:
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   revisionHistoryLimit: 3
@@ -185,6 +186,7 @@ spec:
       labels: *id001
     spec:
       enableServiceLinks: false
+      priorityClassName: estate-app
       automountServiceAccountToken: false
       serviceAccountName: pipeline-skycam-west
       imagePullSecrets:
@@ -227,7 +229,7 @@ spec:
         - name: WEATHER_CLEANUP_ENABLED
           value: 'false'
         - name: WEATHER_IMAGE_DIGEST
-          value: unpinned
+          value: sha256:34a7171933df05694df8cd0ae4718f467739dd91187fc85097685b264d77ab16
         - name: METRICS_PORT
           value: '9000'
         - name: TMPDIR
@@ -331,7 +333,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: '2'
 spec:
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   revisionHistoryLimit: 3
@@ -342,6 +344,7 @@ spec:
       labels: *id001
     spec:
       enableServiceLinks: false
+      priorityClassName: estate-app
       automountServiceAccountToken: false
       serviceAccountName: pipeline-frontyard-1
       imagePullSecrets:
@@ -384,7 +387,7 @@ spec:
         - name: WEATHER_CLEANUP_ENABLED
           value: 'false'
         - name: WEATHER_IMAGE_DIGEST
-          value: unpinned
+          value: sha256:34a7171933df05694df8cd0ae4718f467739dd91187fc85097685b264d77ab16
         - name: METRICS_PORT
           value: '9000'
         - name: TMPDIR
