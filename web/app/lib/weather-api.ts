@@ -113,9 +113,11 @@ const archiveEntry = z.object({
   state: lenient(["published", "partial", "unavailable", "withdrawn"], "unavailable"), reason: text.nullable().default(null),
 });
 const archive = z.object({ items: z.array(archiveEntry), next_cursor: text.nullable() });
-// The AI description (#23). Only validated text fields are read; anything else is dropped, and an
-// unparseable analysis degrades to "unavailable" without sinking its recording.
+// The description (#23): server-rendered template text (C18). Only known fields are read; anything
+// else is dropped, and an unparseable analysis degrades to "unavailable" without sinking its
+// recording. An editor's revision (#44) carries its own label and is never shown as AI output.
 export const ANALYSIS_LABEL = "AI-generated · sampled-frame analysis";
+export const EDITOR_LABEL = "Editor-written description";
 const analysisCoverage = z.object({
   algorithm_revision: text, reviewed_seconds: z.number(), expected_seconds: z.number(), fraction: z.number(),
   windows_reviewed: z.number(), windows_total: z.number(), gaps: z.array(interval).default([]),
@@ -125,7 +127,8 @@ const analysisProvenance = z.object({
   evidence_count: z.number(), frames_sampled: z.number(), keogram_used: z.boolean(),
 });
 export const analysisSchema = z.object({
-  label: z.literal(ANALYSIS_LABEL).catch(ANALYSIS_LABEL),
+  label: z.enum([ANALYSIS_LABEL, EDITOR_LABEL]).catch(ANALYSIS_LABEL),
+  author: lenient(["ai", "editor"], "ai"),
   state: lenient(["pending", "complete", "degraded", "failed", "unavailable"], "unavailable"),
   reason: text.nullable().default(null), stale: z.boolean().default(false), revision: z.number().nullable().default(null),
   generated_at: text.nullable().default(null), description: text.nullable().default(null),
@@ -134,7 +137,7 @@ export const analysisSchema = z.object({
   coverage: analysisCoverage.nullable().default(null).catch(null), provenance: analysisProvenance.nullable().default(null).catch(null),
 });
 const unavailableAnalysis: z.infer<typeof analysisSchema> = {
-  label: ANALYSIS_LABEL, state: "unavailable", reason: null, stale: false, revision: null, generated_at: null,
+  label: ANALYSIS_LABEL, author: "ai", state: "unavailable", reason: null, stale: false, revision: null, generated_at: null,
   description: null, claims: [], limitations: [], coverage: null, provenance: null,
 };
 export const analysisField = analysisSchema.catch(unavailableAnalysis);

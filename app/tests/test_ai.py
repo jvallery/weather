@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 """AI descriptions (#23) without a database: windows, contracts, validation of recorded
-replies, request bodies, call budgets, degraded fallback, events and manifests.
+structured replies, request bodies, call budgets, events and manifests.
 
 Cortex is never called: every reply is a recorded-format fixture (fixtures/ai-recorded.json).
 """
@@ -42,9 +42,10 @@ from weather.ai.client import (
     check_base_url,
     request_body,
 )
-from weather.ai.evidence import build_packet, measured_claims, renderings
+from weather.ai.evidence import build_packet, renderings
 from weather.ai.media import WindowMedia, keogram_columns, sample_frames
-from weather.ai.validate import Observation, Rejected
+from weather.ai.render import measured_claims
+from weather.ai.validate import Rejected
 from weather.ai.windows import frame_ranges, hour_windows, samples
 from weather.config import ConfigurationError, load_settings
 
@@ -102,22 +103,19 @@ def test_windows_follow_utc_hours_from_an_off_hour_dawn() -> None:
 # Shipped contracts --------------------------------------------------------------------------
 
 
-def test_prompts_are_the_extracted_bytes_and_schemas_match_their_fixtures() -> None:
+def test_the_prompt_is_hashed_and_the_schema_matches_its_fixtures() -> None:
     contracts = ROOT / "app/weather/ai/contracts"
-    # The §13 templates, unchanged since extraction (archived receipt hashes).
-    assert hashlib.sha256((contracts / "visual-system.txt").read_bytes()).hexdigest() == (
-        "7029c22a48793eb21d9531eef3d8e775f1ad7c54f5687362d1f5c723404bf49a"
-    )
-    assert hashlib.sha256((contracts / "narrative-system.txt").read_bytes()).hexdigest() == (
-        "63c0e5ea6d9bc98ac9b78110de8c5b93be5a39370864fdc474d70effd1a23a32"
-    )
-    for name, fixtures in (
-        ("visual-analysis", "visual-analysis-fixtures.json"),
-        ("weather-narrative", "weather-narrative-fixtures.json"),
-    ):
-        cases = json.loads((ROOT / "docs/contracts" / fixtures).read_text())["cases"]
-        for case in cases:
-            assert validate.shape_valid(name, case["value"]) is case["valid"], case["name"]
+    # Only the Stage A prompt and schema ship (C18): there is no synthesis prompt.
+    assert sorted(p.name for p in contracts.iterdir()) == [
+        "visual-analysis.schema.json",
+        "visual-system.txt",
+    ]
+    prompt = (contracts / "visual-system.txt").read_bytes()
+    assert analyze.PROMPT_SHA256 == hashlib.sha256(prompt + b"\0templates-v1").hexdigest()
+    assert "description" not in json.dumps(validate.schema("visual-analysis")["properties"])
+    cases = json.loads((ROOT / "docs/contracts/visual-analysis-fixtures.json").read_text())
+    for case in cases["cases"]:
+        assert validate.shape_valid("visual-analysis", case["value"]) is case["valid"], case["name"]
     assert set(validate.CATEGORIES) == set(
         validate.schema("visual-analysis")["properties"]["observations"]["items"]["properties"][
             "category"
@@ -169,17 +167,6 @@ def visual_reply(name: str) -> tuple[list[str], Any]:
 
 
 PACKET = build_packet("n0nce000", T0, T0 + timedelta(hours=2), station(T0, T0 + timedelta(hours=2)))
-OBSERVATIONS = (
-    Observation("v-old-0-0", "cloud_cover", "visible", "high", "Broken cumulus clouds.", 0),
-    Observation("v-old-0-1", "rain", "possible", "low", "Streaks may be light rain.", 0),
-    Observation("v-old-0-2", "fog_visibility", "not_observed", "medium", "Terrain visible.", 0),
-)
-BOUNDS = {0: (T0, T0 + timedelta(hours=1))}
-
-
-def narrative_reply(name: str) -> Any:
-    body = analyze.narrative_request(head_row(), PACKET, OBSERVATIONS, BOUNDS, "complete", None)
-    return run(Script([("narrative", name)]).cortex().chat(body))
 
 
 def test_recorded_visual_reply_validates_and_is_rebound() -> None:
@@ -188,8 +175,14 @@ def test_recorded_visual_reply_validates_and_is_rebound() -> None:
         reply.content, reply.finish_reason, supplied=supplied, window=0, nonce="n0nce000"
     )
     assert [o.id for o in result.observations] == [f"v-n0nce000-0-{i}" for i in range(3)]
-    assert {o.category for o in result.observations} == {"cloud_cover", "rain", "fog_visibility"}
-    assert reply.model == FIXTURE["model"]
+    assert [(o.category, o.assessment, o.intensity, o.sky_cover) for o in result.observations] == [
+        ("cloud_cover", "visible", None, "broken"),
+        ("rain", "possible", "light", None),
+        ("fog_visibility", "not_observed", None, None),
+    ]
+    assert result.limitations == ("sparse_sampling",) and reply.model == FIXTURE["model"]
+    fenced = f"```json\n{reply.content}\n```"
+    assert validate.visual(fenced, "stop", supplied=supplied, window=0, nonce="n0nce000") == result
 
 
 @pytest.mark.parametrize(
@@ -202,75 +195,6 @@ def test_recorded_visual_negatives_are_never_accepted(name: str) -> None:
             reply.content, reply.finish_reason, supplied=supplied, window=0, nonce="n0nce000"
         )
     assert rejected.value.code == FIXTURE["visual"][name]["code"]
-
-
-def test_recorded_narrative_reply_validates() -> None:
-    reply = narrative_reply("valid")
-    result = validate.narrative(
-        reply.content, reply.finish_reason, packet=PACKET, observations=OBSERVATIONS
-    )
-    assert [c.basis for c in result.claims] == ["visual", "instrument", "instrument", "inference"]
-    assert "3.2°C" in result.claims[1].text and result.limitations == ("Night frames were dark.",)
-    empty = narrative_reply("empty")
-    assert (
-        validate.narrative(
-            empty.content, empty.finish_reason, packet=PACKET, observations=OBSERVATIONS
-        ).claims
-        == ()
-    )
-
-
-@pytest.mark.parametrize(
-    "name",
-    [n for n, c in FIXTURE["narrative"].items() if "code" in c],
-    ids=lambda n: f"narrative-{n}",
-)
-def test_recorded_narrative_negatives_are_never_accepted(name: str) -> None:
-    reply = narrative_reply(name)
-    with pytest.raises(Rejected) as rejected:
-        validate.narrative(
-            reply.content, reply.finish_reason, packet=PACKET, observations=OBSERVATIONS
-        )
-    assert rejected.value.code == FIXTURE["narrative"][name]["code"]
-
-
-def test_numbers_must_be_supplied_renderings_of_cited_metrics() -> None:
-    gust = PACKET.find("wind_gust", "max")
-    rain = PACKET.find("precipitation", "sum")
-    assert gust is not None and rain is not None
-    assert gust.renderings == (("12.4", "m/s"), ("44.6", "km/h"), ("27.7", "mph"))
-    assert validate.numbers_grounded("A gust of 27.7 mph.", [gust]) == 1
-    for text in ("A gust of 27.74 mph.", "A gust of 28 mph.", "A gust of 12.4 m/s at 3 pm."):
-        with pytest.raises(Rejected):
-            validate.numbers_grounded(text, [gust])
-    # A true value cited for another quantity does not ground the text, and subjects match
-    # whole words only.
-    with pytest.raises(Rejected):
-        validate.numbers_grounded("Rain totalled 12.4 m/s.", [rain])
-    with pytest.raises(Rejected) as rejected:
-        validate.numbers_grounded("Over the terrain, 0.0 mm.", [rain])
-    assert rejected.value.code == "irrelevant_number"
-    high = PACKET.find("temperature", "max")
-    assert high is not None
-    with pytest.raises(Rejected):
-        validate.numbers_grounded("The low dropped to 14.8°C.", [high])
-    assert validate.numbers_grounded("The high reached 14.8°C.", [high]) == 1
-    # "No rain" needs a full-coverage measured zero that the claim cites.
-    partial = build_packet("p", T0, T0 + timedelta(hours=2), station(T0, T0 + timedelta(hours=2)))
-    claim = {"text": "No rain fell.", "basis": "instrument", "evidence_ids": []}
-    content = json.dumps(
-        {
-            "schema_version": 1,
-            "summary_claims": [
-                {**claim, "evidence_ids": [partial.find("precipitation", "sum").id]}
-            ],  # type: ignore[union-attr]
-            "events": [],
-            "limitations": [],
-        }
-    )
-    with pytest.raises(Rejected) as rejected:
-        validate.narrative(content, "stop", packet=partial, observations=())
-    assert rejected.value.code == "instrument_without_value"
 
 
 # Stage B packet -----------------------------------------------------------------------------
@@ -296,7 +220,6 @@ def test_packet_renders_exactly_withholds_thin_coverage_and_hashes_without_the_n
     assert packet.find("wind_gust", "max") is None and packet.withheld == ("Maximum wind gust",)
     texts = [c["text"] for c in measured_claims(one)]
     assert texts[0] == "Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F)."
-    assert all(validate.numbers_grounded(t, one.metrics) >= 1 for t in texts)
 
 
 # Config and request bodies -------------------------------------------------------------------
@@ -398,10 +321,10 @@ def visual_call(unit: Analyzer, run_: Run) -> Any:
         ([("status", 401)], 1, "cortex_auth"),
         ([("status", 413)], 1, None),
         ([("visual", "malformed_json")], 2, None),
-        ([("down",), ("down",), ("visual", "truncated"), ("visual", "person")], 4, None),
-        ([("visual", "person"), ("down",), ("down",), ("down",)], 4, "cortex_unavailable"),
+        ([("down",), ("down",), ("visual", "truncated"), ("visual", "free_text")], 4, None),
+        ([("visual", "free_text"), ("down",), ("down",), ("down",)], 4, "cortex_unavailable"),
         ([("down",), ("visual", "valid")], 2, "accepted"),
-        ([("visual", "scene_injection"), ("visual", "valid")], 2, "accepted"),
+        ([("visual", "free_text_field"), ("visual", "valid")], 2, "accepted"),
     ],
 )
 def test_at_most_four_calls_per_window_and_auth_or_media_stop(
@@ -451,39 +374,14 @@ def test_a_timed_out_call_keeps_the_slot_for_the_grace_period() -> None:
 
 def test_reply_bodies_never_reach_logs(caplog: pytest.LogCaptureFixture) -> None:
     caplog.set_level(logging.DEBUG)
-    unit = analyzer(Script([("visual", "person"), ("visual", "valid")]))
+    unit = analyzer(Script([("visual", "free_text"), ("visual", "valid")]))
     visual_call(unit, Run(uuid4(), "n0nce000"))
-    assert "person" not in caplog.text and "cumulus" not in caplog.text
+    assert "person" not in caplog.text and "broken" not in caplog.text
     assert "synthetic-key" not in caplog.text
     raw = unit.engine.rows  # type: ignore[attr-defined]
-    assert "cumulus" in raw[-1]["body"] and raw[-1]["outcome"] == "accepted"
-
-
-def test_failed_synthesis_publishes_the_measured_summary_and_validated_observations() -> None:
-    unit = analyzer(Script([("narrative", "valid")]))
-    result = unit._result(
-        None,
-        PACKET,
-        OBSERVATIONS,
-        ["Some hours could not be reviewed visually."],
-        [],
-        {},
-        {},
-        refresh="full",
-        reviewed=True,
-    )
-    assert result.state == "degraded" and result.reason == "synthesis_invalid"
-    assert [c["basis"] for c in result.claims] == [
-        "instrument",
-        "instrument",
-        "instrument",
-        "visual",
-    ]
-    assert result.claims[-1]["text"] == "Broken cumulus clouds."  # the possible rain stays out
-    nothing = build_packet("z", T0, T0 + timedelta(hours=2), [])
-    assert unit._result(
-        None, nothing, (), [], [], {}, {}, refresh="full", reviewed=False
-    ).state == ("failed")
+    # The free text stays in the private 24 h raw table only; it never reaches a result.
+    assert "A person walks" in raw[0]["body"] and raw[0]["outcome"] == "schema"
+    assert "broken" in raw[-1]["body"] and raw[-1]["outcome"] == "accepted"
 
 
 # Events, search projection and scheduling ------------------------------------------------------
@@ -544,7 +442,7 @@ def test_the_search_projection_is_a_valid_document_set() -> None:
                 "category": "cloud_cover",
                 "assessment": "visible",
                 "confidence": "high",
-                "description": "Broken clouds.",
+                "sky_cover": "broken",
                 "window": 1,
             }
         ],
@@ -560,6 +458,8 @@ def test_the_search_projection_is_a_valid_document_set() -> None:
     assert rows[1]["media_start_seconds"] == 5.0 and rows[1]["media_end_seconds"] == 10.0
     assert "AI-generated · sampled-frame analysis" in rows[0]["text"]
     assert text.analysis_mode == "sampled_frames" and text.description_revision == 1
+    # Window search text is template output, never model text (C18).
+    assert text.windows[0].observed_conditions == "Broken clouds."
 
 
 def test_nightly_retry_is_the_next_local_two_am_across_dst() -> None:

@@ -53,15 +53,25 @@ def _local_date(moment: datetime) -> date:
 
 async def enqueue_describe(
     connection: AsyncConnection, video_id: UUID, publication_id: UUID, *, tag: str, now: datetime
-) -> None:
+) -> bool:
+    """Queue one describe job per (video, publication, tag); False if that key already ran."""
+    key = f"{DESCRIBE_KIND}:{video_id}:{publication_id}:{tag}"
+    existing = (
+        await connection.execute(
+            text("SELECT 1 FROM weather.job WHERE idempotency_key=:key"), {"key": key}
+        )
+    ).first()
+    if existing is not None:
+        return False
     await jobs.enqueue(
         connection,
         kind=DESCRIBE_KIND,
-        key=f"{DESCRIBE_KIND}:{video_id}:{publication_id}:{tag}",
+        key=key,
         payload={"video_id": str(video_id), "publication_id": str(publication_id)},
         not_before=now,
         deadline=now + JOB_DEADLINE,
     )
+    return True
 
 
 PUBLISHED_SQL = """SELECT v.id,v.state,v.withdrawn,m.sha256 FROM weather.video v
@@ -233,30 +243,42 @@ async def fail(
     return result.rowcount == 1
 
 
+NIGHTLY_SQL = """SELECT a.video_id,a.publication_id,a.next_attempt_at FROM weather.analysis a
+WHERE a.state='pending' AND a.next_attempt_at<=:now AND a.pending_since>:oldest
+  AND NOT EXISTS (SELECT 1 FROM weather.job j WHERE j.kind=:kind
+    AND j.status IN ('queued','running') AND j.payload->>'video_id'=a.video_id::text)
+ORDER BY a.next_attempt_at,a.video_id LIMIT :limit FOR UPDATE OF a SKIP LOCKED"""
+
+
 async def nightly(connection: AsyncConnection, now: datetime, *, limit: int = 100) -> int:
     """Queue one retry per pending head whose nightly slot has come (inside the 7 days).
 
-    The slot moves to the following night rather than clearing, so a queued job that is lost
-    (intel disabled, retries exhausted) is queued again instead of waiting out the 7 days. A
-    fresh night also refills the head's call budget.
+    Heads with a live describe job are left alone. The slot moves to the following night
+    rather than clearing, so a queued job that is lost (intel disabled, retries exhausted) is
+    queued again instead of waiting out the 7 days. The call budget is refilled only when a
+    job is actually queued.
     """
     rows = list(
         await connection.execute(
-            text("""SELECT video_id,publication_id,next_attempt_at FROM weather.analysis
-            WHERE state='pending' AND next_attempt_at<=:now AND pending_since>:oldest
-            ORDER BY next_attempt_at,video_id LIMIT :limit FOR UPDATE SKIP LOCKED"""),
-            {"now": now, "oldest": now - RETRY_WINDOW, "limit": limit},
+            text(NIGHTLY_SQL),
+            {"now": now, "oldest": now - RETRY_WINDOW, "limit": limit, "kind": DESCRIBE_KIND},
         )
     )
+    queued = 0
     for row in rows:
-        tag = _local_date(row.next_attempt_at).isoformat()
-        await enqueue_describe(connection, row.video_id, row.publication_id, tag=tag, now=now)
-        await connection.execute(
-            text("""UPDATE weather.analysis SET next_attempt_at=:retry,attempt_calls=0
-            WHERE video_id=:video"""),
-            {"video": row.video_id, "retry": next_night(now)},
+        # One key per slot: nightly slots are one per night, and a forced retry is its own.
+        tag = row.next_attempt_at.astimezone(UTC).strftime("%Y%m%dT%H%M%SZ")
+        fresh = await enqueue_describe(
+            connection, row.video_id, row.publication_id, tag=tag, now=now
         )
-    return len(rows)
+        queued += fresh
+        await connection.execute(
+            text("""UPDATE weather.analysis SET next_attempt_at=:retry,
+              attempt_calls=CASE WHEN :fresh THEN 0 ELSE attempt_calls END
+            WHERE video_id=:video"""),
+            {"video": row.video_id, "retry": next_night(now), "fresh": fresh},
+        )
+    return queued
 
 
 SPEND_SQL = """UPDATE weather.analysis SET attempt_calls=attempt_calls+1
@@ -287,7 +309,7 @@ async def request_refresh(
     revision: int,
     now: datetime,
 ) -> bool:
-    """Evidence changed under `revision`: mark it stale and queue one synthesis-only refresh.
+    """Evidence changed under `revision`: mark it stale and queue one re-render.
 
     The key is per (video, base revision, local day), so a burst of evidence changes queues
     one refresh, which reads the evidence when it runs.

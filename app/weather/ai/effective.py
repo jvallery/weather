@@ -1,15 +1,23 @@
 # SPDX-License-Identifier: MIT
 """The one effective-description function: what the API, search and (later) the editor show.
 
-Today the effective description is the current validated analysis summary, bound to the
-current media revision. The editor (#44) extends this with human-edited revisions.
+Today the effective description is the current analysis summary (template-rendered from
+validated observations and station data, C18), bound to the current media revision. The editor
+(#44) writes `operator` revisions, which the API labels as the editor's, never as AI output.
 """
 
 import re
 from collections.abc import Mapping
-from typing import Any, Final
+from typing import Any, Final, Literal
 
 LABEL: Final = "AI-generated · sampled-frame analysis"
+EDITOR_LABEL: Final = "Editor-written description"
+
+
+def public_author(author_kind: object) -> Literal["ai", "editor"]:
+    """The public author of `analysis_revision.author_kind`: anything but the model is the
+    editor, so a human revision is never labelled AI-generated."""
+    return "ai" if author_kind == "model" else "editor"
 # The provider's model name is untrusted text: only an identifier-shaped name is kept.
 MODEL_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:/+-]{0,127}")
 

@@ -22,7 +22,13 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from weather.ai.effective import LABEL, effective_description, public_model
+from weather.ai.effective import (
+    EDITOR_LABEL,
+    LABEL,
+    effective_description,
+    public_author,
+    public_model,
+)
 
 from .cursors import invalid_cursor, seal, unseal
 from .models import Problem
@@ -101,9 +107,13 @@ class AnalysisProvenance(Model):
 
 
 class Analysis(Model):
-    """The labelled AI description of the current media; never raw model text."""
+    """The labelled description of the current media; never model-written text (C18).
 
-    label: Literal["AI-generated · sampled-frame analysis"] = LABEL
+    `author` is `ai` for template text rendered from the model's validated observations and
+    `editor` for a human (#44) revision, whose label then says so."""
+
+    label: Literal["AI-generated · sampled-frame analysis", "Editor-written description"] = LABEL
+    author: Literal["ai", "editor"] = "ai"
     state: Literal["pending", "complete", "degraded", "failed", "unavailable"]
     reason: str | None
     stale: bool
@@ -337,7 +347,7 @@ class DatabaseSource:
 ANALYSIS_COLUMNS = (
     "video_id,state,reason,stale,updated_at,revision,revision_state,refresh,model_route,model,"
     "prompt_sha256,schema_sha256,evidence_count,summary,claims,limitations,coverage,inputs,"
-    "generated_at"
+    "author_kind,generated_at"
 )
 
 
@@ -369,7 +379,10 @@ def build_analysis(row: dict[str, Any] | None, playable: bool) -> Analysis:
         state = "pending"
     coverage = row["coverage"] if content else None
     inputs = row["inputs"] if content else {}
+    author = public_author(row.get("author_kind", "model")) if content else "ai"
     return Analysis(
+        label=EDITOR_LABEL if author == "editor" else LABEL,
+        author=author,
         state=state,
         # Fixed identifiers from the worker's own vocabulary, never provider text.
         reason=row["reason"],
@@ -400,7 +413,7 @@ def build_analysis(row: dict[str, Any] | None, playable: bool) -> Analysis:
             frames_sampled=int(inputs.get("frames", 0)),
             keogram_used=bool(inputs.get("keogram", False)),
         )
-        if content
+        if content and author == "ai"
         else None,
     )
 

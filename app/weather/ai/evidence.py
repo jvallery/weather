@@ -3,9 +3,9 @@
 
 Under C5 an aggregate carries an evidence count and hash, never per-record IDs, so each metric
 gets a packet-local ID bound to this run's nonce. The application renders every value in its
-canonical unit and its fixed display conversions; the model may copy a rendering, never
-compute one. The packet hash covers values, coverage and evidence hashes, not the nonce, so an
-unchanged measurement set hashes the same on every read.
+canonical unit and its fixed display conversions, which only `render.py`'s templates print;
+the model never sees the packet (C18). The packet hash covers values, coverage and evidence
+hashes, not the nonce, so an unchanged measurement set hashes the same on every read.
 """
 
 import hashlib
@@ -14,7 +14,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from fractions import Fraction
-from typing import Any, Protocol
+from typing import Protocol
 
 from weather.api.models import Aggregate
 from weather.api.registry import REGISTRY
@@ -81,16 +81,6 @@ class Metric:
         """The first rendering plus conversions, e.g. '21.4 °C (70.5 °F)'."""
         shown = [_join(number, unit) for number, unit in self.renderings]
         return shown[0] + (f" ({', '.join(shown[1:])})" if len(shown) > 1 else "")
-
-    def prompt(self) -> dict[str, Any]:
-        return {
-            "id": self.id,
-            "metric": self.metric,
-            "statistic": self.statistic,
-            "label": self.label,
-            "values": [_join(number, unit) for number, unit in self.renderings],
-            "coverage": "full" if self.coverage >= FULL_COVERAGE else "partial",
-        }
 
 
 @dataclass(frozen=True)
@@ -194,28 +184,3 @@ async def read_packet(
     source: AggregateSource, nonce: str, start: datetime, end: datetime
 ) -> Packet:
     return build_packet(nonce, start, end, await source.aggregates(start, end, METRICS))
-
-
-def measured_claims(packet: Packet) -> list[dict[str, Any]]:
-    """Deterministic instrument sentences: the degraded summary and the synthesis fallback."""
-    claims = []
-    low, high = packet.find("temperature", "min"), packet.find("temperature", "max")
-    if low and high:
-        claims.append(
-            (f"Measured temperature ranged from {low.text()} to {high.text()}.", [low, high])
-        )
-    gust = packet.find("wind_gust", "max")
-    if gust:
-        claims.append((f"The strongest measured wind gust was {gust.text()}.", [gust]))
-    rain = packet.find("precipitation", "sum")
-    # A zero is an absence claim, made only at full coverage; a partial total is a lower bound.
-    if rain and (rain.value > 0 or rain.coverage >= FULL_COVERAGE):
-        partial = "" if rain.coverage >= FULL_COVERAGE else " over partial station coverage"
-        claims.append((f"Measured rain total: {rain.text()}{partial}.", [rain]))
-    strikes = packet.find("lightning_count", "sum")
-    if strikes and strikes.value > 0:
-        claims.append((f"The station counted {strikes.text()} of lightning.", [strikes]))
-    return [
-        {"text": text, "basis": "instrument", "evidence_ids": [m.id for m in cited]}
-        for text, cited in claims
-    ]

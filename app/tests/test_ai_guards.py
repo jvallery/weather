@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: MIT
-"""#23 review guards without a database: one focused test per validation bypass class, the
-inference slot's lock release, call deferral and budgets, the Cortex breaker, the nightly slot,
-the published model name and the optional keogram."""
+"""#23 guards without a database: the structured Stage A schema, the public templates (C18: no
+model-written prose is ever published), the inference slot's lock release, call deferral and
+budgets, the Cortex breaker, the nightly slot, the published model name and author, and the
+optional keogram."""
 
 import asyncio
 import hashlib
@@ -20,11 +21,11 @@ import pytest
 from ai_support import CountingSlot, RawSink, Script, StaticMedia, StaticWeather, station, tiny_jpeg
 from PIL import Image as PILImage
 from sqlalchemy.exc import OperationalError
-from weather.ai import analyze, media, store, validate
-from weather.ai.analyze import Analyzer, CortexDown, Run, visual_request
+from weather.ai import media, render, store, validate
+from weather.ai.analyze import Analyzer, BudgetSpent, CortexDown, Run, visual_request
 from weather.ai.client import MODEL_ROUTE, Cortex
-from weather.ai.effective import public_model
-from weather.ai.evidence import Packet, build_packet, measured_claims
+from weather.ai.effective import EDITOR_LABEL, LABEL, public_model
+from weather.ai.evidence import Packet, build_packet
 from weather.ai.media import GarageMedia, Source, StoredObject, WindowMedia, keogram_windows
 from weather.ai.slot import LOCK, UNLOCK, CortexSlot, SlotBusy, Uncertain
 from weather.ai.validate import Observation, Rejected
@@ -50,364 +51,165 @@ def packet(coverage: dict[str, float] | None = None, **values: float) -> Packet:
     return build_packet("n0nce000", T0, END, aggregates)
 
 
-def observation(name: str, category: str, assessment: str, text: str = "Clouds.") -> Observation:
-    return Observation(f"v-{name}", category, assessment, "high", text, 0)
+# Stage A: structured output only ---------------------------------------------------------------
 
 
-OBSERVATIONS = {
-    o.id.removeprefix("v-"): o
-    for o in (
-        observation("cloud", "cloud_cover", "visible", "Broken clouds."),
-        observation("rain", "rain", "visible", "Rain streaks."),
-        observation("rain_possible", "rain", "possible", "Streaks may be rain."),
-        observation("rain_none", "rain", "not_observed", "No rain is visible."),
-        observation("rain_dark", "rain", "not_assessable", "Rain cannot be assessed."),
-        observation("fog", "fog_visibility", "visible", "Fog hides the hills."),
-    )
-}
-
-
-def narrate(
-    text: str,
-    basis: str = "visual",
-    cite: Sequence[str | tuple[str, str]] = ("cloud",),
-    *,
-    data: Packet | None = None,
-    limitations: Sequence[str] = (),
-) -> str | None:
-    """The rejection code of a one-claim Stage C reply, or None when it validates."""
-    data = data or packet()
-    ids = []
-    for item in cite:
-        if isinstance(item, tuple):
-            metric = data.find(*item)
-            assert metric is not None
-            ids.append(metric.id)
-        else:
-            ids.append(OBSERVATIONS[item].id)
+def stage_a(*observations: dict[str, Any], limitations: Sequence[Any] = (), **top: Any) -> str:
+    """The rejection code of a one-window Stage A reply, or "accepted"."""
+    required = [
+        {"category": "rain", "assessment": "not_observed", "confidence": "medium"},
+        {"category": "fog_visibility", "assessment": "not_observed", "confidence": "medium"},
+    ]
+    items = [{"evidence_ids": ["f-1"], **o} for o in (*required, *observations)]
     content = json.dumps(
-        {
-            "schema_version": 1,
-            "summary_claims": [{"text": text, "basis": basis, "evidence_ids": ids}],
-            "events": [],
-            "limitations": list(limitations),
-        },
-        ensure_ascii=False,
-    )
-    try:
-        validate.narrative(content, "stop", packet=data, observations=OBSERVATIONS.values())
-    except Rejected as rejected:
-        return rejected.code
-    return None
-
-
-def stage_a(
-    description: str, assessment: str = "visible", *, limitations: Sequence[str] = ()
-) -> str | None:
-    """The rejection code of a one-window Stage A reply, or None when it validates."""
-    content = json.dumps(
-        {
-            "schema_version": 1,
-            "evidence_ids": ["f-1"],
-            "observations": [
-                {
-                    "observation_id": "a",
-                    "category": "rain",
-                    "assessment": assessment,
-                    "description": description,
-                    "confidence": "medium",
-                    "evidence_ids": ["f-1"],
-                },
-                {
-                    "observation_id": "b",
-                    "category": "fog_visibility",
-                    "assessment": "not_observed",
-                    "description": "Distant terrain stays clearly visible.",
-                    "confidence": "medium",
-                    "evidence_ids": ["f-1"],
-                },
-            ],
-            "limitations": list(limitations),
-        },
+        {"schema_version": 2, "observations": items, "limitations": list(limitations), **top},
         ensure_ascii=False,
     )
     try:
         validate.visual(content, "stop", supplied=["f-1"], window=0, nonce="n0nce000")
     except Rejected as rejected:
         return rejected.code
-    return None
+    return "accepted"
 
 
-# 1. A claim's weather words must match what it cites ------------------------------------------
+CLOUD = {"category": "cloud_cover", "assessment": "visible", "confidence": "high"}
 
 
 @pytest.mark.parametrize(
-    ("text", "cite", "code"),
+    ("reply", "code"),
     [
-        ("Rain fell through the afternoon.", ["rain"], None),
-        ("Light rain possibly fell.", ["rain_possible"], None),
-        ("Rain fell through the afternoon.", ["cloud"], "unsupported_weather"),
-        ("Snow showers crossed the hills.", ["rain"], "unsupported_weather"),
-        ("Fog settled over the valley.", ["rain"], "unsupported_weather"),
-        ("Thunder and lightning under dark clouds.", ["cloud"], "unsupported_weather"),
-        ("Drizzle and mist under grey clouds.", ["cloud"], "unsupported_weather"),
-        ("Hail and sleet under dark clouds.", ["cloud"], "unsupported_weather"),
-        ("Frost coated the ground.", ["cloud"], "unsupported_weather"),
-        # not_observed and not_assessable never back a positive claim, hedged or not.
-        ("Rain fell.", ["rain_none"], "unsupported_weather"),
-        ("Rain possibly fell.", ["rain_dark"], "unsupported_weather"),
-        # A possible observation needs its hedge next to the weather word.
-        ("Rain fell.", ["rain_possible"], "uncertain_as_fact"),
+        (stage_a(CLOUD), "accepted"),
+        (stage_a({**CLOUD, "sky_cover": "overcast"}, limitations=["darkness"]), "accepted"),
+        # No free text anywhere, however harmless it looks.
+        (stage_a({**CLOUD, "description": "Broken clouds."}), "schema"),
+        (stage_a({**CLOUD, "note": "x"}), "schema"),
+        (stage_a(CLOUD, limitations=["Night frames were dark."]), "schema"),
+        (stage_a(CLOUD, summary="A dry day."), "schema"),
+        (stage_a({**CLOUD, "sky_cover": "mostly cloudy"}), "schema"),
+        (stage_a({**CLOUD, "confidence": 0.9}), "schema"),
+        (stage_a({**CLOUD, "evidence_ids": ["f-2"]}), "unknown_evidence"),
+        (stage_a({**CLOUD, "intensity": "heavy"}), "misplaced_intensity"),
         (
-            "Rain fell all afternoon while the clouds possibly thickened.",
-            ["rain_possible", "cloud"],
-            "uncertain_as_fact",
+            stage_a({"category": "rain", "assessment": "visible", "confidence": "high"}),
+            "duplicate_category",
         ),
-        ("Rain fell; clouds may have thickened.", ["rain_possible", "cloud"], "uncertain_as_fact"),
-        # Whole words: a rainbow is not rain.
-        ("A rainbow arched over broken clouds.", ["cloud"], None),
-        # Saying it could not be judged is no claim either way.
-        ("Rain could not be assessed after dark.", ["rain_dark"], None),
-    ],
-)
-def test_weather_words_need_cited_visible_or_adjacently_hedged_evidence(
-    text: str, cite: list[str], code: str | None
-) -> None:
-    assert narrate(text, "visual", cite) == code
-
-
-# 2. Values are bound to their own subject ------------------------------------------------------
-
-
-SWAP = packet(temperature_min=2.0, temperature_max=18.0)
-BOTH = [("temperature", "min"), ("temperature", "max")]
-WIND = [("wind_avg", "mean"), ("wind_gust", "max")]
-
-
-@pytest.mark.parametrize(
-    ("text", "cite", "code"),
-    [
-        ("The high was 18.0°C and the low 2.0°C.", BOTH, None),
-        ("The high was 2.0°C and the low 18.0°C.", BOTH, "irrelevant_number"),
-        ("Temperatures ranged from 2.0°C to 18.0°C.", BOTH, None),
-        ("Temperatures ranged from 18.0°C to 2.0°C.", BOTH, "irrelevant_number"),
-        ("Average wind was 5.1 m/s with gusts to 12.4 m/s.", WIND, None),
-        ("Average wind was 12.4 m/s with gusts to 5.1 m/s.", WIND, "irrelevant_number"),
-        ("Gusts reached 5.1 m/s.", WIND, "irrelevant_number"),
-        # Whole words with optional plurals: "lower" is not "low", "highs" is "high".
-        ("A lower reading of 2.0°C.", BOTH, "irrelevant_number"),
-        ("Highs reached 18.0°C.", BOTH, None),
-        ("Over the rainbow, 0.0 mm.", [("precipitation", "sum")], "irrelevant_number"),
-    ],
-)
-def test_each_number_binds_to_the_nearest_subject_of_its_own_metric(
-    text: str, cite: list[tuple[str, str]], code: str | None
-) -> None:
-    assert narrate(text, "instrument", cite, data=SWAP) == code
-
-
-# 3. Numbers cannot slip past the scan ----------------------------------------------------------
-
-
-@pytest.mark.parametrize(
-    "text",
-    [
-        "The strongest gust was 12.4 m/s, about .5 m/s above the rest.",
-        "The strongest gust was 12.4 m/s, x40 the calm.",
-        "The strongest gust was 12.4 m/s for ½ the day.",
-        "The strongest gust was 12.4 m/s for half the day.",
-        *(
-            f"The strongest gust was 12.4 m/s {tail}."
-            for tail in (
-                "at one point",
-                "with zero calm",
-                "in a single burst",
-                "once",
-                "twice",
-                "a dozen times",
-                "a hundred metres up",
-                "a thousand times",
-                "a million times",
-            )
+        (
+            stage_a({"category": "sunlight", "assessment": "visible", "confidence": "high",
+                     "sky_cover": "clear"}),
+            "misplaced_sky_cover",
         ),
-    ],
-)
-def test_unrendered_numbers_in_any_form_are_rejected(text: str) -> None:
-    assert narrate(text, "instrument", [("wind_gust", "max")]) in (
-        "ungrounded_number",
-        "claim_number",
-    )
-    assert stage_a(text.replace("12.4 m/s", "strong"), "visible") == "visual_number"
-
-
-# 4. Absence claims -----------------------------------------------------------------------------
-
-
-PARTIAL_RAIN = packet(coverage={"precipitation_sum": 0.8})
-RAIN_TOTAL = [("precipitation", "sum")]
-
-
-@pytest.mark.parametrize(
-    ("text", "basis", "cite", "data", "code"),
-    [
-        ("It was a rain-free day under broken clouds.", "visual", ["cloud"], None, "absence"),
-        ("Skies stayed precipitation-free.", "visual", ["cloud"], None, "absence"),
-        ("Not a drop fell under the clouds.", "visual", ["cloud"], None, "absence"),
-        ("A dry day under broken clouds.", "visual", ["cloud"], None, "absence"),
-        ("Broken clouds, and the afternoon stayed dry.", "visual", ["cloud"], None, "absence"),
-        ("Clouds covered the frames, and there was no rain.", "visual", ["cloud"], None, "absence"),
-        ("No lightning was seen.", "visual", ["cloud"], None, "absence"),
-        # Only "not visible in the frames", adjacent to the precipitation word, is exempt.
-        ("No rain was visible in the sampled frames.", "visual", ["cloud"], None, None),
-        ("Rain was not visible in the frames.", "visual", ["cloud"], None, None),
-        ("No rain was visible.", "visual", ["cloud"], None, "absence"),
-        # A measured zero supports absence only at full coverage, and is itself one.
-        ("No rain fell, and the station measured 0.0 mm of rain.", "instrument", RAIN_TOTAL,
-         None, None),
-        ("The station measured 0.0 mm of rain.", "instrument", RAIN_TOTAL, PARTIAL_RAIN,
-         "absence"),
-        ("Rainfall totalled 0.0 mm.", "instrument", RAIN_TOTAL, PARTIAL_RAIN, "absence"),
-        ("No rain fell, and rainfall totalled 0.0 mm.", "instrument", RAIN_TOTAL, PARTIAL_RAIN,
-         "absence"),
     ],
 )  # fmt: skip
-def test_absence_needs_a_cited_full_coverage_zero_or_the_imagery_scope(
-    text: str, basis: str, cite: list[Any], data: Packet | None, code: str | None
-) -> None:
-    assert narrate(text, basis, cite, data=data) == (code and "unsupported_absence")
+def test_stage_a_accepts_only_the_strict_structured_schema(reply: str, code: str) -> None:
+    assert reply == code
 
 
-def test_the_fallback_summary_never_prints_a_partial_zero_rain_total() -> None:
-    def rain_lines(data: Packet) -> list[str]:
-        return [c["text"] for c in measured_claims(data) if "rain" in c["text"]]
-
-    assert rain_lines(packet()) == ["Measured rain total: 0.0 mm (0.00 in)."]
-    assert rain_lines(PARTIAL_RAIN) == []
-    wet = packet(coverage={"precipitation_sum": 0.8}, precipitation_sum=2.3)
-    (line,) = rain_lines(wet)
-    assert line.endswith("over partial station coverage.")
-    assert validate.numbers_grounded(line, wet.metrics) == 2
+# Stage C: deterministic templates --------------------------------------------------------------
 
 
-# 5. Stage A descriptions, limitations and what reaches public text ----------------------------
+def obs(window: int, category: str, assessment: str, confidence: str = "high", **extra: Any):
+    return Observation(f"v-{window}-{category}", category, assessment, confidence, window, **extra)
 
 
-@pytest.mark.parametrize(
-    ("description", "assessment", "code"),
-    [
-        ("Rain streaks cross the frames.", "visible", None),
-        ("Streaks near the lens may be light rain.", "possible", None),
-        ("Rain streaks cross the frames.", "possible", "visual_uncertain_as_fact"),
-        ("Rain streaks cross the frames.", "not_observed", "visual_uncertain_as_fact"),
-        ("Rain streaks cross the frames.", "not_assessable", "visual_uncertain_as_fact"),
-        ("Darkness means rain cannot be assessed.", "not_assessable", None),
-        ("No rain is visible.", "not_observed", None),
-        ("The hour was rain-free.", "not_observed", "visual_absence"),
-        ("The ground stayed dry all hour.", "not_observed", "visual_absence"),
-    ],
-)
-def test_stage_a_descriptions_follow_the_absence_and_hedge_rules(
-    description: str, assessment: str, code: str | None
-) -> None:
-    assert stage_a(description, assessment) == code
+def texts(claims: Sequence[dict[str, Any]]) -> list[str]:
+    return [c["text"] for c in claims]
 
 
-@pytest.mark.parametrize(
-    ("limitation", "code"),
-    [
-        ("Night frames were dark.", None),
-        ("Possible rain on the lens blurred some frames.", None),
-        ("Rain on the lens blurred some frames.", "uncertain_as_fact"),
-        ("There was no rain, so wetness was not assessed.", "absence"),
-    ],
-)
-def test_limitations_follow_the_absence_and_hedge_rules(limitation: str, code: str | None) -> None:
-    assert stage_a("Rain streaks cross the frames.", limitations=[limitation]) == (
-        code and f"visual_{code}"
-    )
-    assert narrate("Broken clouds.", limitations=[limitation]) == (code and f"claim_{code}")
-
-
-def test_only_visible_or_hedged_possible_observations_reach_search_text() -> None:
-    row = {
-        "video_id": uuid4(),
-        "camera_id": "skycam_east",
-        "segment": "daytime",
-        "starts_at": T0,
-        "ends_at": END,
-        "frames": 600,
-        "public_not_before": END,
-        "video_revision": 1,
-    }
-    notes = [
-        ("a", "visible", "Broken clouds."),
-        ("b", "possible", "Streaks may be light rain."),
-        ("c", "possible", "Heavy rain."),
-        ("d", "not_observed", "No fog is visible."),
+def test_templates_render_hedges_and_provable_absence_only() -> None:
+    observations = [
+        obs(0, "cloud_cover", "visible", sky_cover="broken"),
+        obs(1, "cloud_cover", "visible", sky_cover="broken"),
+        obs(0, "rain", "possible", intensity="light"),
+        obs(1, "rain", "visible", "low", intensity="moderate"),  # low confidence is hedged
+        obs(0, "fog_visibility", "not_observed"),
+        obs(1, "fog_visibility", "not_observed"),
+        obs(0, "lightning", "not_observed"),
+        obs(1, "snowfall", "not_assessable"),
     ]
-    result = analyze.Result(
-        state="complete",
-        reason=None,
-        claims=[],
-        limitations=[],
-        observations=[
-            {"id": i, "category": "rain", "assessment": a, "description": d, "window": 0}
-            for i, a, d in notes
-        ],
-        coverage={"windows_reviewed": 1, "windows_total": 2},
-        inputs={},
-        packet=packet(),
-        refresh="full",
-        event_windows={i: (T0, T0 + timedelta(hours=1)) for i, _, _ in notes},
+    assert texts(render.visual_claims(observations, 2, "skycam_east")) == [
+        "The sampled east-sky frames show broken clouds in all 2 reviewed hour windows.",
+        "The sampled east-sky frames possibly show light rain in 1 of 2 reviewed hour windows.",
+        "The sampled east-sky frames possibly show moderate rain in 1 of 2 reviewed hour windows.",
+        # Absence only where every reviewed window assessed it as not observed.
+        "No fog was visible in the sampled east-sky frames.",
+    ]
+    assert render.window_text([observations[0], observations[2], observations[4]]) == (
+        "Broken clouds; possibly light rain; no fog visible in the frames."
     )
-    (window,) = analyze.video_text(row, 1, result, "Clouds.", None).windows
-    assert window.observed_conditions == "Broken clouds. Streaks may be light rain."
+    assert render.limitations(
+        observations, 2, {"darkness": 1, "unknown_code": 1}, keogram=False, unreviewed=True,
+        withheld=["Maximum wind gust"],
+    ) == [
+        "Some hours could not be reviewed visually.",
+        "No keogram was available; hours were described from frames.",
+        "Station data was incomplete for: Maximum wind gust.",
+        "Falling snow could not be assessed in 1 of 2 reviewed hour windows.",
+        "Darkness limited what the frames show.",
+    ]  # fmt: skip
 
 
-# 6. People and vehicles, however spelled -------------------------------------------------------
+def test_measured_text_prints_station_numbers_and_a_zero_only_at_full_coverage() -> None:
+    def rain_lines(data: Packet) -> list[str]:
+        return [t for t in texts(render.measured_claims(data)) if "rain" in t]
+
+    assert texts(render.measured_claims(packet()))[:3] == [
+        "Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+        "The mean measured wind was 5.1 m/s (18.4 km/h, 11.4 mph).",
+        "The strongest measured wind gust was 12.4 m/s (44.6 km/h, 27.7 mph).",
+    ]
+    assert rain_lines(packet()) == ["Measured rain total: 0.0 mm (0.00 in)."]
+    assert rain_lines(packet(coverage={"precipitation_sum": 0.8})) == []
+    wet = packet(coverage={"precipitation_sum": 0.8}, precipitation_sum=2.3)
+    assert rain_lines(wet) == [
+        "Measured rain total: 2.3 mm (0.09 in) over partial station coverage."
+    ]
 
 
-@pytest.mark.parametrize(
-    "text",
-    [
-        "Girls played under broken clouds.",
-        "Boys ran under broken clouds.",
-        "Bikes stood under broken clouds.",
-        "A bicycle leaned under broken clouds.",
-        "Cyclists passed under broken clouds.",
-        "Joggers passed under broken clouds.",
-        "Drivers waited under broken clouds.",
-        "Buses passed under broken clouds.",
-        "Motorcycles passed under broken clouds.",
-        "A sedan sat under broken clouds.",
-        "A crowd gathered under broken clouds.",
-        "Workers gathered under broken clouds.",
-        "A toddler sat under broken clouds.",
-        "A stroller sat under broken clouds.",
-        "A box was delivered under broken clouds.",
-        "Someone walked under broken clouds.",
-        "Headlights glowed under broken clouds.",
-        "Pickup trucks passed under broken clouds.",
-    ],
-)
-def test_people_and_vehicle_words_match_with_plurals_and_synonyms(text: str) -> None:
-    assert narrate(text) == "claim_personal"
-    assert stage_a(text) == "visual_personal"
+def test_every_public_string_comes_from_the_templates() -> None:
+    """Exhaustive over the enums: claims, window text and limitations use only fixed phrases."""
+    allowed_nouns = {*render.SKY.values(), *render.FOG.values(), *render.PLAIN.values()}
+    allowed_nouns |= {
+        f"{i} {n}" for i in ("light", "moderate", "heavy") for n in ("rain", "falling snow")
+    }
+    for category in validate.CATEGORIES:
+        for assessment in ("visible", "possible", "not_observed", "not_assessable"):
+            for extra in ({}, {"intensity": "heavy"}, {"sky_cover": "few"}):
+                item = obs(0, category, assessment, "medium", **extra)
+                for claim in render.visual_claims([item], 1, "frontyard_1"):
+                    assert claim["basis"] == "visual"
+                    assert claim["text"].startswith(("The sampled front-yard frames ", "No "))
+                if render.shown(item):
+                    assert render.phrase(item) in allowed_nouns
+                for line in render.limitations([item], 1, {}, keogram=True, unreviewed=False,
+                                               withheld=[]):
+                    assert line.endswith(".")
+    assert len(render.claims(packet(), [obs(w, "rain", "visible", intensity=i)
+                                         for w in range(20) for i in ("light", "moderate")],
+                             20, "skycam_west")) <= render.MAX_CLAIMS  # fmt: skip
 
 
-@pytest.mark.parametrize(
-    ("text", "code"),
-    [
-        ("Ａ ｃａｒ sat under broken clouds.", "claim_personal"),  # full width, NFKC-folded
-        ("A c​ar sat under broken clouds.", "claim_control"),  # zero-width space
-        ("A c­ar sat under broken clouds.", "claim_control"),  # soft hyphen (Cf)
-        ("A саr sat under broken clouds.", "claim_script"),  # Cyrillic look-alikes
-        ("Broken clouds — then sun.", "claim_script"),  # only °, – and ’ beyond ASCII
-        ("Broken clouds drifted past the café’s roof – then sun.", None),
-    ],
-)
-def test_text_is_nfkc_folded_and_latin_only(text: str, code: str | None) -> None:
-    assert narrate(text) == code
+def test_state_follows_review_coverage_and_the_spent_budget() -> None:
+    unit = analyzer(Script([("visual", "valid")]))
+    row = {"camera_id": "skycam_east"}
+    seen = [obs(0, "cloud_cover", "visible", sky_cover="clear")]
+
+    def state(reviewed: int, spent: bool = False, data: Packet | None = None) -> tuple[Any, ...]:
+        result = unit._result(
+            row,
+            data or packet(),
+            seen[:reviewed],
+            {"windows_reviewed": reviewed, "windows_total": 3},
+            {"windows": 2, "keogram": True, "limitations": {}, "call_budget_spent": spent},
+            refresh="full",
+        )
+        return result.state, result.reason
+
+    assert state(1) == ("degraded", "visual_partial")
+    assert state(0) == ("degraded", "visual_invalid")
+    assert state(1, spent=True) == ("degraded", "call_budget")
+    assert state(0, data=build_packet("n", T0, END, [])) == ("failed", "no_evidence")
+    seen.append(obs(1, "cloud_cover", "visible", sky_cover="clear"))
+    assert state(2) == ("complete", None)
 
 
 # 7. The slot never returns a connection that may still hold the lock -------------------------
@@ -622,12 +424,13 @@ def test_a_failed_release_keeps_the_successful_reply() -> None:
 def test_the_head_budget_bounds_calls_across_scheduler_retries() -> None:
     sink = RawSink(budget=3)
     unit = analyzer(Script([("visual", "malformed_json")]), sink=sink)
-    # The first attempt spends two calls (try and repair); its retry has one left, then defers.
+    # The first attempt spends two calls (try and repair); its retry has one left, then stops
+    # (describe then publishes what its accepted windows support).
     assert visual_call(unit, Run(uuid4(), "n0nce000", metered=True)) is None
     retry = Run(uuid4(), "n0nce001", metered=True)
-    with pytest.raises(CortexDown) as down:
+    with pytest.raises(BudgetSpent):
         visual_call(unit, retry)
-    assert down.value.reason == "call_budget" and retry.calls == 1 and sink.spent == 3
+    assert retry.calls == 1 and sink.spent == 3
 
 
 def test_the_breaker_skips_calls_until_the_next_nightly_window() -> None:
@@ -650,33 +453,39 @@ def test_the_breaker_skips_calls_until_the_next_nightly_window() -> None:
 # 9. The nightly slot moves forward instead of clearing ----------------------------------------
 
 
-def test_nightly_moves_the_slot_to_the_next_night(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("fresh", [True, False])
+def test_nightly_moves_the_slot_and_refills_the_budget_only_when_it_queues(
+    fresh: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
     now = store.next_night(T0)
     row = SimpleNamespace(video_id=uuid4(), publication_id=uuid4(), next_attempt_at=now)
     queued: list[Any] = []
 
-    async def enqueue(*args: Any, **kwargs: Any) -> None:
+    async def enqueue(*args: Any, **kwargs: Any) -> bool:
         queued.append(kwargs["tag"])
+        return fresh
 
     monkeypatch.setattr(store, "enqueue_describe", enqueue)
+    updates: list[tuple[str, dict[str, Any]]] = []
 
     class Connection:
-        updates: list[tuple[str, dict[str, Any]]] = []
-
         async def execute(self, statement: Any, params: dict[str, Any]) -> Any:
             if "SKIP LOCKED" in str(statement):
+                # Heads with a live describe job are never selected.
+                assert "j.status IN ('queued','running')" in str(statement)
+                assert params["kind"] == store.DESCRIBE_KIND
                 return [row]
-            self.updates.append((str(statement), params))
+            updates.append((str(statement), params))
             return SimpleNamespace(rowcount=1)
 
-    connection = Connection()
-    assert run(store.nightly(connection, now)) == 1  # type: ignore[arg-type]
-    ((sql, params),) = connection.updates
-    assert params["retry"] == store.next_night(now) > now
-    assert "attempt_calls=0" in sql and queued == [now.astimezone(store.LOCAL).date().isoformat()]
+    assert run(store.nightly(Connection(), now)) == int(fresh)  # type: ignore[arg-type]
+    ((sql, params),) = updates
+    assert params["retry"] == store.next_night(now) > now and params["fresh"] is fresh
+    assert "CASE WHEN :fresh THEN 0" in sql
+    assert queued == [now.strftime("%Y%m%dT%H%M%SZ")]
 
 
-# 13. Only an identifier-shaped model name is recorded or published ----------------------------
+# 13. Only an identifier-shaped model name is published, and the author is labelled -----------
 
 
 def test_provider_model_text_never_reaches_provenance() -> None:
@@ -711,8 +520,13 @@ def test_provider_model_text_never_reaches_provenance() -> None:
         "refresh": "full",
         "evidence_count": 1,
     }
-    provenance = build_analysis(row, True).provenance
-    assert provenance is not None and provenance.model == MODEL_ROUTE
+    analysis = build_analysis(row, True)
+    assert analysis.provenance is not None and analysis.provenance.model == MODEL_ROUTE
+    assert analysis.author == "ai" and analysis.label == LABEL
+    # A human (#44) revision is the editor's: never labelled AI-generated, no model provenance.
+    edited = build_analysis({**row, "author_kind": "operator"}, True)
+    assert edited.author == "editor" and edited.label == EDITOR_LABEL
+    assert edited.provenance is None
 
 
 # 14. A bad keogram means frames only, never a failed video -------------------------------------

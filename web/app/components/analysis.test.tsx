@@ -2,7 +2,7 @@
 import { expect, test } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AnalysisPanel } from "./analysis";
-import { analysisField, ANALYSIS_LABEL } from "../lib/weather-api";
+import { analysisField, ANALYSIS_LABEL, EDITOR_LABEL } from "../lib/weather-api";
 import variants from "../fixtures/analysis.json";
 
 const parse = (value: unknown) => analysisField.parse(value);
@@ -43,4 +43,15 @@ test("the compact day-card form shows only the label, state and description", ()
   const html = renderToStaticMarkup(<AnalysisPanel analysis={parse(variants.complete)} compact />);
   expect(html).toContain(ANALYSIS_LABEL);
   expect(html).not.toContain("Model llm.primary.longctx.mm");
+});
+
+test("an editor's revision is labelled as the editor's, never as AI output, and shows no model", () => {
+  const edited = parse({ ...variants.complete, author: "editor", label: "Editor-written description" });
+  const html = renderToStaticMarkup(<AnalysisPanel analysis={edited} />);
+  expect(html).toContain(EDITOR_LABEL);
+  expect(html).not.toContain(ANALYSIS_LABEL);
+  expect(html).not.toContain("Model llm.primary.longctx.mm");
+  // A garbled label cannot relabel an editor's text as AI output, or the reverse.
+  expect(renderToStaticMarkup(<AnalysisPanel analysis={parse({ ...variants.complete, author: "editor", label: 7 })} />)).toContain(EDITOR_LABEL);
+  expect(parse({ ...variants.complete, author: undefined }).author).toBe("ai");
 });

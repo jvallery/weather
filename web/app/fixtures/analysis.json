@@ -1,6 +1,7 @@
 {
   "complete": {
     "label": "AI-generated · sampled-frame analysis",
+    "author": "ai",
     "state": "complete",
     "reason": null,
     "stale": false,
@@ -47,8 +48,9 @@
   },
   "degraded": {
     "label": "AI-generated · sampled-frame analysis",
+    "author": "ai",
     "state": "degraded",
-    "reason": "synthesis_invalid",
+    "reason": "visual_partial",
     "stale": false,
     "revision": 2,
     "generated_at": "2026-11-01T09:00:00Z",
@@ -94,6 +96,7 @@
   },
   "pending": {
     "label": "AI-generated · sampled-frame analysis",
+    "author": "ai",
     "revision": null,
     "generated_at": null,
     "description": null,
@@ -107,6 +110,7 @@
   },
   "failed": {
     "label": "AI-generated · sampled-frame analysis",
+    "author": "ai",
     "revision": null,
     "generated_at": null,
     "description": null,

@@ -311,9 +311,18 @@ export interface components {
         };
         /**
          * Analysis
-         * @description The labelled AI description of the current media; never raw model text.
+         * @description The labelled description of the current media; never model-written text (C18).
+         *
+         *     `author` is `ai` for template text rendered from the model's validated observations and
+         *     `editor` for a human (#44) revision, whose label then says so.
          */
         readonly Analysis: {
+            /**
+             * Author
+             * @default ai
+             * @enum {string}
+             */
+            readonly author: "ai" | "editor";
             /** Claims */
             readonly claims: readonly components["schemas"]["AnalysisClaim"][];
             readonly coverage: components["schemas"]["AnalysisCoverage"] | null;
@@ -324,9 +333,9 @@ export interface components {
             /**
              * Label
              * @default AI-generated · sampled-frame analysis
-             * @constant
+             * @enum {string}
              */
-            readonly label: "AI-generated · sampled-frame analysis";
+            readonly label: "AI-generated · sampled-frame analysis" | "Editor-written description";
             /** Limitations */
             readonly limitations: readonly string[];
             readonly provenance: components["schemas"]["AnalysisProvenance"] | null;
