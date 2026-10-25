@@ -1,6 +1,29 @@
 # Tempest receive and drain
 
-`weather tempest-receiver` receives Tempest hub UDP broadcasts on port 50222, commits each datagram to a local SQLite spool, and drains the spool to `weather-pg`. #5 commissions the workload; this page describes the code on `main`. Integration, kill and outage tests run only in fleet CI, never on the Mac.
+`weather tempest-receiver` receives Tempest hub UDP broadcasts on port 50222, commits each datagram to a local SQLite spool, and drains the spool to `weather-pg`. It runs as Deployment `tempest-receiver` in `weather` (#5, `deploy/k8s/receiver/`). Integration, kill and outage tests run only in fleet CI, never on the Mac.
+
+## Deployment and data path
+
+The Tempest hub belongs to jvallery/homeassistant; Weather only listens. The hub broadcasts to 255.255.255.255:50222 on VLAN 10. The pod's second interface `net1` comes from the agents-owned NAD `weather/weather-tempest-vlan10` (Argo Application `multus`): a VLAN 10 child of `enp6s21` holding network-infra#774's reserved address as a /32, with no gateway and no IPv4 routes. The receiver reads datagrams on `net1`, commits them to the spool PVC, and drains over `eth0` to `weather-pg-rw:5432` as `weather_ingest`. Home Assistant receives the same broadcasts independently.
+
+- **Scheduling.** `replicas: 1`, `Recreate`, required affinity to `vm-k3s-node6`/`vm-k3s-node7` (the VLAN 10 trunk workers with the `vlan`/`static` CNI plugins, agents#5368). Only one pod can hold the address and the VLAN child, so never run a second receiver or a qualification pod alongside it.
+- **Pod.** Restricted PSA: UID 10001, all capabilities dropped, read-only rootfs, seccomp `RuntimeDefault`, no hostNetwork, no service-account token. `SO_BINDTODEVICE` needs no capability.
+- **Mounts.** `/etc/weather/telemetry`: ConfigMap `tempest-receiver` (`receiver.json`: `net1`, 768 MiB spool cap) plus Secret `weather-tempest` (agents KSOPS: `TEMPEST_HUB_SERIAL`, `TEMPEST_DEVICE_SERIALS`; no source IP). `/var/run/weather-db`: `weather-pg-ingest` and `weather-pg-ca`. `/var/lib/weather/telemetry`: PVC `tempest-receiver-spool` (1 GiB `longhorn-v1-rwo`, `Prune=false,Delete=false`).
+- **Network policy.** `tempest-receiver` allows egress only to `weather-pg` 5432 and kube-dns, and ingress only to `metrics` (9000) from `observability`. The `weather-app` Prometheus job scrapes it. There is no Service, IngressRoute or other listener for 50222.
+- **Residual same-L2 risk.** NetworkPolicy governs `eth0` only. `net1` sits on VLAN 10 L2, whose UDP senders are unauthenticated, so a well-formed spoofed datagram naming the configured serials would be admitted (P4). The app never transmits on `net1`. The kernel does: link-up DAD/MLD/router solicitation, and ARP replies for the reserved address. The kernel also accepts VLAN 10 router advertisements, so `net1` carries a SLAAC IPv6 address and an on-link /64 route (no IPv6 default route). Turning that off would need an `accept_ra`/`disable_ipv6` tuning step in the agents NAD; restricted PSA cannot set it from the pod.
+- **Rotating identities.** If a hub or station is replaced, recapture the serials into `weather-tempest` (agents OWNERSHIP, "Weather Tempest receiver custody"), let `weather-secrets` sync, then `kubectl rollout restart deploy/tempest-receiver`. New devices are seeded at drain start.
+
+Measured at commissioning (2026-10-25): `rapid_wind` every 3 s (~101 bytes per receipt), `hub_status` every 20 s (297 bytes), `obs_st` and `device_status` every 60 s (186 and 212 bytes). That is about 36,000 receipts and about 2 MB of raw bytes a day. The first canonical row landed 20 s after pod start.
+
+### Health checks
+
+```sh
+kubectl --context vallery -n argocd get application weather          # Synced Healthy
+kubectl --context vallery -n weather get pods -l app.kubernetes.io/name=tempest-receiver -o wide
+curl -fsS https://weather.vallery.net/api/v1/weather/current | jq '.data_state, [.metrics[].observed_at] | max'
+```
+
+`weather_telemetry_received_total`, `_spooled_total`, `_committed_total` and `_projected_total` advance together, every `weather_telemetry_rejected_total{reason}` stays flat, and `weather_telemetry_spool_depth` is 0. Without `ip` in the image, read `net1` from `/proc/net/route` (no `net1` rows), `/proc/net/if_inet6` and `/sys/class/net/net1/statistics/tx_packets`.
 
 ## Configuration
 
@@ -46,6 +69,8 @@ WHERE source_ts - prev > interval '90 seconds';
 
 The Deployment is `Recreate` with one replica, and the spool PVC is RWO with a local owner lock, so only one receiver ever writes. A reschedule or node loss leaves a gap of about 1–2 minutes, visible as a `source_ts` gap; nothing on the hub buffers it. Pending spool rows survive the restart and drain under their original receipt IDs. Use at least 40 s termination grace so the drain's bounded transaction finishes.
 
+`terminationGracePeriodSeconds` is 45. On node loss, Kubernetes waits for the node's eviction timeout (about 5 minutes) before rescheduling, and Longhorn must detach the RWO volume from the lost node. Expect a gap of several minutes, and only node6 or node7 can host the pod. If both trunk workers are down, the receiver stays Pending and Home Assistant remains the only listener. `kubectl rollout restart deploy/tempest-receiver` at commissioning left a 12 s `rapid_wind` gap and no `obs_st` gap beyond its 60 s cadence. The new pod drained the one receipt the old pod had left pending, and the spool returned to 0.
+
 ## Spool full
 
 Each datagram is one SQLite WAL/`synchronous=FULL` commit. `/ready` fails at 85% of usable capacity (warning at 70%), and at the limit new datagrams are dropped and counted as `weather_telemetry_capacity_loss_total`; pending rows are never overwritten. A full spool means the drain is not committing: fix the database path (next section). Do not delete, vacuum or force-open the spool.
@@ -69,4 +94,4 @@ The drain sends up to 128 rows per transaction and acknowledges (deletes) spool 
 
 ## Clock offset
 
-Rows are keyed by the hub's `source_ts`; the receive time is the node clock. Node time sync (chrony) belongs to proxmox-infrastructure. A source time more than `future_seconds` ahead of the receive time is stored invalid (`future_timestamp`) and hidden publicly. Compare `telemetry_receipt.received_at` with `source_ts` on recent `rapid_wind` rows (join on `receipt_id`) to measure the offset; a steady offset of more than a few seconds means one of the clocks is wrong, and it also shifts the public embargo and capture timing that use node time.
+Rows are keyed by the hub's `source_ts`; the receive time is the node clock. Node time sync (chrony) belongs to proxmox-infrastructure. A source time more than `future_seconds` ahead of the receive time is stored invalid (`future_timestamp`) and hidden publicly. Compare `telemetry_receipt.received_at` with `source_ts` on recent `rapid_wind` rows (join on `receipt_id`) to measure the offset; a steady offset of more than a few seconds means one of the clocks is wrong, and it also shifts the public embargo and capture timing that use node time. At commissioning on vm-k3s-node7, receive minus source time was 0.14–0.93 s (median 0.34 s): the hub's whole-second timestamps plus delivery latency.
