@@ -147,6 +147,8 @@ Never run those HTTP/latency tests or image builds on the Mac.
 
 The collector does not decode frames. It checks size, `Content-Type: image/jpeg`,
 SOI/EOI markers and that the SOF geometry equals the mounted native geometry, then
-stores the original bytes unchanged. The renderer decodes every frame with FFmpeg
+stores the original bytes unchanged. The commissioned cameras write a COM segment whose
+length undercounts its payload; like libjpeg and FFmpeg, the marker walk skips the
+extraneous bytes to the next marker instead of rejecting the frame. The renderer decodes every frame with FFmpeg
 and records a decode failure as a reject for that slot
 ([#15](https://github.com/jvallery/weather/issues/15) acceptance).
