@@ -17,7 +17,7 @@ metadata:
     agent-fleet.vallery.net/owner: jvallery
     agent-fleet.vallery.net/project: weather
 spec:
-  replicas: 0
+  replicas: 1
   revisionHistoryLimit: 3
   selector:
     matchLabels:

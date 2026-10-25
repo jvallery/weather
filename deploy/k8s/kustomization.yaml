@@ -14,9 +14,10 @@ resources:
 - capture
 - receiver
 - preview
+- pipeline
 # Search (#25): uncomment in the deploy commit that pins an app digest carrying weather.search.
-# components:
-# - search
+components:
+- search
 images:
 - name: weather-app
   newName: registry.vallery.net/jvallery/weather-app
