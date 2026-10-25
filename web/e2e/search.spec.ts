@@ -36,7 +36,7 @@ test("request log: none on load or while typing, exactly one POST per submit, no
   await page.goto("/search/"); await page.waitForLoadState("networkidle");
   await textField(page).pressSequentially("rain over the ridge", { delay: 20 });
   await page.getByRole("button", { name: "Add measured filter" }).click();
-  await page.getByLabel(/^Value\b/).fill("0.1");
+  await page.getByLabel(/^Value/).fill("0.1");
   await page.waitForTimeout(500);
   expect(log).toHaveLength(0);
   await submit(page);
@@ -107,8 +107,8 @@ test("a shared URL with explicit units round-trips into the form, the typed requ
       { metric: "temperature", statistic: "min", op: "<", value: 0, unit: "degC", min_coverage: 0.95 },
     ],
   });
-  await expect(page.getByLabel(/^Unit\b/)).toHaveCount(3);
-  expect(await page.getByLabel(/^Unit\b/).evaluateAll((items) => items.map((item) => (item as HTMLSelectElement).value))).toEqual(["in", "km/h", "degC"]);
+  await expect(page.getByLabel(/^Unit/)).toHaveCount(3);
+  expect(await page.getByLabel(/^Unit/).evaluateAll((items) => items.map((item) => (item as HTMLSelectElement).value))).toEqual(["in", "km/h", "degC"]);
   expect(await page.getByLabel("Minimum coverage (%)").evaluateAll((items) => items.map((item) => (item as HTMLInputElement).value))).toEqual(["95", "90", "95"]);
   await expect(page.getByLabel("Display units")).toHaveValue("metric");
   await expect(page.getByText(/Recordings overlapping 10\/25\/2026, 00:00:00 GMT-06:00 → 11\/01\/2026, 00:00:00 GMT-06:00 \(exclusive\)/)).toBeVisible();
@@ -167,8 +167,8 @@ test("keyboard only: fill, add a filter and submit, then open a result", async (
   await expect(page.getByText(/^Results for “rain”/)).toBeVisible();
   await page.getByRole("button", { name: "Add measured filter" }).focus();
   await page.keyboard.press("Space");
-  await expect(page.getByLabel(/^Value\b/)).toBeVisible();
-  await page.getByLabel(/^Value\b/).focus();
+  await expect(page.getByLabel(/^Value/)).toBeVisible();
+  await page.getByLabel(/^Value/).focus();
   await page.keyboard.type("1");
   const searched = page.waitForResponse((response) => isSearch(response.request()));
   await page.keyboard.press("Enter");
