@@ -375,6 +375,18 @@ def test_cortex_down_stays_pending_retries_nightly_then_fails_after_seven_days()
         async with worker.begin() as c:
             assert await store.nightly(c, retry_at - timedelta(seconds=1)) == 0
             assert await store.nightly(c, retry_at) == 1
+        # The slot moves to the following night (a lost job is queued again) and the
+        # head's call budget is refilled.
+        moved = await head(admin, video)
+        async with admin.connect() as c:
+            slot, spent = (
+                await c.execute(
+                    text("""SELECT next_attempt_at,attempt_calls FROM weather.analysis
+                    WHERE video_id=:v"""),
+                    {"v": video},
+                )
+            ).one()
+        assert moved["state"] == "pending" and slot == store.next_night(retry_at) and spent == 0
         await make(worker, Script(by_task())).describe(
             await claim(worker, store.DESCRIBE_KIND, admin)
         )
@@ -521,3 +533,95 @@ def test_new_web_bytes_reset_the_head_and_the_old_revision_is_hidden() -> None:
 
     database(body)
 
+
+
+def test_model_output_never_replaces_a_human_revision() -> None:
+    async def body(admin: AsyncEngine, worker: AsyncEngine, api: AsyncEngine) -> None:
+        video, publication_id = await seed(admin)
+        await publish(worker, publication_id)
+        weather = StaticWeather(station(START, END))
+        unit = make(worker, Script(by_task()), weather)
+        await unit.describe(await claim(worker, store.DESCRIBE_KIND, admin))
+        # #44's editor appends an operator revision of the same media.
+        async with admin.begin() as c:
+            await c.execute(
+                text("""INSERT INTO weather.analysis_revision(id,video_id,revision,publication_id,
+                  media_sha256,state,reason,refresh,visual_id,model_route,model,prompt_sha256,
+                  schema_sha256,evidence_hash,evidence_count,summary,claims,observations,
+                  limitations,coverage,inputs,event_keys,calls,author_kind)
+                SELECT gen_random_uuid(),video_id,2,publication_id,media_sha256,'complete',NULL,
+                  refresh,visual_id,'editor','editor',prompt_sha256,schema_sha256,evidence_hash,
+                  evidence_count,'Edited by hand.',claims,observations,limitations,coverage,
+                  inputs,event_keys,0,'operator'
+                FROM weather.analysis_revision WHERE video_id=:v AND revision=1"""),
+                {"v": video},
+            )
+            await c.execute(
+                text("""UPDATE weather.analysis SET revision=2,state='complete',reason=NULL,
+                  evidence_checked_at=NULL WHERE video_id=:v"""),
+                {"v": video},
+            )
+        # Changed measurements queue no refresh over a human revision...
+        weather.items = station(START, END, humidity_mean=70.0)
+        assert await unit.check_evidence(datetime.now(UTC)) == 0
+        # ...and a refresh or late result based on it publishes nothing.
+        async with worker.begin() as c:
+            assert await store.request_refresh(
+                c, video, publication_id, 2, datetime.now(UTC)
+            )
+        context = await claim(worker, store.SYNTHESIZE_KIND, admin)
+        await unit.synthesize(context)
+        result = unit._result(
+            None, await _packet(), (), [], [], {}, {}, refresh="synthesis", reviewed=False
+        )
+        await unit._publish(
+            context, await head(admin, video), Run(video, "late"), result, base=2, describe=False
+        )
+        current = await head(admin, video)
+        assert current["revision"] == 2
+        assert await count(admin, "SELECT count(*) FROM weather.analysis_revision") == 2
+
+    database(body)
+
+
+def test_withdrawal_waits_for_an_in_flight_publication() -> None:
+    async def body(admin: AsyncEngine, worker: AsyncEngine, api: AsyncEngine) -> None:
+        video, publication_id = await seed(admin)
+        await publish(worker, publication_id)
+        await make(worker, Script(by_task(visual="rain_visible"))).describe(
+            await claim(worker, store.DESCRIBE_KIND, admin)
+        )
+        second = engine("weather_worker")
+        try:
+            async with worker.begin() as publishing:
+                # A publication holds the head; the video is withdrawn meanwhile.
+                assert await store.head(publishing, video, lock=True) is not None
+                async with admin.begin() as c:
+                    await c.execute(
+                        text("""UPDATE weather.video SET withdrawn=true,withdrawn_at=now(),
+                          withdraw_reason='test' WHERE id=:v"""),
+                        {"v": video},
+                    )
+
+                async def withdraw() -> None:
+                    async with second.begin() as c:
+                        await store.on_withdrawn(c, video, datetime.now(UTC))
+
+                task = asyncio.create_task(withdraw())
+                await asyncio.sleep(0.5)
+                # The hook waits for the publication rather than reading stale event keys.
+                assert not task.done()
+            await asyncio.wait_for(task, timeout=10)
+        finally:
+            await second.dispose()
+        assert (
+            await count(
+                admin,
+                """SELECT count(*) FROM weather.weather_event e
+                JOIN weather.weather_event_revision r ON r.event_id=e.id AND r.revision=e.revision
+                WHERE r.visibility='public'""",
+            )
+            == 0
+        )
+
+    database(body)

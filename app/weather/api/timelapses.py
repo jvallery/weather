@@ -22,7 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from weather.ai.effective import LABEL, effective_description
+from weather.ai.effective import LABEL, effective_description, public_model
 
 from .cursors import invalid_cursor, seal, unseal
 from .models import Problem
@@ -392,7 +392,7 @@ def build_analysis(row: dict[str, Any] | None, playable: bool) -> Analysis:
         else None,
         provenance=AnalysisProvenance(
             model_route=row["model_route"],
-            model=row["model"],
+            model=public_model(row["model"], row["model_route"]),
             prompt_revision=row["prompt_sha256"][:16],
             schema_revision=row["schema_sha256"][:16],
             refresh=row["refresh"],

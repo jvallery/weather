@@ -4,7 +4,8 @@
 The worker reads `weather-media` with the read-only reader key (never originals), verifies the
 content address of every object it downloads, decodes the selected frames in one FFmpeg pass,
 and re-encodes each as a small JPEG. The keogram is optional (#37): when the segment has no
-current keogram, windows are described from frames alone and the inputs record that.
+current keogram, or it is oversized, unreadable, mis-addressed or not an image, windows are
+described from frames alone and the inputs record that. Only the web rendition can fail a run.
 """
 
 import asyncio
@@ -32,6 +33,7 @@ DECODE_SECONDS = 900
 # The web rendition and keogram are bounded by the publication contract; refuse anything else.
 MAX_RENDITION_BYTES = 2 * 1024 * 1024 * 1024
 MAX_KEOGRAM_PIXELS = 4096 * 1024
+MAX_KEOGRAM_BYTES = 8 * MAX_IMAGE_BYTES
 
 
 class MediaError(RuntimeError):
@@ -161,6 +163,27 @@ def keogram_columns(data: bytes, start_fraction: float, end_fraction: float) -> 
     return Image("image/png", buffer.getvalue())
 
 
+def keogram_windows(
+    data: bytes | None, windows: Sequence[Window], chosen: Sequence[Window]
+) -> list[Image | None]:
+    """Each chosen window's keogram columns, or no keogram at all if any of it is unusable."""
+    if data is None or not windows:
+        return [None] * len(chosen)
+    span = (windows[-1].end - windows[0].start).total_seconds()
+    try:
+        return [
+            keogram_columns(
+                data,
+                (window.start - windows[0].start).total_seconds() / span,
+                (window.end - windows[0].start).total_seconds() / span,
+            )
+            for window in chosen
+        ]
+    except Exception:
+        # Optional input: a bad keogram (bomb, truncated, wrong format) means frames only.
+        return [None] * len(chosen)
+
+
 class GarageMedia:
     """Production reader: the `weather-media` reader key, a scratch directory and FFmpeg."""
 
@@ -172,26 +195,20 @@ class GarageMedia:
             root = Path(work)
             await _download(self.store, source.web, root / "web.mp4")
             keogram = None
-            if source.keogram is not None:
-                if source.keogram.bytes > MAX_IMAGE_BYTES * 8:
-                    raise MediaError("keogram")
-                await _download(self.store, source.keogram, root / "keogram")
-                keogram = (root / "keogram").read_bytes()
+            if source.keogram is not None and 0 < source.keogram.bytes <= MAX_KEOGRAM_BYTES:
+                try:
+                    await _download(self.store, source.keogram, root / "keogram")
+                    keogram = (root / "keogram").read_bytes()
+                except MediaError:
+                    keogram = None
             picks = [(window, samples(window)) for window in windows if window.available]
             indices = sorted({index for _, chosen in picks for index in chosen})
             frames_dir = root / "frames"
             frames_dir.mkdir()
             decoded = await asyncio.to_thread(sample_frames, root / "web.mp4", indices, frames_dir)
             by_index = dict(zip(indices, decoded, strict=True))
-        if not windows:
-            return []
-        span = (windows[-1].end - windows[0].start).total_seconds()
-        prepared = []
-        for window, chosen in picks:
-            columns = None
-            if keogram is not None:
-                lo = (window.start - windows[0].start).total_seconds() / span
-                hi = (window.end - windows[0].start).total_seconds() / span
-                columns = keogram_columns(keogram, lo, hi)
-            prepared.append(WindowMedia(window, tuple((i, by_index[i]) for i in chosen), columns))
-        return prepared
+        columns = keogram_windows(keogram, windows, [window for window, _ in picks])
+        return [
+            WindowMedia(window, tuple((i, by_index[i]) for i in chosen), column)
+            for (window, chosen), column in zip(picks, columns, strict=True)
+        ]

@@ -3,7 +3,8 @@
 
 Expand-only and inline DDL; never import application modules here. `analysis` is one head row
 per video (state machine and CAS base); `analysis_revision` is append-only and pinned to its
-media SHA-256, model, prompt/schema hashes and evidence hash. `ai_raw_response` keeps private
+media SHA-256, model, prompt/schema hashes and evidence hash, and records its author so model
+output never replaces a human (#44) revision. `ai_raw_response` keeps private
 model replies for at most 24 h (a CHECK, not just the purge) and no public role can read it.
 The API reads one security-barrier view that shows a revision only for a public, unwithdrawn
 video and only while it describes the video's current media.
@@ -33,6 +34,7 @@ def statements() -> list[str]:
             runs integer DEFAULT 0 NOT NULL,
             calls integer DEFAULT 0 NOT NULL,
             refreshes integer DEFAULT 0 NOT NULL,
+            attempt_calls integer DEFAULT 0 NOT NULL,
             pending_since timestamptz,
             next_attempt_at timestamptz,
             evidence_checked_at timestamptz,
@@ -44,7 +46,7 @@ def statements() -> list[str]:
             CONSTRAINT fk_analysis_publication_id_publication FOREIGN KEY (publication_id)
               REFERENCES weather.publication (id) ON DELETE RESTRICT,
             CONSTRAINT ck_analysis_identity CHECK (media_sha256 {SHA} AND revision >= 0
-              AND runs >= 0 AND calls >= 0 AND refreshes >= 0),
+              AND runs >= 0 AND calls >= 0 AND refreshes >= 0 AND attempt_calls >= 0),
             CONSTRAINT ck_analysis_state CHECK (
               state IN ('pending','complete','degraded','failed')
               AND (state = 'pending') = (pending_since IS NOT NULL)
@@ -79,6 +81,7 @@ def statements() -> list[str]:
             inputs jsonb NOT NULL,
             event_keys jsonb NOT NULL,
             calls integer NOT NULL,
+            author_kind varchar(16) DEFAULT 'model' NOT NULL,
             created_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
             CONSTRAINT pk_analysis_revision PRIMARY KEY (id),
             CONSTRAINT uq_analysis_revision_video_id_revision UNIQUE (video_id, revision),
@@ -89,7 +92,9 @@ def statements() -> list[str]:
             CONSTRAINT ck_analysis_revision_identity CHECK (revision > 0 AND calls >= 0
               AND evidence_count >= 0 AND media_sha256 {SHA} AND prompt_sha256 {SHA}
               AND schema_sha256 {SHA} AND evidence_hash {SHA}
-              AND model_route = 'llm.primary.longctx.mm' AND length(model) > 0),
+              AND author_kind IN ('model','operator')
+              AND (author_kind <> 'model' OR (model_route = 'llm.primary.longctx.mm'
+                AND model ~ '^[A-Za-z0-9][A-Za-z0-9._:/+-]{{0,127}}$'))),
             CONSTRAINT ck_analysis_revision_state CHECK (state IN ('complete','degraded')
               AND refresh IN ('full','synthesis')
               AND (state = 'complete') = (reason IS NULL)
@@ -145,7 +150,7 @@ def statements() -> list[str]:
         "REVOKE ALL ON public_api.video_analyses FROM PUBLIC",
         "GRANT SELECT,INSERT ON weather.analysis,weather.analysis_revision TO weather_worker",
         "GRANT UPDATE (publication_id,media_sha256,state,reason,revision,stale,runs,calls,"
-        "refreshes,pending_since,next_attempt_at,evidence_checked_at,updated_at)"
+        "refreshes,attempt_calls,pending_since,next_attempt_at,evidence_checked_at,updated_at)"
         " ON weather.analysis TO weather_worker",
         "GRANT SELECT,INSERT,DELETE ON weather.ai_raw_response TO weather_worker",
         # Neither the raw table nor the revision tables: only the filtered view.

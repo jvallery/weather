@@ -208,8 +208,10 @@ def measured_claims(packet: Packet) -> list[dict[str, Any]]:
     if gust:
         claims.append((f"The strongest measured wind gust was {gust.text()}.", [gust]))
     rain = packet.find("precipitation", "sum")
-    if rain:
-        claims.append((f"Measured rain total: {rain.text()}.", [rain]))
+    # A zero is an absence claim, made only at full coverage; a partial total is a lower bound.
+    if rain and (rain.value > 0 or rain.coverage >= FULL_COVERAGE):
+        partial = "" if rain.coverage >= FULL_COVERAGE else " over partial station coverage"
+        claims.append((f"Measured rain total: {rain.text()}{partial}.", [rain]))
     strikes = packet.find("lightning_count", "sum")
     if strikes and strikes.value > 0:
         claims.append((f"The station counted {strikes.text()} of lightning.", [strikes]))

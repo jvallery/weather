@@ -8,6 +8,7 @@ from collections.abc import AsyncIterator, Callable, Sequence
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import httpx2
@@ -133,17 +134,25 @@ class CountingSlot:
 
 
 class RawSink:
-    """An engine whose transactions only record raw-response inserts."""
+    """An engine whose transactions record raw-response inserts and grant call-budget spends
+    until `budget` is used up."""
 
-    def __init__(self) -> None:
+    def __init__(self, budget: int | None = None) -> None:
         self.rows: list[dict[str, Any]] = []
+        self.spent = 0
+        self.budget = budget
 
     @asynccontextmanager
     async def begin(self) -> AsyncIterator[RawSink]:
         yield self
 
-    async def execute(self, _statement: Any, params: dict[str, Any] | None = None) -> None:
+    async def execute(self, statement: Any, params: dict[str, Any] | None = None) -> Any:
+        if "attempt_calls" in str(statement):
+            granted = self.budget is None or self.spent < self.budget
+            self.spent += granted
+            return SimpleNamespace(rowcount=int(granted))
         self.rows.append(dict(params or {}))
+        return SimpleNamespace(rowcount=1)
 
 
 def aggregate(
