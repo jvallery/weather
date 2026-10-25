@@ -653,6 +653,26 @@ def test_latest_row_carries_the_capture_bound() -> None:
     assert latest_representation(row, "still") is None
     assert latest_representation({**row, "captured_upper": None}, "keogram") is None
     assert latest_representation({**row, "class": "original"}, "keogram") is None
-    for _, source in LATEST_SOURCES.values():
-        # The window uses the stable now(), so the bound reaches the base table.
-        assert "now() - interval '14 days'" in source
+    # Stable bounds that reach the base tables; the public still scan stays short.
+    for kind in ("video", "poster", "keogram"):
+        assert "now() - interval '14 days'" in LATEST_SOURCES[kind][1]
+    still = LATEST_SOURCES["still"][1]
+    assert "now() - interval '2 days'" in still and "local_date >= current_date - 3" in still
+
+
+def test_breach_is_counted_before_the_first_body_send() -> None:
+    origin, _, registry = latest_origin(EARLY)
+    seen: list[float] = []
+
+    async def send(message: Any) -> None:
+        if message["type"] == "http.response.body" and message.get("body"):
+            seen.append(breaches(registry, product="still"))
+
+    async def receive() -> dict[str, Any]:
+        await asyncio.Event().wait()
+        return {"type": "http.disconnect"}
+
+    scope = {"type": "http", "method": "GET", "path": "/media/latest/still",
+             "raw_path": b"/media/latest/still", "query_string": b"", "headers": []}
+    asyncio.run(origin(scope, receive, send))
+    assert seen and seen[0] == 1 and breaches(registry) == 1
