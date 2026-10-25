@@ -72,6 +72,7 @@ spec:
       serviceAccountName: tempest-receiver
       imagePullSecrets:
       - name: zot-origin-cluster-pull
+      priorityClassName: estate-app
       terminationGracePeriodSeconds: 45
       affinity:
         nodeAffinity:
