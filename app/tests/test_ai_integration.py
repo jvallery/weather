@@ -71,8 +71,8 @@ def database(test: Test) -> None:
 
 ASSET_SQL = """INSERT INTO weather.media_asset(class,bucket,visibility,sha256,extension,object_key,
   bytes,content_type,width,height,public_not_before,published_at)
-VALUES(:class,'weather-media','public',:sha,:ext,:class || '/' || :sha || '.' || :ext,1000,:mime,
-  320,180,:embargo,now()) RETURNING id"""
+VALUES(:class,'weather-media','public',:sha,:ext,:key,1000,:mime,320,180,:embargo,now())
+RETURNING id"""
 INTENT_SQL = """INSERT INTO weather.upload_intent(fence,product,camera_id,product_key,
   expected_revision,manifest,state,deadline,resolved_at)
 VALUES(nextval('weather.publication_fence'),:product,:camera,:key,0,'{}'::jsonb,'committed',
@@ -111,6 +111,7 @@ async def publication(
                     "class": asset_class,
                     "sha": sha,
                     "ext": ext,
+                    "key": f"{asset_class}/{sha}.{ext}",
                     "mime": mime,
                     "embargo": times["embargo"],
                 },
