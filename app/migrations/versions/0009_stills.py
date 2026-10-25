@@ -163,11 +163,12 @@ def statements() -> list[str]:
         """CREATE FUNCTION weather.guard_still_retirement() RETURNS trigger
            LANGUAGE plpgsql SET search_path=pg_catalog AS $$
            BEGIN
-             IF TG_TABLE_NAME = 'archival_still' AND NEW.active AND NOT OLD.active THEN
-               RAISE EXCEPTION 'a retired selection stays retired' USING ERRCODE='55000';
-             END IF;
-             IF TG_TABLE_NAME = 'still_derivative' AND OLD.state = 'retired'
-                AND NEW.state <> 'retired' THEN
+             -- Nested: PL/pgSQL resolves every field of a condition, so test the table first.
+             IF TG_TABLE_NAME = 'archival_still' THEN
+               IF NEW.active AND NOT OLD.active THEN
+                 RAISE EXCEPTION 'a retired selection stays retired' USING ERRCODE='55000';
+               END IF;
+             ELSIF OLD.state = 'retired' AND NEW.state <> 'retired' THEN
                RAISE EXCEPTION 'a retired derivative stays retired' USING ERRCODE='55000';
              END IF;
              RETURN NEW;
