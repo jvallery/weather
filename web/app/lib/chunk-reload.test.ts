@@ -43,6 +43,19 @@ test("a failed preload or dynamic import reloads exactly once, and a later rollo
   expect(reload).toHaveBeenCalledTimes(2); expect(later.defaultPrevented).toBe(true);
 });
 
+test("imports aborted by leaving the page never reload over the navigation; a restored page recovers again", () => {
+  const { target, reload } = fakeWindow(memoryStorage());
+  installChunkReload(target);
+  target.dispatchEvent(new Event("beforeunload"));
+  const preload = new Event("vite:preloadError", { cancelable: true });
+  const aborted = rejection(new TypeError("error loading dynamically imported module: https://weather.example/assets/uPlot.js"));
+  target.dispatchEvent(preload); target.dispatchEvent(aborted);
+  expect(reload).not.toHaveBeenCalled(); expect(preload.defaultPrevented).toBe(false); expect(aborted.defaultPrevented).toBe(false);
+  target.dispatchEvent(new Event("pageshow"));
+  target.dispatchEvent(new Event("vite:preloadError", { cancelable: true }));
+  expect(reload).toHaveBeenCalledOnce();
+});
+
 test.each([
   "Failed to fetch dynamically imported module: https://weather.example/assets/x.js",
   "error loading dynamically imported module: https://weather.example/assets/x.js",

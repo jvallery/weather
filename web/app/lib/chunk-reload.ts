@@ -19,9 +19,16 @@ export function reloadOnce(target: Window): boolean {
   return true;
 }
 export function installChunkReload(target: Window) {
-  target.addEventListener("vite:preloadError", (event) => { if (reloadOnce(target)) event.preventDefault(); });
+  // Leaving the page aborts its in-flight imports. Those failures are not a missing chunk, and a
+  // reload then would cancel the navigation the visitor started and reload the page being left.
+  let leaving = false;
+  target.addEventListener("beforeunload", () => { leaving = true; });
+  target.addEventListener("pagehide", () => { leaving = true; });
+  target.addEventListener("pageshow", () => { leaving = false; });
+  const recover = () => !leaving && reloadOnce(target);
+  target.addEventListener("vite:preloadError", (event) => { if (recover()) event.preventDefault(); });
   target.addEventListener("unhandledrejection", (event) => {
     const message = event.reason instanceof Error ? event.reason.message : String(event.reason);
-    if (FAILED_IMPORT.test(message) && reloadOnce(target)) event.preventDefault();
+    if (FAILED_IMPORT.test(message) && recover()) event.preventDefault();
   });
 }

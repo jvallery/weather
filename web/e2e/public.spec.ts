@@ -242,6 +242,23 @@ test("a failed lazy chunk reloads the page exactly once", async ({ page, request
   expect(loads).toBe(2); expect(aborted).toBeGreaterThanOrEqual(2);
   expect(Number(await page.evaluate(() => sessionStorage.getItem("weather:chunk-reload")))).toBeGreaterThan(0);
 });
+test("leaving a page while its lazy chunk is still loading navigates, never reloads", async ({ page, request }) => {
+  const documentAssets = new Set([...(await (await request.get("/weather/history/")).text()).matchAll(/\/assets\/[^"'\s]+\.js/g)].map((match) => match[0]));
+  let held = 0, loads = 0;
+  // The lazily imported chart chunk never arrives, so it is in flight when the visitor navigates away.
+  const chunks = /\/assets\/[^/]+\.js$/;
+  await page.route(chunks, (route) => { if (documentAssets.has(new URL(route.request().url()).pathname)) return route.continue(); held += 1; });
+  await page.goto("/weather/history/");
+  await expect.poll(() => held).toBeGreaterThan(0);
+  // The held import stays in flight; the next page's own assets load normally.
+  await page.unroute(chunks);
+  page.on("load", () => { loads += 1; });
+  await page.goto("/about/");
+  await expect(page).toHaveURL(/\/about\/$/);
+  await page.waitForTimeout(1000);
+  expect(loads).toBe(1);
+  expect(await page.evaluate(() => sessionStorage.getItem("weather:chunk-reload"))).toBeNull();
+});
 
 // Embed card (#45): framing policy per route, cookie-free same-origin loading, no-JS snapshot, accessibility.
 const PRIVATE = /"(?:serial|serial_number|hub_sn|device_sn|latitude|longitude|camera_ip|camera_address)"\s*:|\b(?:\d{1,3}\.){3}\d{1,3}\b|\.svc\b|localhost:4174|http:\/\/api\b|API_ORIGIN/i;
