@@ -77,6 +77,7 @@ class FakeSource:
     def __init__(self, rows: list[dict[str, Any]]) -> None:
         self.rows = sorted(rows, key=lambda r: (r["starts_at"], r["id"]), reverse=True)
         self.queries: list[CatalogQuery] = []
+        self.analysis_rows: dict[UUID, dict[str, Any]] = {}
 
     async def videos(
         self, query: CatalogQuery, after: tuple[datetime, UUID] | None, video_id: UUID | None
@@ -95,6 +96,9 @@ class FakeSource:
     async def assets(self, ids: list[UUID]) -> dict[UUID, dict[str, Any]]:
         every = assets_for(self.rows)
         return {asset_id: every[asset_id] for asset_id in ids if asset_id in every}
+
+    async def analyses(self, ids: list[UUID]) -> dict[UUID, dict[str, Any]]:
+        return {video: self.analysis_rows[video] for video in ids if video in self.analysis_rows}
 
 
 def client(rows: list[dict[str, Any]]) -> tuple[TestClient, FakeSource]:
@@ -232,4 +236,85 @@ def test_public_response_snapshot_has_no_private_storage_identity() -> None:
         "native_download_url",
         "keogram_state",
         "keogram",
+        "analysis",
     }
+
+
+def analysis_row(video: UUID, **changes: Any) -> dict[str, Any]:
+    value: dict[str, Any] = {
+        "video_id": video,
+        "state": "complete",
+        "reason": None,
+        "stale": False,
+        "updated_at": T0,
+        "revision": 1,
+        "revision_state": "complete",
+        "refresh": "full",
+        "model_route": "llm.primary.longctx.mm",
+        "model": "llm.qwen38u-5080",
+        "prompt_sha256": "a" * 64,
+        "schema_sha256": "b" * 64,
+        "evidence_count": 640,
+        "summary": "Clouds thickened. Measured rain total: 1.2 mm (0.05 in).",
+        "claims": [
+            {"text": "Clouds thickened.", "basis": "visual", "evidence_ids": ["v-1-0-0"]},
+            {
+                "text": "Measured rain total: 1.2 mm (0.05 in).",
+                "basis": "instrument",
+                "evidence_ids": ["m-1-precipitation-sum"],
+            },
+        ],
+        "limitations": ["Some hours could not be reviewed visually."],
+        "coverage": {
+            "algorithm_revision": "hour-windows-v1",
+            "reviewed_seconds": 36000.0,
+            "expected_seconds": 39600.0,
+            "fraction": 36000 / 39600,
+            "windows_reviewed": 10,
+            "windows_total": 11,
+            "gaps": [{"start": "2026-10-02T23:00:00Z", "end": "2026-10-03T00:00:00Z"}],
+        },
+        "inputs": {"rendition": "web", "frames": 80, "windows": 11, "keogram": False},
+        "generated_at": T0,
+    }
+    value.update(changes)
+    return value
+
+
+def test_analysis_is_labelled_pinned_and_never_raw() -> None:
+    done, waiting, broken, moved = row(1), row(2), row(3, web_asset_id=None), row(4)
+    api, source = client([done, waiting, broken, moved])
+    source.analysis_rows = {
+        done["id"]: analysis_row(done["id"]),
+        broken["id"]: analysis_row(broken["id"]),
+        # A new media revision: the head is pending and the old revision does not join.
+        moved["id"]: analysis_row(
+            moved["id"], state="pending", reason="cortex_unavailable", revision=None,
+            revision_state=None, summary=None, claims=None, coverage=None, inputs=None,
+        ),
+    }
+    items = {i["video_id"]: i["analysis"] for i in api.get("/api/v1/timelapses").json()["items"]}
+    complete = items[str(done["id"])]
+    assert complete["label"] == "AI-generated · sampled-frame analysis"
+    assert complete["state"] == "complete" and complete["revision"] == 1
+    assert complete["description"].startswith("Clouds thickened.")
+    assert [c["basis"] for c in complete["claims"]] == ["visual", "instrument"]
+    assert "evidence_ids" not in json.dumps(complete)
+    assert complete["provenance"] == {
+        "model_route": "llm.primary.longctx.mm",
+        "model": "llm.qwen38u-5080",
+        "prompt_revision": "a" * 16,
+        "schema_revision": "b" * 16,
+        "refresh": "full",
+        "evidence_count": 640,
+        "frames_sampled": 80,
+        "keogram_used": False,
+    }
+    assert complete["coverage"]["windows_reviewed"] == 10
+    assert items[str(waiting["id"])]["state"] == "pending"
+    assert items[str(waiting["id"])]["description"] is None
+    assert items[str(broken["id"])]["state"] == "unavailable"
+    assert items[str(broken["id"])]["description"] is None
+    pending = items[str(moved["id"])]
+    assert pending["state"] == "pending" and pending["reason"] == "cortex_unavailable"
+    assert pending["description"] is None and pending["claims"] == []

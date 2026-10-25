@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from prometheus_client import Counter, Gauge, start_http_server
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
+from weather.ai import store as analysis
 from weather.db import jobs
 from weather.db.connection import create_database_engine, wait_for_database
 from weather.scheduler import handlers
@@ -88,6 +89,8 @@ async def tick(connection: AsyncConnection, now: datetime) -> None:
     """Idempotent periodic work: deterministic job keys, then bounded retention."""
     await handlers.periodic(connection, now)
     await jobs.prune(connection)
+    # Private AI replies expire after 24 h even while intel is disabled (#23).
+    await analysis.purge_raw(connection)
 
 
 async def serve(engine: AsyncEngine, registry: Registry, stop: asyncio.Event) -> None:

@@ -22,6 +22,15 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from weather.ai.effective import (
+    EDITOR_LABEL,
+    LABEL,
+    STATION_LABEL,
+    effective_description,
+    public_author,
+    public_model,
+)
+
 from .cursors import invalid_cursor, seal, unseal
 from .models import Problem
 from .registry import PublicError, unavailable
@@ -70,6 +79,62 @@ class Interval(Model):
     end: datetime
 
 
+Label = Literal[
+    "AI-generated · sampled-frame analysis",
+    "Station measurements only",
+    "Editor-written description",
+]
+
+
+class AnalysisClaim(Model):
+    text: str = Field(min_length=1, max_length=240)
+    basis: Literal["visual", "instrument"]
+
+
+class AnalysisCoverage(Model):
+    """Reviewed source time: hour windows whose sampled frames passed validation."""
+
+    algorithm_revision: str
+    reviewed_seconds: float = Field(ge=0)
+    expected_seconds: float = Field(ge=0)
+    fraction: float = Field(ge=0, le=1)
+    windows_reviewed: int = Field(ge=0)
+    windows_total: int = Field(ge=0)
+    gaps: list[Interval] = Field(max_length=48)
+
+
+class AnalysisProvenance(Model):
+    model_route: str
+    model: str
+    prompt_revision: str
+    schema_revision: str
+    refresh: Literal["full", "measurements"]
+    evidence_count: int = Field(ge=0)
+    frames_sampled: int = Field(ge=0)
+    keogram_used: bool
+
+
+class Analysis(Model):
+    """The labelled description of the current media; never model-written text (C18).
+
+    `author` is `ai` for template text rendered from the model's validated observations,
+    `station` when no hour passed visual review (the text is station data only, with no AI
+    label or model provenance), and `editor` for a human (#44) revision; the label says which."""
+
+    label: Label = LABEL
+    author: Literal["ai", "station", "editor"] = "ai"
+    state: Literal["pending", "complete", "degraded", "failed", "unavailable"]
+    reason: str | None
+    stale: bool
+    revision: int | None
+    generated_at: datetime | None
+    description: str | None = Field(max_length=8000)
+    claims: list[AnalysisClaim] = Field(max_length=16)
+    limitations: list[str] = Field(max_length=8)
+    coverage: AnalysisCoverage | None
+    provenance: AnalysisProvenance | None
+
+
 class Timelapse(Model):
     schema_version: Literal[1] = 1
     video_id: UUID
@@ -89,6 +154,7 @@ class Timelapse(Model):
     native_download_url: str | None
     keogram_state: Literal["pending", "published", "partial", "unavailable", "failed", "withdrawn"]
     keogram: Asset | None
+    analysis: Analysis
 
 
 class TimelapsePage(Model):
@@ -203,6 +269,8 @@ class Source(Protocol):
 
     async def assets(self, ids: list[UUID]) -> dict[UUID, dict[str, Any]]: ...
 
+    async def analyses(self, ids: list[UUID]) -> dict[UUID, dict[str, Any]]: ...
+
 
 VIDEO_COLUMNS = (
     "id,camera_id,cycle_date,segment,starts_at,ends_at,frames,revision,committed_at,withdrawn,"
@@ -268,6 +336,103 @@ class DatabaseSource:
         except Exception:
             raise CatalogUnavailable("Catalog unavailable") from None
 
+    async def analyses(self, ids: list[UUID]) -> dict[UUID, dict[str, Any]]:
+        if not ids:
+            return {}
+        try:
+            async with self._engine.connect() as connection:
+                rows = await connection.execute(
+                    text(f"""
+                    SELECT {ANALYSIS_COLUMNS} FROM public_api.video_analyses
+                    WHERE video_id = ANY(CAST(:ids AS uuid[]))
+                """),
+                    {"ids": ids},
+                )
+                return {row.video_id: dict(row._mapping) for row in rows}
+        except Exception:
+            raise CatalogUnavailable("Catalog unavailable") from None
+
+
+LABELS: dict[str, Label] = {"ai": LABEL, "station": STATION_LABEL, "editor": EDITOR_LABEL}
+ANALYSIS_COLUMNS = (
+    "video_id,state,reason,stale,updated_at,revision,revision_state,refresh,model_route,model,"
+    "prompt_sha256,schema_sha256,evidence_count,summary,claims,limitations,coverage,inputs,"
+    "author_kind,generated_at"
+)
+
+
+def _no_analysis(state: Literal["pending", "unavailable"], reason: str | None) -> Analysis:
+    return Analysis(
+        state=state,
+        reason=reason,
+        stale=False,
+        revision=None,
+        generated_at=None,
+        description=None,
+        claims=[],
+        limitations=[],
+        coverage=None,
+        provenance=None,
+    )
+
+
+def build_analysis(row: dict[str, Any] | None, playable: bool) -> Analysis:
+    """Pending until intel reports; unavailable without playable media. Content appears only
+    with a validated revision of the current media; the state is the head's own."""
+    if not playable:
+        return _no_analysis("unavailable", "media_unavailable")
+    if row is None:
+        return _no_analysis("pending", None)
+    content = row["revision_state"] in ("complete", "degraded")
+    state = row["state"]
+    if state in ("complete", "degraded") and not content:
+        state = "pending"
+    coverage = row["coverage"] if content else None
+    inputs = row["inputs"] if content else {}
+    author: Literal["ai", "station", "editor"] = (
+        public_author(row.get("author_kind", "model")) if content else "ai"
+    )
+    if author == "ai" and coverage is not None and not coverage.get("windows_reviewed"):
+        author = "station"
+    return Analysis(
+        label=LABELS[author],
+        author=author,
+        state=state,
+        # Fixed identifiers from the worker's own vocabulary, never provider text.
+        reason=row["reason"],
+        stale=bool(row["stale"]) and content,
+        revision=row["revision"] if content else None,
+        generated_at=row["generated_at"] if content else None,
+        description=effective_description(row),
+        claims=[
+            AnalysisClaim(text=claim["text"], basis=claim["basis"])
+            for claim in (row["claims"] if content else [])
+            # Fail closed: a claim of any other basis is never served.
+            if claim.get("basis") in ("visual", "instrument")
+        ],
+        limitations=list(row["limitations"]) if content else [],
+        coverage=AnalysisCoverage.model_validate(
+            {
+                **{k: coverage[k] for k in AnalysisCoverage.model_fields if k != "gaps"},
+                "gaps": coverage["gaps"][:48],
+            }
+        )
+        if coverage
+        else None,
+        provenance=AnalysisProvenance(
+            model_route=row["model_route"],
+            model=public_model(row["model"], row["model_route"]),
+            prompt_revision=row["prompt_sha256"][:16],
+            schema_revision=row["schema_sha256"][:16],
+            refresh=row["refresh"],
+            evidence_count=row["evidence_count"],
+            frames_sampled=int(inputs.get("frames", 0)),
+            keogram_used=bool(inputs.get("keogram", False)),
+        )
+        if content and author == "ai"
+        else None,
+    )
+
 
 def _asset(row: dict[str, Any] | None) -> Asset | None:
     if row is None:
@@ -285,7 +450,11 @@ def _asset(row: dict[str, Any] | None) -> Asset | None:
     )
 
 
-def build(row: dict[str, Any], assets: dict[UUID, dict[str, Any]]) -> Timelapse:
+def build(
+    row: dict[str, Any],
+    assets: dict[UUID, dict[str, Any]],
+    analysis: dict[str, Any] | None = None,
+) -> Timelapse:
     def pick(column: str) -> Asset | None:
         return _asset(assets.get(row[column])) if row[column] is not None else None
 
@@ -322,6 +491,7 @@ def build(row: dict[str, Any], assets: dict[UUID, dict[str, Any]]) -> Timelapse:
         if row["keogram_state"] in {"published", "partial"} and keogram is None
         else row["keogram_state"],
         keogram=keogram,
+        analysis=build_analysis(analysis, playable),
     )
 
 
@@ -340,7 +510,8 @@ async def _hydrate(source: Source, rows: list[dict[str, Any]]) -> list[Timelapse
         if row[column] is not None
     ]
     assets = await source.assets(ids)
-    return [build(row, assets) for row in rows]
+    analyses = await source.analyses([row["id"] for row in rows])
+    return [build(row, assets, analyses.get(row["id"])) for row in rows]
 
 
 class Catalog:

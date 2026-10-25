@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://weather.vallery.net/contracts/visual-analysis-v2.schema.json",
+  "title": "Private structured visual analysis of one window before application validation",
+  "description": "Enums and supplied evidence IDs only: no free text is accepted, so no model-written prose can be published (C18).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "observations", "limitations"],
+  "properties": {
+    "schema_version": {"const": 2},
+    "observations": {
+      "type": "array", "maxItems": 11,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["category", "assessment", "confidence", "evidence_ids"],
+        "properties": {
+          "category": {"enum": ["cloud_cover", "cloud_motion", "sunlight", "rain", "snowfall", "ground_snow", "surface_wetness", "fog_visibility", "lightning", "lens_condition", "camera_artifact"]},
+          "assessment": {"enum": ["visible", "possible", "not_observed", "not_assessable"]},
+          "confidence": {"enum": ["low", "medium", "high"]},
+          "intensity": {"enum": ["light", "moderate", "heavy"]},
+          "sky_cover": {"enum": ["clear", "few", "scattered", "broken", "overcast"]},
+          "evidence_ids": {"$ref": "#/$defs/EvidenceIds"}
+        }
+      }
+    },
+    "limitations": {
+      "type": "array", "maxItems": 8, "uniqueItems": true,
+      "items": {"enum": ["darkness", "infrared", "lens_obstruction", "glare", "motion_blur", "compression", "missing_frames", "sparse_sampling"]}
+    }
+  },
+  "$defs": {
+    "Id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"},
+    "EvidenceIds": {"type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": {"$ref": "#/$defs/Id"}}
+  }
+}

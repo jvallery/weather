@@ -33,7 +33,9 @@ API_VIEWS = (
     "public_api.station",
     "public_api.search_documents",
     "public_api.search_vectors",
+    "public_api.video_analyses",
 )
+ANALYSIS = ("analysis", "analysis_revision", "ai_raw_response")
 SEARCH = ("embedding_profile", "search_document", "search_embedding")
 TELEMETRY = (
     "station",
@@ -125,11 +127,11 @@ def test_baseline_head_roles_and_least_privilege() -> None:
             async with admin.begin() as connection:
                 assert await scalar(
                     connection, "SELECT version_num FROM public.alembic_version"
-                ) == ("0008_keograms")
+                ) == ("0012_analysis")
                 # Slice-1 relations, the observations view, the API's views (0002), the
                 # publication catalog (0003), search (0004), events (0005), the render
-                # schedule (0006), stills (0009), previews (0007), cleanup (0010) and keograms
-                # (0008, after 0011).
+                # schedule (0006), stills (0009), previews (0007), cleanup (0010), keograms
+                # (0008, after 0011) and AI descriptions (0012).
                 relations = (
                     await connection.execute(
                         text("""
@@ -187,6 +189,8 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     "weather.keogram",
                     "weather.keogram_bin",
                     "public_api.keograms",
+                    # 0012_analysis (#23)
+                    *(f"weather.{name}" for name in ANALYSIS),
                 }
                 options = await scalar(
                     connection,
@@ -276,6 +280,33 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                         assert not await table(role, relation, "SELECT")
                 assert await table("weather_api", "public_api.keograms", "SELECT")
                 assert not await table("weather_worker", "public_api.keograms", "SELECT")
+                # AI descriptions (#23): the worker writes; only the filtered view is public, and
+                # raw model replies are deletable diagnostics no other role can read.
+                async def column(name: str, privilege: str) -> bool:
+                    return bool(
+                        await scalar(
+                            connection,
+                            "SELECT has_column_privilege('weather_worker',"
+                            "'weather.analysis_revision',:column,:privilege)",
+                            column=name,
+                            privilege=privilege,
+                        )
+                    )
+
+                for name in ANALYSIS:
+                    relation = f"weather.{name}"
+                    # Revisions: column-level INSERT that excludes author_kind (C18, #44).
+                    assert await table("weather_worker", relation, "INSERT") is (
+                        name != "analysis_revision"
+                    )
+                    assert await table("weather_worker", relation, "DELETE") is (
+                        name == "ai_raw_response"
+                    )
+                    assert not await table("weather_worker", relation, "TRUNCATE")
+                    for role in ("weather_ingest", "weather_api", "weather_editor"):
+                        assert not await table(role, relation, "SELECT")
+                assert await column("summary", "INSERT")
+                assert not await column("author_kind", "INSERT")
                 # No editorial functions exist yet; weather_editor has no schema access (#44).
                 for role, schema in (
                     ("weather_api", "weather"),
