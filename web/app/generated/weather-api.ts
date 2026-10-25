@@ -313,8 +313,9 @@ export interface components {
          * Analysis
          * @description The labelled description of the current media; never model-written text (C18).
          *
-         *     `author` is `ai` for template text rendered from the model's validated observations and
-         *     `editor` for a human (#44) revision, whose label then says so.
+         *     `author` is `ai` for template text rendered from the model's validated observations,
+         *     `station` when no hour passed visual review (the text is station data only, with no AI
+         *     label or model provenance), and `editor` for a human (#44) revision; the label says which.
          */
         readonly Analysis: {
             /**
@@ -322,7 +323,7 @@ export interface components {
              * @default ai
              * @enum {string}
              */
-            readonly author: "ai" | "editor";
+            readonly author: "ai" | "station" | "editor";
             /** Claims */
             readonly claims: readonly components["schemas"]["AnalysisClaim"][];
             readonly coverage: components["schemas"]["AnalysisCoverage"] | null;
@@ -335,7 +336,7 @@ export interface components {
              * @default AI-generated · sampled-frame analysis
              * @enum {string}
              */
-            readonly label: "AI-generated · sampled-frame analysis" | "Editor-written description";
+            readonly label: "AI-generated · sampled-frame analysis" | "Station measurements only" | "Editor-written description";
             /** Limitations */
             readonly limitations: readonly string[];
             readonly provenance: components["schemas"]["AnalysisProvenance"] | null;
@@ -357,7 +358,7 @@ export interface components {
              * Basis
              * @enum {string}
              */
-            readonly basis: "visual" | "instrument" | "inference";
+            readonly basis: "visual" | "instrument";
             /** Text */
             readonly text: string;
         };
@@ -399,7 +400,7 @@ export interface components {
              * Refresh
              * @enum {string}
              */
-            readonly refresh: "full" | "synthesis";
+            readonly refresh: "full" | "measurements";
             /** Schema Revision */
             readonly schema_revision: string;
         };

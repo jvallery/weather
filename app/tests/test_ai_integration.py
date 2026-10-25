@@ -337,14 +337,18 @@ def test_three_quick_evidence_changes_make_one_synthesis_only_refresh() -> None:
         current = await head(admin, video)
         assert current["revision"] == 2 and current["stale"] is False
         async with admin.connect() as c:
-            refresh, visual, first = (
+            refresh, visual, first, kept = (
                 await c.execute(
-                    text("""SELECT r2.refresh,r2.visual_id,r1.id FROM weather.analysis_revision r2
+                    text("""SELECT r2.refresh,r2.visual_id,r1.id,
+                      (r2.model,r2.prompt_sha256,r2.schema_sha256)
+                        = (r1.model,r1.prompt_sha256,r1.schema_sha256)
+                    FROM weather.analysis_revision r2
                     JOIN weather.analysis_revision r1 ON r1.video_id=r2.video_id
                       AND r1.revision=1 WHERE r2.revision=2""")
                 )
             ).one()
-        assert refresh == "synthesis" and visual == first
+        # A re-render keeps the model and prompt that produced its observations.
+        assert refresh == "measurements" and visual == first and kept
         # The visual events cite the unchanged Stage A, so nothing was revised.
         assert await count(admin, "SELECT count(*) FROM weather.weather_event_revision") == events
 
@@ -394,13 +398,22 @@ def test_cortex_down_stays_pending_retries_nightly_then_fails_after_seven_days()
             await claim(worker, store.DESCRIBE_KIND, admin)
         )
         assert (await head(admin, video))["state"] == "complete"
-        # Another video still pending after 7 days is failed, keeping its reason.
+        # Another video still pending 7 days after its first attempt is failed, keeping its
+        # reason; one never attempted (intel disabled) does not expire.
         other, other_publication = await seed(admin, web="web-2", segment="overnight")
         await publish(worker, other_publication)
         async with admin.begin() as c:
             await c.execute(
-                text("""UPDATE weather.analysis SET pending_since=now() - interval '8 days',
+                text("""UPDATE weather.analysis SET pending_since=now() - interval '9 days',
                   reason='cortex_unavailable' WHERE video_id=:v"""),
+                {"v": other},
+            )
+        async with worker.begin() as c:
+            assert await store.expire(c, datetime.now(UTC)) == 0
+        async with admin.begin() as c:
+            await c.execute(
+                text("""UPDATE weather.analysis SET attempted_at=now() - interval '8 days'
+                WHERE video_id=:v"""),
                 {"v": other},
             )
         async with worker.begin() as c:
@@ -564,6 +577,23 @@ def test_model_output_never_replaces_a_human_revision() -> None:
                   evidence_checked_at=NULL WHERE video_id=:v"""),
                 {"v": video},
             )
+        # The worker itself can never write an author: its INSERT grant excludes the column.
+        with pytest.raises(DBAPIError) as denied:
+            async with worker.begin() as c:
+                await c.execute(
+                    text("""INSERT INTO weather.analysis_revision(id,video_id,revision,
+                      publication_id,media_sha256,state,reason,refresh,visual_id,model_route,
+                      model,prompt_sha256,schema_sha256,evidence_hash,evidence_count,summary,
+                      claims,observations,limitations,coverage,inputs,event_keys,calls,
+                      author_kind)
+                    SELECT gen_random_uuid(),video_id,9,publication_id,media_sha256,state,
+                      reason,refresh,visual_id,model_route,model,prompt_sha256,schema_sha256,
+                      evidence_hash,evidence_count,summary,claims,observations,limitations,
+                      coverage,inputs,event_keys,calls,'operator'
+                    FROM weather.analysis_revision WHERE video_id=:v AND revision=1"""),
+                    {"v": video},
+                )
+        assert "permission denied" in str(denied.value.orig).lower()
         # Changed measurements queue no refresh over a human revision...
         weather.items = station(START, END, humidity_mean=70.0)
         assert await unit.check_evidence(datetime.now(UTC)) == 0
@@ -575,7 +605,7 @@ def test_model_output_never_replaces_a_human_revision() -> None:
         context = await claim(worker, store.SYNTHESIZE_KIND, admin)
         await unit.synthesize(context)
         result = unit._result(
-            await head(admin, video), await _packet(), (), {}, {}, refresh="synthesis"
+            await head(admin, video), await _packet(), (), {}, {}, refresh="measurements"
         )
         await unit._publish(
             context, await head(admin, video), Run(video, "late"), result, base=2, describe=False

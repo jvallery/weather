@@ -5,7 +5,9 @@ The worker reads `weather-media` with the read-only reader key (never originals)
 content address of every object it downloads, decodes the selected frames in one FFmpeg pass,
 and re-encodes each as a small JPEG. The keogram is optional (#37): when the segment has no
 current keogram, or it is oversized, unreadable, mis-addressed or not an image, windows are
-described from frames alone and the inputs record that. Only the web rendition can fail a run.
+described from frames alone and the inputs record that. Only a definitely missing (404/410) or
+invalid web rendition fails a run; any other store error is transient (`MediaUnavailable`), so
+the job retries and the head stays pending.
 """
 
 import asyncio
@@ -37,11 +39,19 @@ MAX_KEOGRAM_BYTES = 8 * MAX_IMAGE_BYTES
 
 
 class MediaError(RuntimeError):
-    """Unreadable or invalid media: the run fails for this media revision without retry."""
+    """Definitely missing or invalid media: the run fails for this media revision."""
 
     def __init__(self, reason: str) -> None:
         super().__init__(f"Media {reason}")
         self.reason = reason
+
+
+class MediaUnavailable(RuntimeError):
+    """A transient object-store failure: the job retries, and the head stays pending."""
+
+
+# A definite answer about the object itself: gone, or there but not the object we expect.
+MISSING_STATUSES = frozenset({404, 410})
 
 
 @dataclass(frozen=True)
@@ -82,8 +92,13 @@ async def _download(store: ObjectStore, item: StoredObject, path: Path) -> None:
                     handle.write(chunk)
         finally:
             await span.aclose()
-    except StoreError:
-        raise MediaError("store") from None
+    except StoreError as error:
+        if error.status in MISSING_STATUSES:
+            raise MediaError("missing") from None
+        if error.operation == "span" and error.status in (200, 206):
+            # Served, but with another length or encoding: not the committed object.
+            raise MediaError("invalid") from None
+        raise MediaUnavailable("store") from None
     if size != item.bytes or digest.hexdigest() != item.sha256:
         raise MediaError("content_address")
 

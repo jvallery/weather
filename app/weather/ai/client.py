@@ -156,7 +156,8 @@ class Cortex:
             content = choice["message"].get("content")
             finish = choice.get("finish_reason")
             model = public_model(data.get("model"), MODEL_ROUTE)
-        except ValueError, KeyError, IndexError, TypeError, AttributeError:
+        except ValueError, KeyError, IndexError, TypeError, AttributeError, RecursionError:
+            # RecursionError: a deeply nested body is invalid, never a crash of the run.
             raise CortexError("invalid") from None
         if content is not None and not isinstance(content, str):
             raise CortexError("invalid")

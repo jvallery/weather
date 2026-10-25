@@ -115,24 +115,27 @@ const archiveEntry = z.object({
 const archive = z.object({ items: z.array(archiveEntry), next_cursor: text.nullable() });
 // The description (#23): server-rendered template text (C18). Only known fields are read; anything
 // else is dropped, and an unparseable analysis degrades to "unavailable" without sinking its
-// recording. An editor's revision (#44) carries its own label and is never shown as AI output.
+// recording. An editor's revision (#44) and a station-only summary (no hour passed visual review)
+// carry their own labels and are never shown as AI output. A claim of unknown basis is dropped.
 export const ANALYSIS_LABEL = "AI-generated · sampled-frame analysis";
+export const STATION_LABEL = "Station measurements only";
 export const EDITOR_LABEL = "Editor-written description";
+const analysisClaim = z.object({ text, basis: z.enum(["visual", "instrument"]) });
 const analysisCoverage = z.object({
   algorithm_revision: text, reviewed_seconds: z.number(), expected_seconds: z.number(), fraction: z.number(),
   windows_reviewed: z.number(), windows_total: z.number(), gaps: z.array(interval).default([]),
 });
 const analysisProvenance = z.object({
-  model_route: text, model: text, prompt_revision: text, schema_revision: text, refresh: lenient(["full", "synthesis"], "synthesis"),
+  model_route: text, model: text, prompt_revision: text, schema_revision: text, refresh: lenient(["full", "measurements"], "measurements"),
   evidence_count: z.number(), frames_sampled: z.number(), keogram_used: z.boolean(),
 });
 export const analysisSchema = z.object({
-  label: z.enum([ANALYSIS_LABEL, EDITOR_LABEL]).catch(ANALYSIS_LABEL),
-  author: lenient(["ai", "editor"], "ai"),
+  label: z.enum([ANALYSIS_LABEL, STATION_LABEL, EDITOR_LABEL]).catch(ANALYSIS_LABEL),
+  author: lenient(["ai", "station", "editor"], "ai"),
   state: lenient(["pending", "complete", "degraded", "failed", "unavailable"], "unavailable"),
   reason: text.nullable().default(null), stale: z.boolean().default(false), revision: z.number().nullable().default(null),
   generated_at: text.nullable().default(null), description: text.nullable().default(null),
-  claims: z.array(z.object({ text, basis: lenient(["visual", "instrument", "inference"], "inference") })).default([]),
+  claims: z.array(analysisClaim.nullable().catch(null)).transform((items) => items.filter((item) => item !== null)).default([]),
   limitations: z.array(text).default([]),
   coverage: analysisCoverage.nullable().default(null).catch(null), provenance: analysisProvenance.nullable().default(null).catch(null),
 });

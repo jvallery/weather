@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
-import { ANALYSIS_LABEL, EDITOR_LABEL, type Analysis } from "../lib/weather-api";
+import { ANALYSIS_LABEL, EDITOR_LABEL, STATION_LABEL, type Analysis } from "../lib/weather-api";
 
-/** The labelled description (#23): server-rendered template text (C18), as escaped text nodes. An
- * editor's revision (#44) is labelled as the editor's and shows no model provenance. */
+/** The labelled description (#23): server-rendered template text (C18), as escaped text nodes. A
+ * station-only summary and an editor's revision (#44) carry their own labels and no model
+ * provenance. */
 const STATES: Record<Analysis["state"], string> = {
   pending: "Pending · not analysed yet",
   complete: "Complete",
@@ -23,7 +24,8 @@ const REASONS: Record<string, string> = {
   no_evidence: "Neither validated imagery nor station measurements were available.",
   media_unavailable: "The published rendition could not be read.",
 };
-const BASIS = { visual: "Visual", instrument: "Measured", inference: "Inference" } as const;
+const BASIS = { visual: "Visual", instrument: "Measured" } as const;
+const LABELS = { ai: ANALYSIS_LABEL, station: STATION_LABEL, editor: EDITOR_LABEL } as const;
 
 function reason(analysis: Analysis): string | null {
   if (!analysis.reason) return null;
@@ -34,15 +36,15 @@ export function AnalysisPanel({ analysis, compact = false }: { analysis: Analysi
   const coverage = analysis.coverage;
   const provenance = analysis.provenance;
   const why = reason(analysis);
-  const editor = analysis.author === "editor";
+  const ai = analysis.author === "ai";
   return <div className="analysis">
-    <p className="provenance"><strong>{editor ? EDITOR_LABEL : ANALYSIS_LABEL}</strong> · {STATES[analysis.state]}</p>
+    <p className="provenance"><strong>{LABELS[analysis.author]}</strong> · {STATES[analysis.state]}</p>
     {analysis.description ? <p>{analysis.description}</p> : <p>No AI description is available.</p>}
     {analysis.stale && <p className="notice">Station measurements changed after this description; a refreshed summary is queued.</p>}
     {!compact && why && <p className="small">{why}</p>}
     {!compact && analysis.claims.length > 0 && <ul className="claims">{analysis.claims.map((claim, index) => <li key={index}><span className="status">{BASIS[claim.basis]}</span> {claim.text}</li>)}</ul>}
     {!compact && coverage && <p className="small">Analysis coverage: {(coverage.fraction * 100).toFixed(0)}% of the source interval reviewed · {coverage.windows_reviewed} of {coverage.windows_total} hour windows · sampled frames{provenance?.keogram_used ? " and keogram" : " only"}</p>}
-    {!compact && provenance && !editor && <p className="small">Model {provenance.model_route} ({provenance.model}) · prompt {provenance.prompt_revision} · schema {provenance.schema_revision} · {provenance.evidence_count.toLocaleString("en-US")} station records · {provenance.frames_sampled} frames · {provenance.refresh === "synthesis" ? "summary refreshed after measurements changed" : "full analysis"}</p>}
+    {!compact && provenance && ai && <p className="small">Model {provenance.model_route} ({provenance.model}) · prompt {provenance.prompt_revision} · schema {provenance.schema_revision} · {provenance.evidence_count.toLocaleString("en-US")} station records · {provenance.frames_sampled} frames · {provenance.refresh === "measurements" ? "summary refreshed after measurements changed" : "full analysis"}</p>}
     {!compact && analysis.limitations.length > 0 && <ul className="small">{analysis.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}</ul>}
   </div>;
 }

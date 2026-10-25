@@ -2,7 +2,7 @@
 import { expect, test } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AnalysisPanel } from "./analysis";
-import { analysisField, ANALYSIS_LABEL, EDITOR_LABEL } from "../lib/weather-api";
+import { analysisField, ANALYSIS_LABEL, EDITOR_LABEL, STATION_LABEL } from "../lib/weather-api";
 import variants from "../fixtures/analysis.json";
 
 const parse = (value: unknown) => analysisField.parse(value);
@@ -26,12 +26,14 @@ test("every state carries the AI label, its state and, when complete or degraded
 });
 
 test("model text is escaped, unknown fields are dropped and a broken analysis degrades alone", () => {
-  const hostile = parse({ ...variants.complete, description: "<img src=x onerror=alert(1)>", claims: [{ text: "<script>x</script>", basis: "oracle" }] });
+  const hostile = parse({ ...variants.complete, description: "<img src=x onerror=alert(1)>", claims: [{ text: "<script>x</script>", basis: "visual" }, { text: "unknown basis", basis: "inference" }] });
   const html = renderToStaticMarkup(<AnalysisPanel analysis={hostile} />);
   expect(html).not.toContain("<img");
   expect(html).not.toContain("<script>");
   expect(html).toContain("&lt;img src=x onerror=alert(1)&gt;");
-  expect(html).toContain("Inference");
+  // An unknown basis fails closed: that claim is dropped, the rest stay.
+  expect(hostile.claims.map((claim) => claim.text)).toEqual(["<script>x</script>"]);
+  expect(html).not.toContain("unknown basis");
   const degraded = parse(variants.degraded);
   expect("raw_response" in degraded).toBe(false);
   expect(renderToStaticMarkup(<AnalysisPanel analysis={degraded} />)).not.toContain("RAW-MODEL-TEXT-SENTINEL");
@@ -54,4 +56,9 @@ test("an editor's revision is labelled as the editor's, never as AI output, and 
   // A garbled label cannot relabel an editor's text as AI output, or the reverse.
   expect(renderToStaticMarkup(<AnalysisPanel analysis={parse({ ...variants.complete, author: "editor", label: 7 })} />)).toContain(EDITOR_LABEL);
   expect(parse({ ...variants.complete, author: undefined }).author).toBe("ai");
+  // No hour passed visual review: station data only, never the AI label or model provenance.
+  const station = renderToStaticMarkup(<AnalysisPanel analysis={parse({ ...variants.degraded, author: "station", label: STATION_LABEL })} />);
+  expect(station).toContain(STATION_LABEL);
+  expect(station).not.toContain(ANALYSIS_LABEL);
+  expect(station).not.toContain("Model llm.primary.longctx.mm");
 });

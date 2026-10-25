@@ -12,7 +12,7 @@ Review: cloud coverage and changes; apparent cloud movement; changing sunlight
 and shadows; visible rain or snow; wet surfaces; visible ground snow and its
 change; fog or reduced visibility; lightning only if unmistakably visible;
 and lens droplets, obstruction, glare, stitching artifacts, or darkness that
-limit observation. Use unknown when the view cannot support a judgment.
+limit observation.
 
 Do not infer exact temperature, humidity, wind speed, rainfall amount, snow
 depth, pressure, forecast, air quality, or storm severity from imagery. Do not
