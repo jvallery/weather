@@ -65,6 +65,10 @@ spec:
           value: '2000'
         - name: WEATHER_PIPELINE_SHUTTER_DEGREES
           value: '180'
+        # Staging cleanup (#19) runs in this pod as dry-run until enabled by a reviewed
+        # change (#49); keogram/hourly conditions stay required until #37/#38 wire them.
+        - name: WEATHER_CLEANUP_ENABLED
+          value: 'false'
         - name: WEATHER_IMAGE_DIGEST
           value: unpinned
         - name: METRICS_PORT
@@ -94,8 +98,21 @@ spec:
         - name: garage
           mountPath: /var/run/weather-garage
           readOnly: true
+        # Only this camera's own directories (#19): cleanup can never reach another
+        # camera's input. Create render/skycam_east and previews/skycam_east
+        # as UID 1025 / GID 100 before enabling.
         - name: staging
-          mountPath: /staging
+          mountPath: /staging/sealed/skycam_east
+          subPath: sealed/skycam_east
+        - name: staging
+          mountPath: /staging/tmp/skycam_east
+          subPath: tmp/skycam_east
+        - name: staging
+          mountPath: /staging/render/skycam_east
+          subPath: render/skycam_east
+        - name: staging
+          mountPath: /staging/previews/skycam_east
+          subPath: previews/skycam_east
         - name: tmp
           mountPath: /tmp
       volumes:
@@ -205,6 +222,10 @@ spec:
           value: '2000'
         - name: WEATHER_PIPELINE_SHUTTER_DEGREES
           value: '180'
+        # Staging cleanup (#19) runs in this pod as dry-run until enabled by a reviewed
+        # change (#49); keogram/hourly conditions stay required until #37/#38 wire them.
+        - name: WEATHER_CLEANUP_ENABLED
+          value: 'false'
         - name: WEATHER_IMAGE_DIGEST
           value: unpinned
         - name: METRICS_PORT
@@ -234,8 +255,21 @@ spec:
         - name: garage
           mountPath: /var/run/weather-garage
           readOnly: true
+        # Only this camera's own directories (#19): cleanup can never reach another
+        # camera's input. Create render/skycam_west and previews/skycam_west
+        # as UID 1025 / GID 100 before enabling.
         - name: staging
-          mountPath: /staging
+          mountPath: /staging/sealed/skycam_west
+          subPath: sealed/skycam_west
+        - name: staging
+          mountPath: /staging/tmp/skycam_west
+          subPath: tmp/skycam_west
+        - name: staging
+          mountPath: /staging/render/skycam_west
+          subPath: render/skycam_west
+        - name: staging
+          mountPath: /staging/previews/skycam_west
+          subPath: previews/skycam_west
         - name: tmp
           mountPath: /tmp
       volumes:
@@ -345,6 +379,10 @@ spec:
           value: '2000'
         - name: WEATHER_PIPELINE_SHUTTER_DEGREES
           value: '180'
+        # Staging cleanup (#19) runs in this pod as dry-run until enabled by a reviewed
+        # change (#49); keogram/hourly conditions stay required until #37/#38 wire them.
+        - name: WEATHER_CLEANUP_ENABLED
+          value: 'false'
         - name: WEATHER_IMAGE_DIGEST
           value: unpinned
         - name: METRICS_PORT
@@ -374,8 +412,21 @@ spec:
         - name: garage
           mountPath: /var/run/weather-garage
           readOnly: true
+        # Only this camera's own directories (#19): cleanup can never reach another
+        # camera's input. Create render/frontyard_1 and previews/frontyard_1
+        # as UID 1025 / GID 100 before enabling.
         - name: staging
-          mountPath: /staging
+          mountPath: /staging/sealed/frontyard_1
+          subPath: sealed/frontyard_1
+        - name: staging
+          mountPath: /staging/tmp/frontyard_1
+          subPath: tmp/frontyard_1
+        - name: staging
+          mountPath: /staging/render/frontyard_1
+          subPath: render/frontyard_1
+        - name: staging
+          mountPath: /staging/previews/frontyard_1
+          subPath: previews/frontyard_1
         - name: tmp
           mountPath: /tmp
       volumes:

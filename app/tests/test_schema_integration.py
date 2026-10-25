@@ -125,7 +125,7 @@ def test_baseline_head_roles_and_least_privilege() -> None:
             async with admin.begin() as connection:
                 assert await scalar(
                     connection, "SELECT version_num FROM public.alembic_version"
-                ) == ("0007_previews")
+                ) == ("0010_cleanup")
                 # Slice-1 relations, the observations view, the API's views (0002), the
                 # publication catalog (0003), search (0004), events (0005) and the render
                 # schedule (0006).
@@ -178,6 +178,10 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     # 0007_previews (#39)
                     "weather.camera_preview",
                     "public_api.previews",
+                    # 0010_cleanup (#19)
+                    "weather.staging_chunk",
+                    "weather.staging_deletion",
+                    "weather.object_event",
                 }
                 options = await scalar(
                     connection,

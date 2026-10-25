@@ -139,7 +139,10 @@ from 10 s doubling to 30 min, so it never starves the camera's live segment.
 /staging/previews/<camera>/<generation>-<variant>.jpg delayed previews (#39), about 1 h
 ```
 
-The renderer deletes nothing; the preview producer prunes only its own `previews/<camera>/` ([previews](media.md#previews)). For #19:
+The renderer deletes nothing; the preview producer prunes only its own `previews/<camera>/`
+([previews](media.md#previews)). Staging cleanup (#19) runs in the same pod between loops,
+ahead of rendering under pressure ([media operations](media.md#staging-cleanup-and-pressure));
+it relies on:
 
 - `segment.mezzanine_through` is a slot key: the segment will never read
   another frame whose slot is earlier. The pipeline advances it after each
@@ -150,12 +153,15 @@ The renderer deletes nothing; the preview producer prunes only its own `previews
   every current segment whose read range `[starts_at − lag, ends_at)` its
   window overlaps, so staging holds only each segment's unrendered tail. The
   keogram and preview conditions of P3 still apply, and every overlapping hour slot needs an
-  active `archival_still` row (its original archived and read back, or recorded missing);
-- a render directory is deletable once its segment has `finalized_at` set
-  (the pipeline recorded its RenderResult), or, for a segment made terminal by
-  the deadline sweep without one, once `ends_at` is more than 12 h past
-  (`LATE_RENDER`). A `deadline_missed` or sweep-reconciled segment is still
-  rendered, published and finalized within those 12 h;
+  active `archival_still` row: its original archived and read back, or recorded missing for
+  lack of input (`no_capture`, `no_eligible_capture`; `selection_expired` keeps the chunk);
+- a render directory is deletable once its segment has `finalized_at` set and
+  its renditions are committed (or its result is `unavailable`). An unfinalized
+  directory whose segment has a release point is never deleted: such a segment
+  stays active past `LATE_RENDER` until the renderer completes it from what is
+  still on staging (gaps become slates) and publishes it, superseding the
+  deadline placeholder. A segment the pipeline never started drops out after
+  12 h, and its directory (if any) goes 13 h after `ends_at`;
 - `.tmp-*` files belong to an in-progress write; the pipeline removes its own
   on restart.
 
@@ -172,6 +178,7 @@ The renderer deletes nothing; the preview producer prunes only its own `previews
 | `WEATHER_IMAGE_DIGEST` | `unpinned` | Recorded in every RenderResult; #49 sets it to the app pin |
 | `WEATHER_FFMPEG` | `ffmpeg` on PATH | Tests only |
 | `WEATHER_PREVIEW_SKEW_SECONDS` | 30 | Preview skew margin, 30–600 ([clock offset](media.md#clock-offset)) |
+| `WEATHER_CLEANUP_*` | dry run | Staging cleanup; see [media operations](media.md#staging-cleanup-and-pressure) |
 
 Database (`weather-pg-worker`) and Garage (`weather-media-s3-writer` and
 `weather-originals-s3-writer`, projected to `/var/run/weather-garage/<bucket>/`) credentials
@@ -186,7 +193,11 @@ requested and 4 CPU/8 GiB limits each, sync wave 2, with the staging PVC, the
 worker DB role and the media writer key. Their NetworkPolicy
 (`network-policy.yaml`) allows DNS, CNPG and Garage only. Enable both by
 adding `pipeline` to the root kustomization and setting replicas to 1 after
-the cameras, `weather-staging` PVC and both bucket writer keys exist.
+the cameras, `weather-staging` PVC and both bucket writer keys exist. Each pod mounts only its camera's
+`sealed/`, `tmp/`, `render/` and `previews/` subPaths of the share; create `render/<camera>`
+and `previews/<camera>` owned
+by UID 1025 / GID 100 first (from a pod running as that identity), or the kubelet creates
+it as root.
 
 ## Throughput check
 

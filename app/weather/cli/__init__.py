@@ -18,6 +18,16 @@ def main() -> None:
 
         media_main(sys.argv[2:])
         return
+    if sys.argv[1:2] == ["staging"]:
+        from weather.scheduler.cli import staging_main
+
+        staging_main(sys.argv[2:])
+        return
+    if sys.argv[1:2] == ["reconcile-objects"]:
+        from weather.scheduler.cli import reconcile_main
+
+        reconcile_main(sys.argv[2:])
+        return
     if sys.argv[1:2] == ["pipeline"]:
         from weather.pipeline.cli import main as pipeline_main
 
@@ -46,7 +56,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="weather", description="Weather archive services")
     parser.epilog = (
         "Snapshot acquisition: weather capture collect --camera <id>; "
-        "publication: weather media withdraw|reconcile; "
+        "publication: weather media withdraw|reconcile|expire|gc|purge; "
+        "staging: weather staging cleanup --camera <id>; "
+        "objects: weather reconcile-objects --bucket <b>; "
         "rendering: weather pipeline run --camera <id>"
     )
     parser.add_argument(

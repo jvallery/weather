@@ -44,15 +44,18 @@ alters `config_hash`, so chunks before and after are distinguishable.
 
 ## Staging occupancy plan
 
-Until #19 cleanup runs, nothing removes sealed chunks, so the share only fills: about
-200 GB/day at 0.5 Hz (day/night mix), so 70% of the 300 GiB share in roughly 26 h. Measured
-figures are in [D02](../decisions/D02-camera-sources-and-time.md#commissioned-measurements).
+Only the pipeline pods' staging cleanup (#19,
+[media operations](media.md#staging-cleanup-and-pressure)) removes sealed chunks, and only
+once their segments have rendered them; until the pipelines run (#49) the share only fills:
+about 200 GB/day at 0.5 Hz (day/night mix), so 70% of the 300 GiB share in roughly 26 h.
+Measured figures are in [D02](../decisions/D02-camera-sources-and-time.md#commissioned-measurements).
 Alert `WeatherStagingOccupancyHigh` (monitoring-stack, thresholds 70/85/90%) fires on
 `weather_capture_staging_ratio`.
 Watch `weather_capture_staging_ratio` (or `df` on `/staging` inside a collector). If it
 approaches 0.70, scale all three collectors to 0 through Git (below) and leave them there
 until #19 runs or Jason chooses another bound. Do not delete anything to make room: sealed
-chunks are renderer input, and tmp files belong to scheduler reconciliation (#19). At 0.90
+chunks are renderer input, and other incarnations' tmp files are removed by the cleanup
+after 6 h. At 0.90
 the collector itself stops writing JPEG payloads (below).
 
 ## Runbook
@@ -136,7 +139,7 @@ On SIGTERM the current HTTP exchange is cancelled, its attempt is recorded and t
 current complete chunk is sealed if storage permits. If storage cannot retain a
 ledger, later successful chunks carry explicit persistence-loss ranges. A hard-killed
 writer leaves its tmp file and uncertain filename-window evidence, not an eligible
-sealed product; tmp cleanup belongs to the scheduler (#19). See the [v2 contract](../contracts/capture-contract.md) for the
+sealed product; the pipeline pod's staging cleanup removes it after 6 h (#19). See the [v2 contract](../contracts/capture-contract.md) for the
 reconciliation rule and post-rename fsync uncertainty. Never adopt, modify or remove
 another incarnation's file from a collector.
 

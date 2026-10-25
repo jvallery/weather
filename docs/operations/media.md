@@ -113,7 +113,7 @@ One transaction writes the tombstones, a `withdrawal` audit row and a
   stops only that file; withdraw the video to stop the video.
 
 The API then lists the video with `withdrawn: true`, no media URLs and
-`keogram_state: withdrawn`. The bytes remain in Garage; hard purge is #19.
+`keogram_state: withdrawn`. The bytes remain in Garage; to remove them see [hard purge](#hard-purge).
 Withdrawing again is a no-op. There is no un-withdraw: the database refuses it.
 
 ## Serve
@@ -347,6 +347,225 @@ SELECT slot_starts_at,revision,state,reason,offset_us,segment_kind FROM weather.
 curl -s 'https://weather.vallery.net/api/v1/stills?date=2026-11-01&camera=skycam_east' \
   | jq '.items[] | {slot_id, local_label, state, reason, offset_seconds, images: (.images|length)}'
 ```
+
+## Staging cleanup and pressure
+
+`app/weather/scheduler/cleanup.py` (#19) runs inside each `pipeline-<camera>` pod, the only
+role besides the collectors that mounts staging (as UID 1025 / GID 100, the share owner), and
+each pod mounts only its own camera's `sealed/`, `tmp/`, `render/` and `previews/` subPaths. The
+scheduler and the api never mount NFS (C17). Each pass works on its own camera only, holds a
+per-camera advisory lock, and takes every age from the database clock.
+
+**What may go.** Catalog rows decide (P3). A sealed chunk is deleted only when every
+condition holds; a kept chunk reports the first unmet one:
+
+| Condition | Holds when | Wired by |
+|---|---|---|
+| `config` | The chunk header's cadence, phase and geometry equal the pipeline's. A `capture.json` mismatch makes every frame a `settings` reject, and the renderer's slates must never release the input | here |
+| `mezzanine` | Every current segment whose read range `[starts_at − lag, ends_at)` overlaps the chunk has `mezzanine_through` (a slot key) at or past the chunk's slot-window end, or a complete mezzanine, and the frozen schedule covers the range. A dusk-spanning chunk waits for both segments | here |
+| `keogram` | Its keogram bins are committed | #37 |
+| `hourly` | Every UTC hour slot the chunk's frames can be selected for has an active `archival_still`: archived with its still publication committed (read back first) and its original asset still `available`, or `missing` for lack of input (`no_capture`, `no_eligible_capture`). `selection_expired` (no selection ran for 12 h, e.g. a Garage or pipeline outage) keeps the chunk, and the 48 h pinned alert fires | here, against #38's `archival_still` |
+| `preview` | Its newest capture is more than 1,800 s plus one refresh (`WEATHER_CLEANUP_PREVIEW_REFRESH_SECONDS`, 60) old | here (#39's window) |
+
+`keogram` is unmet until #37 registers its query in `cleanup.CONDITION_QUERIES`: an async
+function `(connection, camera, chunks, lag)` returning the ids of the given `ChunkRow`s whose
+condition holds, read in the same connection as the segment rows, plus a row in the table
+test (`hourly_finalized` is the model). Until then, `WEATHER_CLEANUP_KEOGRAM=vacuous` waives
+it; set it only while #37 is not deployed, in the reviewed change that enables cleanup. A
+vacuous mode for a registered query fails start-up, and the rule evaluates a wired condition
+regardless. `config`, `mezzanine`, `hourly` and `preview` cannot be waived.
+
+Released input is gone for good, so the release point is tied to the blocks on disk:
+`segment.mezzanine_recipe` records the recipe whose durable blocks `mezzanine_through`
+describes, a renderer of another recipe cannot advance it, and a renderer whose durable blocks
+(listed with errors raised, never silently empty) are behind it refuses to render and counts
+`weather_pipeline_release_incidents_total`. A durable block is never replaced. Change the
+recipe or correct a segment only before the segment starts; a mid-segment change is an
+incident for that segment (the deadline sweep marks it unavailable), never a re-render of
+deleted input.
+
+Also removed, with the same audit row: other incarnations' `tmp/<camera>/` files whose
+slot-window end and mtime are both older than `WEATHER_CLEANUP_TMP_HOURS` (6; a live writer
+seals within 300 s and appends every cadence), and `render/<camera>/<segment>-<recipe>/`
+directories once their segment is finalized with its three renditions committed (the publisher
+read every byte back first) or finalized `unavailable` (the pipeline's terminal verdict:
+insufficient coverage, withdrawn, revision conflict). An unfinalized directory whose segment
+has a release point (`mezzanine_through`) is never deleted, however late: its blocks may be
+the only copy of input cleanup already removed. Such a segment stays active in the pipeline
+past `LATE_RENDER` until the renderer completes it from what is still on staging (gaps become
+slates) and publishes it as a partial or unavailable video over the deadline placeholder;
+then the normal rules release its chunks and directory. A segment the pipeline never started
+leaves at most an empty directory, removed 13 h after its end (12 h plus an hour for the pod's
+clock). Empty sealed hour directories go when both the hour and the directory are older than
+the tmp age.
+
+Mezzanine bytes per released input byte are not yet measured; the throughput Job
+([pipeline](pipeline.md#throughput-check)) is where to record them. Watch
+`weather_staging_bytes{class="render"}` against `{class="sealed"}` and
+`weather_staging_pinned_bytes` meanwhile.
+
+**How.** Each deletion is two-phase: a `staging_deletion` row (name, manifest sha256, size,
+reason) commits first, then the unlink, then `unlinked_at`. Before acting, the name is
+re-validated against its class pattern and camera (also a CHECK in the table) and no path
+component may be a symlink; an unsafe row is refused and counted (`unsafe_target`). The next pass finishes any
+deletion a crash left; an already-gone file is a no-op. A chunk is re-identified (manifest
+sha256 and size) before the decision and again before the unlink, and is never deleted if
+either differs. Files without a catalog row (unreadable, invalid, another camera's, unknown
+names) are never touched; `weather_staging_unindexed_files` counts them. `staging_chunk` rows
+stay as metadata (`deleted`, or `missing` when a file vanished without a decision). An I/O
+error on the soft mount aborts the pass (nothing is ever inferred from a failed listing) and
+the next pass retries.
+
+**Configuration** (pipeline Deployments):
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `WEATHER_CLEANUP_ENABLED` | `false` | Delete; otherwise every pass is a dry run that inventories, evaluates and exports metrics |
+| `WEATHER_CLEANUP_INTERVAL_SECONDS` | 300 | Pass interval at normal pressure |
+| `WEATHER_CLEANUP_TMP_HOURS` | 6 | Age of another incarnation's tmp file before removal |
+| `WEATHER_CLEANUP_KEOGRAM`, `_HOURLY` | `required` | `vacuous` waives an unwired (undeployed) feature's condition; refused once its query is registered (hourly already is) |
+| `WEATHER_CLEANUP_BATCH` | 2000 | New chunks inventoried per pass |
+
+**Watermarks** (D16, `scheduler/pressure.py`): `statvfs` on `/staging/sealed/<camera>` (the
+share's quota), the same ratio the collectors compute.
+
+| Level | At | Effect |
+|---|---|---|
+| alert | ≥ 70 % | Metrics only |
+| urgent | ≥ 85 % | Cleanup runs ahead of rendering at most once a minute (instead of every 5 minutes); render-directory sizes are cached by directory mtime and their segment states read in one query; `optional_allowed()` is false, so no optional re-render or reanalysis may start (none exists yet) |
+| stop | ≥ 90 % | The collectors stop writing JPEG payloads on their own statvfs check and record `staging_full` gaps ([capture](capture.md)). The pipeline keeps rendering, which is what releases input |
+| render stop | ≥ 97 % | The pipeline adds no mezzanine blocks (`weather_pipeline_pressure_paused_total`) but still finalizes complete mezzanines, whose directories cleanup then frees; it resumes below 97 % |
+| resume | < 75 % | Urgent and stop hold until occupancy is below 75 % and the last cleanup pass succeeded |
+
+The stop level holds whether or not any cleanup condition is wired or cleanup is enabled:
+the collectors' check is their own, and the pipeline's pause reads only statvfs, so the share
+cannot fill past 97 % by more than in-flight writes. With `keogram` still
+unwired and required, no chunk is released, so input then piles up to the stop mark and capture
+pauses there (gaps, no loss of sealed input) until those features land or Jason waives them.
+Pressure changes only what runs first. It never relaxes a condition, so no pinned input is
+ever deleted to make room. Unresolved input older than 48 h is an incident
+(`WeatherStagingChunkPinned`), never authority to delete.
+
+**Check and run by hand.** Inside the camera's pipeline pod:
+
+```sh
+kubectl --context vallery -n weather exec deploy/pipeline-skycam-east -- \
+  weather staging cleanup --camera skycam_east --dry-run
+```
+
+It prints counts: `inventoried`, `eligible`, `pinned_<condition>`, `unindexed`, `tmp_stale`,
+`render_eligible`, and `deleted_*` when enabled. Without `--dry-run` it deletes only if
+`WEATHER_CLEANUP_ENABLED` is true. Never delete sealed input by hand: a chunk pinned by
+`mezzanine` is renderer input. When `unindexed` grows, list the files in the camera's sealed
+directory and investigate (an invalid chunk is kept as evidence); remove one only on Jason's
+instruction.
+
+| Metric | Meaning and action |
+|---|---|
+| `weather_staging_ratio{camera}`, `weather_staging_watermark_level{camera}` | Occupancy and level (0–3) seen by each pipeline; -1 when statvfs fails |
+| `weather_staging_bytes{camera,class}` | `sealed` (inventoried), `tmp`, `render` bytes |
+| `weather_staging_chunks{camera,condition}` | Present chunks: `eligible` or the first unmet condition |
+| `weather_staging_oldest_eligible_chunk_seconds{camera}` | Above 1 h with cleanup enabled: passes are failing; check `weather_staging_cleanup_failures_total` |
+| `weather_staging_oldest_pinned_chunk_seconds{camera,condition}` | Above 48 h: the named product is stuck (a stopped pipeline, a missing schedule, an unwired feature) |
+| `weather_staging_pinned_bytes{camera,condition}` | Bytes kept by each condition: alert on its growth before the 90 % stop |
+| `weather_staging_unindexed_files{camera}` | Sealed files no row covers; never deleted |
+| `weather_staging_deletions_total{camera,class}` | `chunk`, `tmp`, `render` deletions |
+| `weather_staging_cleanup_failures_total{camera,stage}` | `scan`, `identity`, `unlink`, `unsafe_target`, `statvfs`, `pass` |
+| `weather_staging_cleanup_last_success_timestamp_seconds{camera}`, `weather_staging_cleanup_enabled{camera}` | Pass freshness and mode |
+
+## Object lifecycle
+
+`app/weather/scheduler/lifecycle.py` (#19). Every state change and deletion appends an
+`object_event` row (`unavailable`, `expired`, `gc_deleted`, `purged`, with reason and actor);
+`media_asset.state_changed_at` dates the change.
+
+### Reconcile objects
+
+```sh
+weather reconcile-objects --bucket weather-media [--rate 20] [--max-missing-ratio 0.05]
+```
+
+Run it after any restore (P7), from a pod holding that bucket's key (a pipeline pod for
+`weather-media`; `weather-originals` needs the originals key, pipeline role only). It HEADs
+every `available` asset of the bucket in keyset pages, at most `--rate` per second, and marks
+a missing or wrong-size object `unavailable`. Circuit breaker: the bucket must exist, every
+row is checked before any is marked, and if more than `--max-missing-ratio` of them are
+missing it marks nothing and exits 3 (`weather_reconcile_aborts_total`). That is usually a
+wrong endpoint, key or bucket; rerun with a higher ratio only after confirming a real loss. The public views then hide it, and a video
+missing a rendition lists as `unavailable` / `media_unavailable`. It prints `checked`,
+`present`, `missing`, `marked_unavailable` and `errors`; a store error decides nothing for
+that object. Rerunning is idempotent. An object restored later stays `unavailable` until a
+republish of the same bytes (the catalog revives it after readback). Metrics:
+`weather_reconcile_missing_objects{bucket}`, `weather_reconcile_marked_unavailable_total`.
+
+### Retention expiry
+
+```sh
+weather media expire [--dry-run]
+```
+
+Expiry only tombstones (`state = 'expired'`), never deletes bytes. It always lists both rules'
+candidates (`candidates` by `rule:class`) and applies only the enabled ones:
+
+| Rule | Flag (default false) | Expires |
+|---|---|---|
+| video | `WEATHER_RETENTION_ENABLED`, `WEATHER_RETENTION_VIDEO_DAYS` (365) | Videos, posters and sidecars of video publications whose cycle date is older |
+| hourly | `WEATHER_HOURLY_ARCHIVE_DELETION_ENABLED`, `WEATHER_HOURLY_ARCHIVE_RETENTION_YEARS` (5) | Stills, originals and keograms whose America/Denver calendar date is older |
+
+An asset that an unexpired product also publishes is kept. Video expiry never touches stills,
+events, `weather_day` or slot rows. Both flags stay off until #79; #38 extends the hourly rule
+to its slot rows. Metric: `weather_expiry_candidates{rule}`.
+
+### Orphan and tombstone GC
+
+```sh
+weather media gc --bucket weather-media [--dry-run]
+```
+
+GC deletes only bytes no restorable catalog state references: keys of `orphan` upload intents
+resolved more than `WEATHER_GC_GRACE_DAYS` (90) ago, and `expired` assets tombstoned more than
+grace ago. It keeps a key any `media_asset` row, pending or committed intent, or orphan still
+inside grace names. Each deletion is fenced by a per-object-key transaction lock that the
+publisher also takes when it registers an intent and when it commits: under the lock GC
+re-checks the candidate and commits its `gc_deleted` row, then under the lock again deletes
+only if no pending intent or live row references the key (otherwise the audited bytes stay,
+`kept_after_audit`). An upload registered after the delete sees the key gone and re-uploads,
+so byte-identical content may be published again (the asset revives after readback) and is a
+GC candidate again from its next tombstone; purged bytes never revive. It **refuses** (exit 3)
+unless
+`WEATHER_RECOVERY_PITR_WINDOW_DAYS` (30, ConfigMap `weather-database-policy`) and
+`WEATHER_RECOVERY_B2_VERSION_RETENTION_DAYS` (storage-infra's custody version retention) are
+set and grace ≥ max(both) + 7 days. Originals need `WEATHER_HOURLY_ARCHIVE_DELETION_ENABLED`.
+With `WEATHER_GC_ENABLED` false (the default) it only counts candidates. The scheduler runs it
+for `weather-media` only once #36 enables it and mounts a key; metrics `weather_gc_candidates`,
+`weather_gc_deletions_total`, `weather_gc_refusals_total{reason}`.
+
+### Hard purge
+
+Third-party privacy (P20) can override grace, **only on Jason's explicit instruction**:
+
+1. Withdraw the video or asset first (above), so it already answers 404.
+2. From a pod holding the bucket's key:
+
+   ```sh
+   weather media purge <asset_id> --bucket weather-media \
+     --reason third_party_privacy --actor jason
+   ```
+
+   It sets the asset `unavailable` and appends a `purged` row with the reason and actor,
+   then deletes the object; if the delete fails, rerun the same command. An original
+   (private) needs no withdrawal; run it in a pipeline pod with the originals key.
+   A recent original may still be inside a sealed staging chunk (`archival_still.chunk`,
+   `member`) until cleanup releases it. To remove it now, from the camera's pipeline pod:
+   `weather staging cleanup --camera <id> --dry-run` to see whether the chunk is already
+   eligible; if not, delete `/staging/sealed/<camera>/<chunk>` by hand only after that
+   segment's mezzanine is past it (`segment.mezzanine_through` ≥ the chunk's slot-window end),
+   and record it in the issue. The next pass marks the row `missing`.
+3. Ask storage-infra to purge the same object key from the B2 custody mirror, including its
+   hidden versions; Weather keys cannot. Database backups hold only the catalog row, never
+   the bytes.
+4. Record the instruction, the asset id and the command result in the issue that asked for
+   it.
 
 ## Failure isolation
 
