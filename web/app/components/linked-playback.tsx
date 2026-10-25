@@ -35,8 +35,8 @@ function Keogram({ video, keogram, span: segment, cursor, onSelect }: { video: T
   }, [bin]);
   if (!visible) {
     const label = state === "pending" || state === "withdrawn" || state === "failed" ? state : "unavailable";
-    const reason = keogram && (state === "failed" || state === "unavailable") && keogram.reason ? ` (${keogram.reason})` : "";
-    return <p className="notice" id="keogram-state">Keogram {label}{reason} · the recording still plays and the plots stay linked.</p>;
+    const reason = keogram && (state === "failed" || state === "unavailable") && keogram.reason ? ` Reason: ${keogram.reason}.` : "";
+    return <p className="notice" id="keogram-state">Keogram {label} · the recording still plays and the plots stay linked.{reason}</p>;
   }
   const half = epochSeconds(span.end - span.start) / KEOGRAM_BINS / 2;
   const choose = (index: number) => onSelect(binCenter(span, KEOGRAM_BINS, Math.min(KEOGRAM_BINS - 1, Math.max(0, index))));

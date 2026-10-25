@@ -52,6 +52,23 @@ export interface paths {
         readonly patch?: never;
         readonly trace?: never;
     };
+    readonly "/api/v1/keograms": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /** List Keograms */
+        readonly get: operations["listKeograms"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
     readonly "/api/v1/search": {
         readonly parameters: {
             readonly query?: never;
@@ -380,6 +397,30 @@ export interface components {
             /** Sunset */
             readonly sunset: string | null;
         };
+        /**
+         * BinMap
+         * @description Bin i is [start + i * step_seconds, start + (i + 1) * step_seconds); column i of the
+         *     image is bin i.
+         */
+        readonly BinMap: {
+            /**
+             * Count
+             * @default 1440
+             * @constant
+             */
+            readonly count: 1440;
+            /**
+             * End
+             * Format: date-time
+             */
+            readonly end: string;
+            /**
+             * Start
+             * Format: date-time
+             */
+            readonly start: string;
+            readonly step_seconds: components["schemas"]["Rational"];
+        };
         /** ComparisonItem */
         readonly ComparisonItem: {
             /** Difference */
@@ -587,6 +628,74 @@ export interface components {
             readonly state: "available" | "unavailable";
             /** Video Id */
             readonly video_id: string | null;
+        };
+        /** Keogram */
+        readonly Keogram: {
+            readonly bins: components["schemas"]["BinMap"];
+            /** Camera */
+            readonly camera: string;
+            /**
+             * Cycle Date
+             * Format: date
+             */
+            readonly cycle_date: string;
+            /** Gaps */
+            readonly gaps: readonly (readonly [
+                number,
+                number
+            ])[];
+            readonly image: components["schemas"]["Asset"] | null;
+            /**
+             * Keogram Id
+             * Format: uuid
+             */
+            readonly keogram_id: string;
+            /** Lineage Digest */
+            readonly lineage_digest: string | null;
+            /** Observed Bins */
+            readonly observed_bins: number | null;
+            /** Reason */
+            readonly reason: string | null;
+            /** Recipe */
+            readonly recipe: string | null;
+            /** Region Version */
+            readonly region_version: string | null;
+            /** Revision */
+            readonly revision: number | null;
+            /**
+             * Schema Version
+             * @default 1
+             * @constant
+             */
+            readonly schema_version: 1;
+            readonly seek: components["schemas"]["weather__api__keograms__Seek"] | null;
+            /**
+             * Segment
+             * @enum {string}
+             */
+            readonly segment: "daytime" | "overnight";
+            readonly sidecar: components["schemas"]["Asset"] | null;
+            readonly source_interval: components["schemas"]["weather__api__timelapses__Interval"];
+            /**
+             * State
+             * @enum {string}
+             */
+            readonly state: "pending" | "published" | "partial" | "unavailable" | "failed" | "withdrawn";
+            readonly thumbnail: components["schemas"]["Asset"] | null;
+            /** Updated At */
+            readonly updated_at: string | null;
+            /** Video Id */
+            readonly video_id: string | null;
+        };
+        /** KeogramPage */
+        readonly KeogramPage: {
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            readonly generated_at: string;
+            /** Items */
+            readonly items: readonly components["schemas"]["Keogram"][];
         };
         /**
          * MatchedMeasurement
@@ -877,6 +986,13 @@ export interface components {
             /** Value */
             readonly value: number | null;
         };
+        /** Rational */
+        readonly Rational: {
+            /** Denominator */
+            readonly denominator: number;
+            /** Numerator */
+            readonly numerator: number;
+        };
         /**
          * RecordItem
          * @description One local day; ranked only with at least 95% metric-duration coverage.
@@ -967,7 +1083,7 @@ export interface components {
             readonly poster_asset_id: string | null;
             /** Rank */
             readonly rank: number;
-            readonly seek: components["schemas"]["Seek"] | null;
+            readonly seek: components["schemas"]["weather__api__models__Seek"] | null;
             /**
              * Segment
              * @enum {string}
@@ -1041,19 +1157,6 @@ export interface components {
             readonly mode: "hybrid_exact" | "lexical" | "numeric";
             /** Profile Id */
             readonly profile_id: string | null;
-        };
-        /**
-         * Seek
-         * @description A playback offset inside the hit's cited media interval and its source instant.
-         */
-        readonly Seek: {
-            /** Media Seconds */
-            readonly media_seconds: number;
-            /**
-             * Source At
-             * Format: date-time
-             */
-            readonly source_at: string;
         };
         /** Still */
         readonly Still: {
@@ -1169,7 +1272,7 @@ export interface components {
              * Keogram State
              * @enum {string}
              */
-            readonly keogram_state: "pending" | "published" | "partial" | "unavailable" | "withdrawn";
+            readonly keogram_state: "pending" | "published" | "partial" | "unavailable" | "failed" | "withdrawn";
             /** Native Download Url */
             readonly native_download_url: string | null;
             readonly poster: components["schemas"]["Asset"] | null;
@@ -1223,6 +1326,25 @@ export interface components {
             readonly next_cursor: string | null;
         };
         /**
+         * Seek
+         * @description Per-bin seek targets into the video: output seconds of the mapped frame's midpoint.
+         */
+        readonly weather__api__keograms__Seek: {
+            /**
+             * Fps
+             * @default 60
+             * @constant
+             */
+            readonly fps: 60;
+            /** Output Seconds */
+            readonly output_seconds: readonly number[];
+            /**
+             * Video Id
+             * Format: uuid
+             */
+            readonly video_id: string;
+        };
+        /**
          * Interval
          * @description Half-open UTC interval [start, end).
          */
@@ -1237,6 +1359,19 @@ export interface components {
              * Format: date-time
              */
             readonly start: string;
+        };
+        /**
+         * Seek
+         * @description A playback offset inside the hit's cited media interval and its source instant.
+         */
+        readonly weather__api__models__Seek: {
+            /** Media Seconds */
+            readonly media_seconds: number;
+            /**
+             * Source At
+             * Format: date-time
+             */
+            readonly source_at: string;
         };
         /** Interval */
         readonly weather__api__stills__Interval: {
@@ -1425,6 +1560,49 @@ export interface operations {
                 };
             };
             /** @description Weather data is temporarily unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    readonly listKeograms: {
+        readonly parameters: {
+            readonly query: {
+                readonly camera?: string | null;
+                /** @description Solar cycle date, YYYY-MM-DD */
+                readonly cycle_date: string;
+                readonly segment?: string | null;
+            };
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["KeogramPage"];
+                };
+            };
+            /** @description Invalid request. */
+            readonly 400: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The catalog is temporarily unavailable. */
             readonly 503: {
                 headers: {
                     readonly [name: string]: unknown;
