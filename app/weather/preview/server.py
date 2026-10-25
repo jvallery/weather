@@ -407,9 +407,7 @@ def preview_routes(resolve: Callable[[UUID], Awaitable[Representation | None]]) 
     return [uuid_route("preview", "/media/previews/", "", resolve)]
 
 
-def build_preview_app(
-    service: PreviewService | None, origin: MediaOrigin | None
-) -> FastAPI:
+def build_preview_app(service: PreviewService | None, origin: MediaOrigin | None) -> FastAPI:
     from weather.api import MediaDispatch
 
     app = FastAPI(title="Weather previews", docs_url=None, redoc_url=None, openapi_url=None)

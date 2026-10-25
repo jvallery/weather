@@ -141,7 +141,8 @@ previews and events. Each owning issue (#18, #19, #37, #38, #39, #41, #44, #25,
 and its public view behind a security barrier. #18 has done so for
 `media_asset`, `video` and the publication tables (`0003_publication`). `0004_search` (#25) replaced the
 v1 `search_document`/`embedding_profile` design. #15 did so for
-`solar_cycle` and `segment` (`0006_render`), and #38 for the hour slots and stills (`0009_stills`).
+`solar_cycle` and `segment` (`0006_render`), and #38 for the hour slots and stills (`0009_stills`). #39 did so for `camera_preview` and
+`public_api.previews` (`0007_previews`).
 
 ## Connection and role custody
 

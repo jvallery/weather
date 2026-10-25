@@ -7,10 +7,10 @@ What this repository owns and its state: **live** (running or applied), **disabl
 | Object | Where | State |
 |---|---|---|
 | Namespace `weather` (PSA restricted), ResourceQuota `weather-budget`, LimitRange `weather-defaults` | `namespace.yaml`, `guardrails.yaml` | live |
-| Tokenless ServiceAccounts `api`, `web`, `migrate`, `scheduler`, `intel`, `tempest-receiver`, `collector-<camera>` ×3, `pipeline-<camera>` ×3 | `serviceaccounts.yaml` | live |
+| Tokenless ServiceAccounts `api`, `web`, `migrate`, `scheduler`, `intel`, `tempest-receiver`, `collector-<camera>` ×3, `pipeline-<camera>` ×3, `weather-preview` | `serviceaccounts.yaml` | live |
 | NetworkPolicies `default-deny`, `api-ingress`, `api-garage-egress`, `web-ingress`, `web-egress` | `network-policy.yaml` | live |
 | Deployments `api` ×2 and `web` ×2, their Services and PDBs | `application.yaml` | live |
-| IngressRoute `weather` (incl. `/media/` and `/downloads/` to api), Middlewares `weather-rate-limit`, `weather-security-headers`, `weather-media-in-flight` (`weather.vallery.net`) | `ingress.yaml` | live |
+| IngressRoute `weather` (incl. `/media/` and `/downloads/` to api, `/api/v1/cameras/<camera>/preview` and `/media/previews/` to `weather-preview`), Middlewares `weather-rate-limit`, `weather-security-headers`, `weather-media-in-flight` (`weather.vallery.net`) | `ingress.yaml` | live |
 | CNPG Cluster `weather-pg` (3 instances, PVCs `weather-pg-1..3`), ObjectStore `weather-pg-b2`, ScheduledBackup `weather-pg-daily`, ConfigMap `weather-database-policy`, NetworkPolicies `weather-pg`, `weather-database-clients`; `Prune=false,Delete=false` | `database/` | live |
 | CNPG-generated Secrets `weather-pg-ca`, `-server`, `-replication`, `-pull`, Roles/RoleBindings `weather-pg`, `weather-pg-barman-cloud`, PDBs `weather-pg`, `weather-pg-primary` | operator-owned children of `weather-pg` | live |
 | Job `weather-migrate` (Argo Sync hook, wave 1) and NetworkPolicy `migrate` | `migrate/` | live |
@@ -26,7 +26,10 @@ What this repository owns and its state: **live** (running or applied), **disabl
 | Job `weather-pipeline-bench` (disposable throughput check) | `pipeline/bench-job.yaml`, never in a kustomization | applied by hand, then deleted |
 | StatefulSets `collector-skycam-east`, `-skycam-west`, `-frontyard-1` ×1, ConfigMap `collector-capture-<hash>`, NetworkPolicy `collector`, PVC `weather-staging` (binds the storage-infra PV; `Prune=false,Delete=false`) | `capture/`; runbook [capture](docs/operations/capture.md) | live (#4, 0.5 Hz epoch) |
 | Deployment `tempest-receiver` ×1 (Recreate, node6/node7), ConfigMap `tempest-receiver`, PVC `tempest-receiver-spool` (1 GiB `longhorn-v1-rwo`, `Prune=false,Delete=false`), NetworkPolicy `tempest-receiver` | `receiver/`; runbook [tempest-ingest](docs/operations/tempest-ingest.md) | live (#5) |
-| `weather-preview`, `intel` | — | planned (#39, #23) |
+| Deployment `weather-preview` ×1 (staging `previews/` read-only, `weather-pg-api`), Service and NetworkPolicy `weather-preview` | `preview/`; runbook [media](docs/operations/media.md#previews) | rendered at `replicas: 0`; the promote commit that pins an image with `weather preview` sets 1 (#39); serves `no_preview` until the pipelines run (#49) |
+| Schema `0007_previews`: `camera_preview`, security-barrier `public_api.previews` (API role), worker insert/delete | `app/migrations/versions/0007_previews.py` | applied with the next app pin (#39) |
+| Preview producer in each `pipeline-<camera>`; files `previews/<camera>/` on the staging share (about 1 h) | `app/weather/preview/` | source (#39); runs when #49 enables the pipelines |
+| `intel` | — | planned (#23) |
 | Images `weather-app`, `weather-web` (digests in `kustomization.yaml`) | `registry.vallery.net/jvallery/` | live |
 | Images `weather-python-base`, `weather-node-base`, `weather-ci` | `registry.vallery.net/jvallery/` | live |
 
