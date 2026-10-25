@@ -59,10 +59,12 @@ All frames 4096 × 1856, every frame a distinct hash (fresh-frame rate 1.0). Col
   0.5 Hz, night frames give ~113 GB/day; the daytime E06 sizes (above) give ~301 GB/day; a
   day/night mix is ~200 GB/day, so the 300 GiB share reaches 70% in about 26 h without #19
   cleanup. At 1 Hz that halves to about 13 h.
-- **Cadence × shutter.** The timelapse plays 60 fps; at the default 180° shutter rule each
-  output frame represents twice the capture interval, so 0.5 Hz captures cost half the NAS
-  of 1 Hz with no loss at the published playback rate. 1 Hz only adds value for slower
-  playback or interpolation (#16), and doubles staging fill until #19 runs.
+- **Cadence × shutter.** The 7,200-frame cycle gives a source step of about 12 s for a 12 h
+  segment, so the default 180° shutter is about 6 s wide (D10). Each capture supports half
+  the expected interval on each side, so at 0.5 Hz about three captures fill the shutter
+  (coverage 1.0); 1 Hz blends about six for smoother motion at twice the NAS cost. A
+  realised 0.25 Hz against a 2 s expected interval covers only about half of each shutter,
+  below the 0.90 minimum, so #119 must be live before #15 renders this input.
 - **Frigate.** Before (01:13 UTC) and after (04:15 UTC): camera and process fps 5.0 on all
   three, skipped fps 0, no detect or record errors, Frigate container restarts unchanged.
   skycam_west's audio-only ffmpeg reconnected three times between 03:09 and 03:34 UTC (one
