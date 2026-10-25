@@ -12,6 +12,7 @@ const almanac = Object.fromEntries(["record", "rain_day", "wind_rose_bin", "astr
 const events = JSON.parse(readFileSync(new URL("../app/fixtures/events.json", import.meta.url)));
 const stills = JSON.parse(readFileSync(new URL("../app/fixtures/stills.json", import.meta.url)));
 const search = JSON.parse(readFileSync(new URL("../app/fixtures/search.json", import.meta.url)));
+const analyses = JSON.parse(readFileSync(new URL("../app/fixtures/analysis.json", import.meta.url)));
 const media = new URL("../.test-media/clip.mp4", import.meta.url);
 const poster = new URL("../.test-media/poster.jpg", import.meta.url);
 const keogramImage = new URL("../.test-media/keogram.jpg", import.meta.url);
@@ -60,6 +61,8 @@ function snapshot() {
   const result = structuredClone(catalog);
   for (const video of result.items) {
     if (state.productState) video.state = state.productState;
+    if (state.analysis) video.analysis = structuredClone(analyses[state.analysis]);
+    if (state.description) video.analysis.description = state.description;
     if (state.reason) video.reason = state.reason;
     for (const rendition of video.renditions) rendition.asset.bytes = statSync(media).size;
     if (video.poster) video.poster.bytes = statSync(poster).size;

@@ -1,0 +1,126 @@
+# AI descriptions and embeddings (#23): one replica, Recreate, one Cortex call in flight across
+# processes (Postgres advisory lock). Reads weather-media with the read-only reader key only.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: intel
+  namespace: weather
+  labels: &id001
+    app.kubernetes.io/part-of: weather
+    app.kubernetes.io/component: intel
+    app.kubernetes.io/name: intel
+    weather.vallery.net/database-role: worker
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: *id001
+  template:
+    metadata:
+      labels: *id001
+    spec:
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      serviceAccountName: intel
+      imagePullSecrets:
+      - name: zot-origin-cluster-pull
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+        fsGroup: 10001
+      containers:
+      - name: intel
+        image: weather-app
+        command:
+        - weather
+        - intel
+        - serve
+        env:
+        - name: DATABASE_CREDENTIAL_DIRECTORY
+          value: /var/run/weather-db
+        - name: METRICS_PORT
+          value: '9000'
+        - name: WEATHER_CORTEX_BASE_URL
+          value: https://cortex.vallery.net/v1
+        - name: GARAGE_ENDPOINT
+          value: https://s3-hdd.vallery.net
+        - name: GARAGE_CREDENTIAL_DIRECTORY
+          value: /var/run/weather-garage
+        - name: TMPDIR
+          value: /work
+        resources:
+          # One rendition download and one FFmpeg decode pass at a time.
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: '2'
+            memory: 2Gi
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        ports:
+        - name: metrics
+          containerPort: 9000
+        volumeMounts:
+        - name: database
+          mountPath: /var/run/weather-db
+          readOnly: true
+        - name: cortex
+          mountPath: /var/run/weather-cortex
+          readOnly: true
+        - name: garage-media
+          mountPath: /var/run/weather-garage/weather-media
+          readOnly: true
+        - name: work
+          mountPath: /work
+      volumes:
+      - name: database
+        projected:
+          defaultMode: 288
+          sources:
+          - secret:
+              name: weather-pg-worker
+              items:
+              - key: username
+                path: username
+              - key: password
+                path: password
+          - secret:
+              name: weather-pg-ca
+              items:
+              - key: ca.crt
+                path: ca.crt
+      - name: cortex
+        secret:
+          secretName: weather-cortex
+          defaultMode: 288
+          items:
+          - key: api_key.txt
+            path: api_key.txt
+      # The read-only weather-media key; never the writer or the originals bucket.
+      - name: garage-media
+        secret:
+          secretName: weather-media-s3-reader
+          defaultMode: 288
+          items:
+          - key: AWS_ACCESS_KEY_ID
+            path: access_key_id
+          - key: AWS_SECRET_ACCESS_KEY
+            path: secret_access_key
+      - name: work
+        emptyDir:
+          sizeLimit: 4Gi
+      terminationGracePeriodSeconds: 150

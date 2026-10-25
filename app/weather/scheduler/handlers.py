@@ -2,9 +2,11 @@
 """Source-owned job handlers and the periodic work the scheduler tick enqueues."""
 
 from datetime import UTC, date, datetime, timedelta
+from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from weather.ai import store as analysis
 from weather.db import jobs
 from weather.db.days import ensure_days
 from weather.events import job as events
@@ -29,7 +31,18 @@ async def days(context: JobContext) -> None:
 
 
 async def media_changed(context: JobContext) -> None:
-    """Routes publication events so they never quarantine. Consumers (search #25) extend it."""
+    """Publication events: a committed video queues its AI description (#23); a withdrawn video
+    loses its search documents and visual events in the same transaction."""
+    payload = context.job.payload
+    now = datetime.now(UTC)
+
+    async def write(connection: AsyncConnection) -> None:
+        if payload.get("product") == "video" and "publication_id" in payload:
+            await analysis.on_published(connection, UUID(str(payload["publication_id"])), now)
+        elif payload.get("target") == "video" and "id" in payload:
+            await analysis.on_withdrawn(connection, UUID(str(payload["id"])), now)
+
+    await context.commit(write)
 
 
 async def periodic(connection: AsyncConnection, now: datetime) -> None:

@@ -13,6 +13,7 @@ from typing import Any, Protocol
 
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from weather.api.models import Aggregate
 from weather.api.registry import DEFAULT_CADENCES, sourced
 from weather.api.service import summarize, whole_bin
 from weather.api.source import SourceUnavailable, WeatherReader
@@ -52,33 +53,41 @@ class AggregateWeather:
         # One aggregate at a time and a generous statement budget: this is background work.
         self.reader = WeatherReader(engine, aggregate_ms=30000, aggregate_slots=1)
 
-    async def summary(self, start: datetime, end: datetime) -> dict[str, Any] | None:
+    async def aggregates(
+        self, start: datetime, end: datetime, metrics: tuple[tuple[str, tuple[str, ...]], ...]
+    ) -> list[Aggregate]:
+        """One whole-interval aggregate per (metric, statistic), in order (also #23's packet)."""
         bins = whole_bin(start, end)
-        items: list[dict[str, Any]] = []
+        items: list[Aggregate] = []
+        for metric, statistics in metrics:
+            entry, source = sourced(metric)
+            rows, rose = await self.reader.aggregates(
+                source,
+                bins,
+                cap=timedelta(seconds=DEFAULT_CADENCES[source.family].cap_seconds),
+                wind=metric == "wind_direction",
+                rose=False,
+            )
+            items.extend(summarize(entry, list(statistics), bins, rows, rose))
+        return items
+
+    async def summary(self, start: datetime, end: datetime) -> dict[str, Any] | None:
         try:
-            for metric, statistics in SUMMARY:
-                entry, source = sourced(metric)
-                rows, rose = await self.reader.aggregates(
-                    source,
-                    bins,
-                    cap=timedelta(seconds=DEFAULT_CADENCES[source.family].cap_seconds),
-                    wind=metric == "wind_direction",
-                    rose=False,
-                )
-                for aggregate in summarize(entry, list(statistics), bins, rows, rose):
-                    items.append(
-                        {
-                            "metric": aggregate.metric,
-                            "statistic": aggregate.statistic,
-                            "value": aggregate.value,
-                            "unit": aggregate.unit,
-                            "coverage": aggregate.coverage.fraction,
-                            "evidence_count": aggregate.evidence_count,
-                        }
-                    )
+            aggregates = await self.aggregates(start, end, SUMMARY)
         except SourceUnavailable:
             LOG.warning("Weather summary read failed; will retry")
             raise
+        items = [
+            {
+                "metric": aggregate.metric,
+                "statistic": aggregate.statistic,
+                "value": aggregate.value,
+                "unit": aggregate.unit,
+                "coverage": aggregate.coverage.fraction,
+                "evidence_count": aggregate.evidence_count,
+            }
+            for aggregate in aggregates
+        ]
         return {
             "interval": {"start": start.isoformat(), "end": end.isoformat()},
             "source": "aggregates/v1",

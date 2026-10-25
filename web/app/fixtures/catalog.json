@@ -75,7 +75,53 @@
       },
       "native_download_url": "/downloads/9bce6d37-455a-5be9-bfe2-991a7fb3fdfc/native",
       "keogram_state": "pending",
-      "keogram": null
+      "keogram": null,
+      "analysis": {
+        "label": "AI-generated · sampled-frame analysis",
+        "state": "complete",
+        "reason": null,
+        "stale": false,
+        "revision": 2,
+        "generated_at": "2026-11-01T09:00:00Z",
+        "description": "Synthetic fixture: broken clouds drifted across the sky through the morning. Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+        "claims": [
+          {
+            "text": "Synthetic fixture: broken clouds drifted across the sky through the morning.",
+            "basis": "visual"
+          },
+          {
+            "text": "Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+            "basis": "instrument"
+          }
+        ],
+        "limitations": [
+          "Some hours could not be reviewed visually."
+        ],
+        "coverage": {
+          "algorithm_revision": "hour-windows-v1",
+          "reviewed_seconds": 39600,
+          "expected_seconds": 45000,
+          "fraction": 0.88,
+          "windows_reviewed": 11,
+          "windows_total": 13,
+          "gaps": [
+            {
+              "start": "2026-10-31T23:00:00Z",
+              "end": "2026-11-01T01:00:00Z"
+            }
+          ]
+        },
+        "provenance": {
+          "model_route": "llm.primary.longctx.mm",
+          "model": "synthetic-model",
+          "prompt_revision": "1f2e3d4c5b6a7980",
+          "schema_revision": "0a1b2c3d4e5f6071",
+          "refresh": "full",
+          "evidence_count": 750,
+          "frames_sampled": 88,
+          "keogram_used": true
+        }
+      }
     },
     {
       "schema_version": 1,
@@ -151,7 +197,53 @@
       },
       "native_download_url": "/downloads/ad463d8c-56d3-577e-b9a1-b0fac451babf/native",
       "keogram_state": "unavailable",
-      "keogram": null
+      "keogram": null,
+      "analysis": {
+        "label": "AI-generated · sampled-frame analysis",
+        "state": "complete",
+        "reason": null,
+        "stale": false,
+        "revision": 2,
+        "generated_at": "2026-11-01T09:00:00Z",
+        "description": "Synthetic fixture: broken clouds drifted across the sky through the morning. Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+        "claims": [
+          {
+            "text": "Synthetic fixture: broken clouds drifted across the sky through the morning.",
+            "basis": "visual"
+          },
+          {
+            "text": "Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+            "basis": "instrument"
+          }
+        ],
+        "limitations": [
+          "Some hours could not be reviewed visually."
+        ],
+        "coverage": {
+          "algorithm_revision": "hour-windows-v1",
+          "reviewed_seconds": 39600,
+          "expected_seconds": 45000,
+          "fraction": 0.88,
+          "windows_reviewed": 11,
+          "windows_total": 13,
+          "gaps": [
+            {
+              "start": "2026-10-31T23:00:00Z",
+              "end": "2026-11-01T01:00:00Z"
+            }
+          ]
+        },
+        "provenance": {
+          "model_route": "llm.primary.longctx.mm",
+          "model": "synthetic-model",
+          "prompt_revision": "1f2e3d4c5b6a7980",
+          "schema_revision": "0a1b2c3d4e5f6071",
+          "refresh": "full",
+          "evidence_count": 750,
+          "frames_sampled": 88,
+          "keogram_used": true
+        }
+      }
     },
     {
       "schema_version": 1,
@@ -227,7 +319,53 @@
       },
       "native_download_url": "/downloads/c586ac04-b19c-5e40-a985-9efebee88673/native",
       "keogram_state": "pending",
-      "keogram": null
+      "keogram": null,
+      "analysis": {
+        "label": "AI-generated · sampled-frame analysis",
+        "state": "complete",
+        "reason": null,
+        "stale": false,
+        "revision": 2,
+        "generated_at": "2026-11-01T09:00:00Z",
+        "description": "Synthetic fixture: broken clouds drifted across the sky through the morning. Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+        "claims": [
+          {
+            "text": "Synthetic fixture: broken clouds drifted across the sky through the morning.",
+            "basis": "visual"
+          },
+          {
+            "text": "Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+            "basis": "instrument"
+          }
+        ],
+        "limitations": [
+          "Some hours could not be reviewed visually."
+        ],
+        "coverage": {
+          "algorithm_revision": "hour-windows-v1",
+          "reviewed_seconds": 39600,
+          "expected_seconds": 45000,
+          "fraction": 0.88,
+          "windows_reviewed": 11,
+          "windows_total": 13,
+          "gaps": [
+            {
+              "start": "2026-10-31T23:00:00Z",
+              "end": "2026-11-01T01:00:00Z"
+            }
+          ]
+        },
+        "provenance": {
+          "model_route": "llm.primary.longctx.mm",
+          "model": "synthetic-model",
+          "prompt_revision": "1f2e3d4c5b6a7980",
+          "schema_revision": "0a1b2c3d4e5f6071",
+          "refresh": "full",
+          "evidence_count": 750,
+          "frames_sampled": 88,
+          "keogram_used": true
+        }
+      }
     },
     {
       "schema_version": 1,
@@ -311,6 +449,52 @@
         "bytes": 1,
         "width": 1440,
         "height": 64
+      },
+      "analysis": {
+        "label": "AI-generated · sampled-frame analysis",
+        "state": "complete",
+        "reason": null,
+        "stale": false,
+        "revision": 2,
+        "generated_at": "2026-11-01T09:00:00Z",
+        "description": "Synthetic fixture: broken clouds drifted across the sky through the morning. Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+        "claims": [
+          {
+            "text": "Synthetic fixture: broken clouds drifted across the sky through the morning.",
+            "basis": "visual"
+          },
+          {
+            "text": "Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+            "basis": "instrument"
+          }
+        ],
+        "limitations": [
+          "Some hours could not be reviewed visually."
+        ],
+        "coverage": {
+          "algorithm_revision": "hour-windows-v1",
+          "reviewed_seconds": 39600,
+          "expected_seconds": 45000,
+          "fraction": 0.88,
+          "windows_reviewed": 11,
+          "windows_total": 13,
+          "gaps": [
+            {
+              "start": "2026-10-31T23:00:00Z",
+              "end": "2026-11-01T01:00:00Z"
+            }
+          ]
+        },
+        "provenance": {
+          "model_route": "llm.primary.longctx.mm",
+          "model": "synthetic-model",
+          "prompt_revision": "1f2e3d4c5b6a7980",
+          "schema_revision": "0a1b2c3d4e5f6071",
+          "refresh": "full",
+          "evidence_count": 750,
+          "frames_sampled": 88,
+          "keogram_used": true
+        }
       }
     },
     {
@@ -387,7 +571,53 @@
       },
       "native_download_url": "/downloads/3bd41fd8-0dd2-5fa6-967b-c9494c1b0418/native",
       "keogram_state": "pending",
-      "keogram": null
+      "keogram": null,
+      "analysis": {
+        "label": "AI-generated · sampled-frame analysis",
+        "state": "complete",
+        "reason": null,
+        "stale": false,
+        "revision": 2,
+        "generated_at": "2026-11-01T09:00:00Z",
+        "description": "Synthetic fixture: broken clouds drifted across the sky through the morning. Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+        "claims": [
+          {
+            "text": "Synthetic fixture: broken clouds drifted across the sky through the morning.",
+            "basis": "visual"
+          },
+          {
+            "text": "Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+            "basis": "instrument"
+          }
+        ],
+        "limitations": [
+          "Some hours could not be reviewed visually."
+        ],
+        "coverage": {
+          "algorithm_revision": "hour-windows-v1",
+          "reviewed_seconds": 39600,
+          "expected_seconds": 45000,
+          "fraction": 0.88,
+          "windows_reviewed": 11,
+          "windows_total": 13,
+          "gaps": [
+            {
+              "start": "2026-10-31T23:00:00Z",
+              "end": "2026-11-01T01:00:00Z"
+            }
+          ]
+        },
+        "provenance": {
+          "model_route": "llm.primary.longctx.mm",
+          "model": "synthetic-model",
+          "prompt_revision": "1f2e3d4c5b6a7980",
+          "schema_revision": "0a1b2c3d4e5f6071",
+          "refresh": "full",
+          "evidence_count": 750,
+          "frames_sampled": 88,
+          "keogram_used": true
+        }
+      }
     },
     {
       "schema_version": 1,
@@ -463,7 +693,53 @@
       },
       "native_download_url": "/downloads/6edbf680-b618-521b-a006-e85551348ce9/native",
       "keogram_state": "pending",
-      "keogram": null
+      "keogram": null,
+      "analysis": {
+        "label": "AI-generated · sampled-frame analysis",
+        "state": "complete",
+        "reason": null,
+        "stale": false,
+        "revision": 2,
+        "generated_at": "2026-11-01T09:00:00Z",
+        "description": "Synthetic fixture: broken clouds drifted across the sky through the morning. Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+        "claims": [
+          {
+            "text": "Synthetic fixture: broken clouds drifted across the sky through the morning.",
+            "basis": "visual"
+          },
+          {
+            "text": "Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+            "basis": "instrument"
+          }
+        ],
+        "limitations": [
+          "Some hours could not be reviewed visually."
+        ],
+        "coverage": {
+          "algorithm_revision": "hour-windows-v1",
+          "reviewed_seconds": 39600,
+          "expected_seconds": 45000,
+          "fraction": 0.88,
+          "windows_reviewed": 11,
+          "windows_total": 13,
+          "gaps": [
+            {
+              "start": "2026-10-31T23:00:00Z",
+              "end": "2026-11-01T01:00:00Z"
+            }
+          ]
+        },
+        "provenance": {
+          "model_route": "llm.primary.longctx.mm",
+          "model": "synthetic-model",
+          "prompt_revision": "1f2e3d4c5b6a7980",
+          "schema_revision": "0a1b2c3d4e5f6071",
+          "refresh": "full",
+          "evidence_count": 750,
+          "frames_sampled": 88,
+          "keogram_used": true
+        }
+      }
     },
     {
       "schema_version": 1,
@@ -539,7 +815,53 @@
       },
       "native_download_url": "/downloads/c3196c44-e775-557b-a1c1-cabebcc0e45a/native",
       "keogram_state": "pending",
-      "keogram": null
+      "keogram": null,
+      "analysis": {
+        "label": "AI-generated · sampled-frame analysis",
+        "state": "complete",
+        "reason": null,
+        "stale": false,
+        "revision": 2,
+        "generated_at": "2026-11-01T09:00:00Z",
+        "description": "Synthetic fixture: broken clouds drifted across the sky through the morning. Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+        "claims": [
+          {
+            "text": "Synthetic fixture: broken clouds drifted across the sky through the morning.",
+            "basis": "visual"
+          },
+          {
+            "text": "Measured temperature ranged from 3.2°C (37.8°F) to 14.8°C (58.6°F).",
+            "basis": "instrument"
+          }
+        ],
+        "limitations": [
+          "Some hours could not be reviewed visually."
+        ],
+        "coverage": {
+          "algorithm_revision": "hour-windows-v1",
+          "reviewed_seconds": 39600,
+          "expected_seconds": 45000,
+          "fraction": 0.88,
+          "windows_reviewed": 11,
+          "windows_total": 13,
+          "gaps": [
+            {
+              "start": "2026-10-31T23:00:00Z",
+              "end": "2026-11-01T01:00:00Z"
+            }
+          ]
+        },
+        "provenance": {
+          "model_route": "llm.primary.longctx.mm",
+          "model": "synthetic-model",
+          "prompt_revision": "1f2e3d4c5b6a7980",
+          "schema_revision": "0a1b2c3d4e5f6071",
+          "refresh": "full",
+          "evidence_count": 750,
+          "frames_sampled": 88,
+          "keogram_used": true
+        }
+      }
     }
   ],
   "next_cursor": null
