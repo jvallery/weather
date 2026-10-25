@@ -870,10 +870,10 @@ def test_gc_kept_supersedes_gc_deleted_when_a_publish_intervenes(
                 INSERT INTO weather.upload_intent (fence,product,camera_id,product_key,
                   expected_revision,manifest,state,reason,deadline,created_at,resolved_at)
                 VALUES (nextval('weather.publication_fence'),'video',:c,:k,0,
-                  CAST(:m AS jsonb),:state,:reason,
+                  CAST(:m AS jsonb),CAST(:state AS varchar),:reason,
                   clock_timestamp() - make_interval(days => :age) + interval '1 hour',
                   clock_timestamp() - make_interval(days => :age),
-                  CASE WHEN :state = 'pending' THEN NULL
+                  CASE WHEN CAST(:state AS varchar) = 'pending' THEN NULL
                        ELSE clock_timestamp() - make_interval(days => :age) END)
             """
             await admin(insert, c=CAMERA, k="2020-02-01/daytime", m=manifest, state="orphan",
