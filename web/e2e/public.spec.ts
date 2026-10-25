@@ -147,11 +147,12 @@ test("safe interpretation text, lifecycle states and quality preservation", asyn
   await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.readyState)).toBeGreaterThanOrEqual(1);
   expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
   await video.evaluate((element: HTMLVideoElement) => { element.currentTime = 12; });
-  const webSource = await video.getAttribute("src");
+  const playing = () => video.evaluate((element: HTMLVideoElement) => element.currentSrc && new URL(element.currentSrc).pathname);
+  const webSource = await playing();
   expect(webSource).toMatch(/^\/media\/[0-9a-f-]{36}$/);
   await page.getByLabel("Playback quality").selectOption("mobile");
-  await expect(video).not.toHaveAttribute("src", webSource!);
-  await expect(video).toHaveAttribute("src", /^\/media\/[0-9a-f-]{36}$/);
+  await expect.poll(playing).not.toBe(webSource);
+  await expect.poll(playing).toMatch(/^\/media\/[0-9a-f-]{36}$/);
   await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime)).toBeCloseTo(12, 0);
   // A partial-coverage recording stays playable and says so (C6).
   await request.post("http://localhost:4174/__control", { data: { productState: "partial" } });
@@ -240,6 +241,23 @@ test("a failed lazy chunk reloads the page exactly once", async ({ page, request
   await page.waitForTimeout(3000);
   expect(loads).toBe(2); expect(aborted).toBeGreaterThanOrEqual(2);
   expect(Number(await page.evaluate(() => sessionStorage.getItem("weather:chunk-reload")))).toBeGreaterThan(0);
+});
+test("leaving a page while its lazy chunk is still loading navigates, never reloads", async ({ page, request }) => {
+  const documentAssets = new Set([...(await (await request.get("/weather/history/")).text()).matchAll(/\/assets\/[^"'\s]+\.js/g)].map((match) => match[0]));
+  let held = 0, loads = 0;
+  // The lazily imported chart chunk never arrives, so it is in flight when the visitor navigates away.
+  const chunks = /\/assets\/[^/]+\.js$/;
+  await page.route(chunks, (route) => { if (documentAssets.has(new URL(route.request().url()).pathname)) return route.continue(); held += 1; });
+  await page.goto("/weather/history/");
+  await expect.poll(() => held).toBeGreaterThan(0);
+  // The held import stays in flight; the next page's own assets load normally.
+  await page.unroute(chunks);
+  page.on("load", () => { loads += 1; });
+  await page.goto("/about/");
+  await expect(page).toHaveURL(/\/about\/$/);
+  await page.waitForTimeout(1000);
+  expect(loads).toBe(1);
+  expect(await page.evaluate(() => sessionStorage.getItem("weather:chunk-reload"))).toBeNull();
 });
 
 // Embed card (#45): framing policy per route, cookie-free same-origin loading, no-JS snapshot, accessibility.
@@ -423,7 +441,7 @@ test("a copied ?t= link restores camera, segment and cursor in a fresh context",
   agree(await linked(fresh), "2026-10-31T12:30:00Z");
   await context.close();
 });
-test("keyboard-only seek, a text summary, axe on the linked page, one player and bounded points on mobile", async ({ page }) => {
+test("keyboard-only seek, a text summary, axe on the linked page, one player and bounded points on mobile", async ({ page, request }) => {
   await page.setViewportSize({ width: 320, height: 900 });
   const points: number[] = [];
   page.on("response", async (response) => { if (new URL(response.url()).pathname === "/api/v1/weather/aggregates") points.push(((await response.json()) as { items: unknown[] }).items.length); });
@@ -445,6 +463,10 @@ test("keyboard-only seek, a text summary, axe on the linked page, one player and
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze()).violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await expect(page.locator("video")).toHaveCount(1);
+  // The browser selects one rendition, once: a phone never fetches the web rendition too. Counted at
+  // the fixture media origin, since WebKit does not surface media loads as Playwright media requests.
+  const requested = (await (await request.get("http://localhost:4174/__media")).json()) as { videos: string[] };
+  expect(requested.videos).toEqual([await page.locator("video").evaluate((element: HTMLVideoElement) => new URL(element.currentSrc).pathname)]);
   await expect.poll(() => points.length).toBe(3);
   expect(points.reduce((sum, count) => sum + count, 0)).toBeLessThan(5000);
 });

@@ -144,9 +144,11 @@ before axe runs. Axe's own WebKit elements-from-point polyfill writes inline poi
 that tooling noise is separated after the pre-scan assertion while all WCAG rules and non-style CSP
 checks remain enabled. Production CSP is unchanged and allows neither inline scripts nor eval.
 
-Rendition changes retain the current loaded playhead; pending seeks survive additional switches
-while new metadata is loading. Initial viewport detection does not retain a stale zero snapshot
-when the automatic role is unchanged. Framework errors use bounded renderer metrics; the default
+Auto quality is chosen once by the browser's own resource selection over `<source>` media queries
+(mobile at ≤767 px, else web), identically with or without JavaScript; a viewport change after load
+never swaps media, so a phone fetches one rendition. Only a user quality change reloads, and it
+retains the current loaded playhead; pending seeks survive additional switches while new metadata is
+loading. Framework errors use bounded renderer metrics; the default
 React Router URL/stack logger is overridden so only the server's route-template/status/latency log
 is emitted. The first real three-engine fixture run and its failed result remain retained for
 comparison; a failed run is never treated as acceptance.

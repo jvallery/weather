@@ -5,6 +5,7 @@ import { playable, type Timelapse } from "../lib/weather-api";
 export type SeekRequest = { seconds: number; serial: number };
 type FrameCallback = (now: number, metadata: { mediaTime: number }) => void;
 type FrameVideo = HTMLVideoElement & { requestVideoFrameCallback?: (callback: FrameCallback) => number; cancelVideoFrameCallback?: (handle: number) => void };
+const MOBILE = "(max-width: 767px)";
 
 /**
  * Native playback. The route controller owns time: it sends seek requests and receives player
@@ -24,21 +25,15 @@ export function VideoPlayer({ video, seek = null, onTime, coverageLabel = null }
     else pendingSeek.current = seek.seconds;
   }, [seek]);
   const [quality, setQuality] = useState("auto");
+  // Auto quality is chosen once, natively, by the browser's resource selection over <source> media
+  // queries (server and client render the same markup, and it works without JavaScript). A later
+  // viewport change never swaps media: a post-hydration swap downloaded both renditions on phones.
+  // The label mirrors the browser's one-time choice.
   const [autoRole, setAutoRole] = useState("web");
-  const previousAutoRole = useRef("web");
-  useEffect(() => {
-    if (typeof window.matchMedia !== "function") return;
-    const media = window.matchMedia("(max-width: 767px)");
-    const changed = () => {
-      const element = player.current;
-      const nextRole = media.matches ? "mobile" : "web";
-      if (quality === "auto" && nextRole !== previousAutoRole.current && element && element.readyState >= 1) resume.current = { time: element.currentTime, playing: !element.paused };
-      previousAutoRole.current = nextRole;
-      setAutoRole(nextRole);
-    };
-    changed(); media.addEventListener("change", changed);
-    return () => media.removeEventListener("change", changed);
-  }, [quality]);
+  useEffect(() => { if (typeof window.matchMedia === "function" && window.matchMedia(MOBILE).matches) setAutoRole("mobile"); }, []);
+  // <source> children are not re-selected on their own, so only a quality change reloads.
+  const selected = useRef(quality);
+  useEffect(() => { if (selected.current === quality) return; selected.current = quality; player.current?.load(); }, [quality]);
   // While playing, report each presented frame's media time (timeupdate is only ~4 Hz).
   const frameLoop = useRef<number | null>(null);
   const stopLoop = () => { const element = player.current; if (frameLoop.current !== null && element?.cancelVideoFrameCallback) element.cancelVideoFrameCallback(frameLoop.current); frameLoop.current = null; };
@@ -55,12 +50,14 @@ export function VideoPlayer({ video, seek = null, onTime, coverageLabel = null }
   const role = quality === "auto" ? autoRole : quality;
   const rendition = video.renditions.find((item) => item.role === role)!;
   const native = video.renditions.find((item) => item.role === "native")!;
+  const source = (item: string) => video.renditions.find((entry) => entry.role === item)!.asset.url;
+  const sources = quality === "auto" ? [{ role: "mobile", media: MOBILE }, { role: "web", media: undefined }] : [{ role: quality, media: undefined }];
   // A report taken mid-seek would carry the old position; the seeked event reports the new one.
   const time = () => { const element = player.current; if (element && !element.seeking) report.current?.(element.currentTime); };
   return <section aria-labelledby="playback-title"><h2 id="playback-title">Recording</h2>
     <p id="playback-note">Silent, accelerated weather recording at 60 frames per second. Source times follow.</p>
     {video.state === "partial" && <p id="coverage-label" className="notice">{coverageLabel || "Partial coverage · this recording has gaps."}</p>}
-    <video ref={player} aria-describedby={video.state === "partial" ? "playback-note coverage-label" : "playback-note"} controls muted playsInline preload="metadata" poster={video.poster!.url} src={rendition.asset.url}
+    <video ref={player} aria-describedby={video.state === "partial" ? "playback-note coverage-label" : "playback-note"} controls muted playsInline preload="metadata" poster={video.poster!.url}
       onPlay={(event) => { document.querySelectorAll("video").forEach((other) => { if (other !== event.currentTarget) other.pause(); }); startLoop(); }}
       onPause={() => { stopLoop(); time(); }} onSeeked={time} onTimeUpdate={time} onEnded={time}
       onLoadedMetadata={() => {
@@ -75,6 +72,7 @@ export function VideoPlayer({ video, seek = null, onTime, coverageLabel = null }
           resume.current = null;
         }
       }}>
+      {sources.map((item) => <source key={item.role} src={source(item.role)} media={item.media} />)}
       Your browser cannot play this recording. Use the native download below.
     </video>
     <div className="filters"><label htmlFor="quality">Playback quality<select id="quality" value={quality} onChange={(event) => {

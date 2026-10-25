@@ -16,6 +16,8 @@ const poster = new URL("../.test-media/poster.jpg", import.meta.url);
 const keogramImage = new URL("../.test-media/keogram.jpg", import.meta.url);
 let state = {};
 let serial = 0;
+// Video rendition paths requested since the last /__control reset, as the media origin sees them.
+let videoRequests = new Set();
 function json(res, value, status = 200) { res.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store" }); res.end(JSON.stringify(value)); }
 // Synthetic slate ranges (non-uniform) per video; every sidecar reports 95% slot coverage.
 const GAPS = { "skycam_east/2026-10-31/daytime": [[1200, 1272], [2000, 2003]], "skycam_west/2026-10-31/overnight": [[600, 601], [1800, 1950]] };
@@ -97,8 +99,9 @@ createServer(async (req, res) => {
   if (url.pathname === "/__control" && req.method === "POST") {
     let body = "";
     for await (const chunk of req) { body += chunk; if (body.length > 16_384) { res.writeHead(413); return res.end(); } }
-    state = JSON.parse(body || "{}"); serial = 0; return json(res, { ok: true });
+    state = JSON.parse(body || "{}"); serial = 0; videoRequests = new Set(); return json(res, { ok: true });
   }
+  if (url.pathname === "/__media" && req.method === "GET") return json(res, { videos: [...videoRequests].sort() });
   if (url.pathname === "/healthz") return json(res, { ok: true });
   if (state.apiUnavailable && url.pathname.startsWith("/api/v1/weather/")) return json(res, { code: "synthetic-unavailable" }, 503);
   if (state.delayMs && url.pathname.startsWith("/api/")) await delay(Math.min(Number(state.delayMs), 5000));
@@ -148,6 +151,7 @@ createServer(async (req, res) => {
   if (url.pathname.startsWith("/media/")) {
     const found = asset(url.pathname.slice("/media/".length));
     if (!found) return json(res, { code: "not_found" }, 404);
+    if (found.mime === "video/mp4") videoRequests.add(url.pathname);
     return found.sidecar ? json(res, found.sidecar) : file(req, res, found.path, found.mime);
   }
   if (url.pathname.startsWith("/downloads/")) {
