@@ -825,12 +825,17 @@ def test_cortex_key_is_read_only_in_the_api_and_search_has_per_client_edge_limit
     assert component["patches"] == [
         {"path": "api-cortex.yaml", "target": {"kind": "Deployment", "name": "api"}}
     ]
-    users = [
+    users = sorted(
         path.relative_to(ROOT).as_posix()
         for path in (ROOT / "deploy").rglob("*.yaml")
         if "weather-cortex" in path.read_text()
+    )
+    # The api (query embedding), the disabled intel worker and its one-call smoke Job (#23).
+    assert users == [
+        "deploy/k8s/intel/intel.yaml",
+        "deploy/k8s/intel/smoke-job.yaml",
+        "deploy/k8s/search/api-cortex.yaml",
     ]
-    assert users == ["deploy/k8s/search/api-cortex.yaml"]
     pod = yaml.safe_load((search / "api-cortex.yaml").read_text())["spec"]["template"]["spec"]
     (container,) = pod["containers"]
     assert container["name"] == "api"

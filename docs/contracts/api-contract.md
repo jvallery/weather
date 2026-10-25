@@ -2,7 +2,7 @@
 
 Status: the semantic HTTP contract (P12). Implemented routes are code-first: the Pydantic models generate [weather.openapi.json](weather.openapi.json), which is the shape authority. Sections for routes not yet built describe the intended semantics; the issue that builds a route owns its tests. The hand-written planning [OpenAPI](../archive/planning-2026-10/contracts/openapi.json) and [JSON Schema](../archive/planning-2026-10/contracts/api.schema.json) are reference input only. Schemas describe allowed shapes, not authorization.
 
-The private [capture contract](capture-contract.md) is separate from public serializers. The private candidate [visual-model schema](visual-analysis.schema.json) implements §13.5's shape; its semantic checks are specified below.
+The private [capture contract](capture-contract.md) is separate from public serializers. The private candidate [visual-model schema](../../app/weather/ai/contracts/visual-analysis.schema.json) implements §13.5's shape; its semantic checks are specified below.
 
 ## Weather data routes (implemented, #14)
 
@@ -42,11 +42,9 @@ The response has `mode` (`hybrid_exact`, `lexical`, `numeric`), `degraded_reason
 
 ## Private visual-model candidate boundary
 
-[visual-analysis.schema.json](visual-analysis.schema.json) enforces the exact category/assessment/confidence vocabulary, at most 16 observations, eight limitations and 240 characters per description/limitation. Evidence lists are nonempty, unique and bounded at 256 opaque IDs. This last ceiling is a selected interface protection; the analysis worker (P9) keeps actual per-request evidence below it.
+[visual-analysis.schema.json](../../app/weather/ai/contracts/visual-analysis.schema.json) (v2, C18) is enums and evidence IDs only: category, assessment, confidence, an optional intensity (rain, snowfall, fog) and sky cover (cloud cover), and limitation codes. There is no free-text field and unknown fields are rejected, so no model-written prose can be published. Evidence lists are nonempty, unique and bounded at 16 opaque IDs, each one supplied in that request. Each category appears at most once per window, and precipitation and visibility are always assessed (`not_assessable` at night or behind an obstruction). Observation IDs are assigned by the application. The schema is private input; it is not the public Analysis representation and is never returned to browsers.
 
-Schema-valid model text is still untrusted. Check all evidence IDs against the request's supplied set, each observation's IDs against the result's declared set, and the supplied IDs against the current media/evidence revision. Rebind candidate observation IDs to deterministic application IDs. Require explicit precipitation and visibility assessments when assessable, and an honest not-assessable result when night/obstruction prevents assessment. Reject invented IDs, unsupported claims, prompt-injected instructions, truncation and stale jobs before publishing. No numeric confidence percentage replaces the categorical field. The schema is private candidate input; it is not the public Analysis representation and must never be returned raw to browsers.
-
-The [visual fixtures](visual-analysis-fixtures.json) exercise shape limits only. Semantic fixtures must include a schema-valid invented evidence ID, omitted assessable precipitation/visibility, repeated generated IDs across clips, scene prompt injection, stale revision and forward/reverse temporal controls. Passing the shape suite does not establish grounding.
+The [visual fixtures](visual-analysis-fixtures.json) exercise the schema's shape; `app/tests/test_ai.py` and `test_ai_guards.py` cover the semantic rules on recorded-format replies.
 
 ## Routes and compatibility
 
@@ -143,11 +141,11 @@ Each route's issue owns its tests in its acceptance list (P16): #14 weather data
 
 ## Synthesis attribution
 
-[WeatherNarrative](weather-narrative-contract.md) is a private untrusted candidate, not a public API payload. Public Claim/Event require evidence `basis` (visual/instrument/inference) separately from `origin`; inferred automated records use origin `synthesis`. Measured/visual origins require matching instrument/visual basis. Human/manual origins retain explicit evidence basis and attribution. Application-assigned interval/precision and seeks come from validated evidence, never model timestamps. Every consumer, sidecar and search projection must preserve that distinction.
+Public text is rendered by server templates (C18; [description text contract](description-text-contract.md)); there is no model-written candidate and no synthesis call. `Analysis.author` is `ai` for template text from validated observations, `station` when no hour passed visual review, and `editor` for a human (#44) revision; each carries its own label. Analysis claims have basis `visual` or `instrument` only, and a stored claim of any other basis is never served. Public events keep evidence `basis` separately from `origin` (#41). Measured/visual origins require matching instrument/visual basis. Human/manual origins retain explicit evidence basis and attribution. Application-assigned interval/precision and seeks come from validated evidence, never model timestamps. Every consumer, sidecar and search projection must preserve that distinction.
 
-## Analysis execution versus available data
+## Analysis execution versus available data (implemented, #23)
 
-`Analysis.execution_state` and its sanitized `reason` are separate from data `state`, mode and coverage. Failed or unsupported execution with no usable evidence has unavailable data; partial validated evidence can survive a failed run. Invalidated claims never become current merely because their producing run completed. Analysis uses sampled frames plus the keogram (P9) and is pinned to the model and prompt version at publication.
+Each `Timelapse` carries `analysis`: `author` (`ai`, or `editor` for a #44 human revision) with its `label` ("AI-generated · sampled-frame analysis" or "Editor-written description"), `state` (`pending`, `complete`, `degraded`, `failed`, or `unavailable` without playable media), a sanitized `reason` code, `stale`, `revision`, `generated_at`, the effective `description` and `claims` (text plus `basis` only), all template-rendered from validated enums and station values (C18), `limitations`, `coverage` (reviewed seconds and hour windows, gaps, algorithm) and, for `ai` only, `provenance` (model route and echoed model, prompt and schema revisions, refresh kind, evidence count, frames sampled, keogram used). Content appears only for a validated revision of the video's current media; a new rendition shows `pending` with no text. Evidence IDs, observations and raw replies are never served. Analysis uses sampled frames plus the keogram when present (P9) and is pinned to the model and prompt version at publication. Runbook: [intelligence](../operations/intelligence.md).
 
 ## Preview expiry clarification
 

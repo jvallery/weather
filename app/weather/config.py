@@ -18,7 +18,8 @@ class Settings(BaseModel):
     api_obs_st_hold_seconds: float = Field(default=150, gt=0, le=86400)
     api_rapid_wind_interval_seconds: float = Field(default=3, gt=0, le=3600)
     api_rapid_wind_hold_seconds: float = Field(default=15, gt=0, le=86400)
-    # Search (#25): Cortex OpenAI-compatible base URL; unset keeps search lexical/numeric.
+    # Search (#25) and intel (#23): the Cortex route is the only inference endpoint (R21);
+    # unset keeps search lexical/numeric.
     cortex_base_url: HttpUrl | None = None
     search_profile: str = "embed-main-2560-v1"
 
@@ -30,6 +31,8 @@ class Settings(BaseModel):
             or value.fragment
         ):
             raise ValueError("requires an HTTPS base URL without credentials")
+        if value is not None and str(value).rstrip("/") != "https://cortex.vallery.net/v1":
+            raise ValueError("requires the Cortex route")
         return value
 
     @field_validator("search_profile")

@@ -2,6 +2,8 @@
 
 > **Historical.** Binding rules live in [docs/architecture.md](../architecture.md) and the 2026-10-24 [simplification](2026-10-24-simplification.md) and [takeover](2026-10-24-takeover-replan.md) records; where this file conflicts, those win.
 
+> **Amended 2026-10-25** by C18 in the [takeover re-plan](2026-10-24-takeover-replan.md): there is no Stage C model call. Stage A returns structured enums only, and public text is rendered by server templates ([description text contract](../contracts/description-text-contract.md)). Stage C rules below are historical.
+
 > **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): P9: sampled frames plus keogram through the proven image path, advisory-lock concurrency 1, timeout plus bounded nightly retry, raw-response TTL table. The call-ownership state machine and native-video gate are **withdrawn**. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
 
 Status: job/slot/publication protocol selected; actual native-video capability and backend termination remain material OWN-MODELS qualification. Requirements §§13.1–13.7, 12.7 and 14.2; consumers WX-21/22/24/31/33/40/43. This design introduces no live model request or server setting.
@@ -10,7 +12,7 @@ Status: job/slot/publication protocol selected; actual native-video capability a
 
 Use the owner-qualified `llm.primary.longctx.mm` route; never substitute the language-only sibling or external service. Qualify fresh forward/reversed synthetic video with a nonce, a real completed-video derivative, supported request/media parameters, actual sampled positions, complete schema-valid output and backend termination. Historical image success and source adapter files are clues, not native-video proof. Sampled frames extracted from completed MP4 remain an explicitly degraded path and cannot close native-video commissioning.
 
-Freeze video ID/media revision/hash, exact rational clip/source mapping, prompt/schema/capability revisions and supplied evidence IDs in every job. Stage A sees visual context only. Stage B calculates measured aggregates deterministically. Stage C uses validated A plus versioned B, under the [synthesis contract](../contracts/weather-narrative-contract.md). Original captures are not a substitute for completed-video input and analysis does not extend dense capture retention.
+Freeze video ID/media revision/hash, exact rational clip/source mapping, prompt/schema/capability revisions and supplied evidence IDs in every job. Stage A sees visual context only. Stage B calculates measured aggregates deterministically. Stage C (superseded by C18) renders fixed templates from validated A plus versioned B, under the [description text contract](../contracts/description-text-contract.md). Original captures are not a substitute for completed-video input and analysis does not extend dense capture retention.
 
 Partition source segments into consecutive at-most-one-hour windows with the §13.2 rational frame-center rule. Before sampling, windows cover exactly `[0,N)` without overlap/omission; do not hardcode 24 windows or use imprecise keyframe-only cuts. Bound proxies by the smaller qualified application/route/backend limits (initial proposals: 8 MiB clip, 16 MiB serialized request, 768–960 px width, 24–32 temporal samples). Record actual sampling and uncertainty; unsupported sampler observability is not proof that every requested frame was consumed.
 

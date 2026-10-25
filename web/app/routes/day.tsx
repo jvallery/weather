@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router";
+import { AnalysisPanel } from "../components/analysis";
 import { SourceInterval, Status, VideoLink } from "../components/common";
 import { EventStrip } from "../components/events";
 import { KeogramPanel } from "../components/keogram";
@@ -26,7 +27,7 @@ export default function Day() {
     <div className="grid three">{Object.entries(CAMERA_LABELS).map(([camera, label]) => <section className="card" key={camera}><h2>{label}</h2>{(["daytime", "overnight"] as const).map((segment) => {
       const video = catalog?.items.find((item) => item.camera === camera && item.segment === segment);
       const keogram = keograms?.find((item) => item.camera === camera && item.segment === segment);
-      return <article key={segment}><h3>{segment === "daytime" ? "Daytime" : "Overnight"}</h3>{keogram && <KeogramPanel keogram={keogram} />}{video ? <><p><VideoLink video={video} /></p><Status state={video.state} reason={video.reason} /><SourceInterval video={video} /><p className="small">{video.allocated_frames.toLocaleString("en-US")} frames · keogram {video.keogram_state}</p></> : <><p>Coming soon · no recording is available.</p><p className="small">Twilight bounds and capture coverage are unavailable until this segment is captured and published.</p></>}</article>;
+      return <article key={segment}><h3>{segment === "daytime" ? "Daytime" : "Overnight"}</h3>{keogram && <KeogramPanel keogram={keogram} />}{video ? <><p><VideoLink video={video} /></p><Status state={video.state} reason={video.reason} /><SourceInterval video={video} /><p className="small">{video.allocated_frames.toLocaleString("en-US")} frames · keogram {video.keogram_state}</p><AnalysisPanel analysis={video.analysis} compact /></> : <><p>Coming soon · no recording is available.</p><p className="small">Twilight bounds and capture coverage are unavailable until this segment is captured and published.</p></>}</article>;
     })}</section>)}</div>
     <h2>Hourly stills · calendar day {date}</h2><StillsNote />
     {!stills ? <p className="fault">Stills API unavailable. No images are shown in its place.</p> : <div className="grid three">{Object.entries(CAMERA_LABELS).map(([camera, label]) => {

@@ -33,6 +33,21 @@ def main() -> None:
 
         pipeline_main(sys.argv[2:])
         return
+    if sys.argv[1:2] == ["intel"]:
+        intel_parser = argparse.ArgumentParser(
+            prog="weather intel", description="AI descriptions and embeddings (#23)"
+        )
+        intel_parser.add_argument("command", choices=["serve", "smoke"], nargs="?")
+        command = intel_parser.parse_args(sys.argv[2:]).command
+        if command == "smoke":
+            from weather.ai.smoke import main as smoke_main
+
+            smoke_main()
+        else:
+            from weather.ai.runner import main as intel_main
+
+            intel_main()
+        return
     if sys.argv[1:2] == ["tempest-receiver"]:
         receiver_parser = argparse.ArgumentParser(
             prog="weather tempest-receiver",
@@ -59,7 +74,8 @@ def main() -> None:
         "publication: weather media withdraw|reconcile|expire|gc|purge; "
         "staging: weather staging cleanup --camera <id>; "
         "objects: weather reconcile-objects --bucket <b>; "
-        "rendering: weather pipeline run --camera <id>"
+        "rendering: weather pipeline run --camera <id>; "
+        "descriptions: weather intel [serve|smoke]"
     )
     parser.add_argument(
         "role", choices=["api", "preview", "scheduler", "tempest-receiver"], nargs="?"
