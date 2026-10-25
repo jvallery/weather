@@ -44,6 +44,8 @@ class FakeCamera:
         self.unknown_oversized = False
         self.always_unauthorized = False
         self.basic_challenge = False
+        self.single_use_nonce = False
+        self.nonce = 0
         self.requests: list[float] = []
         self.in_flight = 0
         self.max_in_flight = 0
@@ -57,10 +59,14 @@ class FakeCamera:
         value = parse_keqv_list(parse_http_list(header[7:]))
         ha1 = hashlib.md5(b"synthetic-user:fake-camera:synthetic-password").hexdigest()
         ha2 = hashlib.md5(("GET:" + SNAPSHOT_PATH).encode()).hexdigest()
+        nonce = f"nonce-{self.nonce}" if self.single_use_nonce else "fixed-nonce"
         expected = hashlib.md5(
-            f"{ha1}:fixed-nonce:{value.get('nc')}:{value.get('cnonce')}:auth:{ha2}".encode()
+            f"{ha1}:{nonce}:{value.get('nc')}:{value.get('cnonce')}:auth:{ha2}".encode()
         ).hexdigest()
-        return value.get("response") == expected and value.get("uri") == SNAPSHOT_PATH
+        ok = value.get("response") == expected and value.get("uri") == SNAPSHOT_PATH
+        if ok and self.single_use_nonce:
+            self.nonce += 1  # Consumed: the next request is challenged again.
+        return ok
 
     async def handler(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         task = asyncio.current_task()
@@ -78,10 +84,11 @@ class FakeCamera:
                 writer.write(b"HTTP/1.1 401 Unauthorized\r\n")
                 if self.basic_challenge:
                     writer.write(b'WWW-Authenticate: Basic realm="fake-camera"\r\n')
+                nonce = f"nonce-{self.nonce}" if self.single_use_nonce else "fixed-nonce"
                 writer.write(
-                    b'WWW-Authenticate: Digest realm="fake-camera", '
-                    b'nonce="fixed-nonce", qop="auth", algorithm=MD5\r\n'
-                    b"Content-Length: 0\r\nConnection: close\r\n\r\n"
+                    f'WWW-Authenticate: Digest realm="fake-camera", nonce="{nonce}", '
+                    'qop="auth", algorithm=MD5\r\n'
+                    "Content-Length: 0\r\nConnection: close\r\n\r\n".encode()
                 )
                 await writer.drain()
                 return
@@ -168,6 +175,29 @@ def test_digest_happy_path_and_identical_frames_retained(
     asyncio.run(check())
 
 
+def test_single_use_nonce_retries_at_once_and_keeps_the_cadence(tmp_path: Path) -> None:
+    async def check() -> None:
+        camera = FakeCamera(jpeg())
+        camera.single_use_nonce = True
+        async with camera.running():
+            collector = Collector(camera.config(tmp_path))
+            task = asyncio.create_task(collector.run())
+            await asyncio.sleep(4.5)
+            collector.shutdown()
+            await task
+        # Every poll is a challenge plus its immediate authorized retry; polls stay >= cadence.
+        assert camera.max_in_flight == 1
+        pairs = list(zip(camera.requests[::2], camera.requests[1::2], strict=False))
+        assert len(pairs) >= 4 and all(b - a < 0.5 for a, b in pairs)
+        starts = [a for a, _ in pairs]
+        assert all(b - a >= 0.95 for a, b in zip(starts, starts[1:], strict=False))
+        rows = [row for path in (tmp_path / "sealed").rglob("*.tar") for row in read_chunk(path)]
+        assert len([row for row in rows if row.get("status") == "captured"]) >= 4
+        assert not any(row.get("failure_class") == "overdue" for row in rows)
+
+    asyncio.run(check())
+
+
 def test_one_byte_per_second_body_hits_total_deadline(tmp_path: Path) -> None:
     async def check() -> None:
         camera = FakeCamera(jpeg())
@@ -194,12 +224,13 @@ def test_slow_camera_never_overlaps_or_catches_up(tmp_path: Path) -> None:
             collector.shutdown()
             await task
         assert camera.max_in_flight == 1
-        # Includes the initial Digest challenge GET. A slot under half a period late is still
-        # taken, so 2.5 s responses allow one request per 2.5 s and never a catch-up burst.
+        # Includes the initial Digest challenge GET, answered at once by its authorized retry.
+        # A slot under half a period late is still taken, so 2.5 s responses allow one poll per
+        # 2.5 s and never a catch-up burst.
         assert len(camera.requests) <= 5
-        assert all(
-            b - a >= 0.95 for a, b in zip(camera.requests, camera.requests[1:], strict=False)
-        )
+        assert camera.requests[1] - camera.requests[0] < 0.5
+        polls = camera.requests[1:]
+        assert all(b - a >= 0.95 for a, b in zip(polls, polls[1:], strict=False))
         rows = [row for path in (tmp_path / "sealed").rglob("*.tar") for row in read_chunk(path)]
         assert len([row for row in rows if row.get("status") == "captured"]) >= 2
         assert any(row.get("failure_class") == "overdue" for row in rows)
