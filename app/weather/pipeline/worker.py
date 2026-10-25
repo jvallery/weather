@@ -211,7 +211,7 @@ class Worker:
                 for chunk in self.index.refresh(
                     renderer.geometry.start, min(renderer.geometry.end, current)
                 ):
-                    if rendered_through is not None:
+                    if rendered_through is not None and not chunk.readded:
                         late = sum(
                             1
                             for c in chunk.candidates
@@ -288,6 +288,9 @@ class Worker:
         rendering = [r for r in rows if not (r.id in self.backoff and now < self.backoff[r.id][1])]
         if rendering:
             self.index.prune(min(epoch_seconds(r.job.starts_at) for r in rendering) - 3600)
+        elif rows:
+            # Every segment is backing off: keep only the last hour in memory.
+            self.index.prune(current - 3600)
 
     async def _publish(
         self, row: schedule.SegmentRow, renderer: SegmentRenderer, prepared: Prepared

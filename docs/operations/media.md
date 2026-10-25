@@ -310,10 +310,14 @@ and the day page.
   slot (only a failed decode is a persisted `decode` reject). A slot still unselected after
   12 h is recorded `missing`/`selection_expired` (while it is under 48 h old); older unselected
   slots the API reports as `missing`/`not_selected`. Backlog (#19): with budget left in a loop,
-  slots older than 12 h whose sealed hour directory is still on staging and that have no row
-  or only `selection_expired` are selected again, oldest first (a correction retires the
-  expired revision; `withdrawn` and real outcomes are final), so an outage longer than 12 h
-  never pins their input forever. `weather_stills_backlog_slots{camera}` counts them.
+  slots older than 12 h (and under 14 days) for which a sealed hour directory is still on
+  staging (that hour, or the one before: its chunks can hold the next hour's captures) and
+  that have no row or only `selection_expired` are selected again, oldest first (a correction
+  retires the expired revision; `withdrawn` and real outcomes are final), so an outage longer
+  than 12 h never pins their input forever. A slot no current segment covers is recorded
+  `missing`/`no_segment` before any decode (terminal: nothing could bind it).
+  `weather_stills_backlog_slots{camera}` counts the rest every loop (-1 if the share cannot be
+  listed).
 - **Archive.** One still product (`<camera>`, `YYYY-MM-DDTHH:00Z`) through the publisher:
   role `original` is the TAR member's exact bytes (EXIF included) in private
   `weather-originals`, roles `still`, `still_960`, `still_480`, `still_webp`, `still_webp960`,
@@ -417,7 +421,8 @@ for a current segment, its unreleased input stay on staging. Resolve it:
 3. Cannot complete (a release incident or a superseded revision), and only on Jason's
    instruction, since its unpublished frames are given up: from the camera's pipeline pod,
    `weather pipeline abandon <segment_id> --actor jason`. It is recorded
-   `unavailable`/`abandoned` and finalized; the next cleanup pass releases its chunks and
+   `unavailable`/`abandoned` and finalized, with the actor in `render_result` (only a segment
+   that has ended); the next cleanup pass releases its chunks and
    its render directory through the normal audited path. Record it in the issue.
 
 Also removed, with the same audit row: other incarnations' `tmp/<camera>/` files whose
@@ -513,7 +518,7 @@ instruction.
 ## Object lifecycle
 
 `app/weather/scheduler/lifecycle.py` (#19). Every state change and deletion appends an
-`object_event` row (`unavailable`, `expired`, `gc_deleted`, `purged`, with reason and actor);
+`object_event` row (`unavailable`, `expired`, `gc_deleted`, `gc_kept`, `purged`, with reason and actor);
 `media_asset.state_changed_at` dates the change.
 
 ### Reconcile objects

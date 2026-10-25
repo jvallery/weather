@@ -773,6 +773,27 @@ def test_a_started_segment_stays_active_past_late_render_until_finalized() -> No
                 {"state": "partial", "reason": "low_coverage", "slots": {"fraction": 0.6}},
             )
             assert not [r for r in await schedule.active(worker, CAMERA, NOW) if r.id == daytime.id]
+            # A stuck one is resolved by an operator's abandon, which records who did it.
+            [overnight] = await rows(
+                worker,
+                "SELECT id,starts_at FROM weather.segment WHERE camera_id=:c AND cycle_date=:d "
+                "AND kind='overnight'",
+                c=CAMERA,
+                d=day,
+            )
+            await schedule.mark_through(worker, overnight.id, overnight.starts_at)
+            assert await schedule.abandon(worker, overnight.id, "jason")
+            assert not await schedule.abandon(worker, overnight.id, "jason")
+            [row] = await rows(
+                worker,
+                "SELECT state,reason,render_result->>'abandoned_by' AS actor,finalized_at "
+                "FROM weather.segment WHERE id=:id",
+                id=overnight.id,
+            )
+            assert (row.state, row.reason, row.actor) == ("unavailable", "abandoned", "jason")
+            assert not [
+                r for r in await schedule.active(worker, CAMERA, NOW) if r.id == overnight.id
+            ]
         finally:
             await worker.dispose()
 
@@ -796,12 +817,22 @@ def test_hourly_backlog_reselects_expired_and_rowless_slots_with_sealed_input(
             CAMERA, worker, Publisher(worker, buckets), ChunkIndex(tmp_path, expected), expected
         )
         base = (NOW - timedelta(days=3)).replace(minute=0, second=0)
-        expired, rowless, withdrawn = base, base + timedelta(hours=1), base + timedelta(hours=2)
-        for hour in (expired, rowless, withdrawn):
+        expired, withdrawn = base, base + timedelta(hours=2)
+        # No directory of its own: the hour after a sealed hour can hold its captures.
+        rowless, after = base + timedelta(hours=1), base + timedelta(hours=3)
+        uncovered = (NOW - timedelta(days=10)).replace(minute=0, second=0)
+        for hour in (expired, withdrawn, uncovered):
             # Sealed hour directories without any capture: selection finds no input.
             (tmp_path / "sealed" / CAMERA / hour.strftime("%Y-%m-%dT%HZ")).mkdir(parents=True)
         try:
             from weather.stills.policy import Choice
+
+            # Segments cover the days around `base` only; `uncovered` has none.
+            first = (base - timedelta(days=2)).date()
+            async with worker.begin() as connection:
+                await schedule.freeze(
+                    connection, SITE, [cycle_for(first + timedelta(days=n)) for n in range(4)]
+                )
 
             async with worker.begin() as connection:
                 for slot, reason in ((expired, "selection_expired"), (withdrawn, "withdrawn")):
@@ -815,7 +846,7 @@ def test_hourly_backlog_reselects_expired_and_rowless_slots_with_sealed_input(
                 assert await stills.reselectable(
                     connection, CAMERA, [expired, rowless, withdrawn]
                 ) == {expired, rowless}
-            await archive._backlog(NOW, set(), 2)
+            await archive._backlog(NOW, set(), 3)
             active = {
                 r.slot_starts_at: (r.revision, r.reason)
                 for r in await rows(
@@ -831,6 +862,10 @@ def test_hourly_backlog_reselects_expired_and_rowless_slots_with_sealed_input(
                 expired: (2, "no_capture"),
                 rowless: (1, "no_capture"),
                 withdrawn: (1, "withdrawn"),
+                after: (1, "no_capture"),
+                # Recorded terminally before any decode: nothing could bind it.
+                uncovered: (1, "no_segment"),
+                uncovered + timedelta(hours=1): (1, "no_segment"),
             }
             async with worker.connect() as connection:
                 assert not await stills.reselectable(connection, CAMERA, list(active))

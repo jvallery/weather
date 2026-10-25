@@ -962,3 +962,21 @@ def test_rendering_yields_after_its_budget_and_backoff_rows_leave_the_prune_floo
     from weather.timemodel._instant import epoch_seconds
 
     assert floors == [epoch_seconds(live.job.starts_at) - 3600]
+
+
+def test_chunks_parsed_again_after_a_prune_are_marked_readded(tmp_path: Path) -> None:
+    """A segment back from backoff re-reads chunks the index pruned; they are not late."""
+    from fractions import Fraction
+
+    from weather.pipeline.intake import ChunkIndex, Expected
+
+    corpus(tmp_path)
+    index = ChunkIndex(tmp_path, Expected(CAMERA, 2000, 0, W, H))
+    start, end = Fraction(int(T0.timestamp())), Fraction(int(at(10).timestamp()))
+    first = index.refresh(start, end)
+    assert first and not any(c.readded for c in first)
+    index.prune(end + 1)
+    assert not index.chunks
+    again = index.refresh(start, end)
+    assert len(again) == len(first) and all(c.readded for c in again)
+    assert not index.forgotten

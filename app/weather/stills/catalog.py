@@ -10,7 +10,7 @@ next one, so exactly one revision is ever active.
 
 import json
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any, cast
 from uuid import UUID
 
@@ -114,6 +114,36 @@ async def reselectable(
         {"camera": camera, "slots": slots},
     )
     return set(rows.scalars())
+
+
+async def covered(
+    connection: AsyncConnection, camera: str, slots: list[datetime]
+) -> set[datetime]:
+    """Of `slots` (UTC hour starts), those the camera's current segments cover entirely, so
+    any winner binds (`segment_for`) and a selection can never end in Unbound."""
+    if not slots:
+        return set()
+    rows = await connection.execute(
+        text("""
+        SELECT starts_at,ends_at FROM weather.segment
+        WHERE current AND camera_id=:camera AND starts_at < :high AND ends_at > :low
+        ORDER BY starts_at
+    """),
+        {"camera": camera, "low": min(slots), "high": max(slots) + timedelta(hours=1)},
+    )
+    spans = [(row.starts_at, row.ends_at) for row in rows]
+    result = set()
+    for slot in slots:
+        reach, end = slot, slot + timedelta(hours=1)
+        for start, stop in spans:
+            if stop <= reach or start >= end:
+                continue
+            if start > reach:
+                break
+            reach = stop
+        if reach >= end:
+            result.add(slot)
+    return result
 
 
 def retain_until(slot: HourSlot) -> date:

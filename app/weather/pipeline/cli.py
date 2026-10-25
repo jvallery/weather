@@ -33,7 +33,7 @@ def _abandon(parser: argparse.ArgumentParser, segment: str, actor: str) -> None:
         engine = create_database_engine()
         try:
             await wait_for_database(engine)
-            return await abandon(engine, segment_id)
+            return await abandon(engine, segment_id, actor)
         finally:
             await engine.dispose()
 

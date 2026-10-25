@@ -77,6 +77,9 @@ class Chunk:
     candidates: list[Candidate] = field(default_factory=list)
     reported_losses: int = 0
     seen: int = 0
+    # Parsed again after `ChunkIndex.prune` dropped it (a segment back from backoff): its
+    # frames are not late arrivals.
+    readded: bool = False
 
 
 @dataclass(frozen=True)
@@ -219,6 +222,8 @@ class ChunkIndex:
         # Chunks the last refresh could not read (I/O error); a block must not render past them.
         self.unreadable: set[Path] = set()
         self.generation = 0
+        # Pruned chunk paths -> their window end, so a re-parse is known to be a re-add.
+        self.forgotten: dict[Path, Fraction] = {}
 
     def refresh(self, start: Fraction, end: Fraction) -> list[Chunk]:
         """Parse sealed chunks of every UTC hour that can hold frames for [start, end)."""
@@ -257,13 +262,17 @@ class ChunkIndex:
                     self.invalid.add(path)
                     continue
                 chunk.seen = self.generation
+                chunk.readded = self.forgotten.pop(path, None) is not None
                 self.chunks[path] = chunk
                 added.append(chunk)
         return added
 
     def prune(self, before: Fraction) -> None:
         for path in [p for p, chunk in self.chunks.items() if chunk.window[1] < before]:
-            del self.chunks[path]
+            self.forgotten[path] = self.chunks.pop(path).window[1]
+        # Bounded: forget re-add markers two days below the floor.
+        horizon = before - 2 * 86400
+        self.forgotten = {p: end for p, end in self.forgotten.items() if end >= horizon}
 
     def window(self, start: Fraction, end: Fraction) -> Window:
         return select(

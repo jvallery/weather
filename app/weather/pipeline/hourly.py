@@ -40,6 +40,8 @@ from .intake import Candidate, ChunkIndex, Expected, IntakeError, read_frame, ut
 from .render import SEAL_MARGIN
 
 LOG = logging.getLogger("weather.pipeline")
+# The backlog re-selects slots at most this old; older pinned input is the 48 h alert's case.
+BACKLOG_MAX_AGE = timedelta(days=14)
 BACKLOG = Gauge(
     "weather_stills_backlog_slots",
     "Slots older than the lookback with sealed input but no real selection (re-selected)",
@@ -139,6 +141,7 @@ class HourlyArchive:
         pending = [slot for slot in slots if slot not in done]
         # Keep backoff for recent pending slots and for backlog slots (older than the lookback).
         floor = min(recent) if recent else now
+        # Backlog entries (older than the lookback) are pruned by _backlog against its own set.
         self.backoff = {k: v for k, v in self.backoff.items() if k in pending or k < floor}
         metrics.STILL_PENDING.labels(self.camera).set(len(pending))
         metrics.STILL_OLDEST.labels(self.camera).set(
@@ -152,8 +155,8 @@ class HourlyArchive:
                 break
             attempted += 1
             await self._attempt(slot, now)
-        if attempted < MAX_SLOTS_PER_STEP:
-            await self._backlog(now, recent, MAX_SLOTS_PER_STEP - attempted)
+        # Always refreshed (budget 0 only counts), so the gauge never goes stale.
+        await self._backlog(now, recent, MAX_SLOTS_PER_STEP - attempted)
 
     async def _backlog(self, now: datetime, recent: set[datetime], budget: int) -> None:
         """Re-select slots older than the lookback that still have sealed input but no real
@@ -164,15 +167,35 @@ class HourlyArchive:
         try:
             hours = await asyncio.to_thread(self.sealed_hours)
         except OSError:
+            BACKLOG.labels(self.camera).set(-1)
             return
         floor = min(recent) if recent else slot_for(now - LOOKBACK).start
-        old = [hour for hour in hours if hour < floor]
-        if not old:
-            BACKLOG.labels(self.camera).set(0)
-            return
-        async with self.engine.connect() as connection:
-            redo = sorted(await catalog.reselectable(connection, self.camera, old))
+        oldest = slot_for(now - BACKLOG_MAX_AGE).start
+        # A chunk in hour directory H can hold captures whose source time is in H + 1.
+        slots = {h + offset for h in hours for offset in (timedelta(0), timedelta(hours=1))}
+        old = sorted(slot for slot in slots if oldest <= slot < floor)
+        redo: list[datetime] = []
+        if old:
+            async with self.engine.connect() as connection:
+                waiting = sorted(await catalog.reselectable(connection, self.camera, old))
+                covered = await catalog.covered(connection, self.camera, waiting)
+            # A slot no current segment covers can never bind a winner: record it terminally
+            # (checked before any decode), instead of retrying it forever.
+            for slot in waiting:
+                if slot in covered:
+                    redo.append(slot)
+                    continue
+                unbound = Choice("missing", "no_segment", None, None, 0)
+                async with self.engine.begin() as connection:
+                    await catalog.record(
+                        connection, camera=self.camera, slot=slot_for(slot), choice=unbound
+                    )
+                metrics.STILL_SLOTS.labels(self.camera, "missing").inc()
         BACKLOG.labels(self.camera).set(len(redo))
+        waiting_set = set(redo)
+        self.backoff = {
+            k: v for k, v in self.backoff.items() if k >= floor or k in waiting_set
+        }
         for slot in redo:
             if budget == 0:
                 break
