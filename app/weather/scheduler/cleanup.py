@@ -432,8 +432,10 @@ ConditionQuery = Callable[
     [AsyncConnection, str, Sequence[ChunkRow], timedelta], Awaitable[set[UUID]]
 ]
 HOUR = timedelta(hours=1)
-# #38 missing reasons that prove the hour had no usable input (stills.policy.choose).
-NO_INPUT = ("no_capture", "no_eligible_capture")
+# #38 missing reasons that prove the hour had no usable input (stills.policy.choose), plus
+# `no_segment`: the backlog's terminal record for an hour older than the lookback that no
+# frozen segment covers, so no still can ever bind there (pipeline.hourly._backlog).
+NO_INPUT = ("no_capture", "no_eligible_capture", "no_segment")
 
 
 def hour_slots(chunk: ChunkRow, lag: timedelta) -> list[datetime]:
@@ -453,9 +455,10 @@ async def hourly_finalized(
     """#38: every hour slot the chunk overlaps has an active `archival_still` that is either
     archived (its still publication committed, the publisher having read the original back,
     and its original asset still `available` in `weather-originals`) or `missing` for a reason
-    that proves there was no input (`no_capture`, `no_eligible_capture`). `selection_expired`
-    only means no selection ran for 12 h (a Garage or pipeline outage): unmet, so the chunk is
-    kept and the 48 h pinned alert fires. A slot without an active row is unfinalized."""
+    that proves there was no input (`no_capture`, `no_eligible_capture`, `no_segment`).
+    `selection_expired` only means no selection ran for 12 h (a Garage or pipeline outage):
+    unmet, so the chunk is kept and the 48 h pinned alert fires. A slot without an active row
+    is unfinalized."""
     if not chunks:
         return set()
     low = min(c.window_start for c in chunks) - HOUR

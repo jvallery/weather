@@ -980,3 +980,10 @@ def test_chunks_parsed_again_after_a_prune_are_marked_readded(tmp_path: Path) ->
     again = index.refresh(start, end)
     assert len(again) == len(first) and all(c.readded for c in again)
     assert not index.forgotten
+
+
+def test_only_reasons_that_prove_no_input_finalize_an_hour() -> None:
+    # `no_segment` is the backlog's terminal record for an hour no frozen segment covers; an
+    # outage (`selection_expired`) or a withdrawal never releases the hour's raw chunks.
+    assert set(cleanup_module.NO_INPUT) == {"no_capture", "no_eligible_capture", "no_segment"}
+    assert not {"selection_expired", "withdrawn"} & set(cleanup_module.NO_INPUT)
