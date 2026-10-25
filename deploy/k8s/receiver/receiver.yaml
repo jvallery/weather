@@ -1,0 +1,222 @@
+# Tempest receiver (#5). Receives hub UDP 50222 broadcasts on net1 (agents NAD
+# weather/weather-tempest-vlan10, VLAN 10 /32, no routes) and drains to weather-pg.
+# Scheduling contract (agents multus README): node6/node7 only, one pod cluster-wide,
+# Recreate. Runbook: docs/operations/tempest-ingest.md.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempest-receiver
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    app.kubernetes.io/component: tempest-receiver
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+data:
+  # 768 MiB keeps the SQLite page cap inside the 1 GiB volume's usable space.
+  receiver.json: |
+    {"interface_name": "net1", "capacity_bytes": 805306368, "metrics_port": 9000}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tempest-receiver-spool
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    app.kubernetes.io/component: tempest-receiver
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: longhorn-v1-rwo
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tempest-receiver
+  namespace: weather
+  labels: &labels
+    app.kubernetes.io/part-of: weather
+    app.kubernetes.io/component: tempest-receiver
+    app.kubernetes.io/name: tempest-receiver
+    weather.vallery.net/database-role: ingest
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: *labels
+  template:
+    metadata:
+      labels: *labels
+      annotations:
+        k8s.v1.cni.cncf.io/networks: weather/weather-tempest-vlan10
+    spec:
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      serviceAccountName: tempest-receiver
+      imagePullSecrets:
+      - name: zot-origin-cluster-pull
+      terminationGracePeriodSeconds: 45
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values: [vm-k3s-node6, vm-k3s-node7]
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: receiver
+        image: weather-app
+        command: [python, -m, weather.cli, tempest-receiver]
+        env:
+        - name: TELEMETRY_CONFIG_DIRECTORY
+          value: /etc/weather/telemetry
+        - name: DATABASE_CREDENTIAL_DIRECTORY
+          value: /var/run/weather-db
+        ports:
+        - name: metrics
+          containerPort: 9000
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: metrics
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /live
+            port: metrics
+          initialDelaySeconds: 20
+          periodSeconds: 20
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 384Mi
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: [ALL]
+        volumeMounts:
+        - name: config
+          mountPath: /etc/weather/telemetry
+          readOnly: true
+        - name: database
+          mountPath: /var/run/weather-db
+          readOnly: true
+        - name: spool
+          mountPath: /var/lib/weather/telemetry
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: config
+        projected:
+          defaultMode: 288
+          sources:
+          - configMap:
+              name: tempest-receiver
+              items:
+              - key: receiver.json
+                path: receiver.json
+          - secret:
+              name: weather-tempest
+              items:
+              - key: TEMPEST_HUB_SERIAL
+                path: TEMPEST_HUB_SERIAL
+              - key: TEMPEST_DEVICE_SERIALS
+                path: TEMPEST_DEVICE_SERIALS
+      - name: database
+        projected:
+          defaultMode: 288
+          sources:
+          - secret:
+              name: weather-pg-ingest
+              items:
+              - key: username
+                path: username
+              - key: password
+                path: password
+          - secret:
+              name: weather-pg-ca
+              items:
+              - key: ca.crt
+                path: ca.crt
+      - name: spool
+        persistentVolumeClaim:
+          claimName: tempest-receiver-spool
+      - name: tmp
+        emptyDir:
+          sizeLimit: 64Mi
+---
+# Governs eth0 only. net1 is outside NetworkPolicy; the app never transmits there.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tempest-receiver
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: weather
+      app.kubernetes.io/component: tempest-receiver
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: observability
+    ports:
+    - protocol: TCP
+      port: 9000
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          cnpg.io/cluster: weather-pg
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53

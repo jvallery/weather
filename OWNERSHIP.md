@@ -24,7 +24,7 @@ What this repository owns and its state: **live** (running or applied), **disabl
 | Scheduler job kinds `segment.schedule`, `segment.finalize`, `segment.deadline`; optional `weather-site` mount in `scheduler` | `app/weather/pipeline/schedule.py`, `scheduler/` | source (#15); without the Secret schedule jobs fail visibly |
 | Job `weather-pipeline-bench` (disposable throughput check) | `pipeline/bench-job.yaml`, never in a kustomization | applied by hand, then deleted |
 | StatefulSets `collector-skycam-east`, `-skycam-west`, `-frontyard-1` ×1, ConfigMap `collector-capture-<hash>`, NetworkPolicy `collector`, PVC `weather-staging` (binds the storage-infra PV; `Prune=false,Delete=false`) | `capture/`; runbook [capture](docs/operations/capture.md) | live (#4, 0.5 Hz epoch) |
-| `tempest-receiver` and its spool PVC | — | planned (#5) |
+| Deployment `tempest-receiver` ×1 (Recreate, node6/node7), ConfigMap `tempest-receiver`, PVC `tempest-receiver-spool` (1 GiB `longhorn-v1-rwo`, `Prune=false,Delete=false`), NetworkPolicy `tempest-receiver` | `receiver/`; runbook [tempest-ingest](docs/operations/tempest-ingest.md) | live (#5) |
 | `weather-preview`, `intel` | — | planned (#39, #23) |
 | Images `weather-app`, `weather-web` (digests in `kustomization.yaml`) | `registry.vallery.net/jvallery/` | live |
 | Images `weather-python-base`, `weather-node-base`, `weather-ci` | `registry.vallery.net/jvallery/` | live |
@@ -42,9 +42,10 @@ Disposable restore-drill resources (`weather-drill-*`) are created by `scripts/r
 | Secrets `weather-camera-skycam-east`, `-skycam-west`, `-frontyard-1` | collectors | live |
 | Secret `weather-cortex` | api search, intel | live (unused until #25 is enabled) |
 | Secret `weather-api-cursor` | api | live |
+| Secret `weather-tempest` (hub and device serials) | `tempest-receiver` | live |
 | Secret `weather-site` (almanac sun/moon position) | api | planned |
 | NetworkPolicies `collector-skycam-east-egress`, `collector-skycam-west-egress`, `collector-frontyard-1-egress` | collectors | live |
-| NetworkAttachmentDefinition for the Tempest receiver (VLAN 10) | `tempest-receiver` | planned (agents#5368) |
+| NetworkAttachmentDefinition `weather-tempest-vlan10` (VLAN 10 /32, Argo Application `multus`) | `tempest-receiver` | live (agents#5368) |
 
 Secret `zot-origin-cluster-pull` is reflected from `agent-fleet-runners` for image pulls.
 
