@@ -191,6 +191,8 @@ test("safe interpretation text, lifecycle states and quality preservation", asyn
   }
 });
 test("AI description: label, model/prompt provenance, state and coverage on video and day pages", async ({ page, request }) => {
+  // Nine page loads, each with linked playback and plots.
+  test.setTimeout(120_000);
   const cases = [["complete", "Complete"], ["degraded", "Degraded"], ["pending", "Pending"], ["failed", "Failed"]] as const;
   for (const [state, label] of cases) {
     await request.post("http://localhost:4174/__control", { data: { analysis: state } });
