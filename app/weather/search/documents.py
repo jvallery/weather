@@ -12,10 +12,11 @@ public description; favorites, notes, operator identity and originals metadata h
 """
 
 import re
+from contextlib import AbstractAsyncContextManager, nullcontext
 from dataclasses import dataclass
 from datetime import UTC, datetime, time, timedelta
 from hashlib import sha256
-from typing import Any, Literal
+from typing import Any, Literal, Protocol
 from uuid import UUID
 
 from sqlalchemy import text
@@ -292,7 +293,13 @@ INDEXED_SQL = """UPDATE weather.search_document SET index_status='indexed'
 WHERE id=:id AND visibility='public' AND index_status='pending'"""
 
 
-def embed_handler(embedder: Embedder) -> Handler:
+class Slot(Protocol):
+    """The cross-process inference slot (#23's advisory lock); held only around the call."""
+
+    def hold(self, wait: float) -> AbstractAsyncContextManager[Any]: ...
+
+
+def embed_handler(embedder: Embedder, slot: Slot | None = None) -> Handler:
     async def embed(context: JobContext) -> None:
         payload = context.job.payload
         document, digest = UUID(str(payload["document_id"])), str(payload["text_hash"])
@@ -306,7 +313,8 @@ def embed_handler(embedder: Embedder) -> Handler:
         if row is None or row["text_hash"] != digest or row["visibility"] != "public":
             return
         try:
-            (vector,) = await embedder.embed([row["text"]], timeout=EMBED_TIMEOUT_SECONDS)
+            async with slot.hold(EMBED_TIMEOUT_SECONDS) if slot else nullcontext():
+                (vector,) = await embedder.embed([row["text"]], timeout=EMBED_TIMEOUT_SECONDS)
         except EmbeddingUnavailable as error:
             raise RuntimeError(f"Embedding failed ({error.reason})") from None
 
@@ -333,7 +341,7 @@ def embed_handler(embedder: Embedder) -> Handler:
     return embed
 
 
-def register(registry: Registry, embedder: Embedder) -> None:
+def register(registry: Registry, embedder: Embedder, *, slot: Slot | None = None) -> None:
     """Wired by the worker that holds Cortex egress (#23); the scheduler leaves jobs queued."""
-    registry.register(EMBED_KIND, embed_handler(embedder))
+    registry.register(EMBED_KIND, embed_handler(embedder, slot))
 
