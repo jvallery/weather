@@ -44,8 +44,11 @@ alters `config_hash`, so chunks before and after are distinguishable.
 
 ## Staging occupancy plan
 
-Until #19 cleanup runs, nothing removes sealed chunks, so the share only fills. Measured fill
-rate and time to 70% are in [D02](../decisions/D02-camera-sources-and-time.md#commissioned-measurements).
+Until #19 cleanup runs, nothing removes sealed chunks, so the share only fills: about
+200 GB/day at 0.5 Hz (day/night mix), so 70% of the 300 GiB share in roughly 26 h. Measured
+figures are in [D02](../decisions/D02-camera-sources-and-time.md#commissioned-measurements).
+Alert `WeatherStagingOccupancyHigh` (monitoring-stack, thresholds 70/85/90%) fires on
+`weather_capture_staging_ratio`.
 Watch `weather_capture_staging_ratio` (or `df` on `/staging` inside a collector). If it
 approaches 0.70, scale all three collectors to 0 through Git (below) and leave them there
 until #19 runs or Jason chooses another bound. Do not delete anything to make room: sealed
