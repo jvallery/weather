@@ -997,7 +997,7 @@ object_event = Table(
     Column("actor", String(64), nullable=False),
     _created(),
     CheckConstraint(
-        "action IN ('unavailable','expired','gc_deleted','purged')", name="action"
+        "action IN ('unavailable','expired','gc_deleted','gc_kept','purged')", name="action"
     ),
 )
 Index("ix_object_event_object_key", object_event.c.object_key)

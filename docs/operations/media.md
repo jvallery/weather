@@ -309,7 +309,11 @@ and the day page.
   fails to read, an FFmpeg timeout or a decode that exits cleanly but reports errors defers the
   slot (only a failed decode is a persisted `decode` reject). A slot still unselected after
   12 h is recorded `missing`/`selection_expired` (while it is under 48 h old); older unselected
-  slots the API reports as `missing`/`not_selected`.
+  slots the API reports as `missing`/`not_selected`. Backlog (#19): with budget left in a loop,
+  slots older than 12 h whose sealed hour directory is still on staging and that have no row
+  or only `selection_expired` are selected again, oldest first (a correction retires the
+  expired revision; `withdrawn` and real outcomes are final), so an outage longer than 12 h
+  never pins their input forever. `weather_stills_backlog_slots{camera}` counts them.
 - **Archive.** One still product (`<camera>`, `YYYY-MM-DDTHH:00Z`) through the publisher:
   role `original` is the TAR member's exact bytes (EXIF included) in private
   `weather-originals`, roles `still`, `still_960`, `still_480`, `still_webp`, `still_webp960`,
@@ -378,7 +382,7 @@ condition holds; a kept chunk reports the first unmet one:
 | `config` | The chunk header's cadence, phase and geometry equal the pipeline's. A `capture.json` mismatch makes every frame a `settings` reject, and the renderer's slates must never release the input | here |
 | `mezzanine` | Every current segment whose read range `[starts_at − lag, ends_at)` overlaps the chunk has `mezzanine_through` (a slot key) at or past the chunk's slot-window end, or a complete mezzanine, and the frozen schedule covers the range. A dusk-spanning chunk waits for both segments | here |
 | `keogram` | Its keogram bins are committed | #37 |
-| `hourly` | Every UTC hour slot the chunk's frames can be selected for has an active `archival_still`: archived with its still publication committed (read back first) and its original asset still `available`, or `missing` for lack of input (`no_capture`, `no_eligible_capture`). `selection_expired` (no selection ran for 12 h, e.g. a Garage or pipeline outage) keeps the chunk, and the 48 h pinned alert fires | here, against #38's `archival_still` |
+| `hourly` | Every UTC hour slot the chunk's frames can be selected for has an active `archival_still`: archived with its still publication committed (read back first) and its original asset still `available`, or `missing` for lack of input (`no_capture`, `no_eligible_capture`). `selection_expired` (no selection ran for 12 h, e.g. a Garage or pipeline outage) keeps the chunk until the hourly backlog re-selects the slot from its sealed input (the 48 h pinned alert fires meanwhile) | here, against #38's `archival_still` |
 | `preview` | Its newest capture is more than 1,800 s plus one refresh (`WEATHER_CLEANUP_PREVIEW_REFRESH_SECONDS`, 60) old | here (#39's window) |
 
 `keogram` is unmet until #37 registers its query in `cleanup.CONDITION_QUERIES`: an async
@@ -394,9 +398,27 @@ Released input is gone for good, so the release point is tied to the blocks on d
 describes, a renderer of another recipe cannot advance it, and a renderer whose durable blocks
 (listed with errors raised, never silently empty) are behind it refuses to render and counts
 `weather_pipeline_release_incidents_total`. A durable block is never replaced. Change the
-recipe or correct a segment only before the segment starts; a mid-segment change is an
-incident for that segment (the deadline sweep marks it unavailable), never a re-render of
-deleted input.
+recipe or correct a segment only before the segment starts: a mid-segment change makes that
+segment stuck (below), never a re-render of deleted input.
+
+**Stuck segments.** A segment with a release point stays active until it finalizes. It is
+stuck when it cannot: a release incident (blocks behind the release point, or another recipe),
+a complete mezzanine whose publish keeps failing, or a superseded revision (`current=false`)
+the pipeline no longer selects. `weather_staging_oldest_unfinalized_segment_seconds` (age past
+its end) and `weather_staging_unfinalized_render_bytes` show it; its render directory and,
+for a current segment, its unreleased input stay on staging. Resolve it:
+
+1. Find it: `SELECT id,camera_id,cycle_date,kind,revision,current,state,reason,
+   mezzanine_through,ends_at FROM weather.segment WHERE finalized_at IS NULL AND
+   mezzanine_through IS NOT NULL AND ends_at < now() - interval '13 hours';` and the
+   pipeline's `weather_pipeline_failures_total{stage}` and log for its camera.
+2. Publish failing (`stage="publish"`/`"catalog"`): fix the cause (Garage, the writer key, a
+   revision conflict); the pipeline retries every 30 min at most and publishes it.
+3. Cannot complete (a release incident or a superseded revision), and only on Jason's
+   instruction, since its unpublished frames are given up: from the camera's pipeline pod,
+   `weather pipeline abandon <segment_id> --actor jason`. It is recorded
+   `unavailable`/`abandoned` and finalized; the next cleanup pass releases its chunks and
+   its render directory through the normal audited path. Record it in the issue.
 
 Also removed, with the same audit row: other incarnations' `tmp/<camera>/` files whose
 slot-window end and mtime are both older than `WEATHER_CLEANUP_TMP_HOURS` (6; a live writer
@@ -482,6 +504,7 @@ instruction.
 | `weather_staging_oldest_eligible_chunk_seconds{camera}` | Above 1 h with cleanup enabled: passes are failing; check `weather_staging_cleanup_failures_total` |
 | `weather_staging_oldest_pinned_chunk_seconds{camera,condition}` | Above 48 h: the named product is stuck (a stopped pipeline, a missing schedule, an unwired feature) |
 | `weather_staging_pinned_bytes{camera,condition}` | Bytes kept by each condition: alert on its growth before the 90 % stop |
+| `weather_staging_oldest_unfinalized_segment_seconds{camera}`, `weather_staging_unfinalized_render_bytes{camera}` | A started segment that has not finalized (see stuck segments); `WeatherStagingSegmentStuck` above 24 h |
 | `weather_staging_unindexed_files{camera}` | Sealed files no row covers; never deleted |
 | `weather_staging_deletions_total{camera,class}` | `chunk`, `tmp`, `render` deletions |
 | `weather_staging_cleanup_failures_total{camera,stage}` | `scan`, `identity`, `unlink`, `unsafe_target`, `statvfs`, `pass` |
@@ -543,7 +566,8 @@ inside grace names. Each deletion is fenced by a per-object-key transaction lock
 publisher also takes when it registers an intent and when it commits: under the lock GC
 re-checks the candidate and commits its `gc_deleted` row, then under the lock again deletes
 only if no pending intent or live row references the key (otherwise the audited bytes stay,
-`kept_after_audit`). An upload registered after the delete sees the key gone and re-uploads,
+`kept_after_audit`, with a `gc_kept` row that supersedes the `gc_deleted` one, so the key can
+be collected later). An upload registered after the delete sees the key gone and re-uploads,
 so byte-identical content may be published again (the asset revives after readback) and is a
 GC candidate again from its next tombstone; purged bytes never revive. It **refuses** (exit 3)
 unless

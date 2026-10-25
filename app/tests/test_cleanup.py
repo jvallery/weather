@@ -286,6 +286,11 @@ class FakeCatalog:
     ) -> dict[tuple[date, str, int], RenderState]:
         return {k: self.render_states[k] for k in keys if k in self.render_states}
 
+    async def oldest_unfinalized(self, camera: str, now: datetime) -> float:
+        return self.unfinalized_age
+
+    unfinalized_age = 0.0
+
 
 def frames(start: datetime, seconds: range) -> list[synthetic.Frame]:
     return [
@@ -686,9 +691,9 @@ def test_rendering_continues_at_the_collector_stop_and_pauses_only_at_97_percent
 
     advanced: list[object] = []
 
-    def advance(self: SegmentRenderer, now: object) -> bool:
+    def advance(self: SegmentRenderer, now: object, *, limit: int | None = None) -> int:
         advanced.append(now)
-        return False
+        return 0
 
     monkeypatch.setattr(schedule, "active", active)
     monkeypatch.setattr(SegmentRenderer, "advance", advance)
@@ -877,3 +882,83 @@ def test_hour_slots_cover_every_hour_a_chunks_frames_can_be_selected_for() -> No
                    window_end=hour + timedelta(hours=1))
     assert hour_slots(edge, LAG) == [hour, hour + timedelta(hours=1)]
     assert hour_slots(edge, timedelta(0)) == [hour]
+
+
+def test_a_finalized_segment_reads_nothing_more_and_releases_its_chunks() -> None:
+    """`weather pipeline abandon` (or any finalized result) ends a segment's reads, so its
+    partial release point no longer pins input."""
+    chunk = row(10, 11)
+    partial = SegmentSpan(at(0), at(600), at(5), False)
+    assert not mezzanine_released(chunk, [partial], LAG)
+    assert mezzanine_released(chunk, [replace(partial, finalized=True)], LAG)
+
+
+def test_stuck_unfinalized_segments_are_visible(tmp_path: Path) -> None:
+    from weather.scheduler.cleanup import OLDEST_UNFINALIZED, UNFINALIZED_BYTES
+
+    root = tmp_path / "render" / CAMERA / "2026-10-22_daytime_r1-v1" / "blocks"
+    root.mkdir(parents=True)
+    (root / "00000.mkv").write_bytes(b"m" * 100)
+    catalog = FakeCatalog(at(24 * 60))
+    catalog.unfinalized_age = 7200.0
+    catalog.render_states = {
+        (date(2026, 10, 22), "daytime", 1): RenderState(
+            uuid.uuid4(), False, "unavailable", at(0), False, False, started=True
+        )
+    }
+    report = run(make(tmp_path, catalog).run())
+    assert "render_eligible" not in report and root.exists()
+    assert UNFINALIZED_BYTES.labels(CAMERA)._value.get() == 100
+    assert OLDEST_UNFINALIZED.labels(CAMERA)._value.get() == 7200.0
+
+
+def test_rendering_yields_after_its_budget_and_backoff_rows_leave_the_prune_floor(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from weather.pipeline import schedule
+    from weather.pipeline import worker as worker_module
+    from weather.pipeline.intake import Expected
+    from weather.pipeline.recipe import Recipe
+    from weather.pipeline.render import SegmentJob, SegmentRenderer
+    from weather.pipeline.worker import PipelineConfig, Worker
+
+    stuck = schedule.SegmentRow(
+        id=uuid.uuid4(),
+        state="unavailable",
+        job=SegmentJob(CAMERA, date(2026, 10, 20), "daytime", 1, at(-3000), at(-2400), 120),
+    )
+    live = schedule.SegmentRow(
+        id=uuid.uuid4(),
+        state="processing",
+        job=SegmentJob(CAMERA, date(2026, 10, 23), "daytime", 1, T0, at(60), 120),
+    )
+
+    async def active(*_: object) -> list[schedule.SegmentRow]:
+        return [stuck, live]
+
+    blocks: list[object] = []
+
+    def advance(self: SegmentRenderer, now: object, *, limit: int | None = None) -> int:
+        assert limit == 1
+        blocks.append(now)
+        return 1
+
+    floors: list[object] = []
+    monkeypatch.setattr(schedule, "active", active)
+    monkeypatch.setattr(SegmentRenderer, "advance", advance)
+    monkeypatch.setattr(SegmentRenderer, "released_through", lambda self: None)
+    monkeypatch.setattr(worker_module, "RENDER_BUDGET_SECONDS", 0)
+    config = PipelineConfig(
+        camera=CAMERA, staging=tmp_path, expected=Expected(CAMERA, 2000, 0, W, H), recipe=Recipe()
+    )
+    worker = Worker(config, None, None, None)  # type: ignore[arg-type]
+    monkeypatch.setattr(worker.index, "prune", floors.append)
+    now = at(30)
+    worker.backoff[stuck.id] = (3, now + timedelta(minutes=10))
+    asyncio.run(worker.step(now))
+    # One block, then the budget ends the segment's turn and the loop restarts at once.
+    assert len(blocks) == 1 and worker.catching_up
+    # The stuck segment in backoff does not hold the index back to its start.
+    from weather.timemodel._instant import epoch_seconds
+
+    assert floors == [epoch_seconds(live.job.starts_at) - 3600]

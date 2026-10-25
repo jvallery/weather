@@ -94,6 +94,28 @@ async def selected(
     return set(rows.scalars())
 
 
+async def reselectable(
+    connection: AsyncConnection, camera: str, slots: list[datetime]
+) -> set[datetime]:
+    """Of `slots`, those with no active selection or only `selection_expired` (#19): no
+    selection ever ran for them, so their sealed input is still pinned and may be selected.
+    Every other outcome (a capture, `no_capture`, `no_eligible_capture`, `withdrawn`) is
+    final here."""
+    if not slots:
+        return set()
+    rows = await connection.execute(
+        text("""
+        SELECT s.slot FROM unnest(CAST(:slots AS timestamptz[])) AS s(slot)
+        WHERE NOT EXISTS (
+          SELECT 1 FROM weather.archival_still a
+          WHERE a.active AND a.camera_id=:camera AND a.slot_starts_at = s.slot
+            AND NOT (a.state = 'missing' AND a.reason = 'selection_expired'))
+    """),
+        {"camera": camera, "slots": slots},
+    )
+    return set(rows.scalars())
+
+
 def retain_until(slot: HourSlot) -> date:
     day = slot.weather_day.local_date
     try:

@@ -15,12 +15,14 @@ A slot still unselected after 12 h (up to 48 h back) is recorded missing, `selec
 
 import asyncio
 import logging
+import os
 import tempfile
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from fractions import Fraction
 from pathlib import Path
 
+from prometheus_client import Gauge
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from weather.publish import catalog as publish_catalog
@@ -38,6 +40,11 @@ from .intake import Candidate, ChunkIndex, Expected, IntakeError, read_frame, ut
 from .render import SEAL_MARGIN
 
 LOG = logging.getLogger("weather.pipeline")
+BACKLOG = Gauge(
+    "weather_stills_backlog_slots",
+    "Slots older than the lookback with sealed input but no real selection (re-selected)",
+    ["camera"],
+)
 LOOKBACK = timedelta(hours=12)
 # A slot still unselected after LOOKBACK is recorded missing (`selection_expired`) while it is
 # within EXPIRY; older slots the API reports as missing/not_selected.
@@ -82,6 +89,20 @@ class HourlyArchive:
             last -= timedelta(hours=1)
         return sorted(slots)
 
+    def sealed_hours(self) -> list[datetime]:
+        """UTC hours that still have a sealed-chunk directory, oldest first. Listing errors
+        propagate (the backlog is then skipped this step)."""
+        hours = []
+        with os.scandir(self.index.root) as entries:
+            for entry in entries:
+                if not entry.is_dir(follow_symlinks=False):
+                    continue
+                try:
+                    hours.append(datetime.strptime(entry.name, "%Y-%m-%dT%HZ").replace(tzinfo=UTC))
+                except ValueError:
+                    continue
+        return sorted(hours)
+
     def _decode(self, candidate: Candidate) -> tuple[bytes, bytes] | str:
         try:
             data = read_frame(candidate)  # the sealed member, re-verified against its sha256
@@ -116,7 +137,9 @@ class HourlyArchive:
             metrics.STILL_SLOTS.labels(self.camera, "missing").inc()
         slots = sorted(recent)
         pending = [slot for slot in slots if slot not in done]
-        self.backoff = {k: v for k, v in self.backoff.items() if k in pending}
+        # Keep backoff for recent pending slots and for backlog slots (older than the lookback).
+        floor = min(recent) if recent else now
+        self.backoff = {k: v for k, v in self.backoff.items() if k in pending or k < floor}
         metrics.STILL_PENDING.labels(self.camera).set(len(pending))
         metrics.STILL_OLDEST.labels(self.camera).set(
             (now - pending[0] - timedelta(hours=1)).total_seconds() if pending else 0
@@ -128,20 +151,51 @@ class HourlyArchive:
             if attempted == MAX_SLOTS_PER_STEP:
                 break
             attempted += 1
-            stage = "select"
-            try:
-                choice = await asyncio.to_thread(self.select, slot)
-                stage = "archive"
-                await self.archive(slot_for(slot), choice, now)
-                metrics.STILL_SLOTS.labels(self.camera, choice.state).inc()
-                self.backoff.pop(slot, None)
-            except Exception as error:
-                stage = "bind" if isinstance(error, Unbound) else stage
-                metrics.STILL_FAILURES.labels(self.camera, stage).inc()
-                LOG.error("Hourly %s failed (%s, %s)", stage, self.camera, type(error).__name__)
-                failures = self.backoff.get(slot, (0, now))[0] + 1
-                delay = min(MAX_BACKOFF, LOOP_SECONDS * 2 ** min(failures - 1, 10))
-                self.backoff[slot] = (failures, now + timedelta(seconds=delay))
+            await self._attempt(slot, now)
+        if attempted < MAX_SLOTS_PER_STEP:
+            await self._backlog(now, recent, MAX_SLOTS_PER_STEP - attempted)
+
+    async def _backlog(self, now: datetime, recent: set[datetime], budget: int) -> None:
+        """Re-select slots older than the lookback that still have sealed input but no real
+        selection (none, or `selection_expired` after an outage longer than 12 h), so their
+        chunks are not pinned forever (#19). Bounded by the step's remaining budget, oldest
+        first; a selection that differs from `selection_expired` is a correction through
+        `catalog.record` (the expired revision is retired)."""
+        try:
+            hours = await asyncio.to_thread(self.sealed_hours)
+        except OSError:
+            return
+        floor = min(recent) if recent else slot_for(now - LOOKBACK).start
+        old = [hour for hour in hours if hour < floor]
+        if not old:
+            BACKLOG.labels(self.camera).set(0)
+            return
+        async with self.engine.connect() as connection:
+            redo = sorted(await catalog.reselectable(connection, self.camera, old))
+        BACKLOG.labels(self.camera).set(len(redo))
+        for slot in redo:
+            if budget == 0:
+                break
+            if slot in self.backoff and now < self.backoff[slot][1]:
+                continue
+            budget -= 1
+            await self._attempt(slot, now)
+
+    async def _attempt(self, slot: datetime, now: datetime) -> None:
+        stage = "select"
+        try:
+            choice = await asyncio.to_thread(self.select, slot)
+            stage = "archive"
+            await self.archive(slot_for(slot), choice, now)
+            metrics.STILL_SLOTS.labels(self.camera, choice.state).inc()
+            self.backoff.pop(slot, None)
+        except Exception as error:
+            stage = "bind" if isinstance(error, Unbound) else stage
+            metrics.STILL_FAILURES.labels(self.camera, stage).inc()
+            LOG.error("Hourly %s failed (%s, %s)", stage, self.camera, type(error).__name__)
+            failures = self.backoff.get(slot, (0, now))[0] + 1
+            delay = min(MAX_BACKOFF, LOOP_SECONDS * 2 ** min(failures - 1, 10))
+            self.backoff[slot] = (failures, now + timedelta(seconds=delay))
 
     async def archive(self, slot: HourSlot, choice: Choice, now: datetime) -> None:
         winner = choice.winner

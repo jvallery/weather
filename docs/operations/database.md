@@ -104,7 +104,8 @@ slice-1 schema, `0002_api` (#14) adds the API's views, `0003_publication`
 (#18) the publication catalog, `0004_search` (#25) the search tables, `0005_events` (#41)
 weather events, `0006_render` (#15) the frozen solar schedule and render segments, `0009_stills`
 (#38) hour slots, archived originals and comparison stills, and `0010_cleanup` (#19) the staging
-inventory and the deletion and object-lifecycle audits; all are
+inventory and the deletion and object-lifecycle audits, and `0011_gc_kept` (#19) its `gc_kept`
+marker; all are
 inline DDL and import no application module. The restore-drill schema `weather_recovery_drill` is not Alembic's;
 the baseline and `alembic check` leave it alone.
 
@@ -177,7 +178,7 @@ migrator creates, so a later function is private until granted.
 
 ## Expand/contract migrations
 
-The head is `0010_cleanup`. `0001_baseline` has run on production, so every change is
+The head is `0011_gc_kept`. `0001_baseline` has run on production, so every change is
 expand/contract. Add a new revision with inline DDL; never edit an applied
 revision or import current application modules into one. `models.metadata`
 describes the current schema for `alembic check` and must change in the same
