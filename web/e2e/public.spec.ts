@@ -292,11 +292,12 @@ function framing(response: APIResponse) {
   expect(response.headersArray().filter((header) => /^(?:access-control-|set-cookie$)/i.test(header.name))).toEqual([]);
   return { ancestors: /frame-ancestors ([^;]+)$/.exec(policies[0])?.[1], xfo: response.headers()["x-frame-options"] };
 }
-test("embed success, 404, 500 and API-down responses allow only vallery.net to frame them; other routes deny", async ({ request }) => {
+test("embed success, 404, invalid-time and API-down responses allow only vallery.net to frame them; other routes deny", async ({ request }) => {
   const cases: [string, Record<string, unknown>, number, RegExp][] = [
     ["/embed/weather/", {}, 200, /<h2>Temperature<\/h2><strong>32 °F<\/strong>/],
     ["/embed/weather/missing", {}, 404, /Current weather is unavailable right now/],
-    ["/embed/weather/", { invalidTime: true }, 500, /Current weather is unavailable right now/],
+    // An unparseable observed_at marks only that time unavailable; the card still renders (#21).
+    ["/embed/weather/", { invalidTime: true }, 200, /Observed <time[^>]*>time unavailable<\/time>/],
     ["/embed/weather/", { apiUnavailable: true }, 200, /API unavailable\. Previously received measurements keep aging\./],
   ];
   for (const [path, control, status, body] of cases) {
