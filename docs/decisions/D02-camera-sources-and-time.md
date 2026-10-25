@@ -35,6 +35,43 @@ geometry 4096 × 1856 (Jason's decision, #4). Reason: staging capacity before #1
 exists; at the default 180° shutter rule the 60 fps timelapse loses no quality at 0.5 Hz.
 1 Hz is the target once #19 runs. Runbook: [capture](../operations/capture.md#cadence-config-epoch).
 
+Night window, 2026-10-25 03:15–04:15 UTC, one hour per camera after the JPEG marker fix
+(#110), from the sealed chunk manifests (no identifiers):
+
+| Camera | Frames/h | Poll p50 / p95 / p99 (s) | Bytes p50 / p95 | Failures |
+|---|---:|---|---|---|
+| skycam_east | 885 | 3.58 / 4.02 / 4.05 | 849 kB / 902 kB | none |
+| skycam_west | 880 | 3.96 / 4.05 / 4.92 | 895 kB / 912 kB | 3 timeouts |
+| frontyard_1 | 876 | 3.75 / 4.04 / 4.63 | 806 kB / 814 kB | 2 timeouts |
+
+All frames 4096 × 1856, every frame a distinct hash (fresh-frame rate 1.0). Collector CPU
+17–98 m, memory 40–50 MiB.
+
+- **JPEG structure.** All three cameras write a COM segment whose length undercounts its
+  payload (≈600 extraneous bytes before the next marker); the frame still ends exactly at
+  EOI. The marker walk skips them as libjpeg and FFmpeg do (#110).
+- **Digest.** The cameras issue single-use nonces: every frame is a 401 (~30 ms) and an
+  authorized retry (~0.7 s transfer). The original client paced that retry a full cadence
+  after the challenge, so a poll took cadence + transfer and every other slot was overdue:
+  0.25 Hz realised at the 0.5 Hz epoch, with p99 near the 5 s deadline. #119 paces polls
+  instead of exchanges; expected poll time is then ~0.7 s at night.
+- **NAS cost.** Measured fill at the realised 0.25 Hz night rate: ~59 GB/day (statvfs). At
+  0.5 Hz, night frames give ~113 GB/day; the daytime E06 sizes (above) give ~301 GB/day; a
+  day/night mix is ~200 GB/day, so the 300 GiB share reaches 70% in about 26 h without #19
+  cleanup. At 1 Hz that halves to about 13 h.
+- **Cadence × shutter.** The 7,200-frame cycle gives a source step of about 12 s for a 12 h
+  segment, so the default 180° shutter is about 6 s wide (D10). Each capture supports half
+  the expected interval on each side, so at 0.5 Hz about three captures fill the shutter
+  (coverage 1.0); 1 Hz blends about six for smoother motion at twice the NAS cost. A
+  realised 0.25 Hz against a 2 s expected interval covers only about half of each shutter,
+  below the 0.90 minimum, so #119 must be live before #15 renders this input.
+- **Frigate.** Before (01:13 UTC) and after (04:15 UTC): camera and process fps 5.0 on all
+  three, skipped fps 0, no detect or record errors, Frigate container restarts unchanged.
+  skycam_west's audio-only ffmpeg reconnected three times between 03:09 and 03:34 UTC (one
+  other, unpolled camera reconnected once in the same window); its video was unaffected.
+- **Pending.** Civil-dawn, midday and civil-dusk windows, the #16 corpus, and the
+  post-#119 cadence measurement.
+
 ## Time and derived products
 
 Use the [capture contract](../contracts/capture-contract.md) for slot, wall-clock and monotonic epochs, source-time estimate, uncertainty, freshness evidence and manifest ownership. HTTP Date and arrival time do not establish exposure time; equal JPEG hashes alone do not establish staleness. A camera timestamp needs validation; otherwise measure caching/latency and calibrate the request-midpoint estimate. Record unbounded uncertainty honestly and deny public image eligibility while its latest plausible exposure cannot be trusted.
