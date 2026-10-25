@@ -571,5 +571,35 @@
     "Reject reversed/empty source intervals even if schema shape passes",
     "Never use JSON decimal seeks as authoritative frame ownership",
     "No neighboring-segment temporal context"
+  ],
+  "solar_anchors": [
+    {
+      "name": "denver-civic-center",
+      "site_note": "Public city-centre coordinate (Denver Civic Center), not the station site",
+      "latitude": 39.7392,
+      "longitude": -104.9903,
+      "reference": "PyEphem 4.2.1, sun centre at -6 degrees, zero pressure (no refraction), elevation 0",
+      "tolerance_seconds": 60,
+      "cycles": [
+        {
+          "local_date": "2026-03-20",
+          "dawn": "2026-03-20T12:36:16Z",
+          "dusk": "2026-03-21T01:39:04Z",
+          "next_dawn": "2026-03-21T12:34:38Z"
+        },
+        {
+          "local_date": "2026-06-21",
+          "dawn": "2026-06-21T10:59:30Z",
+          "dusk": "2026-06-22T03:04:09Z",
+          "next_dawn": "2026-06-22T10:59:44Z"
+        },
+        {
+          "local_date": "2026-12-21",
+          "dawn": "2026-12-21T13:47:05Z",
+          "dusk": "2026-12-22T00:09:14Z",
+          "next_dawn": "2026-12-22T13:47:35Z"
+        }
+      ]
+    }
   ]
 }

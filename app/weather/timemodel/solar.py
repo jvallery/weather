@@ -126,6 +126,9 @@ def solar_cycle(local_date: date, site: SiteConfig) -> SolarCycle:
             duration_seconds(dusk - dawn),
             duration_seconds(next_dawn - dusk),
         )
+    except ScheduleError:
+        # Already sanitized; keep its specific reason instead of the generic one.
+        raise
     except ValueError, OverflowError:
         raise ScheduleError("Civil solar schedule is unavailable or invalid") from None
     return SolarCycle(

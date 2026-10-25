@@ -651,3 +651,97 @@ event_day = Table(
     ),
 )
 Index("ix_weather_event_day_local_date", event_day.c.local_date)
+
+# 0006_render (#15): frozen solar schedule and per-camera render segments. The overlap
+# exclusion on current segments (btree_gist) lives in the migration only; alembic ignores the
+# index that backs it.
+CAMERA_IDS = "'skycam_east','skycam_west','frontyard_1'"
+Table(
+    "solar_cycle",
+    metadata,
+    Column("site", String(32), primary_key=True),
+    Column(
+        "cycle_date",
+        Date,
+        ForeignKey("weather.weather_day.local_date", ondelete="RESTRICT"),
+        primary_key=True,
+    ),
+    _instant("dawn"),
+    _instant("dusk"),
+    _instant("next_dawn"),
+    Column("day_frames", Integer, nullable=False),
+    Column("night_frames", Integer, nullable=False),
+    Column("provenance_hash", String(64), nullable=False),
+    Column("astral_version", String(16), nullable=False),
+    Column("tzdata_version", String(16), nullable=False),
+    _created(),
+    CheckConstraint(
+        "site ~ '^[a-z][a-z0-9_]{0,31}$' AND dawn < dusk AND dusk < next_dawn", name="order"
+    ),
+    CheckConstraint(
+        "day_frames > 0 AND night_frames > 0 AND day_frames + night_frames = 7200",
+        name="allocation",
+    ),
+    CheckConstraint("provenance_hash ~ '^[0-9a-f]{64}$'", name="provenance"),
+)
+segment = Table(
+    "segment",
+    metadata,
+    _identity(),
+    Column("site", String(32), nullable=False),
+    Column("cycle_date", Date, nullable=False),
+    Column("camera_id", String(32), nullable=False),
+    Column("kind", String(16), nullable=False),
+    Column("revision", Integer, nullable=False, server_default=text("1")),
+    Column("current", Boolean, nullable=False, server_default=text("true")),
+    _instant("starts_at"),
+    _instant("ends_at"),
+    Column("frames", Integer, nullable=False),
+    Column("state", String(16), nullable=False, server_default=text("'scheduled'")),
+    Column("reason", String(64)),
+    Column("slot_coverage", DOUBLE_PRECISION),
+    _instant("mezzanine_through", True),
+    _instant("mezzanine_durable_at", True),
+    Column("render_result", JSONB),
+    _instant("finalized_at", True),
+    _created(),
+    Column(
+        "updated_at",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP"),
+    ),
+    UniqueConstraint("camera_id", "cycle_date", "kind", "revision"),
+    ForeignKeyConstraint(
+        ["site", "cycle_date"],
+        ["weather.solar_cycle.site", "weather.solar_cycle.cycle_date"],
+        ondelete="RESTRICT",
+    ),
+    CheckConstraint(
+        f"camera_id IN ({CAMERA_IDS}) AND kind IN ('daytime','overnight') AND revision > 0",
+        name="identity",
+    ),
+    CheckConstraint("starts_at < ends_at AND frames BETWEEN 1 AND 7200", name="interval"),
+    CheckConstraint(
+        "state IN ('scheduled','processing','published','partial','unavailable') "
+        "AND (state IN ('partial','unavailable')) = (reason IS NOT NULL)",
+        name="state",
+    ),
+    CheckConstraint(
+        "slot_coverage IS NULL OR (slot_coverage >= 0 AND slot_coverage <= 1)", name="coverage"
+    ),
+    CheckConstraint(
+        "render_result IS NULL OR (jsonb_typeof(render_result) = 'object' "
+        "AND octet_length(render_result::text) <= 1048576)",
+        name="result",
+    ),
+)
+Index(
+    "uq_segment_current",
+    segment.c.camera_id,
+    segment.c.cycle_date,
+    segment.c.kind,
+    unique=True,
+    postgresql_where=segment.c.current,
+)
+Index("ix_segment_ends_at", segment.c.ends_at, postgresql_where=segment.c.current)

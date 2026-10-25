@@ -452,6 +452,17 @@ def test_reader_requires_zero_padding_termination_and_plain_regular_headers(
     assert len(read_chunk(writer.destination)) == 2
 
 
+def test_every_sealed_padding_length_reads_back(tmp_path: Path) -> None:
+    """tarfile pads two zero blocks to a whole record; that tail can exceed one record."""
+    for step in range(tarfile.RECORDSIZE // tarfile.BLOCKSIZE):
+        directory = tmp_path / str(step)
+        writer = ChunkWriter(config(directory), new_incarnation(), 0, slot(), IOHealth())
+        writer.append(attempt(), b"x" * (step * tarfile.BLOCKSIZE + 1))
+        sealed = writer.seal()
+        assert sealed.stat().st_size % tarfile.RECORDSIZE == 0
+        assert len(read_chunk(sealed)) == 2
+
+
 def test_fsync_happens_only_at_seal(tmp_path: Path) -> None:
     calls: list[int] = []
     writer = ChunkWriter(config(tmp_path), new_incarnation(), 0, slot(), IOHealth(), calls.append)

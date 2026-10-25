@@ -24,6 +24,8 @@ TIMEZONE = "America/Denver"
 TZDATA_VERSION: str = tzdata.__version__
 IANA_VERSION: str = tzdata.IANA_VERSION
 HORIZON_MODEL = "standard-unobstructed-solar-centre-civil-6deg/v1"
+# A commissioned dawn/dusk correction is a local horizon tweak, never a different day.
+MAX_OFFSET_SECONDS = 3600
 
 
 @cache
@@ -46,14 +48,17 @@ def _number(value: object, *, minimum: float, maximum: float) -> float:
 
 
 def _integer(value: object) -> int:
+    number: int | None = None
     if type(value) is int:
-        return value
-    if isinstance(value, str):
+        number = value
+    elif isinstance(value, str):
         try:
-            return int(value)
+            number = int(value)
         except ValueError:
             pass
-    raise ScheduleError("Invalid private site offset")
+    if number is None or not -MAX_OFFSET_SECONDS <= number <= MAX_OFFSET_SECONDS:
+        raise ScheduleError("Invalid private site offset")
+    return number
 
 
 @dataclass(frozen=True, repr=False)

@@ -101,8 +101,8 @@ After a real production recovery, give the recovered cluster a new Barman
 Weather owns the `weather` schema and the `public_api` views inside its
 dedicated `weather` database. Revision `0001_baseline` (#74) holds the
 slice-1 schema, `0002_api` (#14) adds the API's views, `0003_publication`
-(#18) the publication catalog, `0004_search` (#25) the search tables and `0005_events` (#41)
-weather events; all are
+(#18) the publication catalog, `0004_search` (#25) the search tables, `0005_events` (#41)
+weather events and `0006_render` (#15) the frozen solar schedule and render segments; all are
 inline DDL and import no application module. The restore-drill schema `weather_recovery_drill` is not Alembic's;
 the baseline and `alembic check` leave it alone.
 
@@ -121,6 +121,7 @@ the baseline and `alembic check` leave it alone.
 | `public_api.assets`, `public_api.videos` | Public media views (0003; security barrier, embargo and `ends_at + 630 s` guards) |
 | `embedding_profile`, `search_document`, `search_embedding` | Search (0004): profiles, immutable public-text revisions (final withdrawal, generated English `tsvector`) and unit-norm `vector(2560)` rows bound to the document's text hash. See [search operations](search.md) |
 | `public_api.search_documents`, `public_api.search_vectors`, `public_api.search_lexical()` | Security-barrier search views (0004): current public documents past their embargo, and their vectors; a SECURITY DEFINER full-text function with the same filter, so the partial GIN index serves `@@` |
+| `solar_cycle`, `segment` | Frozen civil-twilight schedule keyed on `(site, cycle_date)` and one render segment per camera and kind (0006, #15); current segments of a camera never overlap (`btree_gist` exclusion). See [pipeline operations](pipeline.md) |
 
 `obs_st` and `rapid_wind` also carry `inserted_at` (0002; `clock_timestamp()` on insert, `-infinity` for older rows), which export cursors snapshot on. They carry a btree on `source_ts`, so current conditions
 (#14) read the newest row by index. The other families use BRIN.
@@ -137,7 +138,8 @@ previews and events. Each owning issue (#18, #19, #37, #38, #39, #41, #44, #25,
 #23) re-creates its tables in its own expand-only migration, with those CHECKs
 and its public view behind a security barrier. #18 has done so for
 `media_asset`, `video` and the publication tables (`0003_publication`). `0004_search` (#25) replaced the
-v1 `search_document`/`embedding_profile` design.
+v1 `search_document`/`embedding_profile` design. #15 did so for
+`solar_cycle` and `segment` (`0006_render`).
 
 ## Connection and role custody
 
@@ -158,7 +160,7 @@ every second while the spool holds receipts.
 |---|---|
 | `weather_migrator` | Database/schema owner, DDL and migrations |
 | `weather_ingest` | Insert on station and device, select on their non-private columns (not `private_configuration`); select/insert on receipts and family rows; no update/delete |
-| `weather_worker` | Read/write `job` and `outbox`; select/insert `weather_day`; select/insert `media_asset`, `upload_intent`, `video` with UPDATE only on the columns the publisher writes; select/insert the append-only `publication`, `publication_asset`, `withdrawal`, `product_tombstone`; the fence sequence; select/insert search documents and vectors, update only a document's `visibility`, `withdrawn_at` and `index_status`; select only `id, device_id, source_ts, values, quality` of `evt_precip`, `evt_strike`, `obs_st` and a device's `station_id` (event rules); select/insert events, revisions and day links, update an event's `revision` pointer; no receipts, serials or other telemetry |
+| `weather_worker` | Read/write `job` and `outbox`; select/insert `weather_day`; select/insert `media_asset`, `upload_intent`, `video` with UPDATE only on the columns the publisher writes; select/insert the append-only `publication`, `publication_asset`, `withdrawal`, `product_tombstone`; the fence sequence; select/insert search documents and vectors, update only a document's `visibility`, `withdrawn_at` and `index_status`; select only `id, device_id, source_ts, values, quality` of `evt_precip`, `evt_strike`, `obs_st` and a device's `station_id` (event rules); select/insert events, revisions and day links, update an event's `revision` pointer; select/insert `solar_cycle` and `segment`, updating only the render result columns; select on `public_api.obs_st` and `public_api.rapid_wind` for the sidecar weather block (#15); no receipts, serials or other telemetry |
 | `weather_api` | Select the `public_api` views (including the two search views) and execute the two value-gating functions and `search_lexical`; no base-table access or `weather` schema usage |
 | `weather_editor` | Login only. No editorial functions exist yet; #44 adds them and grants EXECUTE to this role alone |
 
@@ -170,7 +172,7 @@ migrator creates, so a later function is private until granted.
 
 ## Expand/contract migrations
 
-The head is `0005_events`. `0001_baseline` has run on production, so every change is
+The head is `0006_render`. `0001_baseline` has run on production, so every change is
 expand/contract. Add a new revision with inline DDL; never edit an applied
 revision or import current application modules into one. `models.metadata`
 describes the current schema for `alembic check` and must change in the same

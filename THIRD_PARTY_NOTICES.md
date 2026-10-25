@@ -19,6 +19,10 @@ FFmpeg 9.0.2 with libx264 is GPL, not MIT. Its licenses are included under
 see `docs/operations/ffmpeg.md` for the exact source
 archive, checksum, configuration and corresponding-source distribution obligations.
 
+The renderer (#15) uses NumPy (BSD-3-Clause, with bundled 0BSD/MIT/Zlib/CC0 parts) and Pillow
+(MIT-CMU). Their binary wheels bundle native libraries (for NumPy, OpenBLAS; for Pillow,
+libjpeg-turbo, libwebp, zlib and others), each with its license file inside the installed wheel.
+
 Self-hosted IBM Plex Sans Variable and IBM Plex Mono fonts use the SIL Open Font License 1.1.
 Their original notices are distributed at `/fonts/OFL-sans.txt` and `/fonts/OFL-mono.txt`;
 exact approved font and notice hashes are recorded in `docs/research/font-provenance.json`.

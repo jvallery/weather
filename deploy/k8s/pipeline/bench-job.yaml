@@ -1,0 +1,77 @@
+# In-cluster throughput check for #15; never in any kustomization and never run on a Mac.
+# Usage and limits: docs/operations/pipeline.md#throughput-check. Replace the image digest
+# with the weather-app build under test and the expiry date before applying. It needs no
+# Secret, database or network: the pipeline policy is not selected and default-deny holds.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: weather-pipeline-bench
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    app.kubernetes.io/component: pipeline-bench
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+    estate.vallery.net/disposable: 'true'
+    estate.vallery.net/expires: 'YYYY-MM-DD'
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 10800
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/part-of: weather
+        app.kubernetes.io/component: pipeline-bench
+        estate.vallery.net/disposable: 'true'
+    spec:
+      restartPolicy: Never
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      serviceAccountName: pipeline-skycam-east
+      imagePullSecrets:
+      - name: zot-origin-cluster-pull
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: bench
+        image: registry.vallery.net/jvallery/weather-app@sha256:REPLACE_WITH_DIGEST_UNDER_TEST
+        command:
+        - weather
+        - pipeline
+        - bench
+        - --work
+        - /work
+        - --seconds
+        - '600'
+        - --finalize-frames
+        - '1200'
+        env:
+        - name: TMPDIR
+          value: /work
+        resources:
+          # The three pipelines' combined budget (docs/operations/deploy.md).
+          requests:
+            cpu: '3'
+            memory: 6Gi
+          limits:
+            cpu: '12'
+            memory: 24Gi
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: work
+          mountPath: /work
+      volumes:
+      - name: work
+        emptyDir:
+          sizeLimit: 20Gi

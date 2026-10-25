@@ -59,7 +59,7 @@ kubectl --context vallery -n weather exec deploy/api -- python -c \
 | Symptom | Likely cause | Action |
 |---|---|---|
 | `/current` 503, pods unready | Database unreachable for > 30 s and no fresh cache | `kubectl cnpg status weather-pg -n weather`; check the `weather-database-clients` NetworkPolicy and the `weather-pg-api` Secret. Pods recover on their own when the database answers. |
-| `/current` 503, pods ready | Database answers but the views are missing (migration not applied) or there is no reading yet | Check the `weather-migrate` hook Job and `SELECT version_num FROM alembic_version` (expect `0005_events`). |
+| `/current` 503, pods ready | Database answers but the views are missing (migration not applied) or there is no reading yet | Check the `weather-migrate` hook Job and `SELECT version_num FROM alembic_version` (expect `0006_render` or later). |
 | `data_state: cached` | Database reads failing while the cache is fresh | As above; values keep their original times and turn stale on schedule. |
 | `data_state: unavailable` and all metrics null | No telemetry yet (receiver not live) | Expected before #5; not an API fault. |
 | Aggregates 503 | 10 s statement timeout or queueing | Narrow the window or coarsen the resolution; watch `weather_api_db_errors_total{operation="aggregates"}`. |

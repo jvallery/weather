@@ -19,10 +19,13 @@ What this repository owns and its state: **live** (running or applied), **disabl
 | Events: scheduler job kinds `events` and `weather_event_changed`, `GET /api/v1/events[/{id}]`, web `/events/` (#41) | `app/weather/events/`; runbook [events](docs/operations/events.md) | live |
 | Deployment `scheduler` ×1 and NetworkPolicy `scheduler` | `scheduler/` | live |
 | Search: NetworkPolicy `api-cortex-egress`, IngressRoute `weather-search`, Middlewares `weather-search-rate-limit`, `weather-search-in-flight`, `weather-cortex` mount in `api` | `search/` component; runbook [search](docs/operations/search.md) | disabled (#25) |
-| NetworkPolicy `pipeline` | `pipeline/` | disabled (#15) |
+| NetworkPolicy `pipeline` and Deployments `pipeline-skycam-east`, `pipeline-skycam-west`, `pipeline-frontyard-1` (`replicas: 0`; staging PVC, worker DB role, `weather-media-s3-writer`) | `pipeline/`; runbook [pipeline](docs/operations/pipeline.md) | disabled (#15); #49 enables |
+| Schema `0006_render`: `solar_cycle`, `segment` (btree_gist overlap exclusion), worker read on `public_api.obs_st`/`rapid_wind` | `app/migrations/versions/0006_render.py`, `app/weather/pipeline/` | source (#15); applied with the next app pin |
+| Scheduler job kinds `segment.schedule`, `segment.finalize`, `segment.deadline`; optional `weather-site` mount in `scheduler` | `app/weather/pipeline/schedule.py`, `scheduler/` | source (#15); without the Secret schedule jobs fail visibly |
+| Job `weather-pipeline-bench` (disposable throughput check) | `pipeline/bench-job.yaml`, never in a kustomization | applied by hand, then deleted |
 | StatefulSets `collector-skycam-east`, `-skycam-west`, `-frontyard-1` ×1, ConfigMap `collector-capture-<hash>`, NetworkPolicy `collector`, PVC `weather-staging` (binds the storage-infra PV; `Prune=false,Delete=false`) | `capture/`; runbook [capture](docs/operations/capture.md) | live (#4, 0.5 Hz epoch) |
 | `tempest-receiver` and its spool PVC | — | planned (#5) |
-| Pipelines ×3, `weather-preview`, `intel` | — | planned (#15, #39, #23) |
+| `weather-preview`, `intel` | — | planned (#39, #23) |
 | Images `weather-app`, `weather-web` (digests in `kustomization.yaml`) | `registry.vallery.net/jvallery/` | live |
 | Images `weather-python-base`, `weather-node-base`, `weather-ci` | `registry.vallery.net/jvallery/` | live |
 

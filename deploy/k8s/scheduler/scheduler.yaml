@@ -47,6 +47,10 @@ spec:
           value: /var/run/weather-db
         - name: METRICS_PORT
           value: '9000'
+        # Private site for the frozen solar schedule (#15). The Secret is optional so the
+        # scheduler starts without it; schedule jobs then fail visibly (see pipeline.md).
+        - name: WEATHER_SITE_FILE
+          value: /var/run/weather-site/site.json
         resources:
           requests:
             cpu: 100m
@@ -66,6 +70,9 @@ spec:
           readOnly: true
         - name: tmp
           mountPath: /tmp
+        - name: site
+          mountPath: /var/run/weather-site
+          readOnly: true
         ports:
         - name: metrics
           containerPort: 9000
@@ -89,6 +96,11 @@ spec:
       - name: tmp
         emptyDir:
           sizeLimit: 64Mi
+      - name: site
+        secret:
+          secretName: weather-site
+          optional: true
+          defaultMode: 288
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

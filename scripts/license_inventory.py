@@ -32,6 +32,8 @@ ALLOW = {
     "BlueOak-1.0.0",
     "MPL-2.0",
     "0BSD",
+    "Zlib",
+    "MIT-CMU",
 }
 CLASSIFIERS = {
     "Apache Software License": "Apache-2.0",

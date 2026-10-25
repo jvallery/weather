@@ -1,0 +1,398 @@
+# Disabled (#15): replicas 0, and the pipeline directory is not in the root kustomization.
+# #49 enables them once the cameras (#4), the staging PVC and the weather-media writer key
+# (storage-infra#1107) exist. WEATHER_IMAGE_DIGEST must then equal the app digest pin, so
+# every RenderResult records the image that produced it. Runbook: docs/operations/pipeline.md.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipeline-skycam-east
+  namespace: weather
+  labels: &id001
+    app.kubernetes.io/part-of: weather
+    app.kubernetes.io/component: pipeline
+    app.kubernetes.io/name: pipeline-skycam-east
+    weather.vallery.net/database-role: worker
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+spec:
+  replicas: 0
+  strategy:
+    type: Recreate
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: *id001
+  template:
+    metadata:
+      labels: *id001
+    spec:
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      serviceAccountName: pipeline-skycam-east
+      imagePullSecrets:
+      - name: zot-origin-cluster-pull
+      # Same identity as the collectors: the staging share is owned by UID 1025 / GID 100
+      # (storage-infra#1106), and the pipeline creates render/ beside sealed/.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1025
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: pipeline
+        image: weather-app
+        command:
+        - weather
+        - pipeline
+        - run
+        - --camera
+        - skycam_east
+        env:
+        - name: DATABASE_CREDENTIAL_DIRECTORY
+          value: /var/run/weather-db
+        - name: GARAGE_CREDENTIAL_DIRECTORY
+          value: /var/run/weather-garage
+        - name: WEATHER_STAGING
+          value: /staging
+        - name: WEATHER_PIPELINE_GEOMETRY
+          value: 4096x1856
+        - name: WEATHER_PIPELINE_CADENCE_MS
+          value: '2000'
+        - name: WEATHER_PIPELINE_SHUTTER_DEGREES
+          value: '180'
+        - name: WEATHER_IMAGE_DIGEST
+          value: unpinned
+        - name: METRICS_PORT
+          value: '9000'
+        - name: TMPDIR
+          value: /tmp
+        resources:
+          requests:
+            cpu: '1'
+            memory: 2Gi
+          limits:
+            cpu: '4'
+            memory: 8Gi
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        ports:
+        - name: metrics
+          containerPort: 9000
+        volumeMounts:
+        - name: database
+          mountPath: /var/run/weather-db
+          readOnly: true
+        - name: garage
+          mountPath: /var/run/weather-garage
+          readOnly: true
+        - name: staging
+          mountPath: /staging
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: database
+        projected:
+          defaultMode: 288
+          sources:
+          - secret:
+              name: weather-pg-worker
+              items:
+              - key: username
+                path: username
+              - key: password
+                path: password
+          - secret:
+              name: weather-pg-ca
+              items:
+              - key: ca.crt
+                path: ca.crt
+      - name: garage
+        projected:
+          defaultMode: 288
+          sources:
+          - secret:
+              name: weather-media-s3-writer
+              items:
+              - key: AWS_ACCESS_KEY_ID
+                path: weather-media/access_key_id
+              - key: AWS_SECRET_ACCESS_KEY
+                path: weather-media/secret_access_key
+      - name: staging
+        persistentVolumeClaim:
+          claimName: weather-staging
+      - name: tmp
+        emptyDir:
+          sizeLimit: 1Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipeline-skycam-west
+  namespace: weather
+  labels: &id001
+    app.kubernetes.io/part-of: weather
+    app.kubernetes.io/component: pipeline
+    app.kubernetes.io/name: pipeline-skycam-west
+    weather.vallery.net/database-role: worker
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+spec:
+  replicas: 0
+  strategy:
+    type: Recreate
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: *id001
+  template:
+    metadata:
+      labels: *id001
+    spec:
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      serviceAccountName: pipeline-skycam-west
+      imagePullSecrets:
+      - name: zot-origin-cluster-pull
+      # Same identity as the collectors: the staging share is owned by UID 1025 / GID 100
+      # (storage-infra#1106), and the pipeline creates render/ beside sealed/.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1025
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: pipeline
+        image: weather-app
+        command:
+        - weather
+        - pipeline
+        - run
+        - --camera
+        - skycam_west
+        env:
+        - name: DATABASE_CREDENTIAL_DIRECTORY
+          value: /var/run/weather-db
+        - name: GARAGE_CREDENTIAL_DIRECTORY
+          value: /var/run/weather-garage
+        - name: WEATHER_STAGING
+          value: /staging
+        - name: WEATHER_PIPELINE_GEOMETRY
+          value: 4096x1856
+        - name: WEATHER_PIPELINE_CADENCE_MS
+          value: '2000'
+        - name: WEATHER_PIPELINE_SHUTTER_DEGREES
+          value: '180'
+        - name: WEATHER_IMAGE_DIGEST
+          value: unpinned
+        - name: METRICS_PORT
+          value: '9000'
+        - name: TMPDIR
+          value: /tmp
+        resources:
+          requests:
+            cpu: '1'
+            memory: 2Gi
+          limits:
+            cpu: '4'
+            memory: 8Gi
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        ports:
+        - name: metrics
+          containerPort: 9000
+        volumeMounts:
+        - name: database
+          mountPath: /var/run/weather-db
+          readOnly: true
+        - name: garage
+          mountPath: /var/run/weather-garage
+          readOnly: true
+        - name: staging
+          mountPath: /staging
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: database
+        projected:
+          defaultMode: 288
+          sources:
+          - secret:
+              name: weather-pg-worker
+              items:
+              - key: username
+                path: username
+              - key: password
+                path: password
+          - secret:
+              name: weather-pg-ca
+              items:
+              - key: ca.crt
+                path: ca.crt
+      - name: garage
+        projected:
+          defaultMode: 288
+          sources:
+          - secret:
+              name: weather-media-s3-writer
+              items:
+              - key: AWS_ACCESS_KEY_ID
+                path: weather-media/access_key_id
+              - key: AWS_SECRET_ACCESS_KEY
+                path: weather-media/secret_access_key
+      - name: staging
+        persistentVolumeClaim:
+          claimName: weather-staging
+      - name: tmp
+        emptyDir:
+          sizeLimit: 1Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipeline-frontyard-1
+  namespace: weather
+  labels: &id001
+    app.kubernetes.io/part-of: weather
+    app.kubernetes.io/component: pipeline
+    app.kubernetes.io/name: pipeline-frontyard-1
+    weather.vallery.net/database-role: worker
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+spec:
+  replicas: 0
+  strategy:
+    type: Recreate
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: *id001
+  template:
+    metadata:
+      labels: *id001
+    spec:
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      serviceAccountName: pipeline-frontyard-1
+      imagePullSecrets:
+      - name: zot-origin-cluster-pull
+      # Same identity as the collectors: the staging share is owned by UID 1025 / GID 100
+      # (storage-infra#1106), and the pipeline creates render/ beside sealed/.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1025
+        runAsGroup: 100
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: pipeline
+        image: weather-app
+        command:
+        - weather
+        - pipeline
+        - run
+        - --camera
+        - frontyard_1
+        env:
+        - name: DATABASE_CREDENTIAL_DIRECTORY
+          value: /var/run/weather-db
+        - name: GARAGE_CREDENTIAL_DIRECTORY
+          value: /var/run/weather-garage
+        - name: WEATHER_STAGING
+          value: /staging
+        - name: WEATHER_PIPELINE_GEOMETRY
+          value: 4096x1856
+        - name: WEATHER_PIPELINE_CADENCE_MS
+          value: '2000'
+        - name: WEATHER_PIPELINE_SHUTTER_DEGREES
+          value: '180'
+        - name: WEATHER_IMAGE_DIGEST
+          value: unpinned
+        - name: METRICS_PORT
+          value: '9000'
+        - name: TMPDIR
+          value: /tmp
+        resources:
+          requests:
+            cpu: '1'
+            memory: 2Gi
+          limits:
+            cpu: '4'
+            memory: 8Gi
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        ports:
+        - name: metrics
+          containerPort: 9000
+        volumeMounts:
+        - name: database
+          mountPath: /var/run/weather-db
+          readOnly: true
+        - name: garage
+          mountPath: /var/run/weather-garage
+          readOnly: true
+        - name: staging
+          mountPath: /staging
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: database
+        projected:
+          defaultMode: 288
+          sources:
+          - secret:
+              name: weather-pg-worker
+              items:
+              - key: username
+                path: username
+              - key: password
+                path: password
+          - secret:
+              name: weather-pg-ca
+              items:
+              - key: ca.crt
+                path: ca.crt
+      - name: garage
+        projected:
+          defaultMode: 288
+          sources:
+          - secret:
+              name: weather-media-s3-writer
+              items:
+              - key: AWS_ACCESS_KEY_ID
+                path: weather-media/access_key_id
+              - key: AWS_SECRET_ACCESS_KEY
+                path: weather-media/secret_access_key
+      - name: staging
+        persistentVolumeClaim:
+          claimName: weather-staging
+      - name: tmp
+        emptyDir:
+          sizeLimit: 1Gi

@@ -125,9 +125,10 @@ def test_baseline_head_roles_and_least_privilege() -> None:
             async with admin.begin() as connection:
                 assert await scalar(
                     connection, "SELECT version_num FROM public.alembic_version"
-                ) == ("0005_events")
+                ) == ("0006_render")
                 # Slice-1 relations, the observations view, the API's views (0002), the
-                # publication catalog (0003), search (0004) and events (0005).
+                # publication catalog (0003), search (0004), events (0005) and the render
+                # schedule (0006).
                 relations = (
                     await connection.execute(
                         text("""
@@ -166,6 +167,9 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     "public_api.event_revisions",
                     "public_api.event_revision_markers",
                     "public_api.event_days",
+                    # 0006_render (#15)
+                    "weather.solar_cycle",
+                    "weather.segment",
                 }
                 options = await scalar(
                     connection,
@@ -211,11 +215,21 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                         assert not await table(role, relation, "SELECT")
                 assert await table("weather_worker", "weather.weather_day", "INSERT")
                 assert not await table("weather_worker", "weather.weather_day", "UPDATE")
+                # The renderer's sidecar weather block (#15) reads the two public telemetry
+                # views through #14's aggregates as the worker; nothing else widens.
+                summary_views = {"public_api.obs_st", "public_api.rapid_wind"}
                 for view in ("public_api.observations", *API_VIEWS):
                     assert await table("weather_api", view, "SELECT")
                     assert not await table("weather_api", view, "INSERT")
-                    for role in ("weather_ingest", "weather_worker", "weather_editor"):
+                    assert await table("weather_worker", view, "SELECT") is (view in summary_views)
+                    assert not await table("weather_worker", view, "INSERT")
+                    for role in ("weather_ingest", "weather_editor"):
                         assert not await table(role, view, "SELECT")
+                for relation in ("weather.solar_cycle", "weather.segment"):
+                    assert await table("weather_worker", relation, "INSERT")
+                    assert not await table("weather_worker", relation, "DELETE")
+                    for role in ("weather_ingest", "weather_api", "weather_editor"):
+                        assert not await table(role, relation, "SELECT")
                 # No editorial functions exist yet; weather_editor has no schema access (#44).
                 for role, schema in (
                     ("weather_api", "weather"),
@@ -497,10 +511,10 @@ def test_tick_is_idempotent_fills_days_ahead_and_prunes_finished_work() -> None:
             async with db.begin() as connection:
                 await tick(connection, now)
                 await tick(connection, now)
-                # One days job and one events job (#41) for the current slot; the events job is
-                # not yet due.
-                assert await scalar(connection, "SELECT count(*) FROM weather.job") == 2
-                job = await jobs.claim(connection, kinds=registry.kinds())
+                # One days job, one events job (#41) for the current slot (not yet due) and
+                # one `schedule:<date>` job (#15); no segments exist yet.
+                assert await scalar(connection, "SELECT count(*) FROM weather.job") == 3
+                job = await jobs.claim(connection, kinds={"days"})
             assert job is not None and job.kind == "days"
             await _run_job(db, registry, job)
             async with db.begin() as connection:
@@ -534,9 +548,9 @@ def test_tick_is_idempotent_fills_days_ahead_and_prunes_finished_work() -> None:
                     )
                     == "quarantined"
                 )
-                assert await scalar(connection, "SELECT count(*) FROM weather.job") == 2
+                assert await scalar(connection, "SELECT count(*) FROM weather.job") == 3
                 await tick(connection, now)
-                assert await scalar(connection, "SELECT count(*) FROM weather.job") == 2
+                assert await scalar(connection, "SELECT count(*) FROM weather.job") == 3
         finally:
             await db.dispose()
 
@@ -562,6 +576,12 @@ def test_concurrent_ticks_enqueue_one_days_job() -> None:
             async with db.begin() as connection:
                 assert (
                     await scalar(connection, "SELECT count(*) FROM weather.job WHERE kind='days'")
+                    == 1
+                )
+                assert (
+                    await scalar(
+                        connection, "SELECT count(*) FROM weather.job WHERE kind='segment.schedule'"
+                    )
                     == 1
                 )
         finally:

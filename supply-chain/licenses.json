@@ -2990,6 +2990,13 @@
   },
   {
     "ecosystem": "pypi",
+    "name": "numpy",
+    "version": "2.5.4",
+    "license": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+    "source": "https://pypi.org/pypi/numpy/2.5.4/json"
+  },
+  {
+    "ecosystem": "pypi",
     "name": "opentelemetry-api",
     "version": "1.45.1",
     "license": "Apache-2.0",
@@ -3008,6 +3015,13 @@
     "version": "1.1.1",
     "license": "MPL-2.0",
     "source": "https://pypi.org/pypi/pathspec/1.1.1/json"
+  },
+  {
+    "ecosystem": "pypi",
+    "name": "pillow",
+    "version": "13.0.0",
+    "license": "MIT-CMU",
+    "source": "https://pypi.org/pypi/pillow/13.0.0/json"
   },
   {
     "ecosystem": "pypi",

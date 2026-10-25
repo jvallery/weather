@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from weather.db import jobs
 from weather.db.days import ensure_days
 from weather.events import job as events
+from weather.pipeline import schedule as segments
 from weather.scheduler.registry import JobContext, Registry
 from weather.timemodel import day_for, weather_day
 
@@ -46,9 +47,12 @@ async def periodic(connection: AsyncConnection, now: datetime) -> None:
         deadline=weather_day(today).end,
     )
     await events.enqueue(connection, now)
+    # Solar schedule (>=3 local days ahead) and segment boundary jobs (#15).
+    await segments.periodic(connection, now)
 
 
 def register(registry: Registry) -> None:
     registry.register(DAYS_KIND, days)
     registry.register(MEDIA_KIND, media_changed, topics=("media.published", "media.withdrawn"))
     events.register(registry)
+    segments.register(registry)

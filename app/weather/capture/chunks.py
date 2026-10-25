@@ -233,9 +233,16 @@ def read_chunk(path: Path, max_frame_bytes: int = 16777216) -> list[dict[str, An
                     digest.update(part)
                 frames[member.name] = member.size, digest.hexdigest()
             # tarfile stops silently at a bad header; require two zero blocks and only zero fill.
+            # The writer adds two zero blocks and then pads to a whole record, so the tail is
+            # 2 blocks plus under one record, ending exactly on a record boundary.
             raw.seek(end)
-            tail = raw.read(tarfile.RECORDSIZE + 1)
-            if not 2 * tarfile.BLOCKSIZE <= len(tail) <= tarfile.RECORDSIZE or any(tail):
+            limit = tarfile.RECORDSIZE + 2 * tarfile.BLOCKSIZE
+            tail = raw.read(limit)
+            if (
+                not 2 * tarfile.BLOCKSIZE <= len(tail) < limit
+                or (end + len(tail)) % tarfile.RECORDSIZE
+                or any(tail)
+            ):
                 raise ValueError("Incomplete TAR termination")
     except tarfile.TarError, EOFError:
         raise ValueError("Invalid TAR archive") from None

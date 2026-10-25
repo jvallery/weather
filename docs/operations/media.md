@@ -58,6 +58,10 @@ no-op that returns the committed revision. A commit from an older attempt
 fails with `StaleFence`. A withdrawn product, or withdrawn bytes, fail with
 `Withdrawn`, whether retried or re-rendered.
 
+A video can also be committed with no assets at all, only when its state is
+`unavailable`: the renderer's deadline path (#15) records a camera that missed
+its boundary this way, so the catalog says so without uploading anything.
+
 Stills and keograms publish without a video. Originals commit only to a still,
 under the `original` role, to the private `weather-originals` bucket with no
 embargo and no publication time. The database enforces this as well as the
