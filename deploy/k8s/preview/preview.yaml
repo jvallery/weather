@@ -2,8 +2,6 @@
 # that mounts staging, and only `previews/`, read-only. Health never touches the database or
 # the share, so a NAS or database outage makes previews unavailable without unreadying or
 # restarting the pod. Runbook: docs/operations/media.md#previews.
-# replicas: 0 until the promote commit pins an app image that has the `weather preview` role
-# (the current pin predates it and would crash-loop); that commit sets replicas: 1.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,7 +15,7 @@ metadata:
     agent-fleet.vallery.net/owner: jvallery
     agent-fleet.vallery.net/project: weather
 spec:
-  replicas: 0
+  replicas: 1
   revisionHistoryLimit: 3
   selector:
     matchLabels:
