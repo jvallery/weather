@@ -49,7 +49,9 @@ def main() -> None:
         "publication: weather media withdraw|reconcile; "
         "rendering: weather pipeline run --camera <id>"
     )
-    parser.add_argument("role", choices=["api", "scheduler", "tempest-receiver"], nargs="?")
+    parser.add_argument(
+        "role", choices=["api", "preview", "scheduler", "tempest-receiver"], nargs="?"
+    )
     args = parser.parse_args()
     if args.role == "api":
         try:
@@ -64,6 +66,10 @@ def main() -> None:
 
         start_http_server(settings.metrics_port)
         uvicorn.run(create_app(settings), host="0.0.0.0", port=settings.port, access_log=False)
+    elif args.role == "preview":
+        from weather.preview.server import serve
+
+        serve()
     elif args.role == "scheduler":
         from weather.scheduler.runner import main as run_scheduler
 

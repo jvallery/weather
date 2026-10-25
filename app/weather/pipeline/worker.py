@@ -24,6 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from weather.api.source import SourceUnavailable
 from weather.db.connection import create_database_engine, wait_for_database
+from weather.preview.producer import PreviewProducer
 from weather.publish import catalog
 from weather.publish.model import MEDIA_BUCKET, ORIGINALS_BUCKET
 from weather.publish.objects import ObjectStore
@@ -60,6 +61,7 @@ class PipelineConfig:
     block: int = MAX_BLOCK
     chunk_seconds: int = 60
     metrics_port: int = 9000
+    skew_seconds: int = 30
 
     @classmethod
     def from_environment(cls, camera: str, environ: dict[str, str] | None = None) -> PipelineConfig:
@@ -86,6 +88,7 @@ class PipelineConfig:
                 block=int(env.get("WEATHER_PIPELINE_BLOCK_FRAMES", str(MAX_BLOCK))),
                 chunk_seconds=int(env.get("WEATHER_CAPTURE_CHUNK_SECONDS", "60")),
                 metrics_port=int(env.get("METRICS_PORT", "9000")),
+                skew_seconds=int(env.get("WEATHER_PREVIEW_SKEW_SECONDS", "30")),
             )
         except ValueError:
             raise ValueError("Invalid pipeline configuration") from None
@@ -93,6 +96,7 @@ class PipelineConfig:
             not config.staging.is_absolute()
             or not 1 <= config.block <= MAX_BLOCK
             or not 1 <= config.chunk_seconds <= 300
+            or not 30 <= config.skew_seconds <= 600
             or not 1000 <= expected.cadence_ms <= 3_600_000
             or not 0 <= expected.phase_ms < expected.cadence_ms
             or not (0 < width <= 16384 and 0 < height <= 16384)
@@ -300,7 +304,11 @@ async def main_async(config: PipelineConfig) -> None:
             AggregateWeather(engine),
             archive_hours=True,
         )
-        await worker.run(stop)
+        # Previews (#39) run beside the renderer, so a long finalize never stalls them.
+        previews = PreviewProducer(
+            config.staging, config.expected, engine, skew=timedelta(seconds=config.skew_seconds)
+        )
+        await asyncio.gather(worker.run(stop), previews.run(stop))
     finally:
         await store.aclose()
         await originals.aclose()

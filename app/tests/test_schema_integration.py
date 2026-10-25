@@ -125,7 +125,7 @@ def test_baseline_head_roles_and_least_privilege() -> None:
             async with admin.begin() as connection:
                 assert await scalar(
                     connection, "SELECT version_num FROM public.alembic_version"
-                ) == ("0009_stills")
+                ) == ("0007_previews")
                 # Slice-1 relations, the observations view, the API's views (0002), the
                 # publication catalog (0003), search (0004), events (0005) and the render
                 # schedule (0006).
@@ -175,6 +175,9 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     "weather.archival_still",
                     "weather.still_derivative",
                     "public_api.stills",
+                    # 0007_previews (#39)
+                    "weather.camera_preview",
+                    "public_api.previews",
                 }
                 options = await scalar(
                     connection,
@@ -248,6 +251,14 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                 assert not await table("weather_worker", "weather.hour_slot", "UPDATE")
                 assert await table("weather_api", "public_api.stills", "SELECT")
                 assert not await table("weather_worker", "public_api.stills", "SELECT")
+                # Previews (#39): the pipeline writes and expires rows; the API reads the view.
+                assert await table("weather_worker", "weather.camera_preview", "DELETE")
+                assert not await table("weather_worker", "weather.camera_preview", "UPDATE")
+                assert await table("weather_api", "public_api.previews", "SELECT")
+                for role in ("weather_ingest", "weather_api", "weather_editor"):
+                    assert not await table(role, "weather.camera_preview", "SELECT")
+                for role in ("weather_ingest", "weather_worker", "weather_editor"):
+                    assert not await table(role, "public_api.previews", "SELECT")
                 # No editorial functions exist yet; weather_editor has no schema access (#44).
                 for role, schema in (
                     ("weather_api", "weather"),

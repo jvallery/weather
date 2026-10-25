@@ -56,6 +56,8 @@ class Candidate:
     size: int
     reject: str | None = None
     offset: int | None = None  # member data offset, so a read never rescans the archive
+    # The older capture bound: the calibrated lower bound, else the request start (#39).
+    lower: Fraction | None = None
 
     def rank(self) -> tuple[Any, ...]:
         uncertainty = self.uncertainty_ms if self.uncertainty_ms is not None else float("inf")
@@ -139,6 +141,7 @@ def parse_chunk(path: Path, expected: Expected) -> Chunk:
         member = record["member"]
         slot = instant(record["slot_at_utc"])
         upper = record.get("capture_upper_bound")
+        lower = record.get("source_lower_bound") or record.get("request_started_at_utc")
         reject = None
         if mismatch or (slot - phase) % period:
             reject = "settings"
@@ -162,6 +165,7 @@ def parse_chunk(path: Path, expected: Expected) -> Chunk:
                 size=int(member["bytes"]),
                 reject=reject,
                 offset=offsets.get(str(member["name"])),
+                lower=instant(lower) if lower is not None else None,
             )
         )
     return chunk

@@ -1,6 +1,23 @@
 // SPDX-License-Identifier: MIT
 // Generated from code-first Pydantic OpenAPI; run scripts/ci.sh contracts --write.
 export interface paths {
+    readonly "/api/v1/cameras/{camera}/preview": {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path?: never;
+            readonly cookie?: never;
+        };
+        /** Get Preview */
+        readonly get: operations["getCameraPreview"];
+        readonly put?: never;
+        readonly post?: never;
+        readonly delete?: never;
+        readonly options?: never;
+        readonly head?: never;
+        readonly patch?: never;
+        readonly trace?: never;
+    };
     readonly "/api/v1/events": {
         readonly parameters: {
             readonly query?: never;
@@ -719,6 +736,101 @@ export interface components {
             /** Value */
             readonly value: number;
         };
+        /**
+         * Preview
+         * @description The camera's latest eligible preview, judged at `generated_at` by the database clock.
+         *
+         *     Age is `generated_at - source_interval.start`. Clients age a received preview locally from
+         *     `age_seconds` and stop showing it as current past `stale_seconds`, even when polls fail.
+         *     Unavailable carries a reason and no images.
+         */
+        readonly Preview: {
+            /** Age Seconds */
+            readonly age_seconds: number | null;
+            /**
+             * Camera
+             * @enum {string}
+             */
+            readonly camera: "skycam_east" | "skycam_west" | "frontyard_1";
+            /** Expires At */
+            readonly expires_at: string | null;
+            /** Exposure Upper Bound */
+            readonly exposure_upper_bound: string | null;
+            /** First Published At */
+            readonly first_published_at: string | null;
+            /** Fresh Seconds */
+            readonly fresh_seconds: number;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            readonly generated_at: string;
+            /** Generation */
+            readonly generation: number | null;
+            /** Images */
+            readonly images: readonly components["schemas"]["PreviewImage"][];
+            /** Minimum Delay Seconds */
+            readonly minimum_delay_seconds: number;
+            /** Public Not Before */
+            readonly public_not_before: string | null;
+            /** Reason */
+            readonly reason: ("no_preview" | "too_old" | "media_unavailable") | null;
+            /** Refresh Seconds */
+            readonly refresh_seconds: number;
+            /**
+             * Schema Version
+             * @default 1
+             * @constant
+             */
+            readonly schema_version: 1;
+            /** Skew Margin Seconds */
+            readonly skew_margin_seconds: number;
+            readonly source_interval: components["schemas"]["PreviewInterval"] | null;
+            /** Stale Seconds */
+            readonly stale_seconds: number;
+            /**
+             * State
+             * @enum {string}
+             */
+            readonly state: "fresh" | "stale" | "unavailable";
+        };
+        /** PreviewImage */
+        readonly PreviewImage: {
+            /** Bytes */
+            readonly bytes: number;
+            /**
+             * Content Type
+             * @constant
+             */
+            readonly content_type: "image/jpeg";
+            /** Height */
+            readonly height: number;
+            /** Url */
+            readonly url: string;
+            /**
+             * Variant
+             * @enum {string}
+             */
+            readonly variant: "large" | "small";
+            /** Width */
+            readonly width: number;
+        };
+        /**
+         * PreviewInterval
+         * @description Closed capture interval [lower, upper] of one snapshot request.
+         */
+        readonly PreviewInterval: {
+            /**
+             * End
+             * Format: date-time
+             */
+            readonly end: string;
+            /**
+             * Start
+             * Format: date-time
+             */
+            readonly start: string;
+        };
         /** Problem */
         readonly Problem: {
             /** Code */
@@ -1189,6 +1301,46 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    readonly getCameraPreview: {
+        readonly parameters: {
+            readonly query?: never;
+            readonly header?: never;
+            readonly path: {
+                readonly camera: string;
+            };
+            readonly cookie?: never;
+        };
+        readonly requestBody?: never;
+        readonly responses: {
+            /** @description Successful Response */
+            readonly 200: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/json": components["schemas"]["Preview"];
+                };
+            };
+            /** @description No such camera. */
+            readonly 404: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The preview catalog is temporarily unavailable. */
+            readonly 503: {
+                headers: {
+                    readonly [name: string]: unknown;
+                };
+                content: {
+                    readonly "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     readonly getEvents: {
         readonly parameters: {
             readonly query?: {

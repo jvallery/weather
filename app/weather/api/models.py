@@ -671,3 +671,68 @@ class SearchResults(PublicModel):
         if self.count != len(self.hits):
             raise ValueError("count equals the number of hits")
         return self
+
+
+# Delayed camera previews (#39), served by `weather-preview`.
+PreviewState = Literal["fresh", "stale", "unavailable"]
+PreviewReason = Literal["no_preview", "too_old", "media_unavailable"]
+
+
+class PreviewInterval(PublicModel):
+    """Closed capture interval [lower, upper] of one snapshot request."""
+
+    start: UTCInstant
+    end: UTCInstant
+
+    @model_validator(mode="after")
+    def ordered(self) -> PreviewInterval:
+        if self.start > self.end:
+            raise ValueError("A capture interval must not be reversed")
+        return self
+
+
+class PreviewImage(PublicModel):
+    variant: Literal["large", "small"]
+    url: Annotated[str, StringConstraints(pattern=r"^/media/previews/[0-9a-f-]{36}$")]
+    content_type: Literal["image/jpeg"]
+    width: Annotated[int, Field(ge=1)]
+    height: Annotated[int, Field(ge=1)]
+    bytes: Annotated[int, Field(ge=1)]
+
+
+class Preview(PublicModel):
+    """The camera's latest eligible preview, judged at `generated_at` by the database clock.
+
+    Age is `generated_at - source_interval.start`. Clients age a received preview locally from
+    `age_seconds` and stop showing it as current past `stale_seconds`, even when polls fail.
+    Unavailable carries a reason and no images.
+    """
+
+    schema_version: Literal[1] = 1
+    camera: Camera
+    generated_at: UTCInstant
+    state: PreviewState
+    reason: PreviewReason | None
+    refresh_seconds: int
+    fresh_seconds: int
+    stale_seconds: int
+    minimum_delay_seconds: int
+    skew_margin_seconds: int
+    generation: int | None
+    source_interval: PreviewInterval | None
+    exposure_upper_bound: UTCInstant | None
+    public_not_before: UTCInstant | None
+    first_published_at: UTCInstant | None
+    expires_at: UTCInstant | None
+    age_seconds: float | None
+    images: list[PreviewImage] = Field(max_length=2)
+
+    @model_validator(mode="after")
+    def consistent(self) -> Preview:
+        if (self.state == "unavailable") != (self.reason is not None) or (
+            self.state == "unavailable" and self.images
+        ):
+            raise ValueError("Unavailable previews carry a reason and no images")
+        if self.state != "unavailable" and (not self.images or self.source_interval is None):
+            raise ValueError("A current preview carries its images and capture interval")
+        return self
