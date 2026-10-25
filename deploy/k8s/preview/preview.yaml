@@ -44,6 +44,9 @@ spec:
         runAsNonRoot: true
         runAsUser: 1025
         runAsGroup: 100
+        # The projected database files are 0440 root-owned; fsGroup makes them group-readable.
+        fsGroup: 100
+        fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
       containers:

@@ -744,6 +744,8 @@ def test_weather_preview_is_the_only_public_pod_on_staging_and_reads_previews_on
     pod = deployment["spec"]["template"]["spec"]
     assert pod["automountServiceAccountToken"] is False
     assert pod["securityContext"]["runAsNonRoot"] is True
+    # Without fsGroup the 0440 root-owned database files are unreadable and the pod crash-loops.
+    assert pod["securityContext"]["fsGroup"] == pod["securityContext"]["runAsGroup"]
     container = pod["containers"][0]
     assert container["command"] == ["weather", "preview"]
     assert container["securityContext"]["readOnlyRootFilesystem"] is True
