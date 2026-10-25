@@ -9,7 +9,7 @@ import asyncio
 import json
 import os
 from collections.abc import Awaitable, Callable
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
@@ -563,3 +563,17 @@ def test_feed_pages_never_repeat_or_drop_under_concurrent_inserts_and_revisions(
         assert [item.id for item in descending.items] == fresh[::-1]
 
     database(check)
+
+
+def test_event_video_links_read_the_public_catalog_as_the_api_role() -> None:
+    """The page's catalog read (#40) is valid SQL against public_api.videos and granted to
+    weather_api; with nothing published it links nothing."""
+
+    async def body(
+        admin: AsyncEngine, worker: AsyncEngine, api: AsyncEngine, _: list[UUID]
+    ) -> None:
+        reader = WeatherReader(api)
+        start = datetime(2026, 7, 1, tzinfo=UTC)
+        assert await reader.segments(start, start + timedelta(days=1)) == []
+
+    database(body)

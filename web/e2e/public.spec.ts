@@ -147,8 +147,11 @@ test("safe interpretation text, lifecycle states and quality preservation", asyn
   await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.readyState)).toBeGreaterThanOrEqual(1);
   expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
   await video.evaluate((element: HTMLVideoElement) => { element.currentTime = 12; });
+  const webSource = await video.getAttribute("src");
+  expect(webSource).toMatch(/^\/media\/[0-9a-f-]{36}$/);
   await page.getByLabel("Playback quality").selectOption("mobile");
-  await expect(video).toHaveAttribute("src", /mobile$/);
+  await expect(video).not.toHaveAttribute("src", webSource!);
+  await expect(video).toHaveAttribute("src", /^\/media\/[0-9a-f-]{36}$/);
   await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime)).toBeCloseTo(12, 0);
   // A partial-coverage recording stays playable and says so (C6).
   await request.post("http://localhost:4174/__control", { data: { productState: "partial" } });
