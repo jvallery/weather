@@ -147,11 +147,12 @@ test("safe interpretation text, lifecycle states and quality preservation", asyn
   await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.readyState)).toBeGreaterThanOrEqual(1);
   expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
   await video.evaluate((element: HTMLVideoElement) => { element.currentTime = 12; });
-  const webSource = await video.getAttribute("src");
+  const playing = () => video.evaluate((element: HTMLVideoElement) => element.currentSrc && new URL(element.currentSrc).pathname);
+  const webSource = await playing();
   expect(webSource).toMatch(/^\/media\/[0-9a-f-]{36}$/);
   await page.getByLabel("Playback quality").selectOption("mobile");
-  await expect(video).not.toHaveAttribute("src", webSource!);
-  await expect(video).toHaveAttribute("src", /^\/media\/[0-9a-f-]{36}$/);
+  await expect.poll(playing).not.toBe(webSource);
+  await expect.poll(playing).toMatch(/^\/media\/[0-9a-f-]{36}$/);
   await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime)).toBeCloseTo(12, 0);
   // A partial-coverage recording stays playable and says so (C6).
   await request.post("http://localhost:4174/__control", { data: { productState: "partial" } });
@@ -425,6 +426,9 @@ test("a copied ?t= link restores camera, segment and cursor in a fresh context",
 });
 test("keyboard-only seek, a text summary, axe on the linked page, one player and bounded points on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 900 });
+  // The browser selects one rendition, once: a phone never fetches the web rendition too.
+  const media = new Set<string>();
+  page.on("request", (request) => { if (request.resourceType() === "media") media.add(new URL(request.url()).pathname); });
   const points: number[] = [];
   page.on("response", async (response) => { if (new URL(response.url()).pathname === "/api/v1/weather/aggregates") points.push(((await response.json()) as { items: unknown[] }).items.length); });
   await page.goto(EAST_DAY); await ready(page);
@@ -445,6 +449,7 @@ test("keyboard-only seek, a text summary, axe on the linked page, one player and
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze()).violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await expect(page.locator("video")).toHaveCount(1);
+  expect([...media]).toEqual([await page.locator("video").evaluate((element: HTMLVideoElement) => new URL(element.currentSrc).pathname)]);
   await expect.poll(() => points.length).toBe(3);
   expect(points.reduce((sum, count) => sum + count, 0)).toBeLessThan(5000);
 });

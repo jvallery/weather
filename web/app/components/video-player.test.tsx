@@ -10,6 +10,7 @@ const published = (): Timelapse => parseTimelapses(catalog)!.items[0];
 test("native controls never autoplay, one player, quality change preserves the playhead", () => {
   vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
   const ready = vi.spyOn(HTMLMediaElement.prototype, "readyState", "get").mockReturnValue(1);
+  const load = vi.spyOn(HTMLMediaElement.prototype, "load").mockImplementation(() => {});
   const video = published();
   const view = render(<VideoPlayer video={video} />);
   const element = view.container.querySelector("video")!;
@@ -23,9 +24,23 @@ test("native controls never autoplay, one player, quality change preserves the p
   fireEvent.change(screen.getByLabelText("Playback quality"), { target: { value: "native" } });
   ready.mockReturnValue(1); fireEvent.loadedMetadata(element);
   expect(element.currentTime).toBe(12.5);
-  expect(element.src).toContain(video.renditions.find((item) => item.role === "native")!.asset.url);
+  expect([...element.querySelectorAll("source")].map((source) => source.getAttribute("src"))).toEqual([video.renditions.find((item) => item.role === "native")!.asset.url]);
+  expect(load).toHaveBeenCalledTimes(2);
   expect(screen.getByRole("link", { name: /Download native/ }).getAttribute("href")).toBe(video.native_download_url);
   expect(screen.getByRole("link", { name: /Sidecar JSON/ }).getAttribute("href")).toBe(video.sidecar!.url);
+});
+test("auto quality is selected once by the browser from <source> media queries; a viewport change never reloads", () => {
+  const listen = vi.fn();
+  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true, addEventListener: listen, removeEventListener: vi.fn() })));
+  const load = vi.spyOn(HTMLMediaElement.prototype, "load").mockImplementation(() => {});
+  const video = published();
+  const url = (role: string) => video.renditions.find((item) => item.role === role)!.asset.url;
+  const view = render(<VideoPlayer video={video} />);
+  const element = view.container.querySelector("video")!;
+  expect(element.hasAttribute("src")).toBe(false);
+  expect([...element.querySelectorAll("source")].map((source) => [source.getAttribute("src"), source.getAttribute("media")])).toEqual([[url("mobile"), "(max-width: 767px)"], [url("web"), null]]);
+  expect(screen.getByRole("option", { name: "Auto (Mobile)" })).toBeTruthy();
+  expect(listen).not.toHaveBeenCalled(); expect(load).not.toHaveBeenCalled();
 });
 test("seek requests apply once metadata is known and player time is reported, never mid-seek", () => {
   const ready = vi.spyOn(HTMLMediaElement.prototype, "readyState", "get").mockReturnValue(0);
