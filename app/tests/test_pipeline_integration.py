@@ -689,7 +689,9 @@ def test_a_failed_keogram_leaves_its_video_published(tmp_path: Path) -> None:
                     "state": "failed",
                     "reason": "publish_failed",
                 }
-            segments = await rows(admin, "SELECT state FROM weather.segment")
+            segments = await rows(
+                admin, "SELECT state FROM weather.segment WHERE camera_id='skycam_east'"
+            )
             assert {s.state for s in segments} == {"published"}
         finally:
             for store in buckets.values():
