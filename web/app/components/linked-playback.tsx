@@ -5,7 +5,7 @@ import { Link } from "react-router";
 import type { Units } from "../lib/contracts";
 import { localTime } from "../lib/format";
 import { binCenter, binOf, epochSeconds, frameAt, frameCenter, frameHalfWindowSeconds, frameOf, frameSeconds, gapSpans, instant, iso, isGap, KEOGRAM_BINS, parseTimeMap, resolveSeek, type Instant, type Span, type TimeMap } from "../lib/time-map";
-import { parseAggregates, type Aggregates, type MetricRegistry, type Timelapse, type WeatherEvent } from "../lib/weather-api";
+import { parseAggregates, parseKeograms, type Aggregates, type KeogramItem, type MetricRegistry, type Timelapse, type WeatherEvent } from "../lib/weather-api";
 import { EventStrip } from "./events";
 import { binAt, binValue, LinkedPlots, PLOT_PANELS, plotBins, plotQueries, plotResolution, seriesLabel, seriesSummary } from "./linked-plots";
 import { VideoPlayer, type SeekRequest } from "./video-player";
@@ -17,18 +17,26 @@ async function json(url: string, signal: AbortSignal): Promise<unknown> {
 }
 const duration = (seconds: number) => seconds >= 3600 ? `${(seconds / 3600).toFixed(1)} h` : seconds >= 60 ? `${Math.round(seconds / 60)} min` : `${seconds.toFixed(1)} s`;
 
-function Keogram({ video, span, cursor, onSelect }: { video: Timelapse; span: Span; cursor: Instant | null; onSelect: (at: Instant) => void }) {
+/** The keogram strip. With the segment's /api/v1/keograms entry (#37) it uses that entry's state,
+ * image, exact bin map and gap runs; until that arrives (or if it cannot be read) the catalog's. */
+function Keogram({ video, keogram, span: segment, cursor, onSelect }: { video: Timelapse; keogram: KeogramItem | null; span: Span; cursor: Instant | null; onSelect: (at: Instant) => void }) {
   const marker = useRef<HTMLDivElement>(null);
-  const visible = (video.keogram_state === "published" || video.keogram_state === "partial") && video.keogram !== null;
+  const state = keogram ? keogram.state : video.keogram_state;
+  const image = keogram ? keogram.image : video.keogram;
+  const visible = (state === "published" || state === "partial") && image !== null;
+  const start = keogram ? instant(keogram.bins.start) : null, end = keogram ? instant(keogram.bins.end) : null;
+  const span = start !== null && end !== null && start < end ? { start, end } : segment;
   const bin = cursor === null ? null : binOf(span, KEOGRAM_BINS, cursor);
+  const gap = bin !== null && !!keogram?.gaps.some(([first, last]) => first <= bin && bin < last);
   useEffect(() => {
     if (!marker.current) return;
     marker.current.hidden = bin === null;
     if (bin !== null) marker.current.style.left = `${((bin + 0.5) / KEOGRAM_BINS) * 100}%`;
   }, [bin]);
   if (!visible) {
-    const state = video.keogram_state === "pending" ? "pending" : video.keogram_state === "withdrawn" ? "withdrawn" : "unavailable";
-    return <p className="notice" id="keogram-state">Keogram {state} · the recording still plays and the plots stay linked.</p>;
+    const label = state === "pending" || state === "withdrawn" || state === "failed" ? state : "unavailable";
+    const reason = keogram && (state === "failed" || state === "unavailable") && keogram.reason ? ` Reason: ${keogram.reason}.` : "";
+    return <p className="notice" id="keogram-state">Keogram {label} · the recording still plays and the plots stay linked.{reason}</p>;
   }
   const half = epochSeconds(span.end - span.start) / KEOGRAM_BINS / 2;
   const choose = (index: number) => onSelect(binCenter(span, KEOGRAM_BINS, Math.min(KEOGRAM_BINS - 1, Math.max(0, index))));
@@ -40,10 +48,10 @@ function Keogram({ video, span, cursor, onSelect }: { video: Timelapse; span: Sp
   };
   // The image's x axis is the bin axis: 1,440 equal elapsed-UTC bins (D10).
   const click = (event: MouseEvent<HTMLDivElement>) => { const box = event.currentTarget.getBoundingClientRect(); choose(Math.floor(((event.clientX - box.left) / box.width) * KEOGRAM_BINS)); };
-  const text = bin === null ? "No bin selected" : `Bin ${bin + 1} of ${KEOGRAM_BINS}, centred ${localTime(iso(binCenter(span, KEOGRAM_BINS, bin)))}, ±${half.toFixed(1)} s`;
-  return <figure className="keogram"><figcaption id="keogram-caption">Keogram · {KEOGRAM_BINS.toLocaleString("en-US")} equal UTC bins of ±{half.toFixed(1)} s{video.keogram_state === "partial" ? " · partial coverage; missing bins stay visible" : ""}</figcaption>
+  const text = bin === null ? "No bin selected" : `Bin ${bin + 1} of ${KEOGRAM_BINS}, centred ${localTime(iso(binCenter(span, KEOGRAM_BINS, bin)))}${gap ? ", no capture" : ""}, ±${half.toFixed(1)} s`;
+  return <figure className="keogram"><figcaption id="keogram-caption">Keogram · {KEOGRAM_BINS.toLocaleString("en-US")} equal UTC bins of ±{half.toFixed(1)} s{state === "partial" ? " · partial coverage; missing bins stay visible" : ""}</figcaption>
     <div className="keogram-strip" role="slider" tabIndex={0} aria-label="Keogram bin · arrow keys step one bin and seek the video" aria-describedby="keogram-caption" aria-valuemin={1} aria-valuemax={KEOGRAM_BINS} aria-valuenow={(bin ?? 0) + 1} aria-valuetext={text} onKeyDown={key} onClick={click}>
-      <img src={video.keogram!.url} alt="" width={video.keogram!.width ?? undefined} height={video.keogram!.height ?? undefined} />
+      <img src={image!.url} alt="" width={image!.width ?? undefined} height={image!.height ?? undefined} />
       <div ref={marker} className="keogram-cursor" hidden />
     </div></figure>;
 }
@@ -62,6 +70,13 @@ export function LinkedPlayback({ video, requested, events, units, registry }: { 
     queryFn: async ({ signal }) => parseTimeMap(await json(video.sidecar!.url, signal), video),
   });
   const map: TimeMap | null = sidecar.data ?? null;
+  const keogram = useQuery({
+    queryKey: ["keogram", video.camera, video.cycle_date, video.segment], staleTime: 60_000,
+    queryFn: async ({ signal }) => {
+      const page = parseKeograms(await json(`/api/v1/keograms?${new URLSearchParams({ cycle_date: video.cycle_date, camera: video.camera, segment: video.segment })}`, signal));
+      return page?.items.find((item) => item.camera === video.camera && item.segment === video.segment) ?? null;
+    },
+  });
   const queries = useMemo(() => plotQueries(span), [span]);
   const plotted = useQueries({
     queries: queries.map((query) => ({
@@ -139,7 +154,7 @@ export function LinkedPlayback({ video, requested, events, units, registry }: { 
         if (at === null) setNotice("Enter a UTC time such as 2026-10-31T15:20:00Z."); else seekTo(at);
       }}><label>Seek to source time (UTC ISO-8601)<input name="t" defaultValue={requested ?? ""} placeholder={video.source_interval.start} autoComplete="off" spellCheck={false} /></label>{units === "metric" && <input type="hidden" name="units" value="metric" />}<button type="submit">Seek</button></form>
       {cursor !== null && <p><a href={`?t=${encodeURIComponent(iso(cursor))}${units === "metric" ? "&units=metric" : ""}`}>Link to this moment</a></p>}
-      <Keogram video={video} span={span} cursor={cursor} onSelect={seekTo} />
+      <Keogram video={video} keogram={keogram.data ?? null} span={span} cursor={cursor} onSelect={seekTo} />
     </section>
     <section aria-labelledby="station-title"><h2 id="station-title">Station measurements · shared by all cameras</h2>
       <p className="small">From the one weather station, not from this camera: the same UTC interval shows identical values on every camera&apos;s recording. Bounds are this recording&apos;s source interval. Each point summarizes one {resolution / 60}-minute interval (±{resolution / 2} s); intervals without observations are gaps, never zero or interpolated; capture gaps are shaded at their true length.</p>

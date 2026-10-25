@@ -61,7 +61,11 @@ a visible coverage label (slot coverage from the sidecar). Unavailable or withdr
 their text and source interval but expose no player or poster. The player never autoplays; quality
 changes retain the playhead and pause other players. Native downloads and the JSON sidecar stay on
 the same origin. Today shows, per camera and segment, the newest catalog entry's state, poster link
-and keogram, or "pending" when nothing has been published.
+and keogram, or "pending" when nothing has been published. The day page reads
+`/api/v1/keograms?cycle_date=` (#37) and shows each published keogram's thumbnail with a bin
+slider (arrow keys step one of the 1,440 bins; the readout gives the bin's UTC interval, ±half a
+bin, and whether it has a capture) and a link that opens the recording at the bin's midpoint
+(`?t=`); clicking the image does the same. Pending, unavailable and failed keograms say so.
 
 ### Linked playback (#40)
 
@@ -77,7 +81,8 @@ Mapping (`lib/time-map.ts`) is exact integer-microsecond arithmetic: frame k own
 middle of the target frame's display window. A sidecar whose interval, frame count, step or tick
 total disagrees with the catalog entry is refused, and the page plays without linking. Playback
 moves the cursor only when the frame changes, so a seek never echoes back as another seek. Plot,
-keogram (1,440 equal UTC bins, D10), event and time-input selections all seek through the same map;
+keogram (1,440 equal UTC bins, D10; once the browser has read the segment's `/api/v1/keograms`
+entry, its state, image, exact bin map and gap runs, otherwise the catalog's), event and time-input selections all seek through the same map;
 an instant outside `[a, b)` is rejected with a notice, and an event interval is clamped to its
 overlap. Slate frames are shaded and labelled at their true length; telemetry gaps are line breaks
 and read "no observations". Every explicit seek updates `?t=<UTC>` with `history.replaceState`;
@@ -89,7 +94,7 @@ JavaScript it reloads with `?t=`). The plotted values have a text summary and a 
 |---|---|
 | "source-time map is unavailable or does not match" | Fetch the sidecar URL from the catalog entry; compare its `source_interval`, `time_map.frames` and step with `/api/v1/timelapses/<id>`. A mismatch is a publication defect (#15/#18), not a web bug. |
 | "Weather history API unavailable" on a video page | The aggregate reads failed; see `weather_api_db_errors_total{operation="aggregates"}`. Playback and seeking still work. |
-| "Keogram pending/unavailable" | The catalog's `keogram_state`; keograms are #37. Playback is unaffected. |
+| "Keogram pending/unavailable/failed" | `/api/v1/keograms?cycle_date=<date>&camera=<camera>&segment=<segment>`; a `failed` reason names the pipeline stage ([pipeline](pipeline.md#keograms)). Playback is unaffected. |
 
 ### Search (#27)
 

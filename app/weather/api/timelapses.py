@@ -87,7 +87,7 @@ class Timelapse(Model):
     poster: Asset | None
     sidecar: Asset | None
     native_download_url: str | None
-    keogram_state: Literal["pending", "published", "partial", "unavailable", "withdrawn"]
+    keogram_state: Literal["pending", "published", "partial", "unavailable", "failed", "withdrawn"]
     keogram: Asset | None
 
 

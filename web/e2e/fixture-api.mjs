@@ -15,6 +15,7 @@ const search = JSON.parse(readFileSync(new URL("../app/fixtures/search.json", im
 const media = new URL("../.test-media/clip.mp4", import.meta.url);
 const poster = new URL("../.test-media/poster.jpg", import.meta.url);
 const keogramImage = new URL("../.test-media/keogram.jpg", import.meta.url);
+const keograms = JSON.parse(readFileSync(new URL("../app/fixtures/keograms.json", import.meta.url)));
 let state = {};
 let serial = 0;
 // Video rendition paths requested since the last /__control reset, as the media origin sees them.
@@ -81,6 +82,8 @@ function asset(id) {
   }
   // Hourly stills (#38): every synthetic still image is the poster JPEG.
   if (stills.items.some((still) => still.images.some((image) => image.asset_id === id))) return { path: poster, mime: "image/jpeg" };
+  // Keogram thumbnails (#37) reuse the synthetic strip's bytes.
+  if (keograms.items.some((item) => item.thumbnail?.asset_id === id)) return { path: keogramImage, mime: "image/jpeg" };
   return null;
 }
 // Segment plots (#40): epoch-aligned bins clipped to [start, end), identical for every camera.
@@ -181,6 +184,13 @@ createServer(async (req, res) => {
       && (query.has("date") ? still.calendar_date === query.get("date") : still.calendar_date >= query.get("from") && still.calendar_date <= query.get("to"))
       && (!query.has("hour") || Number(still.local_label.slice(11, 13)) === Number(query.get("hour"))));
     return json(res, { ...stills, items });
+  }
+  if (url.pathname === "/api/v1/keograms") {
+    const items = keograms.items.filter((item) => item.cycle_date === url.searchParams.get("cycle_date")
+      && ["camera", "segment"].every((key) => !url.searchParams.has(key) || item[key] === url.searchParams.get(key)));
+    // A forced lifecycle state withdraws the keogram's media the same way it does the video's.
+    const forced = state.productState && !["published", "partial"].includes(state.productState);
+    return json(res, { ...keograms, items: forced ? items.map((item) => ({ ...item, state: state.productState === "withdrawn" ? "withdrawn" : "unavailable", reason: "synthetic_state", revision: null, updated_at: null, observed_bins: null, gaps: [], lineage_digest: null, recipe: null, region_version: null, image: null, thumbnail: null, sidecar: null, seek: null })) : items });
   }
   if (url.pathname === "/api/v1/timelapses") {
     const value = snapshot();

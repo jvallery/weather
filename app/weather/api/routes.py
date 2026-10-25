@@ -12,6 +12,7 @@ from fastapi import APIRouter, FastAPI, Header, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from .keograms import router as keograms
 from .models import (
     AggregateQuery,
     Aggregates,
@@ -50,6 +51,7 @@ ROUTES = {
     "/api/v1/weather/almanac": "almanac",
     "/api/v1/timelapses": "timelapses",
     "/api/v1/stills": "stills",
+    "/api/v1/keograms": "keograms",
     SEARCH: "search",
     "/api/v1/events": "events",
 }
@@ -211,6 +213,7 @@ def install(app: FastAPI) -> None:
     app.include_router(router)
     app.include_router(timelapses)
     app.include_router(stills)
+    app.include_router(keograms)
 
     @app.exception_handler(RequestValidationError)
     async def invalid(_request: Request, _error: RequestValidationError) -> JSONResponse:

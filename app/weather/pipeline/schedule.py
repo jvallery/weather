@@ -173,6 +173,18 @@ async def freeze(
                         "frames": count,
                     },
                 )
+                # Every segment has a keogram status from the start (#37), so one that never
+                # renders still resolves (`unavailable`/`deadline_missed`) instead of staying
+                # pending.
+                await connection.execute(
+                    text("""
+                    INSERT INTO weather.keogram(segment_id)
+                    SELECT id FROM weather.segment WHERE current AND camera_id=:camera
+                      AND cycle_date=:date AND kind=:kind
+                    ON CONFLICT DO NOTHING
+                """),
+                    {"date": cycle.cycle_date, "camera": camera, "kind": kind},
+                )
     return inserted
 
 
@@ -290,6 +302,23 @@ async def sweep_deadline(connection: AsyncConnection, hour: datetime) -> list[st
     return [str(row.camera_id) for row in rows]
 
 
+async def keograms_missed(connection: AsyncConnection, hour: datetime) -> int:
+    """The keogram of a segment that missed its deadline without rendering a single block is
+    `unavailable`/`deadline_missed`, like its placeholder video; a late render revives it."""
+    result = await connection.execute(
+        text("""
+        UPDATE weather.keogram k SET state='unavailable',reason='deadline_missed',
+          updated_at=clock_timestamp()
+        FROM weather.segment s
+        WHERE k.segment_id=s.id AND s.current AND s.ends_at >= :hour AND s.ends_at < :next
+          AND s.state='unavailable' AND s.reason='deadline_missed'
+          AND k.state='pending' AND k.region_version IS NULL
+    """),
+        {"hour": hour, "next": hour + HOUR},
+    )
+    return result.rowcount
+
+
 async def current_video(engine: AsyncEngine, job: SegmentJob) -> catalog.Current:
     identity = Product.video(
         camera_id=job.camera,
@@ -380,6 +409,7 @@ async def deadline_job(context: JobContext) -> None:
 
     async def write(connection: AsyncConnection) -> None:
         missed.extend(await sweep_deadline(connection, hour))
+        await keograms_missed(connection, hour)
 
     await context.commit(write)
     for camera in missed:

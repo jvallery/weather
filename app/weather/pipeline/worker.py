@@ -38,6 +38,8 @@ from . import ffmpeg, metrics, schedule
 from .finalize import RESULT, Prepared, prepare, publish, rebase
 from .hourly import HourlyArchive
 from .intake import ChunkIndex, Expected, utc
+from .keogram import Region, load_regions
+from .keogram_publish import Keograms
 from .recipe import (
     CAMERAS,
     DEFAULT_CADENCE_MS,
@@ -67,6 +69,10 @@ class PipelineConfig:
     chunk_seconds: int = 60
     metrics_port: int = 9000
     skew_seconds: int = 30
+    # The camera's keogram region (#37); None renders no keogram.
+    region: Region | None = None
+    # The region file was refused: no keogram is extracted, and each one fails `region_config`.
+    region_error: bool = False
 
     @classmethod
     def from_environment(cls, camera: str, environ: dict[str, str] | None = None) -> PipelineConfig:
@@ -95,7 +101,7 @@ class PipelineConfig:
                 metrics_port=int(env.get("METRICS_PORT", "9000")),
                 skew_seconds=int(env.get("WEATHER_PREVIEW_SKEW_SECONDS", "30")),
             )
-        except ValueError:
+        except ValueError, OSError:
             raise ValueError("Invalid pipeline configuration") from None
         if (
             not config.staging.is_absolute()
@@ -107,7 +113,16 @@ class PipelineConfig:
             or not (0 < width <= 16384 and 0 < height <= 16384)
         ):
             raise ValueError("Invalid pipeline configuration")
-        return config
+        try:
+            region = load_regions(
+                Path(env["WEATHER_KEOGRAM_REGIONS"]) if "WEATHER_KEOGRAM_REGIONS" in env else None
+            ).region(camera, width, height)
+        except (ValueError, OSError) as error:
+            # A bad region never stops the camera's videos, stills or previews (#37).
+            metrics.KEOGRAM_REGION_ERRORS.labels(camera).inc()
+            LOG.error("Keogram region configuration refused (%s, %s)", camera, type(error).__name__)
+            return replace(config, region_error=True)
+        return replace(config, region=region)
 
 
 class ReleaseAhead(RuntimeError):
@@ -130,6 +145,8 @@ class Worker:
         self.housekeeping = housekeeping
         self.catching_up = False
         self.stages = tuple(stages)
+        # Created on the event loop: the keogram stage writes bins through it.
+        self.keograms: Keograms | None = None
         self.index = ChunkIndex(config.staging, config.expected)
         self.hourly = (
             HourlyArchive(
@@ -162,7 +179,8 @@ class Worker:
                 index=self.index,
                 block=self.config.block,
                 chunk_seconds=self.config.chunk_seconds,
-                stages=self.stages,
+                stages=self.stages
+                + ((self.keograms.stage,) if self.keograms and self.keograms.stage else ()),
             )
             self._guard(row, created)
             self.renderers[row.id] = found = created
@@ -187,6 +205,11 @@ class Worker:
 
     async def step(self, now: datetime) -> None:
         camera = self.config.camera
+        keograms = self.config.region is not None or self.config.region_error
+        if keograms and self.keograms is None:
+            self.keograms = Keograms(
+                self.engine, self.publisher, self.config.region, asyncio.get_running_loop()
+            )
         rows = await schedule.active(self.engine, camera, now)
         live = {row.id for row in rows}
         for stale in set(self.renderers) - live:
@@ -266,6 +289,8 @@ class Worker:
                 metrics.COVERAGE.labels(camera).set(prepared.result.slots.fraction)
                 metrics.LATENCY.labels(camera).observe((now - row.job.ends_at).total_seconds())
                 del self.renderers[row.id]
+                if self.keograms is not None and self.keograms.stage is not None:
+                    self.keograms.stage.forget(row.job)
                 self.durable.discard(row.id)
                 self.backoff.pop(row.id, None)
             except Exception as error:
@@ -283,6 +308,13 @@ class Worker:
             except Exception as error:
                 metrics.STILL_FAILURES.labels(camera, "catalog").inc()
                 LOG.error("Hourly pass failed (%s, %s)", camera, type(error).__name__)
+        if self.keograms is not None:
+            # After the videos: a keogram never delays or withdraws its video.
+            try:
+                await self.keograms.sweep(camera, now)
+            except Exception as error:
+                metrics.FAILURES.labels(camera, "keogram").inc()
+                LOG.error("Pipeline keogram failed (%s, %s)", camera, type(error).__name__)
         # A segment in backoff (possibly stuck for days) must not hold every chunk since its
         # start in memory: only segments that render now set the prune floor.
         rendering = [r for r in rows if not (r.id in self.backoff and now < self.backoff[r.id][1])]
