@@ -125,11 +125,11 @@ function SearchForm({ initial, onSubmit }: { initial: Draft; onSubmit: (draft: D
   const submit = (event: FormEvent) => { event.preventDefault(); onSubmit(draft); };
   return <form method="get" action="/search/" noValidate onSubmit={submit} className="search-form" aria-label="Search recordings">
     <label htmlFor="search-text">Words to find in recording descriptions (optional, at most {MAX_QUERY} characters)</label>
-    <input id="search-text" name="q" type="search" autoComplete="off" value={draft.q} onChange={(event) => setDraft({ ...draft, q: event.target.value })} />
+    <input id="search-text" name="q" type="text" enterKeyHint="search" autoComplete="off" value={draft.q} onChange={(event) => setDraft({ ...draft, q: event.target.value })} />
     <div className="filters">
       <label>First calendar day (America/Denver)<input name="from" type="date" value={draft.from} onChange={(event) => setDraft({ ...draft, from: event.target.value })} /></label>
       <label>Last calendar day (inclusive)<input name="to" type="date" value={draft.to} onChange={(event) => setDraft({ ...draft, to: event.target.value })} /></label>
-      <label>Results<input name="top_k" type="number" min={1} max={MAX_TOP_K} step={1} value={draft.topK} onChange={(event) => setDraft({ ...draft, topK: event.target.value })} /></label>
+      <label>Results per search (1–{MAX_TOP_K})<input name="top_k" inputMode="numeric" autoComplete="off" value={draft.topK} onChange={(event) => setDraft({ ...draft, topK: event.target.value })} /></label>
       <label>Display units<select name="units" value={draft.units} onChange={(event) => setDraft({ ...draft, units: event.target.value })}>{choices(["us", "metric"], [draft.units]).map((value) => <option key={value} value={value}>{value === "us" ? "US customary" : value === "metric" ? "Metric" : `Unknown: ${value}`}</option>)}</select></label>
     </div>
     <fieldset className="filters"><legend>Cameras (none checked: all)</legend>{choices(Object.keys(CAMERA_LABELS), draft.cameras).map((value) => <label key={value} className="check"><input type="checkbox" name="camera" value={value} checked={draft.cameras.includes(value)} onChange={(event) => toggle("cameras", value, event.target.checked)} />{CAMERA_LABELS[value as keyof typeof CAMERA_LABELS] ?? `Unknown: ${value}`}</label>)}</fieldset>
