@@ -144,6 +144,8 @@ test("responses parse leniently and each status is its own outcome", async () =>
   const odd = parseSearchResults({ ...fixture, mode: "oracle", degraded_reason: "mystery", extra: 1, hits: [{ ...fixture.hits[0], evidence_precision: "pixel", extra: 1 }, { rank: "x" }] })!;
   expect([odd.mode, odd.degraded_reason, odd.hits.length, odd.hits[0].evidence_precision, "extra" in odd]).toEqual(["lexical", null, 1, "segment", false]);
   expect(parseSearchResults({ hits: "nope" })).toBeNull();
+  const badTime = parseSearchResults({ ...fixture, hits: [{ ...fixture.hits[0], video_interval: { start: "soon", end: "later" } }, { ...fixture.hits[1], matched_measurements: [{ ...fixture.hits[1].matched_measurements[0], interval: { start: "x", end: "y" } }] }] })!;
+  expect([badTime.hits.length, badTime.hits[0].matched_measurements.length]).toEqual([1, 0]);
   const problem = (status: number, code: string, headers: Record<string, string> = {}) => new Response(JSON.stringify({ code, message: "m" }), { status, headers: { "Content-Type": "application/problem+json", ...headers } });
   expect(await readOutcome(problem(429, "busy", { "Retry-After": "7" }))).toEqual({ kind: "busy", retryAfter: 7 });
   expect(await readOutcome(problem(429, "busy"))).toEqual({ kind: "busy", retryAfter: null });

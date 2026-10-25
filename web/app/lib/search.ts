@@ -182,7 +182,9 @@ export function queryFromRequest(request: SearchRequest, units: Units): SearchQu
 // Lenient response parsing (P12): unknown fields are dropped; an unknown mode, reason or
 // precision degrades to the most cautious known value; a malformed hit is dropped, never the page.
 const text = z.string();
-const interval = z.object({ start: text, end: text });
+// An unparseable instant drops its hit or measurement rather than breaking the page's time labels.
+const utc = text.refine((value) => instant(value) !== null);
+const interval = z.object({ start: utc, end: utc });
 const coverage = z.object({ fraction: z.number(), support_seconds: z.number(), expected_seconds: z.number() });
 const measurement = z.object({
   metric: text, statistic: text, value: z.number(), unit: text, interval, coverage,
