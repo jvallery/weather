@@ -61,5 +61,12 @@ def safe_fields(fields: dict[str, Any]) -> dict[str, Any]:
 
 
 def event(logger: logging.Logger, name: str, level: int = logging.INFO, **fields: Any) -> None:
-    """One structured state-change line: `{"event": name, ...fields}`."""
-    logger.log(level, name, extra={"fields": {"event": name, **safe_fields(fields)}})
+    """One structured state-change line: `{"event": name, ...fields}`. Logging never fails
+    its caller: a value `safe_fields` refuses is replaced by `"refused"`."""
+    clean: dict[str, Any] = {}
+    for key, value in fields.items():
+        try:
+            clean.update(safe_fields({key: value}))
+        except TypeError, ValueError:
+            clean[key] = "refused"
+    logger.log(level, name, extra={"fields": {"event": name, **clean}})

@@ -72,3 +72,8 @@ def test_tracebacks_are_reduced_to_the_error_type() -> None:
     line = render(record)
     assert line["error"] == "RuntimeError"
     assert "secret" not in json.dumps(line)
+
+
+def test_an_event_replaces_a_refused_value_instead_of_raising() -> None:
+    line = capture("segment_finished", reason="a/b", rows=[1], frames=3)
+    assert (line["reason"], line["rows"], line["frames"]) == ("refused", "refused", 3)
