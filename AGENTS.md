@@ -1,16 +1,17 @@
 # weather
 
-<!-- estate-contract:start — canonical copy lives in /Users/jason/AGENTS.md; keep this block identical in every repo -->
+<!-- estate-contract:start — canonical copy is AGENTS.md in jvallery/home-dotfiles (the operator Mac's root contract); keep this block identical in every repo -->
 ## Operating contract
 
 Jason's direct request authorizes the work it describes, across code, infrastructure, and Jason-owned services in scope, through delivery and verification of the real end state. Ask only when an unresolved ambiguity could materially change the outcome. Add approval, review, issue/PR, or planning steps only when Jason asks for them or a branch rule enforces them; process descriptions in repository docs are context, not gates.
 
 - Make the smallest complete change in the repository that owns the thing being changed (see Ownership). Fix forward; prefer rollback when it restores service faster or limits harm. Skip speculative abstractions and unrelated cleanup.
 - Preserve unrelated work; use an isolated worktree when another checkout may be active. Resolve destructive targets exactly and keep practical recovery data.
-- Validate in proportion to risk: the cheapest reliable check of the changed behavior (focused test, direct probe, or readback; docs-only edits need diff/readback). Add tests only for meaningful regression risk: critical behavior, security, data integrity, or subtle logic. Reuse existing CI/CD, honor enforced checks, and add pipelines or gates only for a concrete need in the task.
-- Verify the requested end state from the authoritative source or live behavior; passing CI alone does not prove a deployment works. Report what changed, what was checked, and any remaining limitation.
+- Shared cluster state has one writer at a time. Cordon, drain, node or host restarts and other maintenance writes first take the Lease `kube-system/k3s-planned-maintenance` (estate rule R25), one node or host at a time; never cordon or drain a worker before a CNPG-aware switchover. Never blanket- or prune-sync a SHA-pinned Argo parent; use exact-target syncs.
+- Validate in proportion to risk: the cheapest reliable check of the changed behavior (focused test, direct probe, or readback; docs-only edits need diff/readback). Add tests only for meaningful regression risk: critical behavior, security, data integrity, or subtle logic. Reuse existing CI/CD, honor enforced checks, and add pipelines or gates only for a concrete need in the task. Push to or rebase a PR whose CI is running or green only when GitHub reports a conflict or an enforced check refuses it; a moved base branch alone is not a reason. Regenerate generated files with their registered renderer; never hand-merge them.
+- Verify the requested end state from the authoritative source or live behavior; passing CI alone does not prove a deployment works. Close an issue only when its latest acceptance, including criteria moved in from other issues, holds live; time-gated criteria wait for their gate, and a close-with-carry names a carry issue confirmed open. Report what changed, what was checked, and any remaining limitation.
 - Search narrowly, batch independent lookups, reuse current evidence, and keep plans and updates brief.
-- Use existing credentials without printing, committing, or logging secret values or Kubernetes Secret data; rotate or revoke credentials only when Jason asks.
+- Use existing credentials without printing, committing, or logging secret values or Kubernetes Secret data; rotate or revoke credentials only when Jason asks, after identifying the exact credential by name and ID and confirming every consumer value-blind.
 
 ### Execution location and resource use
 
@@ -64,7 +65,7 @@ Lane table and rules: [estate README](https://github.com/jvallery/agents/blob/ma
 - **Promotion.** A `deploy:` commit pins image digests in `deploy/k8s`, and Argo auto-syncs Application `weather`. A change is deployed when Argo shows Synced + Healthy at the intended revision and the pinned digest is running.
 - **Definition of done** (every issue):
   1. Merged to `main`.
-  2. Checks green in fleet CI. The scaffold, time-model and collector issues (#3, #10, #11) may close before fleet CI exists (WX-01, #2); they close on lightweight `scripts/ci.sh` checks, and WX-01's first fleet run re-verifies them.
+  2. Checks green in fleet CI.
   3. Deployed and verified live, for deployable work.
   4. New failure modes expose metrics, and the alert/probe PR to monitoring-stack is merged where the issue says so.
   5. A runbook section is added under `docs/operations/` for anything operable.
@@ -84,6 +85,7 @@ Lane table and rules: [estate README](https://github.com/jvallery/agents/blob/ma
 - **Privacy.** Camera originals are private. Public images must satisfy the ≥600 s embargo at request time. Never publish exact coordinates, camera addresses, station serials or credentials.
 - **Cameras.** Collectors may only poll their own camera's snapshot endpoint at the commissioned cadence. Public requests never trigger camera access.
 - **Disabled-by-default manifests.** Ship a new workload's manifests disabled (`replicas: 0`, or left out of the kustomization) until its Secrets, PVCs and keys exist. The issue that commissions it, or the slice launch, enables it. Argo `weather` must never go Degraded for want of a prerequisite.
-- **Migrations.** Never rewrite a migration that has run on `weather-pg`. Before the first production migration (#74), squash freely; after it, use expand/contract only. The migrate Job is an Argo Sync hook at wave 1, and DB clients run at wave ≥2.
+- **Migrations.** Never rewrite a migration that has run on `weather-pg`; production migrations have run (#74), so use expand/contract only. The migrate Job is an Argo Sync hook at wave 1, and DB clients run at wave ≥2.
+- **Capacity.** Camera originals, stills, previews and timelapses land on NAS-backed Garage and NFS. NAS Volume 2 was about 20% free on 2026-10-26 and shrinking (Frigate retention ramp; btrfs cleaner paused, storage-infra#1164). A new product, a cadence change or a retention change needs a GiB/day projection in its issue, cleared with storage-infra, before it is enabled.
 - **Generated CI config.** `.agent-fleet/ci.yaml` is generated from the agents registry. Change the registry, not the file.
 - **Inference.** The Cortex routes are shared with other consumers. Keep AI concurrency at 1 and stay within the scoped key's limits.
