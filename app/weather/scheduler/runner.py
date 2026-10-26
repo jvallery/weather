@@ -24,9 +24,7 @@ LOG = logging.getLogger("weather.scheduler")
 CLAIMED = Counter("weather_jobs_claimed_total", "Claimed durable jobs")
 FAILED = Counter("weather_jobs_failed_total", "Failed job attempts", ["reason"])
 LOST = Counter("weather_job_leases_lost_total", "Lost or expired job leases")
-OUTBOX_FAILED = Counter(
-    "weather_outbox_dispatch_failures_total", "Outbox dispatch failures"
-)
+OUTBOX_FAILED = Counter("weather_outbox_dispatch_failures_total", "Outbox dispatch failures")
 TICK_FAILED = Counter("weather_scheduler_tick_failures_total", "Periodic tick failures")
 TICK_SECONDS = 60
 ALIVE = Gauge(
@@ -35,9 +33,7 @@ ALIVE = Gauge(
 )
 
 
-async def _heartbeat(
-    engine: AsyncEngine, job: jobs.Job, owner_task: asyncio.Task[None]
-) -> None:
+async def _heartbeat(engine: AsyncEngine, job: jobs.Job, owner_task: asyncio.Task[None]) -> None:
     try:
         while True:
             await asyncio.sleep(15)
@@ -61,32 +57,32 @@ async def _run_job(engine: AsyncEngine, registry: Registry, job: jobs.Job) -> No
             result = await handler(context)
             if not context.committed:
                 await context.commit(result=result)
+        event(LOG, "job_finished", kind=job.kind, attempt=job.attempt, state="succeeded")
     except jobs.LeaseLost:
         LOST.inc()
-        LOG.warning("Job lease lost; catalog transaction rolled back")
+        event(LOG, "job_lease_lost", logging.WARNING, kind=job.kind, attempt=job.attempt)
     except asyncio.CancelledError:
         # Heartbeat loss or shutdown cannot authorize a completion.
         LOST.inc()
         raise
     except Exception as error:
         FAILED.labels("handler").inc()
-        # Never log exceptions/SQL URLs, payloads, source IDs or private data.
+        retry = job.attempt < 5
+        delay = min(300, 5 * 2 ** min(job.attempt, 6))
+        # Never log exceptions/SQL URLs, payloads, source IDs or private data. A retry is a
+        # warning; the last attempt is an error (#147).
         event(
             LOG,
             "job_failed",
-            logging.ERROR,
+            logging.WARNING if retry else logging.ERROR,
             kind=job.kind,
             attempt=job.attempt,
             error=type(error).__name__,
+            retry=retry,
+            retry_seconds=delay if retry else None,
         )
         async with engine.begin() as connection:
-            await jobs.fail(
-                connection,
-                job,
-                reason="handler",
-                retry=job.attempt < 5,
-                delay_seconds=min(300, 5 * 2 ** min(job.attempt, 6)),
-            )
+            await jobs.fail(connection, job, reason="handler", retry=retry, delay_seconds=delay)
     finally:
         beat.cancel()
         with contextlib.suppress(asyncio.CancelledError):
