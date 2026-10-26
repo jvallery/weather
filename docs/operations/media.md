@@ -395,6 +395,15 @@ each pod mounts only its own camera's `sealed/`, `tmp/`, `render/` and `previews
 scheduler and the api never mount NFS (C17). Each pass works on its own camera only, holds a
 per-camera advisory lock, and takes every age from the database clock.
 
+**Restarts and pass scheduling (#146).**
+- **The chunk index reads headers and the manifest only** (`read_chunk(hash_frames=False)`).
+  `read_frame` re-verifies each frame's SHA-256 when it uses it, so a corrupt body becomes a
+  per-slot `changed` reject instead of rejecting its whole chunk. Before, a restart re-hashed
+  every staged frame (about one hour-directory a minute over NFS, about 40 minutes for 41 h
+  of backlog), and rendering and cleanup waited the whole time.
+- **A due cleanup pass runs as a background task,** one at a time. The render loop only
+  checks pressure (the 97% render stop) and never waits for an inventory or deletion pass.
+
 **What may go.** Catalog rows decide (P3). A sealed chunk is deleted only when every
 condition holds; a kept chunk reports the first unmet one:
 

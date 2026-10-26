@@ -1311,6 +1311,7 @@ class Housekeeping:
         self.next_pass = 0.0
         self.last_pass = float("-inf")
         self._statvfs: asyncio.Task[Any] | None = None
+        self._pass: asyncio.Task[None] | None = None
 
     async def _level(self) -> None:
         # One statvfs in flight at most: a hung soft mount must not pile up threads.
@@ -1332,13 +1333,25 @@ class Housekeeping:
         return self.pressure.render_allowed()
 
     async def tick(self, monotonic: float) -> None:
+        """Pressure every loop; a due cleanup pass starts as a background task (#146), so the
+        render loop never waits for an inventory or deletion pass."""
         await self._level()
+        if self._pass is not None and not self._pass.done():
+            return
         if monotonic < self.next_pass and not (
             self.pressure.urgent and monotonic >= self.last_pass + URGENT_INTERVAL
         ):
             return
         self.last_pass = monotonic
         self.next_pass = monotonic + self.cleanup.settings.interval_seconds
+        self._pass = asyncio.create_task(self._run_pass())
+
+    async def wait(self) -> None:
+        """Await the pass in flight, if any (shutdown and tests)."""
+        if self._pass is not None:
+            await asyncio.shield(self._pass)
+
+    async def _run_pass(self) -> None:
         try:
             await self.cleanup.run()
         except Exception as error:

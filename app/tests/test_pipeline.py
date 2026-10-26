@@ -258,10 +258,21 @@ def test_strict_intake_rejects_unknown_timing_geometry_and_corrupt_tar(tmp_path:
     reasons = sorted({reason for _, reason in window.rejected.values()})
     assert reasons == ["geometry", "settings", "unknown_timing"]
     assert [c.slot - start for c in window.frames] == [180, 181]
-    assert index.invalid == {broken}
+    # #146: the index reads headers and the manifest only, so a corrupt frame body no longer
+    # rejects its whole chunk; read_frame catches it when the frame is used.
+    assert index.invalid == set()
+    corrupt = min(
+        (c for chunk in index.chunks.values() for c in chunk.candidates if c.chunk == broken),
+        key=lambda c: c.offset or 0,
+    )
+    with pytest.raises(IntakeError):
+        read_frame(corrupt)
     assert tarfile.is_tarfile(good[0])
     # Bytes read later are re-verified against the sealed manifest.
-    frame = window.frames[0]
+    frame = min(
+        (c for chunk in index.chunks.values() for c in chunk.candidates if c.chunk == good[0]),
+        key=lambda c: c.offset or 0,
+    )
     assert read_frame(frame)[:2] == b"\xff\xd8" and frame.offset is not None
     data = bytearray(frame.chunk.read_bytes())
     data[frame.offset + 10] ^= 0xFF
@@ -993,3 +1004,28 @@ def test_a_tail_attempt_never_downgrades_an_accepted_slot(tmp_path: Path) -> Non
 
     assert verdicts[micros(instant("2026-10-23T15:00:19Z"))] == "ok"
     assert prepare(renderer, weather=None, expected_revision=0).result.slots.accepted == 20
+
+
+def test_header_only_chunk_reads_skip_frame_hashes_but_keep_the_binding(tmp_path: Path) -> None:
+    """#146: the index reads headers and the manifest; frame SHA-256 is left to read_frame."""
+    from weather.capture.chunks import read_chunk
+
+    (path,) = synthetic.write_chunks(tmp_path, "skycam_east", _frames(range(0, 2)), geometry=(W, H))
+    data = bytearray(path.read_bytes())
+    data[1024] ^= 0xFF  # a frame body byte: hash differs, structure intact
+    path.write_bytes(bytes(data))
+    with pytest.raises(ValueError):
+        read_chunk(path)
+    records = read_chunk(path, hash_frames=False)
+    assert records[0]["record_type"] == "chunk_header"
+    # A manifest that disagrees with a member's length is still refused without hashing.
+    text = path.read_bytes()
+    marker = b'"bytes":'
+    at = text.index(marker) + len(marker)
+    end = at
+    while text[end : end + 1].isdigit():
+        end += 1
+    wrong = text[:at] + str(int(text[at:end]) + 1).encode().rjust(end - at, b"0")[-(end - at) :]
+    path.write_bytes(wrong + text[end:])
+    with pytest.raises(ValueError):
+        read_chunk(path, hash_frames=False)
