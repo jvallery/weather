@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 from weather.ai import store as analysis
 from weather.db import jobs
 from weather.db.connection import create_database_engine, wait_for_database
+from weather.logs import configure, event
 from weather.scheduler import handlers
 from weather.scheduler.outbox import dispatch
 from weather.scheduler.registry import JobContext, Registry
@@ -70,7 +71,14 @@ async def _run_job(engine: AsyncEngine, registry: Registry, job: jobs.Job) -> No
     except Exception as error:
         FAILED.labels("handler").inc()
         # Never log exceptions/SQL URLs, payloads, source IDs or private data.
-        LOG.error("Job handler failed (%s)", type(error).__name__)
+        event(
+            LOG,
+            "job_failed",
+            logging.ERROR,
+            kind=job.kind,
+            attempt=job.attempt,
+            error=type(error).__name__,
+        )
         async with engine.begin() as connection:
             await jobs.fail(
                 connection,
@@ -160,7 +168,7 @@ async def run() -> None:
 def main() -> None:
     from weather.pipeline import metrics as pipeline_metrics
 
-    logging.basicConfig(level=logging.INFO)
+    configure("scheduler")
     try:
         port = int(os.environ.get("METRICS_PORT", "9000"))
         if not 1 <= port <= 65535:

@@ -25,6 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from weather.api.source import SourceUnavailable
 from weather.db.connection import create_database_engine, wait_for_database
+from weather.logs import configure, event
 from weather.preview.producer import PreviewProducer
 from weather.publish import catalog
 from weather.publish.model import MEDIA_BUCKET, ORIGINALS_BUCKET
@@ -286,6 +287,20 @@ class Worker:
                 result = prepared.result.model_dump(mode="json")
                 await schedule.finish(self.engine, row.id, result, outcome=outcome)
                 metrics.SEGMENTS.labels(camera, outcome[0] if outcome else result["state"]).inc()
+                event(
+                    LOG,
+                    "segment_finished",
+                    camera=camera,
+                    segment_id=str(row.id),
+                    cycle_date=row.job.cycle_date.isoformat(),
+                    segment=row.job.kind,
+                    state=str(outcome[0] if outcome else result["state"]),
+                    reason=result.get("reason"),
+                    slot_coverage=round(prepared.result.slots.fraction, 4),
+                    gap_frames=sum(b - a for a, b in prepared.result.exposure.gaps),
+                    frames=prepared.result.frames,
+                    late_seconds=round((now - row.job.ends_at).total_seconds()),
+                )
                 metrics.COVERAGE.labels(camera).set(prepared.result.slots.fraction)
                 metrics.LATENCY.labels(camera).observe((now - row.job.ends_at).total_seconds())
                 del self.renderers[row.id]
@@ -425,7 +440,7 @@ async def main_async(config: PipelineConfig) -> None:
 
 
 def run(camera: str) -> None:
-    logging.basicConfig(level=logging.INFO)
+    configure("pipeline")
     try:
         config = PipelineConfig.from_environment(camera)
         start_http_server(config.metrics_port)
