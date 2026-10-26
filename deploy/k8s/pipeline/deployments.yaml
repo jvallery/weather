@@ -66,10 +66,11 @@ spec:
           value: '2000'
         - name: WEATHER_PIPELINE_SHUTTER_DEGREES
           value: '180'
-        # Staging cleanup (#19) runs in this pod as dry-run until enabled by a reviewed
-        # change (#49); keogram/hourly conditions stay required until #37/#38 wire them.
+        # Staging cleanup (#19) deletes released input in this pod (enabled 2026-10-26 after
+        # the share reached 90%); every condition is wired and required. Projection:
+        # docs/operations/media.md#capacity-projection.
         - name: WEATHER_CLEANUP_ENABLED
-          value: 'false'
+          value: 'true'
         - name: WEATHER_IMAGE_DIGEST
           value: sha256:20ab73db84d4552c5f2e673cbdb90e73113fb5ddf568524b8150bad8f5857b4d
         - name: METRICS_PORT
@@ -224,10 +225,11 @@ spec:
           value: '2000'
         - name: WEATHER_PIPELINE_SHUTTER_DEGREES
           value: '180'
-        # Staging cleanup (#19) runs in this pod as dry-run until enabled by a reviewed
-        # change (#49); keogram/hourly conditions stay required until #37/#38 wire them.
+        # Staging cleanup (#19) deletes released input in this pod (enabled 2026-10-26 after
+        # the share reached 90%); every condition is wired and required. Projection:
+        # docs/operations/media.md#capacity-projection.
         - name: WEATHER_CLEANUP_ENABLED
-          value: 'false'
+          value: 'true'
         - name: WEATHER_IMAGE_DIGEST
           value: sha256:20ab73db84d4552c5f2e673cbdb90e73113fb5ddf568524b8150bad8f5857b4d
         - name: METRICS_PORT
@@ -382,10 +384,11 @@ spec:
           value: '2000'
         - name: WEATHER_PIPELINE_SHUTTER_DEGREES
           value: '180'
-        # Staging cleanup (#19) runs in this pod as dry-run until enabled by a reviewed
-        # change (#49); keogram/hourly conditions stay required until #37/#38 wire them.
+        # Staging cleanup (#19) deletes released input in this pod (enabled 2026-10-26 after
+        # the share reached 90%); every condition is wired and required. Projection:
+        # docs/operations/media.md#capacity-projection.
         - name: WEATHER_CLEANUP_ENABLED
-          value: 'false'
+          value: 'true'
         - name: WEATHER_IMAGE_DIGEST
           value: sha256:20ab73db84d4552c5f2e673cbdb90e73113fb5ddf568524b8150bad8f5857b4d
         - name: METRICS_PORT
