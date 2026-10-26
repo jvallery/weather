@@ -7,6 +7,7 @@ capture timer. Records reach the chunk in slot order; the backlog is bounded."""
 
 import asyncio
 import hashlib
+import logging
 import os
 import re
 import signal
@@ -17,6 +18,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
+from weather.logs import configure, event
+
 from .chunks import ChunkWriter, IOHealth, new_incarnation
 from .client import CaptureFailure, SnapshotClient
 from .config import CaptureConfig
@@ -26,6 +29,9 @@ from .timing import Backoff, Schedule, Slot, request_timing, utc_text
 
 # Queued NFS operations before the timer waits for the I/O thread (about a minute at 0.5 Hz).
 IO_BACKLOG = 32
+# #147: one summary line per minute that lost slots; nothing while every slot is captured.
+LOSS_WINDOW_NS = 60 * 1_000_000_000
+LOG = logging.getLogger("weather.capture")
 
 
 class Watermark:
@@ -142,6 +148,8 @@ class Collector:
         self._io: deque[asyncio.Future[Any]] = deque()
         self._running = False
         self.full = False  # last watermark verdict, refreshed by the I/O thread
+        self._losses: dict[str, int] = {}
+        self._losses_since = time.monotonic_ns()
 
     def shutdown(self) -> None:
         self.stop.set()
@@ -267,7 +275,31 @@ class Collector:
     def _staging_full(self) -> bool:
         ratio = self._occupancy()
         self.metrics.staging_ratio.set(ratio)
-        return self.watermark.update(ratio)
+        before = self.watermark.stopped
+        stopped = self.watermark.update(ratio)
+        if stopped != before:
+            name = "staging_stop" if stopped else "staging_resume"
+            level = logging.WARNING if stopped else logging.INFO
+            event(LOG, name, level, camera=self.config.camera, ratio=round(ratio, 4))
+        return stopped
+
+    def _count(self, result: str, count: int = 1) -> None:
+        if result != "captured":
+            self._losses[result] = self._losses.get(result, 0) + count
+
+    def _summarize(self, now_ns: int) -> None:
+        if now_ns - self._losses_since < LOSS_WINDOW_NS:
+            return
+        if self._losses:
+            event(
+                LOG,
+                "capture_loss",
+                logging.WARNING,
+                camera=self.config.camera,
+                window_seconds=round((now_ns - self._losses_since) / 1e9),
+                **self._losses,
+            )
+        self._losses, self._losses_since = {}, now_ns
 
     async def _attempt(self, slot: Slot, schedule: Schedule) -> None:
         record = self._base(slot)
@@ -317,6 +349,7 @@ class Collector:
                     self.metrics.duration.observe((end_mono - start_mono) / 1e9)
                     schedule.observe_clock(time.time_ns(), time.monotonic_ns())
             result = "captured" if body is not None else str(record["failure_class"])
+            self._count(result)
         except OSError:
             self._abandon()
             self.pending.add(record)
@@ -400,6 +433,7 @@ class Collector:
                         writer.started_mono_ns + writer.window_end_ns - writer.window_start_ns,
                     )
                 self._reap()
+                self._summarize(time.monotonic_ns())
                 wait = (deadline - time.monotonic_ns()) / 1e9
                 if writer is None and self._io:
                     # Queued I/O may open a chunk whose seal deadline is earlier than the
@@ -442,6 +476,7 @@ class Collector:
                         "member": None,
                     }
                     self.metrics.result("overdue", skipped_count)
+                    self._count("overdue", skipped_count)
                     await self._submit(self._persist_quietly, first, record)
 
         finally:
@@ -457,6 +492,7 @@ class Collector:
 
 
 def collect(config: CaptureConfig) -> None:
+    configure("collector")
     collector = Collector(config)
     server = collector.metrics.serve(config.metrics_port)
     try:

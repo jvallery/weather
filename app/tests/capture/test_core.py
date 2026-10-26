@@ -8,6 +8,7 @@ import hashlib
 import io
 import ipaddress
 import json
+import logging
 import os
 import random
 import subprocess
@@ -798,3 +799,27 @@ def test_shutdown_flushes_pending_loss_without_fabricating_another_capture(tmp_p
     records = read_chunk(paths[0])
     assert [row["record_type"] for row in records] == ["chunk_header", "loss_range"]
     assert records[1]["attempt_count"] == 1 and collector.pending.record is None
+
+
+def test_staging_stop_resume_and_loss_summaries_are_logged(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """#147: one line per watermark transition, and one loss summary per minute with losses."""
+    collector = Collector(config(tmp_path))
+    ratios = iter([0.5, 0.91, 0.92, 0.74])
+    monkeypatch.setattr(collector, "_occupancy", lambda: next(ratios))
+    caplog.set_level(logging.INFO, logger="weather.capture")
+    assert [collector._staging_full() for _ in range(4)] == [False, True, True, False]
+    events = [getattr(r, "fields", {}).get("event") for r in caplog.records]
+    assert events == ["staging_stop", "staging_resume"]
+    caplog.clear()
+    start = collector._losses_since
+    collector._count("captured")
+    collector._summarize(start + 61 * 1_000_000_000)
+    assert not caplog.records  # a clean minute logs nothing
+    collector._count("overdue", 3)
+    collector._count("timeout")
+    collector._summarize(start + 122 * 1_000_000_000)
+    (record,) = caplog.records
+    fields = record.fields  # type: ignore[attr-defined]
+    assert (fields["event"], fields["overdue"], fields["timeout"]) == ("capture_loss", 3, 1)
