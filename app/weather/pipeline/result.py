@@ -66,10 +66,19 @@ class Build(Model):
     last: int = Field(gt=0)
 
 
+class FilledRun(Model):
+    first: int = Field(ge=0)
+    last: int = Field(ge=1)
+    mode: Literal["interpolated", "held"]
+
+
 class ExposureCoverage(Model):
     rendered: int = Field(ge=0)
     gaps: list[tuple[int, int]]
     threshold: str
+    # #144: how the renditions filled the gaps (the mezzanine keeps its slates).
+    fill: str | None = None
+    filled: list[FilledRun] = Field(default_factory=list)
 
 
 class RenderResult(Model):

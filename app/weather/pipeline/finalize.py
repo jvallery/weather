@@ -26,8 +26,10 @@ from weather.publish.model import Product, ProductFile
 from weather.publish.publisher import Publisher
 from weather.timemodel import Segment
 
+from . import gapfill, metrics
 from .ffmpeg import (
     Expect,
+    MezzanineReader,
     RenditionSpec,
     ValidationError,
     concat_list,
@@ -38,7 +40,16 @@ from .ffmpeg import (
 from .intake import utc
 from .recipe import Recipe
 from .render import SegmentRenderer, canonical, durable_write, file_sha256, fsync_dir, micros
-from .result import EMBARGO, Build, ExposureCoverage, Poster, RenderResult, Rendition, SlotCoverage
+from .result import (
+    EMBARGO,
+    Build,
+    ExposureCoverage,
+    FilledRun,
+    Poster,
+    RenderResult,
+    Rendition,
+    SlotCoverage,
+)
 
 LOG = logging.getLogger("weather.pipeline")
 RESULT = "result.json"
@@ -186,6 +197,7 @@ def prepare(
     )
     renditions: list[Rendition] = []
     posters: list[Poster] = []
+    fill_runs: list[gapfill.Run] = []
     files: list[dict[str, Any]] = []
     out = renderer.directory / "out"
     out.mkdir(exist_ok=True)
@@ -197,7 +209,35 @@ def prepare(
         concat = concat_list(renderer.blocks_dir, blocks)
         specs = rendition_specs(expected.width, expected.height)
         temporary = [(spec, out / f".tmp-{spec.role}.mp4") for spec in specs]
-        encode_renditions(concat, job.frames, temporary)
+        if gaps:
+            # #144: renditions never show a slate; the mezzanine and `gaps` keep them.
+            fill_runs = gapfill.plan(slates)
+            stats = gapfill.Stats()
+            step = job.frame_map.source_step
+
+            def span(first: int, last: int) -> tuple[datetime, datetime]:
+                return (
+                    job.starts_at + timedelta(seconds=float(first * step)),
+                    job.starts_at + timedelta(seconds=float(last * step)),
+                )
+
+            reader = MezzanineReader(concat, expected.width, expected.height)
+            try:
+                encode_renditions(
+                    concat,
+                    job.frames,
+                    temporary,
+                    raw=(expected.width, expected.height),
+                    feed=gapfill.fill(
+                        reader, slates, (expected.height, expected.width), span, stats
+                    ),
+                )
+            finally:
+                reader.close()
+            for mode, count in (("interpolated", stats.interpolated), ("held", stats.held)):
+                metrics.FILLED.labels(job.camera, mode).inc(count)
+        else:
+            encode_renditions(concat, job.frames, temporary)
         timing = None
         for spec, tmp in temporary:
             decoded = validate_rendition(tmp, Expect(job.frames, spec.width, spec.height))
@@ -298,6 +338,10 @@ def prepare(
                 "threshold": str(recipe.min_exposure_coverage),
                 "rendered": rendered,
                 "gaps": [list(item) for item in gaps],
+                "fill": gapfill.FILL if fill_runs else None,
+                "filled": [
+                    {"first": run.first, "last": run.last, "mode": run.mode} for run in fill_runs
+                ],
                 "frames": [round(float(frame["coverage"]), 4) for frame in frames],
             },
         },
@@ -334,7 +378,14 @@ def prepare(
         mezzanine_builds=[Build.model_validate(item) for item in builds],
         slots=slots,
         exposure=ExposureCoverage(
-            rendered=rendered, gaps=gaps, threshold=str(recipe.min_exposure_coverage)
+            rendered=rendered,
+            gaps=gaps,
+            threshold=str(recipe.min_exposure_coverage),
+            fill=gapfill.FILL if fill_runs else None,
+            filled=[
+                FilledRun(first=run.first, last=run.last, mode=run.mode)  # type: ignore[arg-type]
+                for run in fill_runs
+            ],
         ),
         renditions=renditions,
         posters=posters,

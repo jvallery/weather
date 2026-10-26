@@ -20,7 +20,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from weather.pipeline import ffmpeg, synthetic
+from weather.pipeline import ffmpeg, gapfill, synthetic
 from weather.pipeline.exposure import Geometry, coverage, supports
 from weather.pipeline.finalize import (
     RESULT,
@@ -40,7 +40,7 @@ from weather.pipeline.intake import (
     select,
 )
 from weather.pipeline.light import to_linear, to_srgb
-from weather.pipeline.recipe import Recipe, from_environment
+from weather.pipeline.recipe import SLATE_RGB, Recipe, from_environment
 from weather.pipeline.render import SegmentJob, SegmentRenderer
 from weather.pipeline.result import RenderResult
 from weather.publish.model import ProductFile
@@ -950,6 +950,24 @@ def test_half_hertz_coverage_one_missed_slot_is_one_gap_frame(tmp_path: Path) ->
     prepared = prepare(renderer, weather=None, expected_revision=0)
     assert (prepared.result.slots.expected, prepared.result.slots.accepted) == (120, 119)
     assert prepared.result.exposure.gaps == [(8, 9)]
+    # #144: the mezzanine keeps its slate, but the renditions fill it from frames 7 and 9.
+    assert prepared.result.exposure.fill == gapfill.FILL
+    assert [(r.first, r.last, r.mode) for r in prepared.result.exposure.filled] == [
+        (8, 9, "interpolated")
+    ]
+    assert prepared.sidecar["coverage"]["exposure"]["filled"] == [
+        {"first": 8, "last": 9, "mode": "interpolated"}
+    ]
+    native = next(r for r in prepared.result.renditions if r.role == "native")
+    path = renderer.directory / "out" / "native.mp4"
+
+    def mean(index: int) -> float:
+        raw = ffmpeg.extract_frame(path, index, native.width, native.height)
+        return float(np.frombuffer(raw, dtype=np.uint8).mean())
+
+    before, filled, after = mean(7), mean(8), mean(9)
+    assert abs(filled - (before + after) / 2) < 3
+    assert abs(filled - SLATE_RGB[0]) > 10
 
 
 @needs_ffmpeg
