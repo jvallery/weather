@@ -147,6 +147,7 @@ class Collector:
         self.io = ThreadPoolExecutor(max_workers=1, thread_name_prefix="capture-io")
         self._io: deque[asyncio.Future[Any]] = deque()
         self._running = False
+        self._sealing: ChunkWriter | None = None  # the writer whose seal is queued
         self.full = False  # last watermark verdict, refreshed by the I/O thread
         self._losses: dict[str, int] = {}
         self._losses_since = time.monotonic_ns()
@@ -427,6 +428,8 @@ class Collector:
             while not self.stop.is_set():
                 deadline = schedule.next_mono_ns
                 writer = self.writer
+                if writer is self._sealing:
+                    writer = None  # its seal is already queued
                 if writer is not None:
                     deadline = min(
                         deadline,
@@ -446,9 +449,13 @@ class Collector:
                     except TimeoutError:
                         pass
                 writer = self.writer
-                if writer is not None and time.monotonic_ns() >= (
-                    writer.started_mono_ns + writer.window_end_ns - writer.window_start_ns
+                if (
+                    writer is not None
+                    and writer is not self._sealing
+                    and time.monotonic_ns()
+                    >= writer.started_mono_ns + writer.window_end_ns - writer.window_start_ns
                 ):
+                    self._sealing = writer
                     await self._submit(self._seal_or_abandon)
                 if time.monotonic_ns() < schedule.next_mono_ns:
                     continue

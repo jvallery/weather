@@ -190,6 +190,14 @@ def test_a_slow_seal_never_makes_a_slot_overdue(
         seal(self)
 
     monkeypatch.setattr(ChunkWriter, "seal", slow_seal)
+    queued: list[float] = []
+    seal_or_abandon = Collector._seal_or_abandon
+
+    def counted(self: Collector) -> None:
+        queued.append(time.monotonic())
+        seal_or_abandon(self)
+
+    monkeypatch.setattr(Collector, "_seal_or_abandon", counted)
 
     async def check() -> None:
         camera = FakeCamera(jpeg())
@@ -202,7 +210,10 @@ def test_a_slow_seal_never_makes_a_slot_overdue(
         rows = [row for path in (tmp_path / "sealed").rglob("*.tar") for row in read_chunk(path)]
         assert len([row for row in rows if row.get("status") == "captured"]) >= 7
         assert not any(row.get("failure_class") == "overdue" for row in rows)
-        assert len(list((tmp_path / "sealed").rglob("*.tar"))) >= 3
+        sealed = len(list((tmp_path / "sealed").rglob("*.tar")))
+        assert sealed >= 3
+        # Each chunk's seal is queued once, not again on every timer pass while it runs.
+        assert len(queued) <= sealed
 
     asyncio.run(check())
 
