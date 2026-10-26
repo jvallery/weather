@@ -4,6 +4,8 @@
 
 > **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): O2/P3: launch with streaming observed-exposure rendering (mezzanine per segment). Interpolation profiles and the custom flow adapter are not launch requirements; WX-15 decides with clips. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
 
+> **Amended 2026-10-26** by the [gap-fill interpolation decision](2026-10-26-gap-fill-interpolation.md) (#16): observed exposure with the `gap-fill/v1` cross-fade (#144) is the production profile. Motion-compensated interpolation cost 60–76× the CPU for no visible gain, so no high-interpolation profile is built and the motion-profile paragraphs below are not requirements.
+
 Status: algorithm and initial commissioning defaults selected; exact executable build, real-scene quality and cluster throughput remain unqualified. Requirements §§5.3–5.4, 6.9, 7.1–7.8 and 8; consumers WX-14/16/36, with capture/time, publication and integration consumers inheriting their respective contracts. No render or production change was performed for this decision.
 
 ## Why and evidence
