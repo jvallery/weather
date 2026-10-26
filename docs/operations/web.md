@@ -206,3 +206,24 @@ preserving the distinction between the two repeated 01:15 observations. The tabl
 source timestamps. uPlot sizes its canvas using CSP-permitted JavaScript style properties;
 qualification checks serialized HTML for inline style attributes, rather than forbidding those
 legitimate computed dimensions.
+
+## Edge rate limits (#148)
+
+The site Middleware `weather-rate-limit` allows `average: 30, burst: 60` per visitor
+(`Cf-Connecting-Ip`), and search allows 30/min, burst 10. Traefik keeps these buckets per pod, and
+`traefik-apps` runs one pod on each of the 5 workers. A visitor's effective limit therefore
+depends on how many of cloudflared's pooled origin connections reach different pods: 1× when
+they concentrate on one pod, up to about 5× when they spread.
+
+Measured on 2026-10-26 with one client hitting `/api/healthz`: at 20:5xZ, bursts of 150–400
+requests at 5–200 parallel got 67–81 × 200, which is one bucket (60 + 30/s × t). That morning
+an 800-request burst at 200 parallel got 666 × 200 in 3.3 s, which is about 5 buckets.
+
+Jason's decision (2026-10-26): keep the per-pod values and accept the bounded ≤5×. Dividing by
+5 would make the limit 5× too strict whenever traffic concentrates. The api pods' own caps (32
+media streams per pod, the search slot) bound the expensive paths. A shared Redis-backed limiter
+in `traefik-apps` (network-infra) is the exact option if abuse appears.
+`/assets/*` carries no rate limit: 300 requests at 100 parallel all returned 200.
+
+Probe a burst from one client:
+`seq 1 150 | xargs -P 30 -I{} curl -s -o /dev/null -w '%{http_code}\n' https://weather.vallery.net/api/healthz | sort | uniq -c`
