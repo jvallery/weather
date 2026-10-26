@@ -154,8 +154,8 @@ The web Dockerfile pins the commissioned predecessor and retains its hashed asse
 `.weather-assets.json` with only that build's own path, size and SHA-256 identities before copying
 one predecessor. Subsequent builds read that inventory, verify every predecessor byte and reject
 filename collisions with different content. The closure is limited to 512 files / 64 MiB total and
-8 MiB per file; older ancestors do not accumulate. The original scaffold image has one explicit
-legacy-inventory exception; remove that flag when repinning to the first inventoried web image.
+8 MiB per file; older ancestors do not accumulate. Repin `previous` to the live web digest in the same change as each web promotion (#21:
+the pin had stayed on the scaffold image, so a held tab's chunks 404ed after rollouts).
 A held tab that requests a chunk the new build no longer has reloads exactly once
 (`app/lib/chunk-reload.ts`, guarded by a `sessionStorage` timestamp); a second failure within 60 seconds
 surfaces instead of looping, and a tab still open at a later promotion gets one fresh recovery.
