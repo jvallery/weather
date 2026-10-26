@@ -10,6 +10,7 @@ metrics endpoint stays responsive.
 """
 
 import asyncio
+import contextlib
 import logging
 import os
 import signal
@@ -172,11 +173,19 @@ class Worker:
     def renderer(self, row: schedule.SegmentRow) -> SegmentRenderer:
         found = self.renderers.get(row.id)
         if found is None:
+            # A segment with a release point finishes under the recipe its blocks used (#144):
+            # a recipe change applies to segments that have not started.
+            recipe = self.config.recipe
+            stored = row.mezzanine_recipe
+            if stored is not None and stored != recipe.id:
+                with contextlib.suppress(ValueError):
+                    # An id that does not parse keeps the configured recipe: _guard refuses it.
+                    recipe = Recipe.from_id(stored, recipe)
             created = SegmentRenderer(
                 row.job,
                 staging=self.config.staging,
                 expected=self.config.expected,
-                recipe=self.config.recipe,
+                recipe=recipe,
                 index=self.index,
                 block=self.config.block,
                 chunk_seconds=self.config.chunk_seconds,
