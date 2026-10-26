@@ -11,6 +11,8 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
+from weather.logs import configure
+
 from .config import ReceiverConfig, load_config
 from .drain import Drain, reproject, seed
 from .metrics import Metrics
@@ -124,6 +126,7 @@ def reproject_main(argv: list[str]) -> None:
 
 
 def main() -> None:
+    configure("receiver")
     try:
         asyncio.run(run())
     except Exception:

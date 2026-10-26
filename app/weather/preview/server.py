@@ -44,6 +44,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from weather.api.models import Preview, PreviewImage, PreviewInterval, PreviewReason, Problem
+from weather.logs import configure
 from weather.media.origin import (
     CHUNK,
     MediaMetrics,
@@ -497,7 +498,7 @@ def serve() -> None:
     import uvicorn
     from prometheus_client import start_http_server
 
-    logging.basicConfig(level=logging.INFO)
+    configure("preview")
     port = int(os.environ.get("PORT", "8000"))
     metrics_port = int(os.environ.get("METRICS_PORT", "9000"))
     if port == metrics_port:

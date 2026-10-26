@@ -56,6 +56,8 @@ from prometheus_client import Counter, Gauge
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
+from weather.logs import event
+
 from .pressure import Pressure
 
 LOG = logging.getLogger("weather.cleanup")
@@ -1298,8 +1300,7 @@ class Cleanup:
         UNFINALIZED_BYTES.labels(camera).set(stuck_bytes)
         oldest = await self.catalog.oldest_unfinalized(camera, now)
         OLDEST_UNFINALIZED.labels(camera).set(oldest)
-        LOG.info("Staging cleanup pass (%s, %s): %s", camera, "apply" if apply else "dry-run",
-                 json.dumps(report.as_dict(), sort_keys=True))
+        event(LOG, "cleanup_pass", camera=camera, apply=apply, **report.as_dict())
 
 
 class Housekeeping:
