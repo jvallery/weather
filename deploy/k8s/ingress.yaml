@@ -12,9 +12,13 @@ spec:
   # cloudflared pod. Key on the visitor's address instead (C7). LAN clients
   # that reach traefik-apps directly could spoof the header; that only lets
   # them evade their own limit.
+  # Each traefik-apps pod keeps its own bucket, and the DaemonSet runs one pod on each of
+  # the 5 workers, so these per-replica values give the intended 30/s, burst 60 per visitor
+  # (#148: average 30 and burst 60 per replica measured about 5x). Rescale if the worker
+  # count changes.
   rateLimit:
-    average: 30
-    burst: 60
+    average: 6
+    burst: 12
     sourceCriterion:
       requestHeaderName: Cf-Connecting-Ip
 ---

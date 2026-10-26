@@ -206,3 +206,16 @@ preserving the distinction between the two repeated 01:15 observations. The tabl
 source timestamps. uPlot sizes its canvas using CSP-permitted JavaScript style properties;
 qualification checks serialized HTML for inline style attributes, rather than forbidding those
 legitimate computed dimensions.
+
+## Edge rate limits (#148)
+
+Traefik keeps rate-limit and in-flight counters per pod, and `traefik-apps` runs one pod on
+each of the 5 workers. The weather Middlewares therefore hold per-replica values:
+- the site limit is `average: 6, burst: 12`, which is 30/s, burst 60 per visitor;
+- search is `6/min, burst 2`, which is 30/min, burst 10.
+
+`app/tests/test_edge_limits.py` pins the arithmetic. Rescale if the worker count changes.
+The `inFlightReq` limits (media 6, search 2) cannot be divided below 1 per pod, so they are
+effectively 5× as well. The api pods' own caps (32 media streams per pod, the search slot)
+bound them.
+

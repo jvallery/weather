@@ -10,10 +10,11 @@ metadata:
     agent-fleet.vallery.net/owner: jvallery
     agent-fleet.vallery.net/project: weather
 spec:
+  # Per traefik-apps replica: 5 DaemonSet pods give 30/min, burst 10 per visitor (#148).
   rateLimit:
-    average: 30
+    average: 6
     period: 1m
-    burst: 10
+    burst: 2
     sourceCriterion:
       requestHeaderName: Cf-Connecting-Ip
 ---
