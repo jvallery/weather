@@ -232,6 +232,10 @@ class Worker:
                 continue
             stage = "render"
             try:
+                # A renderer created in this loop (after a restart) resumes from durable blocks;
+                # its first index refresh sees those blocks' chunks for the first time, and
+                # they are not late.
+                resumed = row.id not in self.renderers
                 renderer = self.renderer(row)
                 if not renderer.complete and not self.render_allowed():
                     # Render stop (>= 97 %, #19): add no mezzanine blocks to the share.
@@ -244,7 +248,7 @@ class Worker:
                 for chunk in self.index.refresh(
                     renderer.geometry.start, min(renderer.geometry.end, current)
                 ):
-                    if rendered_through is not None and not chunk.readded:
+                    if rendered_through is not None and not chunk.readded and not resumed:
                         late = sum(
                             1
                             for c in chunk.candidates
