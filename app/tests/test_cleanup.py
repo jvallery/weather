@@ -585,6 +585,12 @@ def test_watermarks_70_85_90_with_resume_below_75(tmp_path: Path) -> None:
         Watermarks(alert=0.8, resume=0.75)
 
 
+
+async def tick(housekeeping: Housekeeping, monotonic: float) -> None:
+    """#146: a due pass runs in the background; tests wait for it."""
+    await housekeeping.tick(monotonic)
+    await housekeeping.wait()
+
 def test_pressure_never_deletes_pinned_input_and_runs_cleanup_every_loop(
     tmp_path: Path,
 ) -> None:
@@ -598,13 +604,13 @@ def test_pressure_never_deletes_pinned_input_and_runs_cleanup_every_loop(
     housekeeping = Housekeeping(cleanup, pressure)
 
     async def loops() -> None:
-        await housekeeping.tick(0.0)
+        await tick(housekeeping, 0.0)
         # Urgent pressure: a loop 10 s later does not clean again (at most once a minute),
         # one 60 s later does, inside the normal interval.
         catalog.segments = [SegmentSpan(at(-60), at(600), at(4), False)]
-        await housekeeping.tick(10.0)
+        await tick(housekeeping, 10.0)
         assert sealed(tmp_path) == {p.name for p in paths[3:]}
-        await housekeeping.tick(60.0)
+        await tick(housekeeping, 60.0)
 
     asyncio.run(loops())
     assert pressure.level is Level.STOP
@@ -613,9 +619,9 @@ def test_pressure_never_deletes_pinned_input_and_runs_cleanup_every_loop(
     # Normal pressure waits for the interval.
     share.used = 0.10
     catalog.segments = [SegmentSpan(at(-60), at(600), None, True)]
-    asyncio.run(housekeeping.tick(20.0))
+    asyncio.run(tick(housekeeping, 20.0))
     assert pressure.level is Level.NORMAL and len(sealed(tmp_path)) == 6
-    asyncio.run(housekeeping.tick(360.0))
+    asyncio.run(tick(housekeeping, 360.0))
     assert sealed(tmp_path) == set()
 
 
@@ -632,7 +638,7 @@ def test_housekeeping_survives_a_failing_share(tmp_path: Path) -> None:
     original = cleanup_module.scan_sealed
     cleanup_module.scan_sealed = broken  # type: ignore[assignment]
     try:
-        asyncio.run(housekeeping.tick(0.0))
+        asyncio.run(tick(housekeeping, 0.0))
     finally:
         cleanup_module.scan_sealed = original
     assert cleanup.healthy is False
@@ -712,7 +718,7 @@ def test_rendering_continues_at_the_collector_stop_and_pauses_only_at_97_percent
         share.used = used
 
         async def once() -> None:
-            await housekeeping.tick(0.0)
+            await tick(housekeeping, 0.0)
             await worker.step(at(30))
 
         asyncio.run(once())
