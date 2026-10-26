@@ -37,6 +37,18 @@ spec:
     ports:
     - protocol: TCP
       port: 8000
+  # The operator listener (#44) trusts Authentik's identity headers, so only the traefik-apps
+  # pods may reach it: never the web pods, monitoring or any other namespace.
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik-apps
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: traefik
+    ports:
+    - protocol: TCP
+      port: 8001
   - from:
     - namespaceSelector:
         matchLabels:

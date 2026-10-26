@@ -359,8 +359,12 @@ async def write_manual(
     event_id: UUID | None = None,
     now: datetime | None = None,
 ) -> tuple[UUID, int]:
-    """Operator hook (#44): a standalone manual annotation, labelled manual and attributed."""
+    """Operator hook (#44): a standalone manual annotation, labelled manual and attributed.
+
+    Public like every event, so it may only describe an interval that ended 600 s ago."""
     _operator(author, reason)
+    if end > (now or datetime.now(UTC)) - timedelta(seconds=600):
+        raise ValueError("A manual event must have ended at least 600 s ago")
     if event_id is None:
         key = f"manual:{uuid4()}"
     else:

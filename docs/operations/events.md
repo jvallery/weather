@@ -20,7 +20,8 @@ Migration `0005_events`:
 
 `weather_worker` reads only `id, device_id, source_ts, values, quality` of `evt_precip`,
 `evt_strike` and `obs_st`, plus a device's `station_id`; it appends events, revisions and day
-links and may move an event's `revision` pointer. `weather_editor` has nothing until #44.
+links and may move an event's `revision` pointer. `weather_editor` (#44) has the same append
+rights for the operator hooks below, and nobody can delete.
 
 ## Rules (each pinned by a rule revision)
 
@@ -89,7 +90,9 @@ counts it; the feed itself still serves. Video pages seek to `?t=<UTC>` through 
 `weather.events.store.override(connection, event_id, author=, reason=, visibility=, label=)`
 changes only visibility or label; `write_manual(...)` writes a standalone manual annotation.
 Both require an authenticated operator and a reason, are attributed as human, and never change a
-station measurement. Until #44 grants `weather_editor`, use them only from a reviewed session.
+station measurement. The editor (#44) calls them as `weather_editor` with the allowlisted
+identity as author, in the same transaction as its own revision, audit and outbox rows; see the
+[editor runbook](editor.md).
 
 ## Checks
 

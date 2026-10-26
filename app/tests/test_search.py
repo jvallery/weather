@@ -808,7 +808,9 @@ def test_canonical_text_has_only_the_six_public_fields() -> None:
     fields = set(VideoText.__dataclass_fields__) | set(WindowText.__dataclass_fields__)
     assert not {f for f in fields if re.search(r"favorite|note|operator|original", f)}
     with pytest.raises(ValueError):
-        documents(video_text({**spec, "observed_conditions": "x" * 2001}))
+        documents(video_text({**spec, "observed_conditions": "x" * 8001}))
+    with pytest.raises(ValueError):
+        documents(video_text({**spec, "evidence_quality": "x" * 2001}))
     with pytest.raises(ValueError):
         documents(video_text({**spec, "camera_id": "Front Yard"}))
 

@@ -1,0 +1,45 @@
+# The private editor (#44, P11): /editor (web) and /api/v1/operator/* (the api's operator
+# listener) need an Authentik session with MFA for the Jason-only weather-editor application
+# (agents#5366). apps-strip-auth-headers blanks client-forged X-authentik-* first; then
+# ak-forwardauth redirects or re-injects the authenticated identity. Higher priority than the
+# public /api/ and catch-all routes, so these paths never reach a public listener.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: weather-editor
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - match: Host(`weather.vallery.net`) && PathPrefix(`/api/v1/operator`)
+    priority: 200
+    kind: Rule
+    middlewares:
+    - name: apps-strip-auth-headers
+      namespace: network-infra
+    - name: ak-forwardauth
+      namespace: network-infra
+    - name: weather-rate-limit
+    - name: weather-security-headers
+    services:
+    - name: api-operator
+      port: 8001
+  - match: Host(`weather.vallery.net`) && PathPrefix(`/editor`)
+    priority: 200
+    kind: Rule
+    middlewares:
+    - name: apps-strip-auth-headers
+      namespace: network-infra
+    - name: ak-forwardauth
+      namespace: network-infra
+    - name: weather-rate-limit
+    - name: weather-security-headers
+    services:
+    - name: web
+      port: 80
+  tls: {}
