@@ -110,6 +110,15 @@ Each camera's keogram region is chosen once from the camera corpus (#4) and comm
 4. A later change is a new version; keograms already published keep the region recorded in
    their sidecar.
 
+## Exposure recipe v2 (#144)
+
+New segments render under `observed-exposure/v2` (`ox2-t180`). Any output frame with at least
+25% exposure coverage is rendered from its weight-normalized accumulation, so a single missed
+capture gives a correct, slightly noisier frame instead of a gap. A segment with a release
+point finishes under the recipe its blocks used: `Recipe.from_id` rebuilds it from
+`segment.mezzanine_recipe`. A stored id that does not parse is refused by the release guard.
+v1 segments are never re-rendered (Jason, 2026-10-26: forward only).
+
 ## Withdraw
 
 ```sh

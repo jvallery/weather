@@ -109,8 +109,23 @@ def test_coverage_exactly_090_renders_and_08999_slates() -> None:
     intervals = supports(g, first + second)
     assert coverage(g, 0, intervals) == F(9, 10)
     assert coverage(g, 1, intervals) == F(8999, 10000)
-    threshold = Recipe().min_exposure_coverage
+    threshold = Recipe(min_exposure_coverage=F(9, 10), version=1).min_exposure_coverage
     assert coverage(g, 0, intervals) >= threshold > coverage(g, 1, intervals)
+
+
+def test_v2_renders_partial_coverage_and_ids_round_trip() -> None:
+    """#144: v2 renders any frame with at least 1/4 exposure coverage; ids keep their meaning."""
+    v2, v1 = Recipe(), Recipe(min_exposure_coverage=F(9, 10), version=1)
+    assert (v2.id, v1.id) == ("ox2-t180", "ox1-t180")
+    assert v2.min_exposure_coverage == F(1, 4) and v2.record()["recipe"] == "observed-exposure/v2"
+    assert v1.record()["recipe"] == "observed-exposure/v1"
+    for recipe in (v1, v2, Recipe(shutter_degrees=360), Recipe(min_exposure_coverage=F(1, 2))):
+        again = Recipe.from_id(recipe.id, v2)
+        assert again == recipe and again.id == recipe.id
+    assert Recipe.from_id("ox1-t180", v2).min_exposure_coverage == F(9, 10)
+    for bad in ("t360", "ox3-t180", "ox1-t200", "ox2-t180-c1o2"):
+        with pytest.raises(ValueError):
+            Recipe.from_id(bad, v2)
 
 
 def test_half_open_boundaries_and_ownership() -> None:
@@ -384,8 +399,12 @@ def _job(seconds: int, frames: int, kind: str = "daytime") -> SegmentJob:
     )
 
 
+# The FFmpeg tests below pin v1's 0.90 exposure rule; v2 (#144) has its own test.
+V1 = Recipe(min_exposure_coverage=F(9, 10), version=1)
+
+
 def _renderer(staging: Path, job: SegmentJob, **kw: object) -> SegmentRenderer:
-    recipe = kw.pop("recipe", Recipe())
+    recipe = kw.pop("recipe", V1)
     expected = _expected(cadence_ms=int(kw.pop("cadence_ms", 1000)))  # type: ignore[call-overload]
     return SegmentRenderer(
         job,
@@ -950,6 +969,27 @@ def test_half_hertz_coverage_one_missed_slot_is_one_gap_frame(tmp_path: Path) ->
     prepared = prepare(renderer, weather=None, expected_revision=0)
     assert (prepared.result.slots.expected, prepared.result.slots.accepted) == (120, 119)
     assert prepared.result.exposure.gaps == [(8, 9)]
+
+
+@needs_ffmpeg
+def test_v2_renders_a_frame_that_lost_one_slot_instead_of_a_gap(tmp_path: Path) -> None:
+    """#144: under observed-exposure/v2 the 4/6-covered frame is a real exposure, not a slate."""
+    seconds = [s for s in range(0, 240, 2) if s != 102]
+    synthetic.write_chunks(
+        tmp_path,
+        "skycam_east",
+        _frames_at(T0, seconds, offset_ns=0),
+        geometry=(W, H),
+        cadence_ms=2000,
+    )
+    renderer = _renderer(tmp_path, _job(240, 20), cadence_ms=2000, recipe=Recipe())
+    renderer.advance(FAR_FUTURE)
+    frames = [f for meta in renderer.metas for f in meta["frames"]]
+    assert not any(f["slate"] for f in frames)
+    assert frames[8]["coverage"] == round(4 / 6, 6)
+    prepared = prepare(renderer, weather=None, expected_revision=0)
+    assert prepared.result.exposure.gaps == []
+    assert prepared.result.recipe["recipe"] == "observed-exposure/v2"
 
 
 @needs_ffmpeg
