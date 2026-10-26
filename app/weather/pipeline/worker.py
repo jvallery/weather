@@ -166,6 +166,9 @@ class Worker:
         self.durable: set[UUID] = set()
         # Per-segment retry backoff: (consecutive failures, wall time of the next attempt).
         self.backoff: dict[UUID, tuple[int, datetime]] = {}
+        # #147: one line when the first loop after start has indexed the staged chunks.
+        self.started = time.monotonic()
+        self.indexed = False
 
     def render_allowed(self) -> bool:
         return self.housekeeping is None or self.housekeeping.render_allowed()
@@ -194,6 +197,16 @@ class Worker:
             )
             self._guard(row, created)
             self.renderers[row.id] = found = created
+            event(
+                LOG,
+                "segment_started",
+                camera=self.config.camera,
+                segment_id=str(row.id),
+                cycle_date=row.job.cycle_date.isoformat(),
+                segment=row.job.kind,
+                recipe=created.recipe.id,
+                resumed=row.mezzanine_through is not None,
+            )
         return found
 
     def _guard(self, row: schedule.SegmentRow, renderer: SegmentRenderer) -> None:
@@ -323,13 +336,34 @@ class Worker:
                 self.backoff.pop(row.id, None)
             except Exception as error:
                 metrics.FAILURES.labels(camera, stage).inc()
-                # Never log paths, payloads or driver errors; the type and stage suffice.
-                LOG.error("Pipeline %s failed (%s, %s)", stage, camera, type(error).__name__)
                 # Back off so a deterministic failure never re-reads gigabytes every loop or
                 # starves the camera's live segment: 10 s doubling to 30 min.
                 failures = self.backoff.get(row.id, (0, now))[0] + 1
                 delay = min(MAX_BACKOFF, LOOP_SECONDS * 2 ** min(failures - 1, 10))
                 self.backoff[row.id] = (failures, now + timedelta(seconds=delay))
+                # Never log paths, payloads or driver errors; the type and stage suffice. A
+                # segment at the maximum backoff is stuck (#147).
+                event(
+                    LOG,
+                    "segment_stuck" if delay >= MAX_BACKOFF else "segment_retry",
+                    logging.ERROR if delay >= MAX_BACKOFF else logging.WARNING,
+                    camera=camera,
+                    segment_id=str(row.id),
+                    stage=stage,
+                    error=type(error).__name__,
+                    failures=failures,
+                    retry_seconds=round(delay),
+                )
+        if not self.indexed and rows:
+            self.indexed = True
+            event(
+                LOG,
+                "index_ready",
+                camera=camera,
+                seconds=round(time.monotonic() - self.started, 1),
+                chunks=len(self.index.chunks),
+                segments=len(rows),
+            )
         if self.hourly is not None:
             try:
                 await self.hourly.step(now)

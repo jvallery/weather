@@ -43,6 +43,7 @@ import re
 import shutil
 import stat
 import tarfile
+import time
 from collections import Counter as Tally
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
@@ -262,8 +263,10 @@ def chunk_identity(staging: Path, name: str, camera: str) -> ChunkRow:
         raise ValueError("Invalid chunk settings")
     geometry = settings.get("geometry")
     values = (settings.get("cadence_ms"), settings.get("phase_ms"), *(geometry or (None, None)))
-    if not isinstance(geometry, list) or len(values) != 4 or any(
-        type(v) is not int for v in values
+    if (
+        not isinstance(geometry, list)
+        or len(values) != 4
+        or any(type(v) is not int for v in values)
     ):
         raise ValueError("Invalid chunk settings")
     start = _instant(header.get("slot_window_start_utc"))
@@ -576,7 +579,11 @@ class Catalog(Protocol):
     async def register(self, rows: Sequence[ChunkRow]) -> list[ChunkRow]: ...
     async def missing(self, ids: Sequence[UUID]) -> None: ...
     async def facts(
-        self, camera: str, chunks: Sequence[ChunkRow], now: datetime, lag: timedelta,
+        self,
+        camera: str,
+        chunks: Sequence[ChunkRow],
+        now: datetime,
+        lag: timedelta,
         refresh_seconds: int,
     ) -> dict[UUID, Facts]: ...
     async def pending(self, camera: str) -> list[Deletion]: ...
@@ -716,7 +723,10 @@ class SqlCatalog:
             )
             spans = [
                 SegmentSpan(
-                    r.starts_at, r.ends_at, r.mezzanine_through, bool(r.durable),
+                    r.starts_at,
+                    r.ends_at,
+                    r.mezzanine_through,
+                    bool(r.durable),
                     bool(r.finalized),
                 )
                 for r in rows
@@ -1128,6 +1138,7 @@ class Cleanup:
         await self.catalog.unlinked(deletion)
         DELETIONS.labels(self.camera, deletion.kind).inc()
         report.add(f"deleted_{deletion.kind}")
+        report.add("deleted_bytes", deletion.bytes)
 
     async def _same(self, row: ChunkRow, report: Report) -> bool:
         """Re-identify a chunk before deciding: a changed file is never deleted."""
@@ -1151,6 +1162,7 @@ class Cleanup:
 
     async def _pass(self, apply: bool, report: Report) -> None:
         camera, settings = self.camera, self.settings
+        started = time.monotonic()
         now = await self.catalog.now()
         # 1. Finish deletions a crash left between decision and unlink.
         if apply:
@@ -1300,7 +1312,14 @@ class Cleanup:
         UNFINALIZED_BYTES.labels(camera).set(stuck_bytes)
         oldest = await self.catalog.oldest_unfinalized(camera, now)
         OLDEST_UNFINALIZED.labels(camera).set(oldest)
-        event(LOG, "cleanup_pass", camera=camera, apply=apply, **report.as_dict())
+        event(
+            LOG,
+            "cleanup_pass",
+            camera=camera,
+            apply=apply,
+            seconds=round(time.monotonic() - started, 1),
+            **report.as_dict(),
+        )
 
 
 class Housekeeping:
@@ -1325,7 +1344,7 @@ class Housekeeping:
             )
         try:
             await asyncio.wait_for(asyncio.shield(self._statvfs), 30)
-        except (OSError, TimeoutError):
+        except OSError, TimeoutError:
             FAILURES.labels(self.cleanup.camera, "statvfs").inc()
 
     def render_allowed(self) -> bool:
