@@ -112,8 +112,8 @@ Each camera's keogram region is chosen once from the camera corpus (#4) and comm
 
 ## Gap fill in published renditions (#144)
 
-A captured video never shows a flat dark frame. The renderer keeps v1's exposure rule: an
-output frame below 90% exposure coverage is a slate in the mezzanine, and
+A captured video never shows a flat dark frame. An output frame below its recipe's exposure threshold (0.90 in v1, 0.25 in v2) is still a
+slate in the mezzanine, and
 `coverage.exposure.gaps` still lists it, so the coverage label stays honest. When finalize
 builds the renditions, it streams the mezzanine through `pipeline/gapfill.py` (`gap-fill/v1`):
 
@@ -127,6 +127,15 @@ builds the renditions, it streams the mezzanine through `pipeline/gapfill.py` (`
 and its mode, and `weather_pipeline_filled_frames_total{camera,mode}` counts them. A
 segment with no gap keeps the original single-pass encode. Motion-compensated interpolation
 is #16's A/B against this cross-fade.
+
+## Exposure recipe v2 (#144)
+
+New segments render under `observed-exposure/v2` (`ox2-t180`). Any output frame with at least
+25% exposure coverage is rendered from its weight-normalized accumulation, so a single missed
+capture gives a correct, slightly noisier frame instead of a gap. A segment with a release
+point finishes under the recipe its blocks used: `Recipe.from_id` rebuilds it from
+`segment.mezzanine_recipe`. A stored id that does not parse is refused by the release guard.
+v1 segments are never re-rendered (Jason, 2026-10-26: forward only).
 
 ## Withdraw
 
@@ -429,6 +438,14 @@ Measured 2026-10-26 on the 300 GiB `weather-staging` share (NAS Volume 2), three
   - That leaves 65–110 GiB before the 75% and 90% marks, which is 8–13 hours of growth with no cleanup. `WeatherStagingCleanupStale` (monitoring-stack, 30 minutes) fires long before that.
 - **NAS Volume 2:** the share oscillates between about 20 and 160 GiB a day instead of filling to its 300 GiB quota. Its worst case is about 140 GiB less than the 2026-10-26 incident (270 GiB).
 
+**Restarts and pass scheduling (#146).**
+- **The chunk index reads headers and the manifest only** (`read_chunk(hash_frames=False)`).
+  `read_frame` re-verifies each frame's SHA-256 when it uses it, so a corrupt body becomes a
+  per-slot `changed` reject instead of rejecting its whole chunk. Before, a restart re-hashed
+  every staged frame (about one hour-directory a minute over NFS, about 40 minutes for 41 h
+  of backlog), and rendering and cleanup waited the whole time.
+- **A due cleanup pass runs as a background task,** one at a time. The render loop only
+  checks pressure (the 97% render stop) and never waits for an inventory or deletion pass.
 
 **What may go.** Catalog rows decide (P3). A sealed chunk is deleted only when every
 condition holds; a kept chunk reports the first unmet one:

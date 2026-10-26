@@ -194,9 +194,19 @@ def _reject_constant(value: str) -> None:
     raise ValueError("Non-finite JSON number")
 
 
-def read_chunk(path: Path, max_frame_bytes: int = 16777216) -> list[dict[str, Any]]:
-    """Regular frame members, then one final manifest binding each by length and sha256."""
-    frames: dict[str, tuple[int, str]] = {}
+SHA256_HEX = re.compile(r"[0-9a-f]{64}")
+
+
+def read_chunk(
+    path: Path, max_frame_bytes: int = 16777216, *, hash_frames: bool = True
+) -> list[dict[str, Any]]:
+    """Regular frame members, then one final manifest binding each by length and sha256.
+
+    With `hash_frames=False` (#146) the frame bodies are not read: the TAR structure,
+    padding, termination and manifest are still validated and each member is bound by name
+    and length, but its SHA-256 is left to the reader (`pipeline.intake.read_frame`
+    re-verifies every frame it uses). A restart then reads headers, not gigabytes."""
+    frames: dict[str, tuple[int, str | None]] = {}
     manifest: bytes | None = None
     end = 0
     try:
@@ -228,6 +238,9 @@ def read_chunk(path: Path, max_frame_bytes: int = 16777216) -> list[dict[str, An
                 attempt_id = member.name[7:-4]
                 if not ATTEMPT_ID.fullmatch(attempt_id) or not 0 < member.size <= max_frame_bytes:
                     raise ValueError("Invalid frame member")
+                if not hash_frames:
+                    frames[member.name] = member.size, None
+                    continue
                 digest = hashlib.sha256()
                 while part := source.read(65536):
                     digest.update(part)
@@ -298,7 +311,15 @@ def read_chunk(path: Path, max_frame_bytes: int = 16777216) -> list[dict[str, An
             expected_name = f"frames/{attempt_id}.jpg"
             if not isinstance(member, dict) or member.get("name") != expected_name:
                 raise ValueError("Frame binding differs")
-            if frames.pop(expected_name, None) != (member.get("bytes"), member.get("sha256")):
+            found = frames.pop(expected_name, None)
+            sha256 = member.get("sha256")
+            if (
+                found is None
+                or found[0] != member.get("bytes")
+                or not isinstance(sha256, str)
+                or not SHA256_HEX.fullmatch(sha256)
+                or (found[1] is not None and found[1] != sha256)
+            ):
                 raise ValueError("Frame hash or length differs")
         elif member is not None or record.get("status") not in {"skipped", "request_failed"}:
             raise ValueError("Invalid non-captured attempt")

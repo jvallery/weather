@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # The commissioned predecessor is immutable; refresh this pin for each web promotion.
-FROM registry.vallery.net/jvallery/weather-web@sha256:0761f4ebf5f5cf73a4d261446b296fa77c1a3fb7e755585306c218a6e70764bd AS previous
+FROM registry.vallery.net/jvallery/weather-web@sha256:832f9a04c5c20c5992a82ddf69de13f15bc1b39e7cd697b1a00f9edc0048699f AS previous
 FROM registry.vallery.net/jvallery/weather-node-base@sha256:1304d2735b6d11efe11501456ef9e312b1f3141341feec72d61f194c2ab7fd1c AS build
 RUN npm install --global pnpm@12.15.0
 WORKDIR /app
@@ -9,9 +9,10 @@ RUN pnpm install --frozen-lockfile --ignore-scripts
 COPY web/ ./
 COPY scripts/retain-web-assets.mjs /opt/retain-web-assets.mjs
 COPY --from=previous /app/build/client /previous-client
-# Only this original scaffold image predates asset inventories. Remove the exception on the next pin.
+# #21: the predecessor is the live web image at promotion time, which carries its own
+# .weather-assets.json inventory, so the legacy-baseline exception is gone.
 RUN pnpm build \
- && node /opt/retain-web-assets.mjs /app/build/client /previous-client --allow-legacy-baseline \
+ && node /opt/retain-web-assets.mjs /app/build/client /previous-client \
  && pnpm prune --prod --ignore-scripts
 
 FROM registry.vallery.net/jvallery/weather-node-base@sha256:1304d2735b6d11efe11501456ef9e312b1f3141341feec72d61f194c2ab7fd1c

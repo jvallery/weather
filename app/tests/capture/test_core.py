@@ -8,6 +8,7 @@ import hashlib
 import io
 import ipaddress
 import json
+import logging
 import os
 import random
 import subprocess
@@ -125,10 +126,10 @@ def test_root_capture_cli_redacts_bad_arguments_without_api_configuration() -> N
 def test_schedule_skips_slow_responses_and_clock_steps_never_reuse_ids() -> None:
     schedule = Schedule(0, 0, 1000, 0)
     first = schedule.take()
-    # A slot is overdue only once it is more than half a period late.
-    assert schedule.overdue_count(1_500_000_000) == 0
-    assert schedule.overdue_count(1_500_000_001) == 1
-    assert schedule.overdue_count(2_500_000_001) == 2
+    # A slot is overdue only once it is more than three quarters of a period late (#145).
+    assert schedule.overdue_count(1_750_000_000) == 0
+    assert schedule.overdue_count(1_750_000_001) == 1
+    assert schedule.overdue_count(2_750_000_001) == 2
     skipped = [schedule.take(), schedule.take()]
     assert schedule.next_mono_ns == 3_000_000_000
     assert schedule.observe_clock(12_500_000_000, 2_500_000_000)
@@ -798,3 +799,27 @@ def test_shutdown_flushes_pending_loss_without_fabricating_another_capture(tmp_p
     records = read_chunk(paths[0])
     assert [row["record_type"] for row in records] == ["chunk_header", "loss_range"]
     assert records[1]["attempt_count"] == 1 and collector.pending.record is None
+
+
+def test_staging_stop_resume_and_loss_summaries_are_logged(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """#147: one line per watermark transition, and one loss summary per minute with losses."""
+    collector = Collector(config(tmp_path))
+    ratios = iter([0.5, 0.91, 0.92, 0.74])
+    monkeypatch.setattr(collector, "_occupancy", lambda: next(ratios))
+    caplog.set_level(logging.INFO, logger="weather.capture")
+    assert [collector._staging_full() for _ in range(4)] == [False, True, True, False]
+    events = [getattr(r, "fields", {}).get("event") for r in caplog.records]
+    assert events == ["staging_stop", "staging_resume"]
+    caplog.clear()
+    start = collector._losses_since
+    collector._count("captured")
+    collector._summarize(start + 61 * 1_000_000_000)
+    assert not caplog.records  # a clean minute logs nothing
+    collector._count("overdue", 3)
+    collector._count("timeout")
+    collector._summarize(start + 122 * 1_000_000_000)
+    (record,) = caplog.records
+    fields = record.fields  # type: ignore[attr-defined]
+    assert (fields["event"], fields["overdue"], fields["timeout"]) == ("capture_loss", 3, 1)

@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from weather.db import jobs
 from weather.db.connection import create_database_engine, wait_for_database
+from weather.logs import configure
 from weather.media.garage import media_store
 from weather.pipeline.summary import AggregateWeather
 from weather.scheduler.registry import Registry
@@ -132,7 +133,7 @@ async def run() -> None:
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO)
+    configure("intel")
     try:
         port = int(os.environ.get("METRICS_PORT", "9000"))
         if not 1 <= port <= 65535:

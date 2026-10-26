@@ -117,7 +117,8 @@ class Expected:
 
 
 def parse_chunk(path: Path, expected: Expected) -> Chunk:
-    records = read_chunk(path, expected.max_bytes)
+    # Headers and manifest only (#146); read_frame verifies each frame's SHA-256 on use.
+    records = read_chunk(path, expected.max_bytes, hash_frames=False)
     try:
         with tarfile.open(path, mode="r:") as archive:
             offsets = {member.name: member.offset_data for member in archive.getmembers()}

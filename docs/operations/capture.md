@@ -161,3 +161,17 @@ length undercounts its payload; like libjpeg and FFmpeg, the marker walk skips t
 extraneous bytes to the next marker instead of rejecting the frame. The renderer decodes every frame with FFmpeg
 and records a decode failure as a reject for that slot
 ([#15](https://github.com/jvallery/weather/issues/15) acceptance).
+
+### Timer, pacing and missed slots (#145)
+
+- **Only the camera request is on the capture timer.** Chunk appends, seals and the staging
+  statvfs run in order on one I/O thread, with a backlog of at most 32 operations. A slow
+  NFS write or a 1–5 s seal no longer delays the next request.
+- **Polls are paced from their start.** Polls stay at least one cadence apart, and the Digest
+  retry inside a poll is immediate. Pacing used to restart at the authorized retry, so every
+  poll started late by the 401 round trip.
+- **A slot is skipped as `overdue` only when it is more than three quarters of a period
+  late** (1.5 s at 0.5 Hz). A late capture keeps its slot key and records its true request
+  time, which the renderer uses.
+- **Watch** `weather_capture_attempts_total{result="overdue"}` against `captured`. The target
+  is under 1% of slots per camera over 24 h. Before #145 it was 8–9%.
