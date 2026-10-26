@@ -54,7 +54,23 @@ Weather data responses may gain additive fields within v1; clients parse lenient
 
 A public ID is not a capability. The media resolver checks class, committed publication, trusted exposure eligibility, expiry and tombstone before returning headers or bytes. It cannot accept arbitrary upstream URLs/keys. IDs in operator routes similarly require subject-specific authorization.
 
-Operator routes (`/editor`, `/api/v1/operator/*`) sit behind Authentik forward-auth (P11). The API trusts the identity header only from Traefik (enforced by NetworkPolicy) and admits a request only when that subject is on the one-user allowlist; there are no capability roles, local passwords or public accounts. Mutations additionally require `SameSite=Strict` cookies and a matching `Origin`. All private responses, including private raw receipts, use no-store and are excluded from public service-worker/CDN caches.
+Operator routes (`/editor`, `/api/v1/operator/*`) sit behind Authentik forward-auth (P11). The API trusts the identity header only from Traefik (enforced by NetworkPolicy) and admits a request only when that subject is on the one-user allowlist; there are no capability roles, local passwords or public accounts. Mutations additionally require a matching `Origin` and a JSON body; the app sets no cookies of its own (the Authentik session cookie is the edge's). All private responses, including private raw receipts, use no-store and are excluded from public service-worker/CDN caches.
+
+## Private editor (implemented, #44)
+
+Code-first like the public routes: the Pydantic models in `app/weather/editorial/models.py` generate [operator.openapi.json](operator.openapi.json) and `web/app/generated/operator-api.ts`. The routes are served only by the api's operator listener (port 8001); the public listener 404s them. Runbook: [editor](../operations/editor.md).
+
+| Route | Contract |
+|---|---|
+| `GET /api/v1/operator/session` | The allowlisted username. |
+| `GET /api/v1/operator/subjects/{id}` | A video or event (canonical lowercase UUID; anything else 404): `revision` (0 before the first edit), the description state for videos (`human`, `active`, `stale`, `effective`, `automated`, `bound` versus `current` media SHA-256 and evidence hash), the event's current and last operator revision with `stale`, `tags` (`public`/`private`), `favorite`, `note` and the 20 newest audit entries. |
+| `PATCH /api/v1/operator/subjects/{id}` | `expected_revision`, `reason` (1–2,000) and `changes`: `description` (1–8,000 plain text, `null` clears), `tags` (≤ 32, replaces the list), `favorite`, `note` (1–4,000, `null` clears), `rebase: true`, `event` (`label` ≤ 240, `visibility` `public`/`private`/`withdrawn`). Omitted means unchanged. Unknown fields (an actor, evidence or a measured value) are 422, as are blank, over-long or control-character text, which is never truncated. 409 `revision_conflict` (with `current_revision`) when the CAS fails, 409 `rebase_required` when media or evidence changed since the human revision and the change does not rebase. |
+| `POST /api/v1/operator/events` | A manual event: `reason`, `label`, `basis`, half-open `start`/`end` (UTC `Z`, ≤ 31 days), optional `camera` and `evidence_ids`. 201 with the new subject. |
+| `GET /api/v1/operator/telemetry/receipts` | `start`, `end` (UTC `Z`, ≤ 24 h, else 400 `range_too_large`), `family` (a Tempest family or `unknown`), `limit` ≤ 100, signed `cursor`. Each receipt: `id`, `received_at`, `family`, `parse_state`, `parse_reason`, `parser_revision`, `sha256`, `bytes`, `bytes_base64` (verified against the SHA-256 before it is served). |
+
+Every response is `Cache-Control: no-store, private`. Errors are `application/problem+json` (`code`, `message`, optional `current_revision`): 400 query, 401 no identity, 403 not allowlisted or cross-origin, 404, 409, 413, 415, 422, 503.
+
+Each public `Timelapse` carries `editorial`: `revision` (the public revision: it moves only when public content changes, never for a favorite, note or private tag), `description` (the effective text: an active human revision, else the eligible validated AI text, else null), `human_edited` and public `tags`. While a human revision is active, `analysis` carries it as `author` `editor` under the label "Editor-written description", with no AI claims, coverage or model provenance; `ai` text alone carries the AI-generated label. Favorites, private tags, notes, actors, reasons and evidence bindings appear in no public response, sidecar or search document.
 
 ## Shape constraints and semantic checks
 

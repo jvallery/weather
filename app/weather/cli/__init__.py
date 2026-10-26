@@ -87,17 +87,18 @@ def main() -> None:
         except ConfigurationError as exc:
             parser.exit(2, f"{exc}\n")
 
-        import uvicorn
+        import asyncio
+
         from prometheus_client import start_http_server
 
-        from weather.api import create_app
+        from weather.api import serve
 
         start_http_server(settings.metrics_port)
-        uvicorn.run(create_app(settings), host="0.0.0.0", port=settings.port, access_log=False)
+        asyncio.run(serve(settings))
     elif args.role == "preview":
-        from weather.preview.server import serve
+        from weather.preview.server import serve as serve_preview
 
-        serve()
+        serve_preview()
     elif args.role == "scheduler":
         from weather.scheduler.runner import main as run_scheduler
 

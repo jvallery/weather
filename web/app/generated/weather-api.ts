@@ -608,6 +608,21 @@ export interface components {
             /** Station Alias */
             readonly station_alias: string;
         };
+        /**
+         * Editorial
+         * @description The effective public description (#44): a human-edited revision while it is bound to the
+         *     current rendition and evidence, else the validated AI description. Public tags only.
+         */
+        readonly Editorial: {
+            /** Description */
+            readonly description: string | null;
+            /** Human Edited */
+            readonly human_edited: boolean;
+            /** Revision */
+            readonly revision: number;
+            /** Tags */
+            readonly tags: readonly string[];
+        };
         /** Event */
         readonly Event: {
             /**
@@ -1363,6 +1378,7 @@ export interface components {
              * Format: date
              */
             readonly cycle_date: string;
+            readonly editorial: components["schemas"]["Editorial"];
             readonly keogram: components["schemas"]["Asset"] | null;
             /**
              * Keogram State

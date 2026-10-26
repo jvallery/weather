@@ -185,8 +185,11 @@ def test_event_schema_grants_views_and_constraints() -> None:
                 name = f"weather.{relation}"
                 assert await table("weather_worker", name, "INSERT")
                 assert not await table("weather_worker", name, "DELETE")
-                for role in ("weather_api", "weather_ingest", "weather_editor"):
+                for role in ("weather_api", "weather_ingest"):
                     assert not await table(role, name, "SELECT")
+                # #44: the operator hooks append as weather_editor; nobody deletes.
+                assert await table("weather_editor", name, "INSERT")
+                assert not await table("weather_editor", name, "DELETE")
             assert not await table("weather_worker", "weather.weather_event_revision", "UPDATE")
             for view in ("event_revisions", "event_revision_markers", "event_days"):
                 name = f"public_api.{view}"
@@ -236,7 +239,8 @@ def test_event_schema_grants_views_and_constraints() -> None:
                 ({"origin": "visual", "basis": "visual"}, "23514"),  # visual needs a clip
                 ({"evidence": []}, "23514"),
                 ({"evidence": [same, same]}, "23514"),
-                ({"origin": "manual", "author_kind": "operator"}, "23514"),  # no author/reason
+                # Only weather_editor may write an operator revision (#44), even the owner.
+                ({"origin": "manual", "author_kind": "operator"}, "42501"),
             ):
                 await rejects(c, base, {**good, **change}, state)
             await c.execute(text(base), good)
@@ -439,7 +443,9 @@ def test_operator_override_unchanged_and_changed_evidence_and_manual_events() ->
         await reconcile(worker, end)
         service = feed(api, end)
         (event,) = (await service.events(EventQuery())).items
-        async with worker.begin() as c:
+        # Operator revisions are the editor's alone (#44): its role writes them.
+        editor = engine("weather_editor")
+        async with editor.begin() as c:
             assert (
                 await store.override(c, UUID(event.id), visibility="private", now=end, **OPERATOR)
                 == 2
@@ -463,14 +469,14 @@ def test_operator_override_unchanged_and_changed_evidence_and_manual_events() ->
                 )
                 == "rule:public:,operator:private:,rule:withdrawn:override_stale"
             )
-        async with worker.begin() as c:
+        async with editor.begin() as c:
             await store.override(
                 c, UUID(event.id), visibility="public", label="Reviewed gust", now=end, **OPERATOR
             )
         (settled,) = (await service.events(EventQuery())).items
         assert settled.human_edited and settled.gust_mps == 8 and settled.label == "Reviewed gust"
         assert (await reconcile(worker, end))["unchanged"] == 1
-        async with worker.begin() as c:
+        async with editor.begin() as c:
             manual, _ = await store.write_manual(
                 c,
                 label="Hail on the deck",
@@ -487,8 +493,14 @@ def test_operator_override_unchanged_and_changed_evidence_and_manual_events() ->
         ]
         assert (await service.events(EventQuery(camera="skycam_east", origin="manual"))).items == []
         with pytest.raises(ValueError):
-            async with worker.begin() as c:
+            async with editor.begin() as c:
                 await store.override(c, manual, visibility="public", author="", reason="x")
+        # The worker may append events but never an operator's revision.
+        with pytest.raises(DBAPIError) as refused:
+            async with worker.begin() as c:
+                await store.override(c, manual, visibility="private", now=end, **OPERATOR)
+        assert getattr(refused.value.orig, "sqlstate", None) == "42501"
+        await editor.dispose()
 
     database(check)
 
@@ -498,7 +510,9 @@ def test_feed_pages_never_repeat_or_drop_under_concurrent_inserts_and_revisions(
         start = utc("2026-07-01T16:00:00Z")
         now = utc("2026-07-02T12:00:00Z")
         ids: list[UUID] = []
-        async with worker.begin() as c:
+        # Operator events are written by weather_editor alone (#44); a trigger refuses others.
+        editor = engine("weather_editor")
+        async with editor.begin() as c:
             for minute in range(20):
                 event_id, _ = await store.write_manual(
                     c,
@@ -512,7 +526,7 @@ def test_feed_pages_never_repeat_or_drop_under_concurrent_inserts_and_revisions(
                 ids.append(event_id)
 
         async def manual(event_id: UUID | None, minute: int) -> UUID:
-            async with worker.begin() as c:
+            async with editor.begin() as c:
                 written, _ = await store.write_manual(
                     c,
                     label="Moved",
@@ -527,7 +541,7 @@ def test_feed_pages_never_repeat_or_drop_under_concurrent_inserts_and_revisions(
 
         service = feed(api, now)
         # A writer that is in flight when the first page takes its snapshot.
-        async with worker.connect() as pending:
+        async with editor.connect() as pending:
             await pending.begin()
             hidden, _ = await store.write_manual(
                 pending,
@@ -547,7 +561,7 @@ def test_feed_pages_never_repeat_or_drop_under_concurrent_inserts_and_revisions(
         await manual(ids[15], -10)
         await manual(ids[1], 50)
         await manual(None, 40)
-        async with worker.begin() as c:
+        async with editor.begin() as c:
             await store.override(c, ids[18], visibility="withdrawn", now=now, **OPERATOR)
         while page.next_cursor:
             page = await service.events(query.model_copy(update={"cursor": page.next_cursor}))

@@ -78,6 +78,7 @@ class FakeSource:
         self.rows = sorted(rows, key=lambda r: (r["starts_at"], r["id"]), reverse=True)
         self.queries: list[CatalogQuery] = []
         self.analysis_rows: dict[UUID, dict[str, Any]] = {}
+        self.editorial_rows: dict[UUID, dict[str, Any]] = {}
 
     async def videos(
         self, query: CatalogQuery, after: tuple[datetime, UUID] | None, video_id: UUID | None
@@ -99,6 +100,9 @@ class FakeSource:
 
     async def analyses(self, ids: list[UUID]) -> dict[UUID, dict[str, Any]]:
         return {video: self.analysis_rows[video] for video in ids if video in self.analysis_rows}
+
+    async def editorials(self, ids: list[UUID]) -> dict[UUID, dict[str, Any]]:
+        return {video: self.editorial_rows[video] for video in ids if video in self.editorial_rows}
 
 
 def client(rows: list[dict[str, Any]]) -> tuple[TestClient, FakeSource]:
@@ -237,7 +241,11 @@ def test_public_response_snapshot_has_no_private_storage_identity() -> None:
         "keogram_state",
         "keogram",
         "analysis",
+        "editorial",
     }
+    # The public editorial block (#44) has no slot for favorites, notes, actors or bindings.
+    editorial = set(record.model_dump()["editorial"])
+    assert editorial == {"revision", "description", "human_edited", "tags"}
 
 
 def analysis_row(video: UUID, **changes: Any) -> dict[str, Any]:
@@ -318,3 +326,47 @@ def test_analysis_is_labelled_pinned_and_never_raw() -> None:
     pending = items[str(moved["id"])]
     assert pending["state"] == "pending" and pending["reason"] == "cortex_unavailable"
     assert pending["description"] is None and pending["claims"] == []
+
+
+def test_an_active_human_revision_is_the_effective_description() -> None:
+    edited, plain, stale, broken = row(1), row(2), row(3), row(4, web_asset_id=None)
+    api, source = client([edited, plain, stale, broken])
+    source.analysis_rows = {v["id"]: analysis_row(v["id"]) for v in (edited, plain, stale)}
+    # The AI head's own state and reason never describe the editor's text.
+    source.analysis_rows[edited["id"]] = analysis_row(
+        edited["id"], state="degraded", reason="call_budget", revision_state="degraded"
+    )
+    source.editorial_rows = {
+        edited["id"]: {
+            "video_id": edited["id"], "revision": 3, "description": "Corrected: light snow.",
+            "human_edited": True, "tags": ["snow"],
+        },
+        # Bound to old media or evidence: the view withholds the human text.
+        stale["id"]: {
+            "video_id": stale["id"], "revision": 1, "description": None,
+            "human_edited": False, "tags": [],
+        },
+        broken["id"]: {
+            "video_id": broken["id"], "revision": 2, "description": "Not playable.",
+            "human_edited": True, "tags": [],
+        },
+    }
+    items = {i["video_id"]: i for i in api.get("/api/v1/timelapses").json()["items"]}
+    human = items[str(edited["id"])]
+    assert human["editorial"] == {
+        "revision": 3, "description": "Corrected: light snow.", "human_edited": True,
+        "tags": ["snow"],
+    }
+    # The human text is the editor's, never labelled AI: no AI claims or model provenance.
+    assert human["analysis"]["author"] == "editor"
+    assert human["analysis"]["label"] == "Editor-written description"
+    assert human["analysis"]["description"] == "Corrected: light snow."
+    assert human["analysis"]["claims"] == [] and human["analysis"]["provenance"] is None
+    assert human["analysis"]["state"] == "complete" and human["analysis"]["reason"] is None
+    assert items[str(plain["id"])]["analysis"]["author"] == "ai"
+    automated = items[str(plain["id"])]["editorial"]
+    assert automated["human_edited"] is False and automated["revision"] == 0
+    assert automated["description"].startswith("Clouds thickened.")
+    assert items[str(stale["id"])]["editorial"]["description"].startswith("Clouds thickened.")
+    # Without playable media nothing is described, human or not.
+    assert items[str(broken["id"])]["editorial"]["description"] is None
