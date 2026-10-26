@@ -1,3 +1,5 @@
+# Disabled: not referenced by the root kustomization. #50 enables it in the deploy commit that
+# pins an app digest carrying weather.ai, once the Cortex and media reader keys exist.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
