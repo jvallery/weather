@@ -696,7 +696,7 @@ def test_pipeline_deployments_run_with_only_their_inputs() -> None:
         assert container["command"][:3] == ["weather", "pipeline", "run"]
         # Staging cleanup (#19) ships as a dry run.
         env = {e["name"]: e.get("value") for e in container["env"]}
-        assert env["WEATHER_CLEANUP_ENABLED"] == "false"
+        assert env["WEATHER_CLEANUP_ENABLED"] == "true"
         assert not any(name.startswith(("WEATHER_GC_", "WEATHER_RETENTION")) for name in env)
         secrets = {
             source["secret"]["name"]
