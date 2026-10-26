@@ -125,10 +125,10 @@ def test_root_capture_cli_redacts_bad_arguments_without_api_configuration() -> N
 def test_schedule_skips_slow_responses_and_clock_steps_never_reuse_ids() -> None:
     schedule = Schedule(0, 0, 1000, 0)
     first = schedule.take()
-    # A slot is overdue only once it is more than half a period late.
-    assert schedule.overdue_count(1_500_000_000) == 0
-    assert schedule.overdue_count(1_500_000_001) == 1
-    assert schedule.overdue_count(2_500_000_001) == 2
+    # A slot is overdue only once it is more than three quarters of a period late (#145).
+    assert schedule.overdue_count(1_750_000_000) == 0
+    assert schedule.overdue_count(1_750_000_001) == 1
+    assert schedule.overdue_count(2_750_000_001) == 2
     skipped = [schedule.take(), schedule.take()]
     assert schedule.next_mono_ns == 3_000_000_000
     assert schedule.observe_clock(12_500_000_000, 2_500_000_000)

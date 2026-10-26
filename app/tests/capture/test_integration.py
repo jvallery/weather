@@ -2,6 +2,7 @@
 """Cluster-only fake-camera latency, Digest, response validation and process failure checks."""
 
 import asyncio
+import dataclasses
 import hashlib
 import ipaddress
 import os
@@ -171,6 +172,37 @@ def test_digest_happy_path_and_identical_frames_retained(
         assert all(
             row["capture_upper_bound"] == row["response_completed_at_utc"] for row in captured
         )
+
+    asyncio.run(check())
+
+
+def test_a_slow_seal_never_makes_a_slot_overdue(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#145: chunk seals run on the I/O thread, so a seal slower than the cadence costs no
+    slot. Before, the timer waited for every NFS write and seal."""
+    from weather.capture.chunks import ChunkWriter
+
+    seal = ChunkWriter.seal
+
+    def slow_seal(self: ChunkWriter) -> None:
+        time.sleep(1.6)  # longer than the 1 s cadence
+        seal(self)
+
+    monkeypatch.setattr(ChunkWriter, "seal", slow_seal)
+
+    async def check() -> None:
+        camera = FakeCamera(jpeg())
+        async with camera.running():
+            collector = Collector(dataclasses.replace(camera.config(tmp_path), chunk_seconds=2))
+            task = asyncio.create_task(collector.run())
+            await asyncio.sleep(8.5)
+            collector.shutdown()
+            await task
+        rows = [row for path in (tmp_path / "sealed").rglob("*.tar") for row in read_chunk(path)]
+        assert len([row for row in rows if row.get("status") == "captured"]) >= 7
+        assert not any(row.get("failure_class") == "overdue" for row in rows)
+        assert len(list((tmp_path / "sealed").rglob("*.tar"))) >= 3
 
     asyncio.run(check())
 

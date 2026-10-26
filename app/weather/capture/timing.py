@@ -75,8 +75,10 @@ class Schedule:
         return first, self._slot(self.seq - 1, self.next_mono_ns - self.period_ns)
 
     def overdue_count(self, now_ns: int) -> int:
-        """Slots more than half a period late are skipped; a later slot is still taken."""
-        late = now_ns - self.next_mono_ns - self.period_ns // 2
+        """Slots more than three quarters of a period late are skipped (#145: 1.5 s at 0.5 Hz);
+        a later slot is still taken. A late capture keeps its slot key and records its true
+        request time, which the observed-exposure renderer uses."""
+        late = now_ns - self.next_mono_ns - self.period_ns * 3 // 4
         return max(0, (late + self.period_ns - 1) // self.period_ns)
 
 

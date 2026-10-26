@@ -146,7 +146,10 @@ class SnapshotClient:
                         ) / 1e9
                         if delay > 0:
                             await asyncio.sleep(delay)
-                    self._last_exchange_ns = time.monotonic_ns()
+                    if attempt == 0:
+                        # #145: pace from the start of each poll. Pacing from the authorized
+                        # retry made every poll start late by the 401 round trip.
+                        self._last_exchange_ns = time.monotonic_ns()
                     result = await self._exchange(self._digest.header())
                     if isinstance(result, str):
                         if attempt:
