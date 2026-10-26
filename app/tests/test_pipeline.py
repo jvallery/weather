@@ -445,7 +445,11 @@ def test_linear_mix_through_the_renderer_and_coverage_slate_at_same_pts(tmp_path
         for s in range(10, 18)
     ] + [synthetic.Frame(int(T0.timestamp() + 18) * NS, black, offset_ns=499_000_000)]
     synthetic.write_chunks(tmp_path, "skycam_east", first + second, geometry=(W, H))
-    renderer = _renderer(tmp_path, _job(20, 2), recipe=Recipe(shutter_degrees=360))
+    renderer = _renderer(
+        tmp_path,
+        _job(20, 2),
+        recipe=Recipe(shutter_degrees=360, min_exposure_coverage=F(9, 10), version=1),
+    )
     renderer.advance(FAR_FUTURE)
     frames = renderer.metas[0]["frames"]
     assert [f["coverage"] for f in frames] == [0.9, 0.8999]
