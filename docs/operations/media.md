@@ -413,6 +413,23 @@ each pod mounts only its own camera's `sealed/`, `tmp/`, `render/` and `previews
 scheduler and the api never mount NFS (C17). Each pass works on its own camera only, holds a
 per-camera advisory lock, and takes every age from the database clock.
 
+### Capacity projection
+
+Measured 2026-10-26 on the 300 GiB `weather-staging` share (NAS Volume 2), three cameras at 0.5 Hz:
+
+| Input | Measured | Per day, three cameras |
+|---|---|---|
+| Raw sealed chunks | 50.0 GiB in 2,336 one-minute chunks for skycam_east, so about 21.9 MiB per chunk and 0.73 MiB per frame | about 95 GiB (31.5 GiB per camera) |
+| Mezzanines (`render/`) | 2026-10-25 daytime 19.9–36.2 GiB per camera, overnight 8.2–9.6 GiB per camera | about 105–135 GiB |
+| Previews, `tmp/` | under 0.1 GiB | negligible |
+
+- **Without cleanup:** about 200–230 GiB a day. The share went from 0% to 90% in about 36 hours, and at 90% the collectors refuse every capture until it falls below 75% (2026-10-26 08:50–16:30Z, no frames).
+- **With cleanup:** a raw chunk goes once its slot window is in a durable mezzanine block, its hour's still is archived, its preview window has passed and its keogram bins are committed. That is usually under 3 hours behind capture, so about 12 GiB of raw input. A render directory goes once its segment publishes and reads back.
+  - The peak comes as a daytime segment ends: its full mezzanine (up to about 36 GiB per camera, about 110 GiB for three) plus the overnight segment rendering behind it plus raw input. That is about 150–160 GiB, or 50–55% of the share.
+  - That leaves 65–110 GiB before the 75% and 90% marks, which is 8–13 hours of growth with no cleanup. `WeatherStagingCleanupStale` (monitoring-stack, 30 minutes) fires long before that.
+- **NAS Volume 2:** the share oscillates between about 20 and 160 GiB a day instead of filling to its 300 GiB quota. Its worst case is about 140 GiB less than the 2026-10-26 incident (270 GiB).
+
+
 **What may go.** Catalog rows decide (P3). A sealed chunk is deleted only when every
 condition holds; a kept chunk reports the first unmet one:
 
@@ -493,7 +510,7 @@ the next pass retries.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `WEATHER_CLEANUP_ENABLED` | `false` | Delete; otherwise every pass is a dry run that inventories, evaluates and exports metrics |
+| `WEATHER_CLEANUP_ENABLED` | `false` (deployed `true` since 2026-10-26) | Delete; otherwise every pass is a dry run that inventories, evaluates and exports metrics |
 | `WEATHER_CLEANUP_INTERVAL_SECONDS` | 300 | Pass interval at normal pressure |
 | `WEATHER_CLEANUP_TMP_HOURS` | 6 | Age of another incarnation's tmp file before removal |
 | `WEATHER_CLEANUP_KEOGRAM`, `_HOURLY` | `required` | `vacuous` waives an unwired feature's condition; both queries are registered, so `vacuous` fails start-up |
