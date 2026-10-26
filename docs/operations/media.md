@@ -110,6 +110,24 @@ Each camera's keogram region is chosen once from the camera corpus (#4) and comm
 4. A later change is a new version; keograms already published keep the region recorded in
    their sidecar.
 
+## Gap fill in published renditions (#144)
+
+A captured video never shows a flat dark frame. The renderer keeps v1's exposure rule: an
+output frame below 90% exposure coverage is a slate in the mezzanine, and
+`coverage.exposure.gaps` still lists it, so the coverage label stays honest. When finalize
+builds the renditions, it streams the mezzanine through `pipeline/gapfill.py` (`gap-fill/v1`):
+
+- **Short runs.** A run of at most 12 slate frames between two rendered frames becomes a
+  linear cross-fade between them. The arithmetic is integer, so a re-render gives the same bytes.
+- **Long or edge runs.** A longer run, or a run at either end of the segment, holds the
+  nearest rendered frame with a burned-in "Capture gap HH:MM–HH:MM" label in America/Denver
+  local time.
+
+`coverage.exposure.fill` and `.filled` in the sidecar and RenderResult list every filled range
+and its mode, and `weather_pipeline_filled_frames_total{camera,mode}` counts them. A
+segment with no gap keeps the original single-pass encode. Motion-compensated interpolation
+is #16's A/B against this cross-fade.
+
 ## Withdraw
 
 ```sh

@@ -10,6 +10,11 @@ FRAMES = Counter(
     "Output frames written to a mezzanine, by result",
     ["camera", "result"],
 )
+FILLED = Counter(
+    "weather_pipeline_filled_frames_total",
+    "Slate frames replaced in published renditions (#144), by mode",
+    ["camera", "mode"],
+)
 REJECTS = Counter(
     "weather_pipeline_slot_rejects_total",
     "Captured frames rejected per slot (decode, timing, geometry, settings, stale, changed)",
@@ -82,6 +87,8 @@ def zero_scheduler() -> None:
 
 def zero_pipeline(camera: str) -> None:
     LATENCY.labels(camera)
+    for mode in ("interpolated", "held"):
+        FILLED.labels(camera, mode)
     for state in STILL_STATES:
         STILL_SLOTS.labels(camera, state)
 

@@ -12,7 +12,8 @@ import shutil
 import struct
 import subprocess
 import tempfile
-from collections.abc import Sequence
+import time
+from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
 from pathlib import Path
@@ -259,9 +260,17 @@ class RenditionSpec:
 
 
 def encode_renditions(
-    concat: Path, frames: int, outputs: Sequence[tuple[RenditionSpec, Path]]
+    concat: Path,
+    frames: int,
+    outputs: Sequence[tuple[RenditionSpec, Path]],
+    *,
+    raw: tuple[int, int] | None = None,
+    feed: Iterable[bytes] | None = None,
 ) -> None:
-    """One FFmpeg: decode the mezzanine once, split, scale and encode every rendition."""
+    """One FFmpeg: decode the mezzanine once, split, scale and encode every rendition.
+
+    With `feed`, the input is RGB24 frames of size `raw` (width, height) on stdin instead of
+    the mezzanine concat list (the #144 gap fill streams the mezzanine through Python)."""
     labels = [f"r{index}" for index in range(len(outputs))]
     graph = f"[0:v]setpts=N/(60*TB),split={len(outputs)}" + "".join(
         f"[s{label}]" for label in labels
@@ -273,7 +282,13 @@ def encode_renditions(
             "setparams=range=tv:color_primaries=bt709:color_trc=bt709:colorspace=bt709"
             f"[{label}]"
         )
-    command = [*_base(), "-y", "-f", "concat", "-safe", "0", "-i", str(concat)]
+    if feed is None:
+        command = [*_base(), "-y", "-f", "concat", "-safe", "0", "-i", str(concat)]
+    else:
+        if raw is None:
+            raise ValueError("Raw input needs its frame size")
+        command = [*_base(), "-y", "-f", "rawvideo", "-pix_fmt", "rgb24"]
+        command += ["-s", f"{raw[0]}x{raw[1]}", "-framerate", "60", "-i", "pipe:0"]
     command += ["-filter_complex", graph]
     for label, (spec, path) in zip(labels, outputs, strict=True):
         command += [
@@ -316,12 +331,72 @@ def encode_renditions(
             "mp4",
             str(path),
         ]
-    try:
-        result = subprocess.run(command, capture_output=True, timeout=RENDITION_SECONDS)
-    except subprocess.TimeoutExpired:
-        raise FFmpegError("renditions") from None
-    if result.returncode or result.stderr.strip():
-        raise FFmpegError("renditions")
+    if feed is None:
+        try:
+            result = subprocess.run(command, capture_output=True, timeout=RENDITION_SECONDS)
+        except subprocess.TimeoutExpired:
+            raise FFmpegError("renditions") from None
+        if result.returncode or result.stderr.strip():
+            raise FFmpegError("renditions")
+        return
+    with tempfile.TemporaryFile() as errors:
+        process = subprocess.Popen(
+            command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=errors
+        )
+        assert process.stdin is not None
+        deadline = time.monotonic() + RENDITION_SECONDS
+        try:
+            for frame in feed:
+                if time.monotonic() > deadline:
+                    raise FFmpegError("renditions")
+                process.stdin.write(frame)
+            process.stdin.close()
+            code = process.wait(timeout=max(1.0, deadline - time.monotonic()))
+        except BaseException:
+            process.kill()
+            process.wait()
+            raise
+        errors.seek(0)
+        if code or errors.read().strip():
+            raise FFmpegError("renditions")
+
+
+class MezzanineReader:
+    """Decodes the concatenated mezzanine to RGB24 frames, one at a time (#144)."""
+
+    def __init__(self, concat: Path, width: int, height: int) -> None:
+        self.frame_bytes = width * height * 3
+        self._errors: IO[bytes] = tempfile.TemporaryFile()
+        command = [*_base(), "-f", "concat", "-safe", "0", "-i", str(concat)]
+        command += ["-map", "0:v:0", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"]
+        self._process = subprocess.Popen(
+            command, stdout=subprocess.PIPE, stderr=self._errors, stdin=subprocess.DEVNULL
+        )
+
+    def __iter__(self) -> Iterator[bytes]:
+        assert self._process.stdout is not None
+        try:
+            while True:
+                data = self._process.stdout.read(self.frame_bytes)
+                if not data:
+                    break
+                if len(data) != self.frame_bytes:
+                    raise FFmpegError("mezzanine_decode")
+                yield data
+            code = self._process.wait(timeout=60)
+            self._errors.seek(0)
+            if code or self._errors.read().strip():
+                raise FFmpegError("mezzanine_decode")
+        finally:
+            self.close()
+
+    def close(self) -> None:
+        if self._process.poll() is None:
+            self._process.kill()
+            self._process.wait()
+        if self._process.stdout is not None:
+            self._process.stdout.close()
+        self._errors.close()
 
 
 def extract_frame(path: Path, index: int, width: int, height: int) -> bytes:
