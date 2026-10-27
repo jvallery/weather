@@ -146,9 +146,12 @@ def test_the_chosen_frame_is_published_as_the_six_poster_roles_without_metadata(
     assert (call["camera_id"], call["segment"]) == ("skycam_east", "daytime")
     roles = {(f.role, f.extension, f.width) for f in call["files"]}
     assert {(role, ext) for role, ext, _ in roles} == {
-        (role, ext)
-        for role in ("poster", "poster_960", "poster_480")
-        for ext in ("jpg", "webp")
+        ("poster", "jpg"),
+        ("poster_960", "jpg"),
+        ("poster_480", "jpg"),
+        ("poster_webp", "webp"),
+        ("poster_webp960", "webp"),
+        ("poster_webp480", "webp"),
     }
     assert all(width == W for _, _, width in roles)  # never upscaled past the source
     jpeg = call["bytes"]["poster.jpg"]

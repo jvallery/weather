@@ -603,7 +603,7 @@ test("the editor poster picker previews candidate frames, saves only the frame a
   await page.keyboard.press("Space");
   await page.keyboard.press("ArrowRight");
   await expect(group.getByRole("radio").nth(1)).toBeChecked();
-  await group.getByLabel(/^Frame 1650 /).check();
+  await group.getByRole("radio", { name: /Frame 1650 ·/ }).check();
   const preview = page.getByLabel("Preview of the selected poster frame");
   await expect.poll(async () => preview.evaluate((element: HTMLVideoElement) => Math.round(element.currentTime * 60 - 0.5))).toBe(1650);
   await page.getByLabel(/Reason for this change/).fill("Sunrise colour");
