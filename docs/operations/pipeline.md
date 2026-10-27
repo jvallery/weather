@@ -262,15 +262,16 @@ it as root.
 
 ## Throughput check
 
-`deploy/k8s/pipeline/bench-job.yaml` runs `weather pipeline bench` in
-`weather` as a disposable Job (no Secret, no network): per camera, in parallel,
-it times the streaming renderer over 600 s of synthetic 4096×1856 frames at the
-commissioned 0.5 Hz (`--cadence-ms 1000` for 1 Hz)
-(target ≥ 3× real time) and a 1,200-frame finalize extrapolated to 4,200
-frames with three cameras at once (target ≤ 2 h), within the three pipelines'
-combined limits. Set the image digest under test and the expiry date, apply,
-read the three JSON lines from the log (`"pass": true`), record them in the
-issue and delete the Job. Never run it on a workstation.
+`deploy/k8s/pipeline/bench-job.yaml` runs `weather pipeline bench --cameras 1` in
+`weather` as a disposable Job (no Secret, no network) at one production pipeline's
+resources. It times the streaming renderer over 600 s of synthetic 4096×1856 frames at the
+commissioned 0.5 Hz (`--cadence-ms 1000` for 1 Hz) (target ≥ 3× real time) and a
+1,200-frame finalize extrapolated to 4,200 frames (target ≤ 2 h). Run three copies at once
+(`weather-pipeline-bench-1` to `-3`) for the three-camera case: the namespace LimitRange
+caps one container at 8 CPU / 16 GiB, so three cameras never fit a single Job. Set the image
+digest under test and the expiry date, keep the Jobs off busy hosts, apply, read each JSON
+line from the logs (`"pass": true`), record them in the issue and delete the Jobs. Never run
+it on a workstation.
 
 ## Metrics
 

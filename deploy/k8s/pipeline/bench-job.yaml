@@ -51,17 +51,21 @@ spec:
         - '600'
         - --finalize-frames
         - '1200'
+        - --cameras
+        - '1'
         env:
         - name: TMPDIR
           value: /work
         resources:
           # The three pipelines' combined budget (docs/operations/deploy.md).
+          # One camera per Job at a production pipeline's resources; the namespace LimitRange
+          # caps a container at 8 CPU / 16 GiB, so three cameras never fit one container.
           requests:
-            cpu: '3'
-            memory: 6Gi
+            cpu: '1'
+            memory: 2Gi
           limits:
-            cpu: '12'
-            memory: 24Gi
+            cpu: '4'
+            memory: 8Gi
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
