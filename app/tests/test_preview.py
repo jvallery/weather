@@ -40,6 +40,7 @@ from weather.preview.server import (
     PreviewMetrics,
     PreviewService,
     Row,
+    _read_file,
     build_preview_app,
     preview_routes,
 )
@@ -345,7 +346,10 @@ def test_breach_detector_rechecks_preview_bytes_from_the_capture_bound(
     harness.source.now = large.timing.first_published_at
     found = asyncio.run(harness.service.resolve(large.id))
     assert found is not None and (found.product, found.captured_upper, found.resolved_at) == (
-        "preview", large.timing.captured_upper, harness.source.now)
+        "preview",
+        large.timing.captured_upper,
+        harness.source.now,
+    )
     assert harness.client.get(url).status_code == 200
     assert _served_before(harness) == 0
     # A denied request is not a breach.
@@ -456,7 +460,7 @@ def test_stalled_share_answers_unavailable_within_its_deadline(tmp_path: Path) -
         assert body["reason"] == "media_unavailable"
         # Both sizes were read concurrently: one deadline, not one per size.
         assert time.monotonic() - started < 0.35
-        # Both readers are now stuck: later requests answer at once instead of queueing.
+        # Both readers are now stuck: later requests answer within their deadline, never queueing.
         assert h.client.get(f"/media/previews/{rows['small'].id}").status_code == 503
         assert h.pointer()["reason"] == "media_unavailable"
         assert time.monotonic() - started < 2
@@ -783,3 +787,31 @@ def test_weather_preview_is_the_only_public_pod_on_staging_and_reads_previews_on
     )
     assert "/media/previews/" in route["match"] and "/preview$" in route["match"]
     assert route["priority"] > 100
+
+
+def test_a_burst_of_reads_waits_for_a_reader_instead_of_failing(tmp_path: Path) -> None:
+    """A page reads three cameras' previews at once: more reads than readers, all served."""
+    gate = threading.Semaphore(0)
+
+    def slow(path: Path, size: int) -> bytes | None:
+        gate.acquire(timeout=0.05)
+        return _read_file(path, size)
+
+    h = Harness(tmp_path, timeout=1.0, readers=2, read=slow)
+    try:
+        rows = h.publish()
+        h.source.now = rows["large"].timing.first_published_at
+
+        async def burst() -> list[bytes | None]:
+            return await asyncio.gather(
+                *(
+                    h.files.read(r.path, r.bytes, r.sha256)
+                    for r in [rows["large"], rows["small"]] * 3
+                )
+            )
+
+        results = asyncio.run(burst())
+        assert all(data is not None for data in results)
+        assert h.metrics.files.labels("busy")._value.get() == 0
+    finally:
+        h.files.close()
