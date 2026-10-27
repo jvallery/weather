@@ -247,14 +247,13 @@ are mounted files. The pipeline holds the only originals key; it does not start 
 
 ## Deploying (#49)
 
-`deploy/k8s/pipeline/deployments.yaml` holds `pipeline-skycam-east`,
-`pipeline-skycam-west` and `pipeline-frontyard-1` at `replicas: 0`, outside
-the root kustomization: non-root, read-only root, tokenless, 1 CPU/2 GiB
-requested and 4 CPU/8 GiB limits each, sync wave 2, with the staging PVC, the
-worker DB role and the media writer key. Their NetworkPolicy
-(`network-policy.yaml`) allows DNS, CNPG and Garage only. Enable both by
-adding `pipeline` to the root kustomization and setting replicas to 1 after
-the cameras, `weather-staging` PVC and both bucket writer keys exist. Each pod mounts only its camera's
+`deploy/k8s/pipeline/deployments.yaml` runs `pipeline-skycam-east`,
+`pipeline-skycam-west` and `pipeline-frontyard-1` at one replica each (live since #124):
+non-root, read-only root, tokenless, 1 CPU/2 GiB requested and 4 CPU/8 GiB limits each, sync
+wave 2, with the staging PVC, the worker DB role and the media writer key. Their
+NetworkPolicy (`network-policy.yaml`) allows DNS, CNPG and Garage only. To pause a camera's
+pipeline, set its replicas to 0 in Git (an unpublished segment goes `unavailable` after its
+deadline). Each pod mounts only its camera's
 `sealed/`, `tmp/`, `render/` and `previews/` subPaths of the share; create `render/<camera>`
 and `previews/<camera>` owned
 by UID 1025 / GID 100 first (from a pod running as that identity), or the kubelet creates
