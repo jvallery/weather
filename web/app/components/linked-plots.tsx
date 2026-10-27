@@ -117,7 +117,7 @@ export function LinkedPlots({ span, bins, gaps, cursor, onSelect, units, registr
         const first = key(panel.series[0][0], panel.series[0][1]);
         const unit = bins.find((bin) => bin.units[first])?.units[first] || definition?.canonical_unit || "";
         const shade = (plot: { ctx: CanvasRenderingContext2D; bbox: { top: number; height: number }; valToPos(value: number, scale: string, canvas?: boolean): number }) => {
-          plot.ctx.save(); plot.ctx.fillStyle = "rgba(179, 38, 30, 0.14)";
+          plot.ctx.save(); plot.ctx.fillStyle = "rgba(179, 38, 30, 0.06)";
           for (const gap of gaps) {
             const left = plot.valToPos(epochSeconds(gap.start), "x", true), right = plot.valToPos(epochSeconds(gap.end), "x", true);
             plot.ctx.fillRect(left, plot.bbox.top, Math.max(1, right - left), plot.bbox.height);
@@ -126,7 +126,9 @@ export function LinkedPlots({ span, bins, gaps, cursor, onSelect, units, registr
         };
         const plot = new UPlot({
           width: element.clientWidth, height: HEIGHT, padding: [8, 16, 0, 8],
-          scales: { x: { time: true, range: () => [epochSeconds(span.start), epochSeconds(span.end)] } },
+          scales: { x: { time: true, range: () => [epochSeconds(span.start), epochSeconds(span.end)] },
+            // Rain starts at zero and a dry interval keeps a small scale (2.5 mm), not an inflated one.
+            ...(panel.id === "rain" ? { y: { range: (_plot: unknown, _min: number, max: number): [number, number] => [0, Math.max(2.5, (max || 0) * 1.1)] } } : {}) },
           series: [{}, ...panel.series.map(([metric, statistic], position) => ({ label: seriesLabel(metric, statistic, registry), stroke: STROKES[position], width: position ? 1 : 2, spanGaps: false, points: { show: true, size: 3 } }))],
           axes: [{ stroke: "#626b76", font: "12px IBM Plex Sans", space: 140, size: 48, values: (_plot, values) => values.map(plotTime) }, { stroke: "#626b76", size: 72, values: (_plot, values) => values.map((value) => metricValue(value, unit, units, definition)) }],
           cursor: { drag: { x: false, y: false }, sync: { key: "linked-weather" } }, legend: { show: false },

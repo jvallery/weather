@@ -475,6 +475,7 @@ test("a telemetry gap and a partial recording: gap and coverage shown, nothing i
   await expect(page.getByText(/^Partial coverage · 95\.0% of the source interval was captured/)).toBeVisible();
   await page.goto(`${EAST_DAY}?t=2026-10-31T15:10:00Z`); await ready(page);
   await expect(page.locator("#cursor-readout")).toContainText("Temperature mean no observations");
+  await page.getByText("Plotted values table").click();
   await expect(page.getByText(/^Temperature mean: .*, 9 without observations; coverage 94\.0%\.$/)).toBeVisible();
   // Inside the 15-minute capture gap the frame is a labelled slate, at its own source time.
   await page.goto(`${EAST_DAY}?t=2026-10-31T16:45:00Z`); await ready(page);

@@ -24,7 +24,7 @@ export function EventTime({ event }: { event: WeatherEvent }) {
   const { start, end } = event.source_interval;
   const precision = event.precision === "second" ? "to the second" : event.precision === "clip" ? "clip window" : "report interval";
   const span = Date.parse(end) - Date.parse(start);
-  return <span className="event-when" title={`${localTime(start)} → ${localTime(end)} · ${precision}`}><time dateTime={start}>{shortDateTime(start)}</time>{span > 1000 && <time dateTime={end}>to {localDate(start) === localDate(end) ? shortTime(end) : shortDateTime(end)}</time>}</span>;
+  return <span className="event-when" title={`${localTime(start)} → ${localTime(end)} · ${precision}`}><time dateTime={start}>{shortDateTime(start)}</time>{span > 1000 && <>{" "}<time dateTime={end}>to {localDate(start) === localDate(end) ? shortTime(end) : shortDateTime(end)}</time></>}</span>;
 }
 /** The instant a bookmark seeks to: the start of the event's overlap with this recording, or null. */
 export function bookmarkInstant(event: WeatherEvent, video: Pick<Timelapse, "source_interval">): string | null {
