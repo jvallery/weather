@@ -61,7 +61,9 @@ CAMERAS = ("skycam_east", "skycam_west", "frontyard_1")
 PATH = re.compile(r"previews/(skycam_east|skycam_west|frontyard_1)/[0-9]{1,16}-(large|small)\.jpg")
 MAX_BYTES = 2 * 1024 * 1024
 READ_SECONDS = 2.0
-READERS = 4
+# One Now page reads 3 cameras x 2 sizes at once, plus the image fetches.
+READERS = 16
+SLOT_POLL = 0.01
 COLUMNS = (
     "id,camera_id,generation,variant,width,height,bytes,sha256,path,captured_lower,"
     "captured_upper,public_not_before,first_published_at,expires_at"
@@ -196,12 +198,20 @@ class Files:
         if not PATH.fullmatch(path) or not 0 < size <= MAX_BYTES:
             self.metrics.files.labels("missing").inc()
             return None
-        with self._lock:
-            if self._busy >= self.readers:
-                # Every reader is stuck on the share: answer now, never queue behind it.
+        # One deadline covers waiting for a reader and the read itself. A burst of ordinary reads
+        # waits briefly for a free reader; readers stuck on a stalled share make the request answer
+        # Unavailable at its deadline instead of queueing behind them.
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + self.timeout
+        while True:
+            with self._lock:
+                if self._busy < self.readers:
+                    self._busy += 1
+                    break
+            if loop.time() >= deadline:
                 self.metrics.files.labels("busy").inc()
                 raise Unavailable("store")
-            self._busy += 1
+            await asyncio.sleep(SLOT_POLL)
         future = self._executor.submit(self._read, self.root / path.removeprefix("previews/"), size)
 
         def release(_: object) -> None:
@@ -210,7 +220,7 @@ class Files:
 
         future.add_done_callback(release)
         try:
-            async with asyncio.timeout(self.timeout):
+            async with asyncio.timeout_at(deadline):
                 data = await asyncio.wrap_future(future)
         except TimeoutError:
             self.metrics.files.labels("timeout").inc()

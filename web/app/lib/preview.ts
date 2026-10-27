@@ -5,7 +5,7 @@
  * wall-clock time since receipt: a suspended tab or a clock step never makes imagery look fresher. A failed poll keeps the last preview
  * until it ages out; it never extends what the server authorized.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { parsePreview, type Preview } from "./weather-api";
 
 export type PreviewTile =
@@ -43,6 +43,7 @@ export function usePreview(camera: string, clock: () => number = monotonic) {
   const [received, setReceived] = useState<Received | null>(null);
   const [failed, setFailed] = useState(false);
   const [now, setNow] = useState(clock);
+  const hasImage = useRef(false);
   useEffect(() => {
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -55,7 +56,10 @@ export function usePreview(camera: string, clock: () => number = monotonic) {
           const preview = response.ok ? parsePreview(await response.json()) : null;
           if (stopped) return;
           if (preview === null) { setFailed(true); delay = 15_000; }
-          else { setReceived({ preview, receivedAt: clock(), receivedWall: Date.now() }); setFailed(false); delay = Math.min(300, Math.max(15, preview.refresh_seconds)) * 1000; }
+          // A transient read failure (the image share stalled past its deadline) keeps the last
+          // good preview, which still ages from its own capture time and expires on schedule.
+          else if (preview.state === "unavailable" && preview.reason === "media_unavailable" && hasImage.current) { setFailed(false); delay = 15_000; }
+          else { hasImage.current = preview.state !== "unavailable"; setReceived({ preview, receivedAt: clock(), receivedWall: Date.now() }); setFailed(false); delay = Math.min(300, Math.max(15, preview.refresh_seconds)) * 1000; }
         } catch {
           if (stopped) return;
           setFailed(true); delay = 15_000;
