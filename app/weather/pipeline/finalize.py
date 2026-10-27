@@ -235,7 +235,7 @@ def prepare(
             finally:
                 reader.close()
             for mode, count in (("interpolated", stats.interpolated), ("held", stats.held)):
-                metrics.FILLED.labels(job.camera, mode).inc(count)
+                metrics.FRAMES.labels(job.camera, mode).inc(count)
         else:
             encode_renditions(concat, job.frames, temporary)
         timing = None
