@@ -35,5 +35,4 @@ p,li,dd,h1,h2,h3{overflow-wrap:anywhere}
 textarea{font:inherit;width:100%;min-height:44px;border:1px solid var(--muted);border-radius:.375rem;background:white;color:var(--ink);padding:.5rem .75rem;resize:vertical}
 .editor-form{display:grid;gap:1rem;margin:1rem 0}.editor-form label{display:flex;flex-direction:column;gap:.3rem}.editor-form label.inline{flex-direction:row;align-items:center;gap:.5rem;min-height:44px}.editor-form fieldset{border:1px solid var(--line);border-radius:.625rem;padding:1rem;min-width:0;display:grid;gap:.75rem}.editor-form legend{font-weight:600;padding:0 .25rem}
 .editor-picks{list-style:none;padding:0;display:grid;gap:.5rem}.editor-picks button{width:100%;text-align:left}.editor-subject{margin:1.5rem 0}.evidence-compare table{font-size:.9rem}
-.editor-poster img, .editor-poster video { display: block; max-width: 100%; height: auto; margin-block: 0.5rem; }
-.poster-candidates { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
+.editor-poster img,.editor-poster video{display:block;max-width:100%;height:auto;margin-block:.5rem}.poster-candidates{display:flex;flex-wrap:wrap;gap:.25rem 1rem}
