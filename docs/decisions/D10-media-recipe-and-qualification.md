@@ -6,6 +6,8 @@
 
 > **Amended 2026-10-26** by the [gap-fill interpolation decision](2026-10-26-gap-fill-interpolation.md) (#16): observed exposure with the `gap-fill/v1` cross-fade (#144) is the production profile. Motion-compensated interpolation cost 60–76× the CPU for no visible gain, so no high-interpolation profile is built and the motion-profile paragraphs below are not requirements.
 
+> **Config epoch 2026-10-27 (#4):** production renders at 0.5 Hz × 180° with `observed-exposure/v2` (#144) and `gap-fill/v1`. Measured cadence, bytes and CPU are in [D02](D02-camera-sources-and-time.md).
+
 Status: algorithm and initial commissioning defaults selected; exact executable build, real-scene quality and cluster throughput remain unqualified. Requirements §§5.3–5.4, 6.9, 7.1–7.8 and 8; consumers WX-14/16/36, with capture/time, publication and integration consumers inheriting their respective contracts. No render or production change was performed for this decision.
 
 ## Why and evidence
