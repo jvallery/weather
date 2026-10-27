@@ -342,6 +342,7 @@ main>section>h2,main>section>.section-head{margin:2rem 0 .6rem}
 
 /* Stills */
 .stills{grid-template-columns:repeat(auto-fill,minmax(min(100%,14rem),1fr));gap:.75rem}
+@media(max-width:600px){.stills{grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}.still{padding:.35rem}}
 .still{margin:0;padding:.5rem;display:flex;flex-direction:column;gap:.35rem}
 .still h3{font:500 .8rem/1.3 var(--mono);letter-spacing:0}
 .still img{display:block;width:100%;border-radius:var(--radius-sm)}
