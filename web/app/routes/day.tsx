@@ -32,7 +32,7 @@ export default function Day() {
       const keogram = keograms?.find((item) => item.camera === camera && item.segment === segment);
       return <article className="segment-card" key={segment}><h3><span>{SEGMENT_LABELS[segment]}</span>{video && <Status state={video.state} reason={video.reason} />}</h3>
         {video ? <>
-          {playable(video) && <Link className="media-tile" to={videoPath(video)} tabIndex={-1} aria-hidden="true"><img src={video.poster!.url} alt="" width={video.poster!.width ?? undefined} height={video.poster!.height ?? undefined} loading="lazy" decoding="async" /><span className="play" /></Link>}
+          {playable(video) && <Link className="media-tile" to={videoPath(video)} tabIndex={-1} aria-hidden="true"><img src={(video.poster_small ?? video.poster)!.url} alt="" width={(video.poster_small ?? video.poster)!.width ?? undefined} height={(video.poster_small ?? video.poster)!.height ?? undefined} loading="lazy" decoding="async" /><span className="play" /></Link>}
           <p className="small"><VideoLink video={video} /> · <time dateTime={video.source_interval.start}>{shortTime(video.source_interval.start)}</time> to <time dateTime={video.source_interval.end}>{shortTime(video.source_interval.end)}</time></p>
           {keogram && <KeogramPanel keogram={keogram} />}
           <AnalysisPanel analysis={video.analysis} compact />

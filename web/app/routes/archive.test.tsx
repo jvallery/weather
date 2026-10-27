@@ -28,3 +28,14 @@ test("the archive month page reads its month (both API pages) and lists that mon
   // Month navigation links carry the filters, not the month query parameter.
   expect(data.filters).toEqual({ camera: "skycam_east" });
 });
+
+test("the calendar's cover is the 480 px poster when the API provides one", async () => {
+  vi.stubEnv("API_ORIGIN", "http://api");
+  const small = { asset_id: "a1", class: "poster", url: "/media/00000000-0000-4000-8000-0000000000aa", mime: "image/jpeg", bytes: 30_000, width: 480, height: 218 };
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    generated_at: "2026-10-24T00:00:00Z", next_cursor: null,
+    items: [{ ...entry("00000000-0000-4000-8000-000000000001", "2026-10-31", "published", null), poster_small: small }, entry("00000000-0000-4000-8000-000000000002", "2026-10-30", "published", null)],
+  }))));
+  const data = await loader({ request: new Request("https://weather.example/archive/2026/10/"), params: { year: "2026", month: "10" }, context: {} } as unknown as Parameters<typeof loader>[0]);
+  expect(data.catalog?.items.map((video) => video.poster_small?.url ?? null)).toEqual([small.url, null]);
+});

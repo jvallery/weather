@@ -1385,9 +1385,11 @@ export interface components {
              * @enum {string}
              */
             readonly keogram_state: "pending" | "published" | "partial" | "unavailable" | "failed" | "withdrawn";
+            readonly keogram_thumbnail?: components["schemas"]["Asset"] | null;
             /** Native Download Url */
             readonly native_download_url: string | null;
             readonly poster: components["schemas"]["Asset"] | null;
+            readonly poster_small?: components["schemas"]["Asset"] | null;
             /** Reason */
             readonly reason: string | null;
             /** Renditions */

@@ -3453,6 +3453,16 @@
             "title": "Keogram State",
             "type": "string"
           },
+          "keogram_thumbnail": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Asset"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "native_download_url": {
             "anyOf": [
               {
@@ -3465,6 +3475,16 @@
             "title": "Native Download Url"
           },
           "poster": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Asset"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "poster_small": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/Asset"

@@ -60,7 +60,10 @@ export default function Archive() {
         const date = `${selectedMonth}-${String(index + 1).padStart(2, "0")}`;
         const present = cameras.flatMap((camera) => segments.map((segment) => byKey.get(`${date}/${camera}/${segment}`)));
         const has = present.some(Boolean);
-        return <Link key={date} to={`/day/${date}/`} aria-label={`Open solar cycle ${date}`} data-has={catalog ? String(has) : undefined} aria-current={date === today ? "date" : undefined}>
+        // The day's picture: the first filtered camera's daytime poster, else its overnight one (480 px only).
+        const cover = segments.flatMap((segment) => cameras.map((camera) => byKey.get(`${date}/${camera}/${segment}`))).find((video) => video?.poster_small)?.poster_small;
+        return <Link key={date} to={`/day/${date}/`} aria-label={`Open solar cycle ${date}`} data-has={catalog ? String(has) : undefined} data-cover={cover ? "true" : undefined} aria-current={date === today ? "date" : undefined}>
+          {cover && <img className="calendar-cover" src={cover.url} alt="" width={cover.width ?? undefined} height={cover.height ?? undefined} loading="lazy" decoding="async" />}
           <span className="calendar-day">{index + 1}</span>
           {has ? <span className="state-dots" data-cols={cameras.length} aria-hidden="true">{segments.flatMap((segment) => cameras.map((camera) => { const video = byKey.get(`${date}/${camera}/${segment}`); return <span key={`${camera}-${segment}`} className="state-dot" data-state={video?.state ?? "none"} />; }))}</span> : <small>{date > today ? "" : "No recordings"}</small>}
         </Link>;

@@ -619,7 +619,10 @@ def test_keograms_publish_after_their_videos_and_drop_their_bins(tmp_path: Path)
                 )
                 videos = list(
                     await connection.execute(
-                        text("SELECT segment,keogram_state,keogram_asset_id FROM public_api.videos")
+                        text(
+                            "SELECT segment,keogram_state,keogram_asset_id,"
+                            "keogram_thumb_asset_id,poster_small_asset_id FROM public_api.videos"
+                        )
                     )
                 )
             assert {(p.segment, p.state, p.observed) for p in public} == {
@@ -630,6 +633,10 @@ def test_keograms_publish_after_their_videos_and_drop_their_bins(tmp_path: Path)
             assert {(v.keogram_state, v.keogram_asset_id is not None) for v in videos} == {
                 ("partial", True)
             }
+            # The catalog's thumbnails: the keogram's 360 px thumbnail and the 480 px poster.
+            thumbs = {p.segment: p.thumbnail_asset_id for p in public}
+            assert all(v.keogram_thumb_asset_id == thumbs[v.segment] for v in videos)
+            assert all(v.poster_small_asset_id is not None for v in videos)
             # A second pass has nothing left to do.
             await east_worker(tmp_path, worker_db, Publisher(worker_db, buckets)).step(now)
             assert (

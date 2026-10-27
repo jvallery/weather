@@ -18,9 +18,9 @@ function Tile({ camera, segment, label, video }: { camera: Camera; segment: stri
   const name = `${CAMERA_LABELS[camera]} · ${label.toLowerCase()} · ${video.cycle_date}${segment === "overnight" ? ` → ${dateShift(video.cycle_date, 1)}` : ""}`;
   const keogram = (video.keogram_state === "published" || video.keogram_state === "partial") && video.keogram;
   return <li><h4><span>{label} · {dayTitle(video.cycle_date, "short")}</span>{video.state !== "published" && <Status state={video.state} />}</h4>
-    {playable(video) ? <Link className="media-tile" to={videoPath(video)}><img src={video.poster!.url} alt={`Poster frame, ${name}`} width={video.poster!.width ?? undefined} height={video.poster!.height ?? undefined} loading="lazy" decoding="async" /><span className="play" aria-hidden="true" /><span className="screen-reader">Watch {name}</span></Link>
+    {playable(video) ? <Link className="media-tile" to={videoPath(video)}><img src={(video.poster_small ?? video.poster)!.url} alt={`Poster frame, ${name}`} width={(video.poster_small ?? video.poster)!.width ?? undefined} height={(video.poster_small ?? video.poster)!.height ?? undefined} loading="lazy" decoding="async" /><span className="play" aria-hidden="true" /><span className="screen-reader">Watch {name}</span></Link>
       : <Link className="media-empty" to={videoPath(video)}>No playable media · details</Link>}
-    {keogram ? <Link className="keo-thumb" to={videoPath(video)}><img src={video.keogram!.url} alt={`Keogram, ${name}${video.keogram_state === "partial" ? " (partial coverage)" : ""}`} width={video.keogram!.width ?? undefined} height={video.keogram!.height ?? undefined} loading="lazy" decoding="async" /></Link>
+    {keogram ? <Link className="keo-thumb" to={videoPath(video)}><img src={(video.keogram_thumbnail ?? video.keogram)!.url} alt={`Keogram, ${name}${video.keogram_state === "partial" ? " (partial coverage)" : ""}`} width={(video.keogram_thumbnail ?? video.keogram)!.width ?? undefined} height={(video.keogram_thumbnail ?? video.keogram)!.height ?? undefined} loading="lazy" decoding="async" /></Link>
       : <p className="small">Keogram {video.keogram_state === "pending" ? "pending" : video.keogram_state === "withdrawn" ? "withdrawn" : "unavailable"}.</p>}
   </li>;
 }
