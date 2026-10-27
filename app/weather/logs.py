@@ -18,6 +18,7 @@ from typing import Any
 
 _UNSAFE = re.compile(r"/|\\|://|@")
 _SCALARS = (str, int, float, bool, type(None))
+QUIET = ("httpx", "httpcore", "botocore", "boto3", "urllib3", "aiobotocore")
 
 
 class JsonFormatter(logging.Formatter):
@@ -47,6 +48,9 @@ def configure(component: str, level: int = logging.INFO) -> None:
     root = logging.getLogger()
     root.handlers[:] = [handler]
     root.setLevel(level)
+    # HTTP clients log every request with its full URL (bucket and object keys) at INFO.
+    for name in QUIET:
+        logging.getLogger(name).setLevel(logging.WARNING)
 
 
 def safe_fields(fields: dict[str, Any]) -> dict[str, Any]:
