@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Units } from "../lib/contracts";
 import type { Current, Metric, MetricDefinition, MetricRegistry } from "../lib/weather-api";
 import { ageLabel, ageSeconds, compass, conversionAvailable, duration, humanize, localTime, metricLabel, metricValue } from "../lib/format";
@@ -37,10 +37,23 @@ function strip(get: Lookup, units: Units): { key: string; label: string; value: 
 }
 
 export function CurrentConditions({ initial, renderedAt, units, registry = null, apiUnavailable = false }: { initial: Current; renderedAt: number; units: Units; registry?: MetricRegistry | null; apiUnavailable?: boolean }) {
-  const result = useCurrent(initial, apiUnavailable);
-  const [now, setNow] = useState(renderedAt);
-  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
+  // Returning to a hidden tab refetches at once instead of showing values that aged while away.
+  const result = useCurrent(initial, apiUnavailable, { refreshOnResume: true });
+  const [clock, setClock] = useState(renderedAt);
+  useEffect(() => { const timer = setInterval(() => setClock(Date.now()), 1000); return () => clearInterval(timer); }, []);
   const current = result.data;
+  // Ages count on the server's clock: a device clock running ahead would otherwise make every
+  // reading look old. The offset is measured on each successful poll (no-store, so generated_at
+  // is current); latency under 2 s is ignored, and an outage keeps the last offset, so ages still grow.
+  const [skew, setSkew] = useState(0);
+  const mounted = useRef(Date.now());
+  useEffect(() => {
+    const generated = Date.parse(current.generated_at);
+    if (!Number.isFinite(generated) || result.dataUpdatedAt <= mounted.current) return;
+    const offset = result.dataUpdatedAt - generated;
+    setSkew(Math.abs(offset) > 2000 ? offset : 0);
+  }, [current.generated_at, result.dataUpdatedAt]);
+  const now = clock - skew;
   const definition = (name: string) => registry?.metrics.find((row) => row.metric === name);
   const get: Lookup = (name) => { const metric = current.metrics.find((item) => item.metric === name); return metric ? { metric, definition: definition(name) } : null; };
   const temperature = get("temperature") ?? get("air_temperature");

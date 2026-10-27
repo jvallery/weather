@@ -23,7 +23,7 @@ export function PlayerPanel({ video, quality, onQuality, coverageLabel = null, m
   const rendition = video.renditions.find((item) => item.role === (quality === "auto" ? autoRole : quality))!;
   const native = video.renditions.find((item) => item.role === "native")!;
   return <div className="card player-panel"><div className="card-head"><h2>Playback</h2></div>
-    {video.state === "partial" && <p id="coverage-label" className="notice notice-warn">{coverageLabel || "Partial coverage · this recording has gaps."}</p>}
+    {video.state === "partial" && <p id="coverage-label" className="small">{coverageLabel || "Partial coverage · this recording has gaps."}</p>}
     <div className="filters"><label htmlFor="quality">Playback quality<select id="quality" value={quality} onChange={(event) => onQuality(event.target.value as Quality)}><option value="auto">Auto ({autoRole === "mobile" ? "Mobile" : "Web"})</option><option value="web">Web</option><option value="mobile">Mobile</option><option value="native">Native</option></select></label></div>
     {rendition.asset.width && rendition.asset.height && <p className="small">{rendition.asset.width} × {rendition.asset.height} · H.264 · 60 fps · {(video.allocated_frames / 60).toFixed(0)} s</p>}
     <div className="player-links">

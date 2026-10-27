@@ -118,7 +118,8 @@ main>section>h2,main>section>.section-head{margin:2rem 0 .6rem}
 .card-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.6rem;flex-wrap:wrap}
 .tag,.status,.badge{display:inline-flex;align-items:center;gap:.3rem;border-radius:999px;padding:.15rem .55rem;font:500 .68rem/1.4 var(--mono);text-transform:uppercase;letter-spacing:.06em;background:var(--field);color:var(--ink);border:1px solid var(--line);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .status-published,.status-complete,.status-on_target,.badge-measured,.tag-ok{background:var(--tint-ok);border-color:#bfe3d3;color:var(--forest)}
-.status-partial,.status-stale,.status-degraded,.status-off_target,.status-processing,.status-capturing,.status-queued,.status-pending,.badge-visual,.badge-synthesis,.tag-warn{background:var(--tint-warn);border-color:#ecd798;color:#5c4407}
+.status-partial{background:var(--field);border-color:var(--line-strong);color:var(--ink)}
+.status-stale,.status-degraded,.status-off_target,.status-processing,.status-capturing,.status-queued,.status-pending,.badge-visual,.badge-synthesis,.tag-warn{background:var(--tint-warn);border-color:#ecd798;color:#5c4407}
 .status-unavailable,.status-expired,.status-withdrawn,.status-failed,.status-missing,.tag-fault{background:var(--tint-fault);border-color:#f1c4bf;color:var(--fault)}
 .badge{white-space:normal;text-align:left}
 .badge-manual{background:#ecebf6;border-color:#d5d2ea;color:#3f3a77}

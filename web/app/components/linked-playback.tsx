@@ -125,7 +125,7 @@ export function LinkedPlayback({ video, requested, events, units, registry, side
   const frame = map && cursor !== null ? frameOf(map, cursor) : null;
   const bin = binAt(bins, cursor);
   const resolution = plotResolution(span);
-  const partialLabel = map?.slotFraction !== null && map?.slotFraction !== undefined ? `Partial coverage · ${(map.slotFraction * 100).toFixed(1)}% of the source interval was captured; this recording has gaps.` : null;
+  const partialLabel = map?.slotFraction !== null && map?.slotFraction !== undefined ? `Partial coverage · ${(map.slotFraction * 100).toFixed(1)}% of the source interval was captured; missed captures appear as brief slates.` : null;
   const station = useMemo(() => !responses ? null : <>
     <ul className="plot-summary" id="plot-summary">{PLOT_PANELS.flatMap((panel) => panel.series.map(([metric, statistic]) => <li key={`${metric}-${statistic}`}>{seriesSummary(bins, metric, statistic, units, registry)}</li>))}</ul>
     <details><summary>Plotted values table</summary><div className="table-wrap" tabIndex={0} role="region" aria-label="Plotted values table"><table><caption>One row per {resolution / 60}-minute interval</caption><thead><tr><th scope="col">Interval start · America/Denver</th>{PLOT_PANELS.flatMap((panel) => panel.series.map(([metric, statistic]) => <th scope="col" key={`${metric}-${statistic}`}>{seriesLabel(metric, statistic, registry)}</th>))}</tr></thead>
