@@ -175,3 +175,10 @@ and records a decode failure as a reject for that slot
   time, which the renderer uses.
 - **Watch** `weather_capture_attempts_total{result="overdue"}` against `captured`. The target
   is under 1% of slots per camera over 24 h. Before #145 it was 8–9%.
+
+- **The 82-frame gap at the 2026-10-25 daytime start** (frames 0–82, about 16 minutes) was a
+  one-off. The segment began at 12:54Z, and the pacing fix (#119, "pace polls, not the Digest
+  retry inside one poll") reached the collectors in the 13:04Z deploy; until then polls ran
+  late. No later segment starts with a gap except 2026-10-26 daytime, whose leading run is the
+  staging-full outage. The cameras invalidate every Digest nonce, so each poll is two round
+  trips: request p90 is about 2.4–2.6 s, the accepted floor (Jason, 2026-10-27).

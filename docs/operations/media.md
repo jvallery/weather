@@ -581,6 +581,10 @@ instruction.
 | `weather_staging_cleanup_failures_total{camera,stage}` | `scan`, `identity`, `unlink`, `unsafe_target`, `statvfs`, `pass` |
 | `weather_staging_cleanup_last_success_timestamp_seconds{camera}`, `weather_staging_cleanup_enabled{camera}` | Pass freshness and mode |
 
+Metrics: `weather_pipeline_index_ready_seconds{camera}` (start until the first loop has indexed
+staged chunks; the target is under 120 s) and `weather_staging_cleanup_pass_seconds{camera}` (the last
+complete pass; target under 600 s).
+
 ## Object lifecycle
 
 `app/weather/scheduler/lifecycle.py` (#19). Every state change and deletion appends an
