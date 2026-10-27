@@ -546,7 +546,7 @@ test("keyboard-only seek, a text summary, axe on the linked page, one player and
   expect(points.reduce((sum, count) => sum + count, 0)).toBeLessThan(5000);
 });
 test("the same UTC interval from two cameras shows identical, shared station values", async ({ page }) => {
-  const summary = async (path: string) => { await page.goto(path); await ready(page); return page.locator("#plot-summary").innerText(); };
+  const summary = async (path: string) => { await page.goto(path); await ready(page); return (await page.locator("#plot-summary").textContent()) ?? ""; };
   const east = await summary(EAST_DAY), west = await summary("/timelapses/skycam_west/2026-10-31/daytime/");
   expect(east).toBe(west); expect(east).toContain("Temperature mean:");
   await expect(page.getByRole("heading", { name: "Station measurements · shared by all cameras" })).toBeVisible();
