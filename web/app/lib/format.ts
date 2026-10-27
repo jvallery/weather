@@ -60,3 +60,59 @@ export function dateShift(value: string, offset: number): string {
   day.setUTCDate(day.getUTCDate() + offset);
   return day.toISOString().slice(0, 10);
 }
+
+const SHORT_TIME = new Intl.DateTimeFormat("en-US", { timeZone: "America/Denver", hour: "numeric", minute: "2-digit" });
+const SHORT_DATE_TIME = new Intl.DateTimeFormat("en-US", { timeZone: "America/Denver", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+/** "6:42 AM", America/Denver: for display where the page states the zone once. */
+export function shortTime(instant: string): string {
+  const date = instantDate(instant);
+  return date ? SHORT_TIME.format(date) : TIME_UNAVAILABLE;
+}
+/** "Oct 27, 6:42 AM", America/Denver. */
+export function shortDateTime(instant: string): string {
+  const date = instantDate(instant);
+  return date ? SHORT_DATE_TIME.format(date) : TIME_UNAVAILABLE;
+}
+/** A calendar date (YYYY-MM-DD) as words: "Tuesday, Oct 27, 2026"; `short` drops the weekday and year. */
+export function dayTitle(value: string, style: "long" | "short" = "long"): string {
+  const date = new Date(`${value}T12:00:00Z`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-US", style === "long" ? { timeZone: "UTC", weekday: "long", month: "short", day: "numeric", year: "numeric" } : { timeZone: "UTC", month: "short", day: "numeric" }).format(date);
+}
+/** "October 2026" for YYYY-MM. */
+export function monthTitle(month: string): string {
+  const date = new Date(`${month}-15T12:00:00Z`);
+  return Number.isNaN(date.getTime()) ? month : new Intl.DateTimeFormat("en-US", { timeZone: "UTC", month: "long", year: "numeric" }).format(date);
+}
+/** Elapsed seconds as "12 s", "4 min", "2 h", "3 d". */
+export function duration(seconds: number): string {
+  if (seconds < 60) return `${Math.max(0, Math.floor(seconds))} s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min`;
+  if (seconds < 86_400) return `${Math.floor(seconds / 3600)} h`;
+  return `${Math.floor(seconds / 86_400)} d`;
+}
+const POINTS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+/** The 16-point compass name of a direction in degrees ("from"), or null. */
+export function compass(degrees: number | null): string | null {
+  if (degrees === null || !Number.isFinite(degrees)) return null;
+  return POINTS[Math.round((((degrees % 360) + 360) % 360) / 22.5) % 16];
+}
+const REASON_WORDS: Record<string, string> = {
+  low_coverage: "low coverage", no_observations: "no observations", no_capture: "no capture", no_eligible_capture: "no eligible capture",
+  not_captured: "not captured", media_unavailable: "media unavailable", embargo: "inside the 10-minute delay", no_preview: "no preview yet",
+  site_not_configured: "site not configured", stale: "stale", missing: "missing", invalid: "failed quality checks",
+};
+/** A reason code in words; an unknown code still shows, with its underscores as spaces. */
+export function humanize(code: string | null | undefined): string {
+  if (!code) return "";
+  // Only a snake_case code is rewritten; any other text shows exactly as received (as escaped text).
+  return REASON_WORDS[code] ?? (/^[a-z][a-z0-9_]*$/.test(code) ? code.replaceAll("_", " ") : code);
+}
+/** The UTC instant of local midnight (America/Denver) starting a calendar date. */
+export function localDayStart(value: string): string {
+  const midnight = Date.parse(`${value}T00:00:00Z`);
+  // The offset in force at UTC midnight is the one at the following local midnight: DST changes at 02:00.
+  const name = new Intl.DateTimeFormat("en-US", { timeZone: "America/Denver", timeZoneName: "shortOffset" }).formatToParts(new Date(midnight)).find((part) => part.type === "timeZoneName")?.value || "GMT-7";
+  const hours = Number(/GMT([+-]\d+)/.exec(name)?.[1] ?? -7);
+  return new Date(midnight - hours * 3_600_000).toISOString();
+}

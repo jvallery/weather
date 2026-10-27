@@ -48,7 +48,7 @@ export function AnalysisPanel({ analysis, compact = false }: { analysis: Analysi
   const ai = analysis.author === "ai";
   return <div className="analysis">
     <p className="provenance"><strong>{LABELS[analysis.author]}</strong> · {STATES[analysis.state]}</p>
-    {analysis.description ? <p>{analysis.description}</p> : <p>No AI description is available.</p>}
+    {analysis.description ? <p className="description">{analysis.description}</p> : <p className="muted">No AI description is available.</p>}
     {analysis.stale && <p className="notice">Station measurements changed after this description; a refreshed summary is queued.</p>}
     {!compact && why && <p className="small">{why}</p>}
     {!compact && analysis.claims.length > 0 && <ul className="claims">{analysis.claims.map((claim, index) => <li key={index}><span className="status">{BASIS[claim.basis]}</span> {claim.text}</li>)}</ul>}

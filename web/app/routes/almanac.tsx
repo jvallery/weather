@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { Form, Link, useLoaderData, type LoaderFunctionArgs } from "react-router";
-import { UnitForm } from "../components/common";
+import { PageHead } from "../components/common";
 import { almanacSelection, COMPARISONS, hours, percent, PRODUCTS, reasonText, RECORDS, SECTORS, type AlmanacSelection } from "../lib/almanac";
 import type { Units } from "../lib/contracts";
 import { localDate, localTime, metricValue } from "../lib/format";
@@ -127,7 +127,7 @@ function Comparison({ almanac, units, definition }: View) {
 
 const VIEWS = { record: Records, rain_day: Rain, wind_rose_bin: Rose, astronomy: Astronomy, comparison: Comparison } as const;
 function Filters({ selection, units }: { selection: AlmanacSelection; units: Units }) {
-  return <Form method="get" className="filters"><input type="hidden" name="product" value={selection.product} /><input type="hidden" name="units" value={units} />
+  return <Form method="get" className="filters"><input type="hidden" name="product" value={selection.product} />{units === "metric" && <input type="hidden" name="units" value="metric" />}
     <label>First local date<input type="date" name="from" defaultValue={selection.from} required /></label><label>Last local date<input type="date" name="to" defaultValue={selection.to} required /></label>
     {selection.product === "record" && <label>Record<select name="record" defaultValue={selection.record}>{Object.entries(RECORDS).map(([key, value]) => <option key={key} value={key}>{value.label}</option>)}</select></label>}
     {selection.product === "comparison" && <><label>Compare with first date<input type="date" name="compare_from" defaultValue={selection.compareFrom} required /></label><label>Compare with last date<input type="date" name="compare_to" defaultValue={selection.compareTo} required /></label><label>Value<select name="compare" defaultValue={selection.compare}>{Object.entries(COMPARISONS).map(([key, value]) => <option key={key} value={key}>{value.label}</option>)}</select></label></>}
@@ -139,11 +139,9 @@ export default function AlmanacPage() {
   const View = VIEWS[selection.product];
   const definition = definitionFor(registry, almanac?.metric ?? null);
   const history = almanac?.history_interval;
-  return <><h1>Local almanac</h1>
-    <p className="prose">Records, rain, wind and comparisons from this station’s own observations, computed when the page loads. They are observed values within the station’s history, not climate normals. Sun and moon times are derived, not measured.</p>
-    <nav aria-label="Almanac sections" className="actions">{PRODUCTS.map((item) => <Link key={item.id} to={`?product=${item.id}&units=${units}`} aria-current={item.id === selection.product ? "page" : undefined}>{item.label}</Link>)}</nav>
+  return <><PageHead eyebrow="Almanac · this station's own record" title="Local almanac" lede="Records, rain, wind and comparisons from this station's observations, computed when the page loads. They are not climate normals. Sun and moon times are derived, not measured." />
+    <nav aria-label="Almanac sections"><ul className="chips">{PRODUCTS.map((item) => <li key={item.id}><Link to={`?product=${item.id}${units === "metric" ? "&units=metric" : ""}`} aria-current={item.id === selection.product ? "page" : undefined}>{item.label}</Link></li>)}</ul></nav>
     <Filters selection={selection} units={units} />
-    <UnitForm units={units}>{Object.entries({ product: selection.product, from: selection.from, to: selection.to, ...(selection.product === "record" ? { record: selection.record } : {}), ...(selection.product === "comparison" ? { compare: selection.compare, compare_from: selection.compareFrom, compare_to: selection.compareTo } : {}) }).map(([name, value]) => <input key={name} type="hidden" name={name} value={value} />)}</UnitForm>
     {rejected ? <p className="fault">The API rejected this almanac selection. Choose whole local dates within 366 days.</p>
       : !almanac ? <p className="fault">Almanac API unavailable. No substitute values are displayed.</p>
       : <>

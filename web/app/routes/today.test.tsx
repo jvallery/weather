@@ -33,7 +33,7 @@ test("before the API serves data, Today says API unavailable and fabricates no v
     await act(async () => { render(<QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>); });
     expect(await screen.findByText(/^API unavailable\./)).toBeTruthy();
     expect(screen.getByText("No current measurements were returned. No substitute values are displayed.")).toBeTruthy();
-    expect(document.querySelectorAll(".metric")).toHaveLength(0);
+    expect(document.querySelectorAll(".stat")).toHaveLength(0);
     expect(screen.queryByText(/No qualified current measurements/)).toBeNull();
   } finally { router.dispose(); client.clear(); }
 });

@@ -160,10 +160,14 @@ class Timelapse(Model):
     allocated_frames: int
     renditions: list[Rendition]
     poster: Asset | None
+    # The 480 px poster (same rules as `poster`): for calendars and tiles.
+    poster_small: Asset | None = None
     sidecar: Asset | None
     native_download_url: str | None
     keogram_state: Literal["pending", "published", "partial", "unavailable", "failed", "withdrawn"]
     keogram: Asset | None
+    # The keogram's 360 px thumbnail (same rules as `keogram`).
+    keogram_thumbnail: Asset | None = None
     analysis: Analysis
     editorial: Editorial
 
@@ -288,7 +292,8 @@ class Source(Protocol):
 VIDEO_COLUMNS = (
     "id,camera_id,cycle_date,segment,starts_at,ends_at,frames,revision,committed_at,withdrawn,"
     "state,reason,native_asset_id,web_asset_id,mobile_asset_id,poster_asset_id,"
-    "sidecar_asset_id,keogram_asset_id,keogram_state"
+    "sidecar_asset_id,keogram_asset_id,keogram_state,poster_small_asset_id,"
+    "keogram_thumb_asset_id"
 )
 
 
@@ -523,7 +528,7 @@ def build(
     editorial: dict[str, Any] | None = None,
 ) -> Timelapse:
     def pick(column: str) -> Asset | None:
-        return _asset(assets.get(row[column])) if row[column] is not None else None
+        return _asset(assets.get(row[column])) if row.get(column) is not None else None
 
     renditions = [
         Rendition(role=role, asset=asset)  # type: ignore[arg-type]
@@ -552,6 +557,7 @@ def build(
         allocated_frames=row["frames"],
         renditions=renditions if playable else [],
         poster=poster if playable else None,
+        poster_small=pick("poster_small_asset_id") if playable else None,
         sidecar=pick("sidecar_asset_id"),
         native_download_url=f"/downloads/{row['id']}/native" if playable else None,
         # A visible keogram state needs its image; a race between the two reads degrades it.
@@ -559,6 +565,7 @@ def build(
         if row["keogram_state"] in {"published", "partial"} and keogram is None
         else row["keogram_state"],
         keogram=keogram,
+        keogram_thumbnail=pick("keogram_thumb_asset_id") if keogram is not None else None,
         analysis=build_analysis(
             analysis, playable, edited.description if edited.human_edited else None
         ),
@@ -577,16 +584,16 @@ async def _hydrate(source: Source, rows: list[dict[str, Any]]) -> list[Timelapse
             "poster_asset_id",
             "sidecar_asset_id",
             "keogram_asset_id",
+            "poster_small_asset_id",
+            "keogram_thumb_asset_id",
         )
-        if row[column] is not None
+        if row.get(column) is not None
     ]
     assets = await source.assets(ids)
     videos = [row["id"] for row in rows]
     analyses = await source.analyses(videos)
     editorials = await source.editorials(videos)
-    return [
-        build(row, assets, analyses.get(row["id"]), editorials.get(row["id"])) for row in rows
-    ]
+    return [build(row, assets, analyses.get(row["id"]), editorials.get(row["id"])) for row in rows]
 
 
 class Catalog:

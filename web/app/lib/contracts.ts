@@ -22,4 +22,5 @@ export const intervalSchema = z.strictObject({ start: utc, end: utc }).refine((x
   return start !== null && end !== null && start < end;
 }, "Empty or reversed interval");
 export type Camera = z.infer<typeof cameraSchema>;
+export type Segment = z.infer<typeof segmentSchema>;
 export type Units = "us" | "metric";

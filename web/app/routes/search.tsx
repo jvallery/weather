@@ -11,6 +11,7 @@ import {
   type Draft, type DraftFilter, type Measure, type Outcome, type SearchHit, type SearchQuery, type SearchResults, type VideoResult,
 } from "../lib/search";
 import { parseRegistry, type MetricRegistry } from "../lib/weather-api";
+import { PageHead } from "../components/common";
 export const meta = () => [{ title: "Search recorded weather · Weather" }];
 
 type View = { kind: "idle" } | { kind: "loading" } | (Outcome & { text: string });
@@ -166,11 +167,10 @@ export default function SearchPage() {
     navigate({ search: `?${valid ? paramsFromQuery(valid) : paramsFromDraft(next)}` }, { state: { ownSubmit: true } });
   };
   const request = query ? searchRequest(query) : null;
-  return <><h1>Search recorded weather</h1>
-    <p>Find timelapse recordings by words in their descriptions, by camera, segment and date, and by station measurements over each recording. Results cite their evidence; measured values apply to the whole video.</p>
+  return <><PageHead eyebrow="Search · descriptions, dates and measurements" title="Search recorded weather" lede="Find recordings by what their descriptions say, by camera, segment and date, and by what the station measured over each recording." />
     <noscript><p className="notice">Search runs in your browser and needs JavaScript. The archive, day pages and events work without it.</p></noscript>
     <SearchForm key={formVersion} initial={draft} onSubmit={submit} />
-    <section aria-labelledby="results-heading"><h2 id="results-heading">Results</h2>
+    <section className="section" aria-labelledby="results-heading"><h2 id="results-heading">Results</h2>
       {errors.length > 0 && <div className="fault" role="alert"><p>Check the search; nothing was sent:</p><ul>{errors.map((error) => <li key={error}>{error}</li>)}</ul></div>}
       {request && <p className="source-time">Recordings overlapping <Interval value={request} /> · calendar days in America/Denver · UTC {request.start} → {request.end}</p>}
       {!submitted && <p>Choose words or filters and select Search.</p>}

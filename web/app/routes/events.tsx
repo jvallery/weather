@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { Form, Link, useLoaderData, type LoaderFunctionArgs } from "react-router";
+import { PageHead } from "../components/common";
 import { EventFeedItem } from "../components/events";
 import { cameraSchema } from "../lib/contracts";
 import { CAMERA_LABELS } from "../lib/format";
@@ -23,10 +24,10 @@ export default function EventsFeed() {
   const { feed, filters } = useLoaderData<typeof loader>();
   const next = new URLSearchParams(filters);
   if (feed?.next_cursor) next.set("cursor", feed.next_cursor);
-  return <><h1>Weather events</h1><p>Measured events come from the station's instruments; visual and AI events are interpretations of recorded video; manual events are human annotations. Each shows its provenance. Times are source times, oldest first.</p>
+  return <><PageHead eyebrow="Events · times America/Denver" title="Weather events" lede="Measured events come from the station's instruments. AI events interpret recorded video, and manual events are human notes. Each one carries its provenance tag." />
     <Form key={JSON.stringify(filters)} method="get" className="filters"><label>Calendar day<input name="day" type="date" defaultValue={filters.day || ""} /></label><label>Camera<select name="camera" defaultValue={filters.camera || ""}><option value="">All cameras and station-wide</option>{Object.entries(CAMERA_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Origin<select name="origin" defaultValue={filters.origin || ""}><option value="">All origins</option>{Object.entries(ORIGINS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><button type="submit">Apply filters</button></Form>
-    <h2>Events</h2>
+    <h2 className="screen-reader">Events</h2>
     {!feed ? <p className="fault">Events API unavailable. No events are shown in its place.</p> : feed.items.length === 0 ? <p>No weather events match these filters.</p> : <ol className="events">{feed.items.map((event) => <EventFeedItem key={event.id} event={event} />)}</ol>}
-    {feed?.next_cursor && <Link className="button-link" to={`?${next}`}>Next events page</Link>}
+    {feed?.next_cursor && <p className="actions"><Link className="button-link" to={`?${next}`}>Next events page →</Link></p>}
   </>;
 }

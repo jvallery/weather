@@ -42,8 +42,9 @@ def row(day: int, camera: str = "skycam_east", **changes: Any) -> dict[str, Any]
         "reason": None,
         "keogram_state": "published",
     }
-    for role in ("native", "web", "mobile", "poster", "sidecar", "keogram"):
+    for role in ("native", "web", "mobile", "poster", "sidecar", "keogram", "poster_small"):
         value[f"{role}_asset_id"] = uuid4()
+    value["keogram_thumb_asset_id"] = uuid4()
     value.update(changes)
     return value
 
@@ -56,11 +57,13 @@ def assets_for(rows: list[dict[str, Any]]) -> dict[UUID, dict[str, Any]]:
         "poster": "poster",
         "sidecar": "sidecar",
         "keogram": "keogram",
+        "poster_small": "poster",
+        "keogram_thumb": "keogram",
     }
     result = {}
     for item in rows:
         for role, asset_class in classes.items():
-            asset_id = item[f"{role}_asset_id"]
+            asset_id = item.get(f"{role}_asset_id")
             if asset_id is not None:
                 result[asset_id] = {
                     "id": asset_id,
@@ -236,10 +239,12 @@ def test_public_response_snapshot_has_no_private_storage_identity() -> None:
         "allocated_frames",
         "renditions",
         "poster",
+        "poster_small",
         "sidecar",
         "native_download_url",
         "keogram_state",
         "keogram",
+        "keogram_thumbnail",
         "analysis",
         "editorial",
     }
@@ -370,3 +375,18 @@ def test_an_active_human_revision_is_the_effective_description() -> None:
     assert items[str(stale["id"])]["editorial"]["description"].startswith("Clouds thickened.")
     # Without playable media nothing is described, human or not.
     assert items[str(broken["id"])]["editorial"]["description"] is None
+
+
+def test_thumbnails_follow_their_full_size_products() -> None:
+    """The small poster and keogram thumbnail appear only where the poster and keogram do."""
+    published = row(1)
+    no_keogram = row(2, keogram_asset_id=None, keogram_state="pending")
+    unavailable = row(3, state="unavailable", reason="camera_offline", poster_asset_id=None)
+    api, _ = client([published, no_keogram, unavailable])
+    items = {i["video_id"]: i for i in api.get("/api/v1/timelapses").json()["items"]}
+    shown = items[str(published["id"])]
+    assert shown["poster_small"]["url"] == f"/media/{published['poster_small_asset_id']}"
+    assert shown["keogram_thumbnail"]["url"] == f"/media/{published['keogram_thumb_asset_id']}"
+    assert items[str(no_keogram["id"])]["keogram_thumbnail"] is None
+    assert items[str(no_keogram["id"])]["poster_small"] is not None
+    assert items[str(unavailable["id"])]["poster_small"] is None

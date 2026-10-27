@@ -31,7 +31,7 @@ export type Timelapse = Schemas["Timelapse"];
 export type TimelapsePage = Schemas["TimelapsePage"];
 export type Keogram = Schemas["Keogram"];
 export type Asset = Schemas["Asset"];
-export type ArchiveEntry = Pick<Timelapse, "video_id" | "camera" | "cycle_date" | "segment" | "state" | "reason">;
+export type ArchiveEntry = Pick<Timelapse, "video_id" | "camera" | "cycle_date" | "segment" | "state" | "reason" | "poster_small">;
 export type ArchivePage = { items: ArchiveEntry[]; next_cursor: string | null };
 export type WeatherEvent = Schemas["Event"];
 export type Events = Schemas["Events"];
@@ -110,11 +110,6 @@ const almanac = z.object({
   coverage: coverage.nullable().default(null), missing_reasons: reasons, next_cursor: text.nullable().default(null),
   items: z.array(almanacItem).transform((items) => items.filter((item) => item !== null)),
 });
-const archiveEntry = z.object({
-  video_id: text, camera: text, cycle_date: text, segment: z.enum(["daytime", "overnight"]),
-  state: lenient(["published", "partial", "unavailable", "withdrawn"], "unavailable"), reason: text.nullable().default(null),
-});
-const archive = z.object({ items: z.array(archiveEntry), next_cursor: text.nullable() });
 // The description (#23): server-rendered template text (C18). Only known fields are read; anything
 // else is dropped, and an unparseable analysis degrades to "unavailable" without sinking its
 // recording. An editor's revision (#44) and a station-only summary (no hour passed visual review)
@@ -161,13 +156,20 @@ const media = z.object({
   mime: text, bytes: z.number(), width: number, height: number,
 });
 const optionalMedia = media.nullable().catch(null).default(null);
+const archiveEntry = z.object({
+  video_id: text, camera: text, cycle_date: text, segment: z.enum(["daytime", "overnight"]),
+  state: lenient(["published", "partial", "unavailable", "withdrawn"], "unavailable"), reason: text.nullable().default(null),
+  // The 480 px poster, for the month calendar (absent from older API responses).
+  poster_small: optionalMedia,
+});
+const archive = z.object({ items: z.array(archiveEntry), next_cursor: text.nullable() });
 const rendition = z.object({ role: z.enum(["native", "web", "mobile"]), asset: media });
 const timelapse = z.object({
   schema_version: z.literal(1), video_id: text, camera: text, cycle_date: text, segment: z.enum(["daytime", "overnight"]),
   state: lenient(["published", "partial", "unavailable", "withdrawn"], "unavailable"), reason: text.nullable().default(null),
   withdrawn: z.boolean().default(false), revision: z.number(), updated_at: text, source_interval: interval, allocated_frames: z.number(),
   renditions: z.array(rendition.nullable().catch(null)).transform((items) => items.filter((item) => item !== null)),
-  poster: optionalMedia, sidecar: optionalMedia, keogram: optionalMedia,
+  poster: optionalMedia, poster_small: optionalMedia, sidecar: optionalMedia, keogram: optionalMedia, keogram_thumbnail: optionalMedia,
   native_download_url: text.regex(/^\/downloads\/[0-9a-f-]{36}\/native$/).nullable().catch(null).default(null),
   keogram_state: lenient(["pending", "published", "partial", "unavailable", "failed", "withdrawn"], "unavailable"),
   analysis: analysisField.default(unavailableAnalysis),

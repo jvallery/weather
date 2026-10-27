@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-import { Form, useLoaderData, type LoaderFunctionArgs } from "react-router";
+import { Form, Link, useLoaderData, type LoaderFunctionArgs } from "react-router";
 import plotStyles from "uplot/dist/uPlot.min.css?url";
-import { HistoryPlot, historyRows } from "../components/history-plot";
-import { UnitForm } from "../components/common";
-import { conversionAvailable, localTime, metricLabel, metricValue } from "../lib/format";
+import { HistoryPlot, historyRows, type HistoryRow } from "../components/history-plot";
+import { PageHead } from "../components/common";
+import { conversionAvailable, humanize, localTime, metricLabel, metricValue, shortDateTime } from "../lib/format";
 import { intervalSchema } from "../lib/contracts";
 import { aggregatesRead, metricRegistryRead } from "../lib/public-api.server";
 import { unitsFrom } from "../lib/route-params";
@@ -41,24 +41,60 @@ export async function loader({ request }: LoaderFunctionArgs) {
   for (const statistic of statistics) parameters.append("statistics", statistic);
   const result = await aggregatesRead(request, parameters);
   const raw = new URLSearchParams({ start, end, metrics: metric, limit: "5000" });
-  return { aggregates: result.kind === "ok" ? result.data : null, issue: result.kind === "invalid" ? result.issue : null, registry, start, end, metric, statistics, resolution, units: unitsFrom(url), exportUrl: `/api/v1/weather/observations?${raw}` };
+  return { aggregates: result.kind === "ok" ? result.data : null, issue: result.kind === "invalid" ? result.issue : null, registry, start, end, metric, statistics, resolution, units: unitsFrom(url), now, exportUrl: `/api/v1/weather/observations?${raw}` };
+}
+const PRESETS = [["24 h", DAY], ["3 days", 3 * DAY], ["7 days", 7 * DAY], ["31 days", 31 * DAY]] as const;
+/** Low, mean, high (or total) over the window, from the interval statistics; gaps are skipped, never zero. */
+export function summarize(rows: HistoryRow[], statistics: string[]): { label: string; value: number; at?: string }[] {
+  const series = (statistic: string) => rows.flatMap((row) => row.values[statistic] === null || row.values[statistic] === undefined ? [] : [{ value: row.values[statistic]!, at: row.start }]);
+  if (statistics[0] === "mean") {
+    const means = series("mean"), lows = series("min"), highs = series("max");
+    if (!means.length) return [];
+    const low = (lows.length ? lows : means).reduce((a, b) => (b.value < a.value ? b : a));
+    const high = (highs.length ? highs : means).reduce((a, b) => (b.value > a.value ? b : a));
+    return [{ label: "Low", value: low.value, at: low.at }, { label: "Mean", value: means.reduce((sum, item) => sum + item.value, 0) / means.length }, { label: "High", value: high.value, at: high.at }];
+  }
+  const values = series(statistics[0]);
+  if (!values.length) return [];
+  if (statistics[0] === "sum") return [{ label: "Total", value: values.reduce((sum, item) => sum + item.value, 0) }];
+  if (statistics[0] === "max") { const high = values.reduce((a, b) => (b.value > a.value ? b : a)); return [{ label: "Highest", value: high.value, at: high.at }]; }
+  if (statistics[0] === "min") { const low = values.reduce((a, b) => (b.value < a.value ? b : a)); return [{ label: "Lowest", value: low.value, at: low.at }]; }
+  return [];
 }
 export default function HistoryPage() {
-  const { aggregates, issue, registry, start, end, metric, statistics, resolution, units, exportUrl } = useLoaderData<typeof loader>();
+  const { aggregates, issue, registry, start, end, metric, statistics, resolution, units, exportUrl, now } = useLoaderData<typeof loader>();
   const definition = registry?.metrics.find((row) => row.metric === metric);
   const rows = aggregates ? historyRows(aggregates, metric, statistics) : [];
   const hasValues = rows.some((row) => row.values[statistics[0]] !== null);
-  const step = resolution === "day" ? "local day" : `${Number(resolution) / 60} min`;
-  return <><h1>Measured weather history</h1><p>Each point summarizes one {step} interval of source observations (statistic: {statistics.join(", ")}). Intervals without observations are gaps, never zero; coverage is the share of each interval with valid data. Local days have 23, 24 or 25 hours; repeated-hour labels include their UTC offset.</p>
-    <Form key={`${start}|${end}|${metric}`} method="get" className="filters"><label>Source start (UTC ISO)<input name="start" defaultValue={start} required /></label><label>Source end (UTC ISO, exclusive)<input name="end" defaultValue={end} required /></label><label>Metric{registry ? <select name="metric" defaultValue={metric}>{registry.metrics.filter((item) => chartStatistics(item).length > 0).map((item) => <option value={item.metric} key={item.metric}>{item.label} · {item.canonical_unit}</option>)}</select> : <input name="metric" defaultValue={metric} required pattern="[a-z][a-z0-9_]{0,63}" />}</label><input type="hidden" name="units" value={units} /><button type="submit">Show history</button></Form>
-    <UnitForm units={units}><input type="hidden" name="start" value={start} /><input type="hidden" name="end" value={end} /><input type="hidden" name="metric" value={metric} /></UnitForm>
+  const step = resolution === "day" ? "local day" : `${Number(resolution) / 60}-minute`;
+  const span = Date.parse(end) - Date.parse(start);
+  const live = Math.abs(now - Date.parse(end)) < 15 * 60_000;
+  const query = (changes: Record<string, string>) => `?${new URLSearchParams({ start, end, metric, ...(units === "metric" ? { units } : {}), ...changes })}`;
+  const preset = (ms: number) => query({ start: new Date(now - ms).toISOString(), end: new Date(now).toISOString() });
+  const summary = summarize(rows, statistics);
+  const coverage = rows.length ? rows.reduce((sum, row) => sum + row.coverage, 0) / rows.length : null;
+  const metrics = registry ? registry.metrics.filter((item) => chartStatistics(item).length > 0) : [];
+  return <>
+    <PageHead eyebrow="Station history · America/Denver" title={metricLabel(metric, definition)} lede={<><time dateTime={start}>{shortDateTime(start)}</time> → <time dateTime={end}>{shortDateTime(end)}</time> · one point per {step} interval; gaps stay empty, never zero.</>} />
+    <div className="actions" role="group" aria-label="History selection">
+      <ul className="chips" aria-label="Range">{PRESETS.map(([label, ms]) => <li key={label}><Link to={preset(ms)} aria-current={live && Math.abs(span - ms) < 60_000 ? "page" : undefined}>{label}</Link></li>)}</ul>
+    </div>
+    {metrics.length > 0 && <ul className="chips chips-sm" aria-label="Measurement">{metrics.map((item) => <li key={item.metric}><Link to={query({ metric: item.metric })} aria-current={item.metric === metric ? "page" : undefined}>{item.label}</Link></li>)}</ul>}
     {!conversionAvailable(definition?.canonical_unit || "", units, definition) && <p className="notice">Display conversions unavailable; source units shown.</p>}
+    <section className="section" aria-labelledby="history-title"><h2 id="history-title" className="screen-reader">{metricLabel(metric, definition)} over the selected window</h2>
     {issue ? <p className="fault">The API rejected this history selection. Select a shorter interval or another metric.{issue.suggestedResolutionSeconds !== null && ` The suggested minimum resolution is ${issue.suggestedResolutionSeconds} seconds.`}</p> : !aggregates ? <p className="fault">History API unavailable. No substitute history or zero-filled series is displayed.</p> : rows.length === 0 ? <p>No intervals were returned for this source window.</p> : <>
-      <h2>{metricLabel(metric, definition)}</h2><p>{localTime(aggregates.start)} → {localTime(aggregates.end)}</p>
-      {hasValues ? <HistoryPlot rows={rows} metric={metric} statistics={statistics} units={units} definition={definition} /> : <p>No valid measured values are available to plot.</p>}
-      <p className="small">Interactive plotting uses JavaScript. The complete table below is available without it.</p>
-      <div className="table-wrap" tabIndex={0} role="region" aria-label="Weather history table"><table><caption>Summarized intervals</caption><thead><tr><th scope="col">Interval start · America/Denver</th>{statistics.map((statistic) => <th scope="col" key={statistic}>{statistic === "vector_mean" ? "direction" : statistic}</th>)}<th scope="col">Coverage</th></tr></thead><tbody>{rows.map((row) => <tr key={row.start}><th scope="row"><time dateTime={row.start}>{localTime(row.start)}</time></th>{statistics.map((statistic) => <td key={statistic}>{row.values[statistic] === null && row.notes[statistic] ? row.notes[statistic] : metricValue(row.values[statistic], row.unit, units, definition)}</td>)}<td>{(row.coverage * 100).toFixed(0)}%</td></tr>)}</tbody></table></div>
+      {summary.length > 0 && <dl className="summary-stats">{summary.map((item) => <div key={item.label}><dt>{item.label}</dt><dd>{metricValue(item.value, rows[0].unit, units, definition)}{item.at && <small><time dateTime={item.at}>{shortDateTime(item.at)}</time></small>}</dd></div>)}{coverage !== null && <div><dt>Coverage</dt><dd>{(coverage * 100).toFixed(0)}%<small>{rows.length} intervals</small></dd></div>}</dl>}
+      <div className="card card-tight">{hasValues ? <HistoryPlot rows={rows} metric={metric} statistics={statistics} units={units} definition={definition} /> : <p>No valid measured values are available to plot.</p>}</div>
+      <details><summary>Data table · {rows.length} intervals</summary>
+      <div className="table-wrap" tabIndex={0} role="region" aria-label="Weather history table"><table><caption>Summarized intervals ({statistics.join(", ")}); coverage is the share of each interval with valid data</caption><thead><tr><th scope="col">Interval start · America/Denver</th>{statistics.map((statistic) => <th scope="col" key={statistic}>{statistic === "vector_mean" ? "direction" : statistic}</th>)}<th scope="col">Coverage</th></tr></thead><tbody>{rows.map((row) => <tr key={row.start}><th scope="row"><time dateTime={row.start}>{localTime(row.start)}</time></th>{statistics.map((statistic) => <td key={statistic}>{row.values[statistic] === null && row.notes[statistic] ? humanize(row.notes[statistic]) : metricValue(row.values[statistic], row.unit, units, definition)}</td>)}<td>{(row.coverage * 100).toFixed(0)}%</td></tr>)}</tbody></table></div>
+      </details>
     </>}
-    {aggregates ? <p><a className="button-link" href={exportUrl} download>Export raw observations for this window as JSON</a></p> : <p>Export is unavailable until observations can be read.</p>}<p className="small">JSON exports carry original source and receipt times, units and quality. Follow next_cursor for later pages; query limits do not delete older history.</p>
+    </section>
+    <details><summary>Custom range (UTC)</summary>
+      <Form key={`${start}|${end}|${metric}`} method="get" className="filters"><label>Source start (UTC)<input name="start" defaultValue={start} required /></label><label>Source end (UTC, exclusive)<input name="end" defaultValue={end} required /></label><label>Metric{registry ? <select name="metric" defaultValue={metric}>{metrics.map((item) => <option value={item.metric} key={item.metric}>{item.label} · {item.canonical_unit}</option>)}</select> : <input name="metric" defaultValue={metric} required pattern="[a-z][a-z0-9_]{0,63}" />}</label><input type="hidden" name="units" value={units} /><button type="submit">Show history</button></Form>
+      <p className="small">Up to 31 days per view. Local days have 23, 24 or 25 hours; repeated hours carry their UTC offset.</p>
+    </details>
+    {aggregates ? <p className="actions"><a className="button-link" href={exportUrl} download>Export raw observations for this window as JSON</a></p> : <p className="muted">Export is unavailable until observations can be read.</p>}
+    <p className="small">JSON exports carry original source and receipt times, units and quality; follow next_cursor for later pages.</p>
   </>;
 }

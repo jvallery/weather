@@ -127,7 +127,7 @@ def test_baseline_head_roles_and_least_privilege() -> None:
             async with admin.begin() as connection:
                 assert await scalar(
                     connection, "SELECT version_num FROM public.alembic_version"
-                ) == ("0014_editorial_poster")
+                ) == ("0015_catalog_thumbnails")
                 # Slice-1 relations, the observations view, the API's views (0002), the
                 # publication catalog (0003), search (0004), events (0005), the render
                 # schedule (0006), stills (0009), previews (0007), cleanup (0010), keograms

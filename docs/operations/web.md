@@ -67,6 +67,23 @@ slider (arrow keys step one of the 1,440 bins; the readout gives the bin's UTC i
 bin, and whether it has a capture) and a link that opens the recording at the bin's midpoint
 (`?t=`); clicking the image does the same. Pending, unavailable and failed keograms say so.
 
+### Design system and navigation (2026-10-27 redesign)
+
+The site uses vallery.net's tokens and components. `web/app/styles.css` holds all of them: IBM Plex
+Sans and Mono, ink, forest and mint, the sticky header with the V wordmark, cards, tags and chips. The
+rationale is in [the redesign record](../decisions/2026-10-27-frontend-redesign.md).
+
+- **Sections.** The sections are Now, Timelapses, History, Almanac, Events and Search
+  (`components/site-header.tsx`). Timelapses owns `/archive/`, `/day/`, `/timelapses/` and `/stills/`.
+- **Units.** The °F/°C toggle is a pair of plain links that rewrite only `units`, so it works without
+  JavaScript. Section links carry `units=metric` forward.
+- **Reason codes.** `humanize()` in `lib/format.ts` renders a snake_case code as words. Any other text
+  shows exactly as received.
+- **Styling.** Never add inline `style` attributes, because CSP forbids them and the e2e suite checks.
+  Add a class to `styles.css` instead.
+- **Accessibility.** Keep targets at least 24 px, and 44 px for primary controls. axe WCAG 2.2 AA runs at
+  320, 768 and 1440 px.
+
 ### Linked playback (#40)
 
 One route-local controller (`components/linked-playback.tsx`) owns the media revision's sidecar

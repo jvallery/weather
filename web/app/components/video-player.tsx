@@ -54,9 +54,10 @@ export function VideoPlayer({ video, seek = null, onTime, coverageLabel = null }
   const sources = quality === "auto" ? [{ role: "mobile", media: MOBILE }, { role: "web", media: undefined }] : [{ role: quality, media: undefined }];
   // A report taken mid-seek would carry the old position; the seeked event reports the new one.
   const time = () => { const element = player.current; if (element && !element.seeking) report.current?.(element.currentTime); };
-  return <section aria-labelledby="playback-title"><h2 id="playback-title">Recording</h2>
-    <p id="playback-note">Silent, accelerated weather recording at 60 frames per second. Source times follow.</p>
-    {video.state === "partial" && <p id="coverage-label" className="notice">{coverageLabel || "Partial coverage · this recording has gaps."}</p>}
+  const mib = (bytes: number) => `${(bytes / 1_048_576).toFixed(bytes < 10_485_760 ? 1 : 0)} MB`;
+  return <section aria-labelledby="playback-title"><h2 id="playback-title" className="screen-reader">Recording</h2>
+    <p id="playback-note" className="screen-reader">Silent, accelerated weather recording at 60 frames per second. Source times follow.</p>
+    {video.state === "partial" && <p id="coverage-label" className="notice notice-warn">{coverageLabel || "Partial coverage · this recording has gaps."}</p>}
     <video ref={player} aria-describedby={video.state === "partial" ? "playback-note coverage-label" : "playback-note"} controls muted playsInline preload="metadata" poster={video.poster!.url}
       onPlay={(event) => { document.querySelectorAll("video").forEach((other) => { if (other !== event.currentTarget) other.pause(); }); startLoop(); }}
       onPause={() => { stopLoop(); time(); }} onSeeked={time} onTimeUpdate={time} onEnded={time}
@@ -75,16 +76,19 @@ export function VideoPlayer({ video, seek = null, onTime, coverageLabel = null }
       {sources.map((item) => <source key={item.role} src={source(item.role)} media={item.media} />)}
       Your browser cannot play this recording. Use the native download below.
     </video>
-    <div className="filters"><label htmlFor="quality">Playback quality<select id="quality" value={quality} onChange={(event) => {
-      const element = player.current;
-      // Prefer the current loaded media, retaining a pending seek only while a
-      // previous rendition switch is still loading its metadata.
-      if (element && element.readyState >= 1) resume.current = { time: element.currentTime, playing: !element.paused };
-      else resume.current ||= { time: element?.currentTime || 0, playing: !!element && !element.paused };
-      setQuality(event.target.value);
-    }}><option value="auto">Auto ({autoRole === "mobile" ? "Mobile" : "Web"})</option><option value="web">Web</option><option value="mobile">Mobile</option><option value="native">Native</option></select></label></div>
+    <div className="player-bar">
+      <div className="filters"><label htmlFor="quality">Playback quality<select id="quality" value={quality} onChange={(event) => {
+        const element = player.current;
+        // Prefer the current loaded media, retaining a pending seek only while a
+        // previous rendition switch is still loading its metadata.
+        if (element && element.readyState >= 1) resume.current = { time: element.currentTime, playing: !element.paused };
+        else resume.current ||= { time: element?.currentTime || 0, playing: !!element && !element.paused };
+        setQuality(event.target.value);
+      }}><option value="auto">Auto ({autoRole === "mobile" ? "Mobile" : "Web"})</option><option value="web">Web</option><option value="mobile">Mobile</option><option value="native">Native</option></select></label></div>
+      {rendition.asset.width && rendition.asset.height && <span className="small">{rendition.asset.width} × {rendition.asset.height} · H.264 · 60 fps · {(video.allocated_frames / 60).toFixed(0)} s</span>}
+      <a className="button-link" href={video.native_download_url!} download>Download native ({native.asset.width && native.asset.height ? `${native.asset.width} × ${native.asset.height}, ` : ""}{mib(native.asset.bytes)})</a>
+    </div>
     {resumeMessage && <p>{resumeMessage}</p>}
-    {rendition.asset.width && rendition.asset.height && <p>{rendition.asset.width} × {rendition.asset.height} pixels · H.264 · 60 fps</p>}
-    <div className="player-links"><a className="button-link" href={video.native_download_url!} download>Download native · {native.asset.bytes.toLocaleString("en-US")} bytes{native.asset.width && native.asset.height ? ` · ${native.asset.width} × ${native.asset.height}` : ""}</a><a className="button-link" href={`/api/v1/timelapses/${video.video_id}`}>Catalog metadata JSON</a>{video.sidecar && <a className="button-link" href={video.sidecar.url}>Sidecar JSON · time map and coverage</a>}</div>
+    <details className="files"><summary>Metadata and time map</summary><div className="player-links"><a href={`/api/v1/timelapses/${video.video_id}`}>Catalog metadata JSON</a>{video.sidecar && <a href={video.sidecar.url}>Sidecar JSON · time map and coverage</a>}</div></details>
   </section>;
 }
