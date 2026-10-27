@@ -27,7 +27,9 @@ app.use((req, res, next) => {
     const duration = (performance.now() - started) / 1000;
     const route = routeName(req.path);
     timings.labels(route, String(res.statusCode)).observe(duration);
-    if (route !== "assets") process.stdout.write(`${JSON.stringify({ service: "weather-web", route, status: res.statusCode, duration_ms: Math.round(duration * 1000) })}\n`);
+    // Successful kubelet probes are not logged (#147: about 540 lines an hour per pod); a failing probe still is.
+    const probe = (route === "/healthz" || route === "/readyz") && res.statusCode < 400;
+    if (route !== "assets" && !probe) process.stdout.write(`${JSON.stringify({ service: "weather-web", route, status: res.statusCode, duration_ms: Math.round(duration * 1000) })}\n`);
   });
   if (req.originalUrl.length > 4096) return res.sendStatus(414);
   next();
