@@ -356,6 +356,7 @@ class Worker:
                 )
         if not self.indexed and rows:
             self.indexed = True
+            metrics.INDEX_READY.labels(camera).set(time.monotonic() - self.started)
             event(
                 LOG,
                 "index_ready",

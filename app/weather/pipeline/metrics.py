@@ -81,6 +81,13 @@ def zero_scheduler() -> None:
         DEADLINES.labels(camera)
 
 
+INDEX_READY = Gauge(
+    "weather_pipeline_index_ready_seconds",
+    "Seconds from pipeline start until the first loop had indexed the staged chunks (#146)",
+    ["camera"],
+)
+
+
 def zero_pipeline(camera: str) -> None:
     LATENCY.labels(camera)
     for result in ("rendered", "gap", "interpolated", "held"):

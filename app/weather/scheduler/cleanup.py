@@ -92,6 +92,11 @@ CHUNKS = Gauge(
     "Present inventoried chunks: eligible, or the first unmet condition that pins them",
     ["camera", "condition"],
 )
+PASS_SECONDS = Gauge(
+    "weather_staging_cleanup_pass_seconds",
+    "Duration of the camera's most recent complete cleanup pass (#146)",
+    ["camera"],
+)
 OLDEST_ELIGIBLE = Gauge(
     "weather_staging_oldest_eligible_chunk_seconds",
     "Age (now - slot window end) of the oldest deletable chunk still present; 0 if none",
@@ -1312,12 +1317,14 @@ class Cleanup:
         UNFINALIZED_BYTES.labels(camera).set(stuck_bytes)
         oldest = await self.catalog.oldest_unfinalized(camera, now)
         OLDEST_UNFINALIZED.labels(camera).set(oldest)
+        seconds = time.monotonic() - started
+        PASS_SECONDS.labels(camera).set(seconds)
         event(
             LOG,
             "cleanup_pass",
             camera=camera,
             apply=apply,
-            seconds=round(time.monotonic() - started, 1),
+            seconds=round(seconds, 1),
             **report.as_dict(),
         )
 
