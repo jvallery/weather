@@ -7,13 +7,9 @@ from .recipe import CAMERAS
 
 FRAMES = Counter(
     "weather_pipeline_output_frames_total",
-    "Output frames written to a mezzanine, by result",
+    "Output frames by result: rendered or gap in the mezzanine; interpolated or held where the"
+    " published renditions fill a gap (#144)",
     ["camera", "result"],
-)
-FILLED = Counter(
-    "weather_pipeline_filled_frames_total",
-    "Slate frames replaced in published renditions (#144), by mode",
-    ["camera", "mode"],
 )
 REJECTS = Counter(
     "weather_pipeline_slot_rejects_total",
@@ -87,8 +83,8 @@ def zero_scheduler() -> None:
 
 def zero_pipeline(camera: str) -> None:
     LATENCY.labels(camera)
-    for mode in ("interpolated", "held"):
-        FILLED.labels(camera, mode)
+    for result in ("rendered", "gap", "interpolated", "held"):
+        FRAMES.labels(camera, result)
     for state in STILL_STATES:
         STILL_SLOTS.labels(camera, state)
 

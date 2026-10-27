@@ -124,7 +124,7 @@ builds the renditions, it streams the mezzanine through `pipeline/gapfill.py` (`
   local time.
 
 `coverage.exposure.fill` and `.filled` in the sidecar and RenderResult list every filled range
-and its mode, and `weather_pipeline_filled_frames_total{camera,mode}` counts them. A
+and its mode, and `weather_pipeline_output_frames_total{camera,result}` (`interpolated`, `held`) counts them. A
 segment with no gap keeps the original single-pass encode. Motion-compensated interpolation
 is #16's A/B against this cross-fade.
 
