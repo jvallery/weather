@@ -86,7 +86,9 @@ def test_http_client_request_lines_never_reach_the_logs() -> None:
     saved = root.handlers[:], root.level, logging.getLogger("httpx").level
     try:
         configure("pipeline")
-        assert not logging.getLogger("httpx").isEnabledFor(logging.INFO)
+        # httpx2 is the client the object store, Cortex and media origin use (#147).
+        for name in ("httpx", "httpx2"):
+            assert not logging.getLogger(name).isEnabledFor(logging.INFO)
         assert logging.getLogger("weather.pipeline").isEnabledFor(logging.INFO)
     finally:
         root.handlers[:], root.level = saved[0], saved[1]
