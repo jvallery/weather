@@ -44,6 +44,8 @@ export default function Archive() {
   const segments = filters.segment ? SEGMENTS.filter((segment) => segment === filters.segment) : SEGMENTS;
   const byKey = new Map((catalog?.items || []).map((video) => [`${video.cycle_date}/${video.camera}/${video.segment}`, video]));
   const count = catalog?.items.length ?? 0;
+  // Days before the archive's first recording this month are blank, not "No recordings".
+  const first = catalog?.items.reduce<string | null>((low, video) => (low === null || video.cycle_date < low ? video.cycle_date : low), null) ?? null;
   return <>
     <PageHead eyebrow="Timelapses · civil dawn to civil dawn" title={monthTitle(selectedMonth)} lede="Each day is one solar cycle: a daytime and an overnight recording from each of three cameras. Pick a day to see them side by side.">
       <Pager label="Archive months" previous={link({}, previous)} next={link({}, next)} previousLabel={monthTitle(previous)} nextLabel={monthTitle(next)} />
@@ -66,7 +68,7 @@ export default function Archive() {
         return <Link key={date} to={`/day/${date}/`} aria-label={`Open solar cycle ${date}`} data-has={catalog ? String(has) : undefined} data-cover={cover ? "true" : undefined} aria-current={date === today ? "date" : undefined}>
           {cover && <img className="calendar-cover" src={cover.url} alt="" width={cover.width ?? undefined} height={cover.height ?? undefined} loading="lazy" decoding="async" />}
           <span className="calendar-day">{index + 1}</span>
-          {has ? <span className="state-dots" data-cols={cameras.length} aria-hidden="true">{segments.flatMap((segment) => cameras.map((camera) => { const video = byKey.get(`${date}/${camera}/${segment}`); return <span key={`${camera}-${segment}`} className="state-dot" data-state={video?.state ?? "none"} />; }))}</span> : <small>{date > today ? "" : "No recordings"}</small>}
+          {has ? <span className="state-dots" data-cols={cameras.length} aria-hidden="true">{segments.flatMap((segment) => cameras.map((camera) => { const video = byKey.get(`${date}/${camera}/${segment}`); return <span key={`${camera}-${segment}`} className="state-dot" data-state={video?.state ?? "none"} />; }))}</span> : <small>{date === today ? "Today · recording" : date > today || !first || date < first ? "" : "No recordings"}</small>}
         </Link>;
       })}
     </div>
