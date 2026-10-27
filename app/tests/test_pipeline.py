@@ -748,6 +748,17 @@ def test_pipeline_deployments_run_with_only_their_inputs() -> None:
     assert not any(
         "secret" in v or "projected" in v for v in bench["spec"]["template"]["spec"]["volumes"]
     )
+    # The namespace LimitRange refuses a bench container above its per-container maximum.
+    guardrails = list(yaml.safe_load_all((root / "guardrails.yaml").read_text()))
+    (limit_range,) = [d for d in guardrails if d and d["kind"] == "LimitRange"]
+    (container_max,) = [
+        item["max"] for item in limit_range["spec"]["limits"] if item["type"] == "Container"
+    ]
+    (container,) = bench["spec"]["template"]["spec"]["containers"]
+    limits = container["resources"]["limits"]
+    assert float(limits["cpu"]) <= float(container_max["cpu"])
+    gib = int(container_max["memory"].removesuffix("Gi"))
+    assert int(limits["memory"].removesuffix("Gi")) <= gib
 
 
 def _at(text: str) -> datetime:
