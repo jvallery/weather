@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: MIT
 """Public read-only routes. Errors are sanitized problem documents; nothing private is echoed."""
 
+import csv
 import hashlib
+import io
 import json
 import time
 from collections.abc import Awaitable, Callable
@@ -48,6 +50,7 @@ ROUTES = {
     "/api/v1/weather/metrics": "metrics",
     "/api/v1/weather/observations": "observations",
     "/api/v1/weather/aggregates": "aggregates",
+    "/api/v1/weather/history.csv": "history_csv",
     "/api/v1/weather/almanac": "almanac",
     "/api/v1/timelapses": "timelapses",
     "/api/v1/stills": "stills",
@@ -138,6 +141,70 @@ async def get_aggregates(
     result = await _service(request).aggregates(query)
     response.headers["Cache-Control"] = "public, max-age=60"
     return result
+
+
+# #166: the aggregates as CSV, one row per interval, metric and statistic. Wind-rose bins stay
+# JSON-only; a missing value is an empty cell with its reason, never a substitute.
+CSV_COLUMNS = (
+    "start",
+    "end",
+    "metric",
+    "statistic",
+    "value",
+    "unit",
+    "coverage_fraction",
+    "support_seconds",
+    "expected_seconds",
+    "evidence_count",
+    "direction_state",
+    "reason",
+)
+
+
+def history_csv(result: Aggregates) -> str:
+    buffer = io.StringIO()
+    writer = csv.writer(buffer, lineterminator="\r\n")
+    writer.writerow(CSV_COLUMNS)
+    for item in result.items:
+        writer.writerow(
+            (
+                item.start.isoformat().replace("+00:00", "Z"),
+                item.end.isoformat().replace("+00:00", "Z"),
+                item.metric,
+                item.statistic,
+                "" if item.value is None else repr(float(item.value)),
+                item.unit,
+                repr(float(item.coverage.fraction)),
+                repr(float(item.coverage.support_seconds)),
+                repr(float(item.coverage.expected_seconds)),
+                item.evidence_count,
+                item.direction_state or "",
+                item.reason or "",
+            )
+        )
+    return buffer.getvalue()
+
+
+@router.get(
+    "/api/v1/weather/history.csv",
+    operation_id="getHistoryCsv",
+    response_class=Response,
+    responses={200: {"content": {"text/csv": {}}, "description": "Aggregates as CSV."}, **ERRORS},
+)
+async def get_history_csv(request: Request, query: Annotated[AggregateQuery, Query()]) -> Response:
+    """The same aggregates as `/api/v1/weather/aggregates`, as a CSV download (#166)."""
+    result = await _service(request).aggregates(query)
+    first, last = (instant.strftime("%Y%m%dT%H%M%SZ") for instant in (query.start, query.end))
+    name = f"weather-history-{first}-{last}-{query.resolution}.csv"
+    return Response(
+        content=history_csv(result),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Cache-Control": "public, max-age=60",
+            "Content-Disposition": f'attachment; filename="{name}"',
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
 
 
 @router.get(

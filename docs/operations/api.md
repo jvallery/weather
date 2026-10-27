@@ -32,6 +32,21 @@ curl -s 'https://weather.vallery.net/api/v1/weather/almanac?product=astronomy&st
   | jq '.missing_reasons, .items[0].sunrise'
 ```
 
+## History CSV (#166)
+
+`GET /api/v1/weather/history.csv` takes exactly the aggregates query (`start`, `end`,
+`metrics`, `statistics`, `resolution`) with the same range cap and validation; an invalid or
+over-wide request is the same 400 problem as JSON. Each row is one interval, metric and
+statistic:
+`start,end,metric,statistic,value,unit,coverage_fraction,support_seconds,expected_seconds,evidence_count,direction_state,reason`.
+Times are UTC, and a gap has an empty `value` with its `reason`, never a zero. Wind-rose bins
+stay JSON-only.
+
+The response is `text/csv` with `Content-Disposition: attachment` (named for the window and
+resolution) and `Cache-Control: public, max-age=60`. It goes through the same `/api/` route,
+so the edge rate limit applies. The history page links it as "Download this history as CSV".
+Raw receipts are never exported here.
+
 ## Signals
 
 Port 9000 `/metrics`:

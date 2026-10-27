@@ -170,6 +170,11 @@ createServer(async (req, res) => {
   if (url.pathname === "/api/v1/weather/metrics") return json(res, registry);
   if (url.pathname === "/api/v1/weather/aggregates") return json(res, segmentWindow(url.searchParams) ? segmentAggregates(url.searchParams) : aggregates);
   if (url.pathname === "/api/v1/weather/observations") return json(res, observations);
+  if (url.pathname === "/api/v1/weather/history.csv") {
+    const rows = aggregates.items.map((item) => [item.start, item.end, item.metric, item.statistic, item.value ?? "", item.unit, item.coverage.fraction, item.coverage.support_seconds, item.coverage.expected_seconds, item.evidence_count, item.direction_state ?? "", item.reason ?? ""].join(","));
+    res.writeHead(200, { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="weather-history-fixture.csv"', "Cache-Control": "public, max-age=60" });
+    return res.end(["start,end,metric,statistic,value,unit,coverage_fraction,support_seconds,expected_seconds,evidence_count,direction_state,reason", ...rows].join("\r\n") + "\r\n");
+  }
   if (url.pathname === "/api/v1/weather/almanac") return json(res, almanac[state.almanacEmpty ? "empty" : url.searchParams.get("product")] || { code: "invalid_request" }, almanac[url.searchParams.get("product")] ? 200 : 400);
   if (url.pathname === "/api/v1/events") {
     // The API's filters: calendar day, camera (plus station-wide), origin; source order.

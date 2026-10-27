@@ -564,3 +564,57 @@ def test_web_fixtures_match_the_server_models() -> None:
         model.model_validate_json((fixtures / f"{name}.json").read_text())
     registry = (fixtures / "metric-registry.json").read_text()
     assert metric_registry(DEFAULT_CADENCES).model_dump(mode="json") == json.loads(registry)
+
+
+def test_history_csv_matches_the_aggregates_json_and_is_a_download(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """#166: the CSV is the same aggregates as the JSON endpoint, one row per item."""
+    import csv
+    import io
+
+    from weather.api.models import Aggregates
+    from weather.api.routes import CSV_COLUMNS
+    from weather.api.service import WeatherService
+
+    fixture = Aggregates.model_validate_json(
+        (ROOT / "web/app/fixtures/aggregates.json").read_text()
+    )
+
+    async def aggregates(self: Any, query: Any) -> Aggregates:
+        return fixture
+
+    monkeypatch.setattr(WeatherService, "aggregates", aggregates)
+    client = TestClient(build_app(service(Clock(T0), FakeReader())))
+    query = (
+        "start=2026-06-01T00:00:00Z&end=2026-06-02T00:00:00Z"
+        "&metrics=temperature&statistics=mean&resolution=3600"
+    )
+    as_json = client.get("/api/v1/weather/aggregates?" + query).json()
+    response = client.get("/api/v1/weather/history.csv?" + query)
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "text/csv; charset=utf-8"
+    assert response.headers["content-disposition"] == (
+        'attachment; filename="weather-history-20260601T000000Z-20260602T000000Z-3600.csv"'
+    )
+    assert response.headers["cache-control"] == "public, max-age=60"
+    rows = list(csv.DictReader(io.StringIO(response.text)))
+    assert tuple(rows[0]) == CSV_COLUMNS and len(rows) == len(as_json["items"]) > 0
+    for row, item in zip(rows, as_json["items"], strict=True):
+        assert (row["metric"], row["statistic"], row["unit"]) == (
+            item["metric"],
+            item["statistic"],
+            item["unit"],
+        )
+        assert (row["start"], row["end"]) == (item["start"], item["end"])
+        assert (float(row["value"]) if row["value"] else None) == item["value"]
+        assert float(row["coverage_fraction"]) == item["coverage"]["fraction"]
+        assert row["reason"] == (item["reason"] or "")
+    # The same validation as the JSON endpoint: an over-wide range is a 400 problem, not CSV.
+    monkeypatch.undo()
+    client = TestClient(build_app(service(Clock(T0), FakeReader())))
+    wide = client.get(
+        "/api/v1/weather/history.csv?start=2026-06-01T00:00:00Z&end=2026-07-01T00:00:00Z"
+        "&metrics=temperature&statistics=mean&resolution=60"
+    )
+    assert wide.status_code == 400 and wide.json()["code"] == "range_too_large"

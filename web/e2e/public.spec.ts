@@ -584,3 +584,16 @@ test("hourly stills: day and hour navigation, the repeated 01:00 and missing slo
   await expect(page).toHaveURL(/hour=2/);
   await context.close();
 });
+
+// #166: the history page offers the charted intervals as a CSV download.
+test("history offers a CSV download of the charted intervals", async ({ page }) => {
+  await page.goto("/weather/history/");
+  const link = page.getByRole("link", { name: "Download this history as CSV" });
+  await expect(link).toHaveAttribute("href", /^\/api\/v1\/weather\/history\.csv\?/);
+  await link.focus();
+  const download = page.waitForEvent("download");
+  await page.keyboard.press("Enter");
+  const file = await download;
+  const text = await (await file.createReadStream()).toArray().then((chunks) => Buffer.concat(chunks).toString());
+  expect(text.split("\r\n")[0]).toBe("start,end,metric,statistic,value,unit,coverage_fraction,support_seconds,expected_seconds,evidence_count,direction_state,reason");
+});

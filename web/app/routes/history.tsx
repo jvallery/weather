@@ -41,10 +41,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
   for (const statistic of statistics) parameters.append("statistics", statistic);
   const result = await aggregatesRead(request, parameters);
   const raw = new URLSearchParams({ start, end, metrics: metric, limit: "5000" });
-  return { aggregates: result.kind === "ok" ? result.data : null, issue: result.kind === "invalid" ? result.issue : null, registry, start, end, metric, statistics, resolution, units: unitsFrom(url), exportUrl: `/api/v1/weather/observations?${raw}` };
+  return { aggregates: result.kind === "ok" ? result.data : null, issue: result.kind === "invalid" ? result.issue : null, registry, start, end, metric, statistics, resolution, units: unitsFrom(url), exportUrl: `/api/v1/weather/observations?${raw}`, csvUrl: `/api/v1/weather/history.csv?${parameters}` };
 }
 export default function HistoryPage() {
-  const { aggregates, issue, registry, start, end, metric, statistics, resolution, units, exportUrl } = useLoaderData<typeof loader>();
+  const { aggregates, issue, registry, start, end, metric, statistics, resolution, units, exportUrl, csvUrl } = useLoaderData<typeof loader>();
   const definition = registry?.metrics.find((row) => row.metric === metric);
   const rows = aggregates ? historyRows(aggregates, metric, statistics) : [];
   const hasValues = rows.some((row) => row.values[statistics[0]] !== null);
@@ -59,6 +59,6 @@ export default function HistoryPage() {
       <p className="small">Interactive plotting uses JavaScript. The complete table below is available without it.</p>
       <div className="table-wrap" tabIndex={0} role="region" aria-label="Weather history table"><table><caption>Summarized intervals</caption><thead><tr><th scope="col">Interval start · America/Denver</th>{statistics.map((statistic) => <th scope="col" key={statistic}>{statistic === "vector_mean" ? "direction" : statistic}</th>)}<th scope="col">Coverage</th></tr></thead><tbody>{rows.map((row) => <tr key={row.start}><th scope="row"><time dateTime={row.start}>{localTime(row.start)}</time></th>{statistics.map((statistic) => <td key={statistic}>{row.values[statistic] === null && row.notes[statistic] ? row.notes[statistic] : metricValue(row.values[statistic], row.unit, units, definition)}</td>)}<td>{(row.coverage * 100).toFixed(0)}%</td></tr>)}</tbody></table></div>
     </>}
-    {aggregates ? <p><a className="button-link" href={exportUrl} download>Export raw observations for this window as JSON</a></p> : <p>Export is unavailable until observations can be read.</p>}<p className="small">JSON exports carry original source and receipt times, units and quality. Follow next_cursor for later pages; query limits do not delete older history.</p>
+    {aggregates ? <p><a className="button-link" href={csvUrl} download>Download this history as CSV</a> <a className="button-link" href={exportUrl} download>Export raw observations for this window as JSON</a></p> : <p>Export is unavailable until observations can be read.</p>}<p className="small">The CSV holds the charted intervals: one row per interval, metric and statistic, with units, coverage and an empty value for a gap (#166). JSON exports carry original source and receipt times, units and quality. Follow next_cursor for later pages; query limits do not delete older history.</p>
   </>;
 }
