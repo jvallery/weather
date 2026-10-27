@@ -114,15 +114,15 @@ def statements() -> list[str]:
             cap_seconds integer NOT NULL,
             imported_at timestamptz DEFAULT clock_timestamp() NOT NULL,
             CONSTRAINT pk_obs_import PRIMARY KEY (id),
-            CONSTRAINT fk_obs_import_batch FOREIGN KEY (batch_id)
+            CONSTRAINT fk_obs_import_batch_id_import_batch FOREIGN KEY (batch_id)
               REFERENCES weather.import_batch(id),
-            CONSTRAINT uq_obs_import_source_ts UNIQUE (source, source_ts),
+            CONSTRAINT uq_obs_import_source_source_ts UNIQUE (source, source_ts),
             CONSTRAINT ck_obs_import_source CHECK (source IN ({SOURCES})),
             CONSTRAINT ck_obs_import_cap CHECK (cap_seconds BETWEEN 60 AND 3600),
             CONSTRAINT ck_obs_import_values CHECK (jsonb_typeof("values") = 'object')
         )""",
         "CREATE INDEX ix_obs_import_source_ts ON weather.obs_import (source_ts)",
-        "CREATE INDEX ix_obs_import_batch ON weather.obs_import (batch_id)",
+        "CREATE INDEX ix_obs_import_batch_id ON weather.obs_import (batch_id)",
         f"CREATE OR REPLACE VIEW public_api.obs_st AS {live('obs_st')} UNION ALL {imported()}",
         f"CREATE OR REPLACE VIEW public_api.rapid_wind AS {live('rapid_wind')}",
         # Only the migrator (owner) loads and rolls back batches; the API reads through the view.

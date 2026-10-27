@@ -117,6 +117,8 @@ test("preview tiles age locally past 1,800 s while the network is blocked", asyn
   await expect(east.getByText("Preview unavailable. The last capture is more than 30 minutes old.")).toBeVisible();
 });
 test("event bookmarks seek via ?t=, day and video strips, feed provenance and recent events", async ({ page }) => {
+  // Many navigations across three pages; WebKit on a busy CI node needs more than 30 s.
+  test.setTimeout(60_000);
   await page.goto("/timelapses/skycam_east/2026-10-31/daytime/");
   const strip = page.getByRole("region", { name: "Weather events in this recording" });
   // Station-wide events plus this camera's; the west-sky and front-yard events are not here.

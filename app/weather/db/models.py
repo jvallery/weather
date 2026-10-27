@@ -1323,14 +1323,14 @@ import_batch = Table(
     Column("duplicate_rows", Integer),
     Column("state", String(16), nullable=False, server_default=text("'running'")),
 )
-Table(
+obs_import = Table(
     "obs_import",
     metadata,
     Column("id", PGUUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")),
     Column(
         "batch_id",
         PGUUID(as_uuid=True),
-        ForeignKey("weather.import_batch.id", ondelete="RESTRICT"),
+        ForeignKey("weather.import_batch.id"),
         nullable=False,
     ),
     Column("source", String(32), nullable=False),
@@ -1343,4 +1343,7 @@ Table(
         nullable=False,
         server_default=text("clock_timestamp()"),
     ),
+    UniqueConstraint("source", "source_ts"),
 )
+Index("ix_obs_import_source_ts", obs_import.c.source_ts)
+Index("ix_obs_import_batch_id", obs_import.c.batch_id)
