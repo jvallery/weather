@@ -1300,3 +1300,47 @@ Table(
         server_default=text("clock_timestamp()"),
     ),
 )
+
+# 0016_obs_import (#167): imported station history and its batches.
+import_batch = Table(
+    "import_batch",
+    metadata,
+    Column("id", PGUUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")),
+    Column("source", String(32), nullable=False),
+    Column(
+        "started_at",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("clock_timestamp()"),
+    ),
+    Column("finished_at", DateTime(timezone=True)),
+    Column("source_start", DateTime(timezone=True), nullable=False),
+    Column("source_end", DateTime(timezone=True), nullable=False),
+    Column("cutoff", DateTime(timezone=True), nullable=False),
+    Column("source_rows", Integer),
+    Column("inserted_rows", Integer),
+    Column("overlap_rows", Integer),
+    Column("duplicate_rows", Integer),
+    Column("state", String(16), nullable=False, server_default=text("'running'")),
+)
+Table(
+    "obs_import",
+    metadata,
+    Column("id", PGUUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")),
+    Column(
+        "batch_id",
+        PGUUID(as_uuid=True),
+        ForeignKey("weather.import_batch.id", ondelete="RESTRICT"),
+        nullable=False,
+    ),
+    Column("source", String(32), nullable=False),
+    Column("source_ts", DateTime(timezone=True), nullable=False),
+    Column("values", JSONB, nullable=False),
+    Column("cap_seconds", Integer, nullable=False),
+    Column(
+        "imported_at",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("clock_timestamp()"),
+    ),
+)

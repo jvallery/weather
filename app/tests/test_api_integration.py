@@ -480,3 +480,112 @@ def test_slow_query_is_sanitized_and_ingest_commits_while_api_pool_is_saturated(
         await asyncio.gather(*holds, return_exceptions=True)
 
     database(check)
+
+
+def test_imported_history_reads_before_live_and_live_wins() -> None:
+    """#167: imported readings fill history before the first live report, never after it."""
+
+    async def check(admin: AsyncEngine, api: AsyncEngine, device: UUID) -> None:
+        live_start = utc("2026-10-24T20:40:00Z")
+        imported_start = live_start - timedelta(hours=2)
+        async with admin.begin() as c:
+            batch = (
+                await c.execute(
+                    text("""INSERT INTO weather.import_batch(source,source_start,source_end,cutoff)
+                            VALUES('verdify-platform',:a,:b,:b) RETURNING id"""),
+                    {"a": imported_start, "b": live_start + timedelta(hours=1)},
+                )
+            ).scalar_one()
+            imported = [
+                (imported_start + timedelta(minutes=5 * n), {"air_temperature": 4.0})
+                for n in range(24)
+            ]
+            # A humidity-only row inside the run: it neither supports nor breaks temperature.
+            imported.append((imported_start + timedelta(minutes=7), {"relative_humidity": 50.0}))
+            # After the first live report: never shown (live wins).
+            imported.append((live_start + timedelta(minutes=30), {"air_temperature": 99.0}))
+            await c.execute(
+                text("""INSERT INTO weather.obs_import(batch_id,source,source_ts,"values",
+                          cap_seconds)
+                        SELECT :batch,'verdify-platform',ts,CAST(v AS jsonb),600
+                        FROM unnest(CAST(:ts AS timestamptz[]),CAST(:v AS text[])) AS t(ts,v)"""),
+                {
+                    "batch": batch,
+                    "ts": [at for at, _ in imported],
+                    "v": [json.dumps(values) for _, values in imported],
+                },
+            )
+            await insert(
+                c,
+                device,
+                "obs_st",
+                [(live_start + timedelta(minutes=n), {"air_temperature": 10.0}) for n in range(60)],
+            )
+        weather = service(api)
+        result = await weather.aggregates(
+            AggregateQuery.model_validate(
+                {
+                    "start": imported_start,
+                    "end": live_start + timedelta(hours=1),
+                    "metrics": ["temperature"],
+                    "statistics": ["mean", "max"],
+                    "resolution": "1800",
+                }
+            )
+        )
+        means = {item.start: item for item in result.items if item.statistic == "mean"}
+        maxima = {item.start: item for item in result.items if item.statistic == "max"}
+        # Imported 5-minute readings, each held up to 10 minutes: whole intervals covered.
+        first = means[imported_start]
+        assert first.value == pytest.approx(4.0)
+        assert first.coverage.fraction == pytest.approx(1.0)
+        assert result.imported is not None
+        assert result.imported.source == "verdify-platform"
+        assert result.imported.start == imported_start
+        assert result.imported.last == imported_start + timedelta(minutes=115)
+        # The live hour is the receiver's alone: the overlapping imported 99 never appears.
+        live = [maxima[start] for start in maxima if start >= live_start]
+        assert live and all(item.value == pytest.approx(10.0) for item in live)
+        # A live-only window carries no imported label.
+        later = await weather.aggregates(
+            AggregateQuery.model_validate(
+                {
+                    "start": live_start,
+                    "end": live_start + timedelta(hours=1),
+                    "metrics": ["temperature"],
+                    "statistics": ["mean"],
+                    "resolution": "1800",
+                }
+            )
+        )
+        assert later.imported is None
+        # The raw export lists live receipts only.
+        page = await weather.observations(
+            ObservationQuery.model_validate(
+                {
+                    "start": imported_start,
+                    "end": live_start + timedelta(hours=1),
+                    "metrics": ["temperature"],
+                    "limit": 1000,
+                }
+            )
+        )
+        assert len(page.points) == 60
+        assert all(point.observed_at >= live_start for point in page.points)
+        # History begins at the first imported reading, and the almanac says which part is imported.
+        almanac = await weather.almanac(
+            AlmanacQuery.model_validate(
+                {
+                    "product": "record",
+                    "metric": "temperature",
+                    "statistic": "max",
+                    "start": "2026-10-24T06:00:00Z",
+                    "end": "2026-10-25T06:00:00Z",
+                }
+            )
+        )
+        assert almanac.history_interval is not None
+        assert almanac.history_interval.start == imported_start
+        assert almanac.imported is not None and almanac.imported.last < live_start
+
+    database(check)

@@ -31,7 +31,7 @@ function aggregates(query: URLSearchParams): Aggregates {
     const a = Math.max(lo, start), b = Math.min(lo + step, end), gap = a >= Date.parse("2026-10-31T15:00:00Z") && a < Date.parse("2026-10-31T15:45:00Z");
     for (const metric of query.getAll("metrics")) for (const statistic of query.getAll("statistics")) items.push({ metric, statistic, start: new Date(a).toISOString(), end: new Date(b).toISOString(), value: gap ? null : 10 + (a - start) / 3_600_000, unit: metric === "temperature" ? "degC" : metric === "humidity" ? "%" : metric === "station_pressure" ? "hPa" : metric === "precipitation" ? "mm" : "m/s", coverage: { fraction: gap ? 0 : 1, support_seconds: gap ? 0 : (b - a) / 1000, expected_seconds: (b - a) / 1000 }, evidence_count: gap ? 0 : 5, evidence_hash: null, reason: gap ? "No valid observations in this interval." : null, direction_state: null, rose: null });
   }
-  return { generated_at: query.get("start")!, start: query.get("start")!, end: query.get("end")!, resolution: query.get("resolution")!, items };
+  return { generated_at: query.get("start")!, start: query.get("start")!, end: query.get("end")!, resolution: query.get("resolution")!, items, imported: null };
 }
 let requests: string[] = [];
 beforeEach(() => {

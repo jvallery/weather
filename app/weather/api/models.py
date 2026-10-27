@@ -175,12 +175,23 @@ class Aggregate(PublicModel):
     rose: list[RoseBin] | None = None
 
 
+class ImportedHistory(PublicModel):
+    """History imported from another record (#167): readings before the first live report."""
+
+    source: Literal["verdify-platform"]
+    start: UTCInstant
+    # The last imported reading (inclusive); live reports follow it.
+    last: UTCInstant
+
+
 class Aggregates(PublicModel):
     generated_at: UTCInstant
     start: UTCInstant
     end: UTCInstant
     resolution: str
     items: list[Aggregate]
+    # Present when the window overlaps imported history (its intervals summarize imported readings).
+    imported: ImportedHistory | None = None
 
 
 class Problem(PublicModel):
@@ -490,6 +501,8 @@ class Almanac(PublicModel):
     comparison_interval: Interval | None
     # First valid station observation to the read time; null when there is no history.
     history_interval: Interval | None
+    # The imported part of that history (#167), when there is one.
+    imported: ImportedHistory | None = None
     timezone: Literal["America/Denver"]
     label: str
     derived: bool

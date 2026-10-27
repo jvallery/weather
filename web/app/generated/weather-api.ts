@@ -270,6 +270,7 @@ export interface components {
              * Format: date-time
              */
             readonly generated_at: string;
+            readonly imported: components["schemas"]["ImportedHistory"] | null;
             /** Items */
             readonly items: readonly components["schemas"]["Aggregate"][];
             /** Resolution */
@@ -298,6 +299,7 @@ export interface components {
              */
             readonly generated_at: string;
             readonly history_interval: components["schemas"]["weather__api__models__Interval"] | null;
+            readonly imported: components["schemas"]["ImportedHistory"] | null;
             readonly interval: components["schemas"]["weather__api__models__Interval"];
             /** Items */
             readonly items: readonly (components["schemas"]["RecordItem"] | components["schemas"]["RainDayItem"] | components["schemas"]["WindRoseBinItem"] | components["schemas"]["AstronomyItem"] | components["schemas"]["ComparisonItem"])[];
@@ -738,6 +740,27 @@ export interface components {
             readonly state: "available" | "unavailable";
             /** Video Id */
             readonly video_id: string | null;
+        };
+        /**
+         * ImportedHistory
+         * @description History imported from another record (#167): readings before the first live report.
+         */
+        readonly ImportedHistory: {
+            /**
+             * Last
+             * Format: date-time
+             */
+            readonly last: string;
+            /**
+             * Source
+             * @constant
+             */
+            readonly source: "verdify-platform";
+            /**
+             * Start
+             * Format: date-time
+             */
+            readonly start: string;
         };
         /** Keogram */
         readonly Keogram: {

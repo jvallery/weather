@@ -100,6 +100,9 @@ class FakeReader:
         ]
         return sorted(rows, key=lambda r: (r["observed_at"], r["id"]))[: kwargs["rows"]], snapshot
 
+    async def imported(self) -> None:
+        return None
+
     async def aggregates(self, *args: Any, **kwargs: Any) -> tuple[list[Any], list[Any]]:
         return [], []
 
@@ -130,6 +133,14 @@ def test_registry_columns_match_the_migration_views() -> None:
     assert {k: tuple(v) for k, v in module.COLUMNS.items()} == COLUMNS
     for statement in module.statements():
         assert not text(statement)._bindparams
+    # 0016 (#167) replaces the views column for column: the same allowlist.
+    spec = importlib.util.spec_from_file_location(
+        "migration_0016", ROOT / "app/migrations/versions/0016_obs_import.py"
+    )
+    assert spec and spec.loader
+    replaced = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(replaced)
+    assert {k: tuple(v) for k, v in replaced.COLUMNS.items()} == COLUMNS
 
 
 def test_current_keeps_zero_and_ages_from_source_time() -> None:

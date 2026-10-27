@@ -194,6 +194,9 @@ class StaticWeather:
         self.items = aggregates
         self.reads = 0
 
+    async def imported(self) -> None:
+        return None
+
     async def aggregates(
         self, start: datetime, end: datetime, metrics: tuple[tuple[str, tuple[str, ...]], ...]
     ) -> list[Aggregate]:

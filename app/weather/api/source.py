@@ -14,7 +14,7 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from .registry import COLUMNS, REPORT_SECONDS, Family, Source
+from .registry import COLUMNS, IMPORT_CAP_SECONDS, REPORT_SECONDS, Family, Source
 
 EPOCH_ORIGIN = datetime.fromisoformat("1970-01-01T00:00:00+00:00")
 # Longer than any ingest transaction (drain 30 s, reproject pages 60 s): every row inserted at or
@@ -68,6 +68,9 @@ STATION_SQL = "SELECT alias FROM public_api.station ORDER BY alias LIMIT 1"
 # Every device at the site counts, so a replaced station continues the same history (P20).
 HISTORY_SQL = """SELECT observed_at AS first FROM public_api.obs_st
 WHERE valid AND observed_at < :now ORDER BY observed_at LIMIT 1"""
+# The imported range (#167): before the first live report, from another source's records.
+IMPORTED_SQL = """SELECT min(observed_at) AS start,max(observed_at) AS last,
+  min(provenance) AS source FROM public_api.obs_st WHERE provenance <> 'live'"""
 SNAPSHOT_SQL = f"SELECT now() - interval '{SNAPSHOT_MARGIN_SECONDS} seconds' AS snapshot"
 
 
@@ -76,7 +79,8 @@ def observations_sql(family: Family) -> str:
     # The snapshot is database insert time: late drain/reproject rows keep an old received_at.
     return f"""SELECT id,observed_at,received_at,valid,invalid_fields,{_columns(family)}
 FROM public_api.{family}
-WHERE observed_at >= :after_time AND observed_at < :end AND inserted_at <= :snapshot
+WHERE provenance = 'live'
+  AND observed_at >= :after_time AND observed_at < :end AND inserted_at <= :snapshot
   AND (observed_at, id) > (CAST(:after_time AS timestamptz), CAST(:after_id AS uuid))
 ORDER BY observed_at, id LIMIT :rows"""
 
@@ -87,7 +91,8 @@ def _cells_sql(source: Source, *, day: bool, wind: bool, intervals: bool = False
     carry = ",d" if wind else ""
     if source.support == "sample":
         # [ts, min(next, ts + cap)): an instantaneous reading held until the next one.
-        cap = "ts + CAST(:cap AS interval)"
+        # Imported readings (#167) carry their own cap; live rows use the registry's.
+        cap = "ts + coalesce(make_interval(secs => cap_seconds), CAST(:cap AS interval))"
         start, end = "ts", f"least(coalesce(next_ts, {cap}), {cap})"
         keep = "ts < CAST(:end AS timestamptz)"
         home = "ts >= bin_start AND ts < bin_end"
@@ -120,10 +125,13 @@ def _cells_sql(source: Source, *, day: bool, wind: bool, intervals: bool = False
     FROM generate_series(date_bin({stride}, sup.s, CAST(:origin AS timestamptz)),
                          date_bin({stride}, {last}, CAST(:origin AS timestamptz)), {stride}) AS b"""
     return f"""WITH raw AS (
-  SELECT id,observed_at AS ts,{value} AS v{direction}
+  SELECT id,observed_at AS ts,{value} AS v{direction},cap_seconds
   FROM public_api.{source.family}
   WHERE observed_at >= CAST(:fetch_start AS timestamptz)
     AND observed_at < CAST(:fetch_end AS timestamptz)
+    -- An imported row lacking this field neither supports nor interrupts it (#167): the source
+    -- reported fields on different rows. Live rows keep their existing semantics.
+    AND ({value} IS NOT NULL OR provenance = 'live')
 ), seq AS (
   SELECT raw.*,lag(ts) OVER w AS prev_ts,lead(ts) OVER w AS next_ts
   FROM raw WINDOW w AS (ORDER BY ts,id)
@@ -269,6 +277,11 @@ class WeatherReader:
         rows = (await self._run([(HISTORY_SQL, {"now": now})], self._statement_ms))[0]
         return rows[0]["first"] if rows else None
 
+    async def imported(self) -> Row | None:
+        """The imported history's first and last reading and its source, or None."""
+        rows = (await self._run([(IMPORTED_SQL, {})], self._statement_ms))[0]
+        return rows[0] if rows and rows[0]["start"] is not None else None
+
     async def observations(
         self,
         family: Family,
@@ -317,7 +330,7 @@ class WeatherReader:
     async def aggregates(
         self, source: Source, bins: BinSpec, *, cap: timedelta, wind: bool, rose: bool
     ) -> tuple[list[Row], list[Row]]:
-        reach = max(cap, timedelta(seconds=REPORT_SECONDS))
+        reach = max(cap, timedelta(seconds=REPORT_SECONDS), timedelta(seconds=IMPORT_CAP_SECONDS))
         parameters: dict[str, Any] = {
             "start": bins.start,
             "end": bins.end,
