@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { Link } from "react-router";
+import { Link } from "./unit-link";
 import { CAMERA_LABELS, humanize, localTime } from "../lib/format";
 import type { Still } from "../lib/weather-api";
 

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router";
+import { useLoaderData, type LoaderFunctionArgs } from "react-router";
+import { Link } from "../components/unit-link";
 import { PageHead, Pager, SEGMENT_LABELS, Status, VideoLink } from "../components/common";
 import { CAMERA_LABELS, localDate, monthTitle } from "../lib/format";
 import { archiveRead } from "../lib/public-api.server";

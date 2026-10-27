@@ -54,11 +54,11 @@ export function usePreview(camera: string, clock: () => number = monotonic) {
           const response = await fetch(`/api/v1/cameras/${camera}/preview`, { cache: "no-store", headers: { Accept: "application/json" }, signal: AbortSignal.any([controller.signal, AbortSignal.timeout(6000)]) });
           const preview = response.ok ? parsePreview(await response.json()) : null;
           if (stopped) return;
-          if (preview === null) setFailed(true);
+          if (preview === null) { setFailed(true); delay = 15_000; }
           else { setReceived({ preview, receivedAt: clock(), receivedWall: Date.now() }); setFailed(false); delay = Math.min(300, Math.max(15, preview.refresh_seconds)) * 1000; }
         } catch {
           if (stopped) return;
-          setFailed(true);
+          setFailed(true); delay = 15_000;
         }
       }
       setNow(clock());

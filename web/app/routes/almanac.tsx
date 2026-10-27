@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-import { Form, Link, useLoaderData, type LoaderFunctionArgs } from "react-router";
+import { Form, useLoaderData, type LoaderFunctionArgs } from "react-router";
+import { Link } from "../components/unit-link";
 import { PageHead } from "../components/common";
 import { almanacSelection, COMPARISONS, hours, percent, PRODUCTS, reasonText, RECORDS, SECTORS, type AlmanacSelection } from "../lib/almanac";
 import type { Units } from "../lib/contracts";

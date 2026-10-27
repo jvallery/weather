@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-import { Link, useLoaderData, type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { useLoaderData, type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { Link } from "../components/unit-link";
 import { AnalysisPanel } from "../components/analysis";
 import { PageHead, Pager, SEGMENT_LABELS, Status, VideoLink, videoPath } from "../components/common";
 import { EventStrip } from "../components/events";

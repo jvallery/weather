@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { Link } from "react-router";
+import { Link } from "./unit-link";
 import { CAMERA_LABELS, dateShift, dayTitle } from "../lib/format";
 import type { Camera } from "../lib/contracts";
 import { playable, type Timelapse } from "../lib/weather-api";
@@ -12,6 +12,11 @@ export function latestMedia(items: readonly Timelapse[]): Map<string, Timelapse>
   const latest = new Map<string, Timelapse>();
   for (const item of items) if (!latest.has(`${item.camera}/${item.segment}`)) latest.set(`${item.camera}/${item.segment}`, item);
   return latest;
+}
+/** The camera's newest playable recording (the catalog lists newest first), for the preview's link. */
+function newest(items: readonly Timelapse[], camera: string): string | null {
+  const video = items.find((item) => item.camera === camera && playable(item));
+  return video ? videoPath(video) : null;
 }
 function Tile({ camera, segment, label, video }: { camera: Camera; segment: string; label: string; video: Timelapse | undefined }) {
   if (!video) return <li><h4>{label}</h4><p className="media-empty">No recording published yet</p></li>;
@@ -30,6 +35,6 @@ export function CameraTiles({ media }: { media: readonly Timelapse[] | null }) {
   return <section className="section" aria-labelledby="cameras-title">
     <div className="section-head"><div><span className="eyebrow">Three cameras · delayed at least 10 minutes</span><h2 id="cameras-title">Sky and yard</h2></div><Link to="/archive/">All timelapses →</Link></div>
     {media === null && <p className="fault">Recording API unavailable. Latest videos and keograms cannot be listed; nothing is shown in their place.</p>}
-    <div className="grid three">{(Object.keys(CAMERA_LABELS) as Camera[]).map((camera) => <article className="card camera-card" key={camera}><h3>{CAMERA_LABELS[camera]}</h3><PreviewTile camera={camera} />
+    <div className="grid three">{(Object.keys(CAMERA_LABELS) as Camera[]).map((camera) => <article className="card camera-card" key={camera}><h3>{CAMERA_LABELS[camera]}</h3><PreviewTile camera={camera} href={newest(media || [], camera)} />
       <ul className="media-tiles">{SEGMENTS.map(([segment, label]) => <Tile key={segment} camera={camera} segment={segment} label={label} video={latest.get(`${camera}/${segment}`)} />)}</ul></article>)}</div></section>;
 }

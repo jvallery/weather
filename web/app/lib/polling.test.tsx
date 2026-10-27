@@ -143,3 +143,14 @@ test("jitter stays stable while one-second source-age renders continue", async (
     expect(fetch).toHaveBeenCalledTimes(1);
   } finally { random.mockRestore(); }
 });
+
+test("a device clock running ahead does not age readings: ages count on the server's clock", async () => {
+  // The device clock is 10 min ahead of the server, which generated this response at 08:15:05Z.
+  vi.setSystemTime(new Date("2026-11-01T08:25:05Z"));
+  const fresh = asCurrent({ ...currentFixture, generated_at: "2026-11-01T08:15:20Z" });
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(fresh))));
+  render(<QueryClientProvider client={client}><CurrentConditions initial={current} renderedAt={Date.parse("2026-11-01T08:15:05Z")} units="us" /></QueryClientProvider>);
+  await advance(15_001);
+  expect(screen.getAllByText(/^20 s old$/).length).toBeGreaterThan(0);
+  expect(screen.queryByText(/10 min old/)).toBeNull();
+});

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
-import { Link, useLoaderData, type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { useLoaderData, type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { Link } from "../components/unit-link";
+import type { ReactNode } from "react";
 import plotStyles from "uplot/dist/uPlot.min.css?url";
 import { AnalysisPanel, EditorialPanel } from "../components/analysis";
 import { cycleLabel, PageHead, Pager, SEGMENT_LABELS, SourceInterval, Status } from "../components/common";
@@ -45,15 +47,16 @@ function Switcher({ camera, segment, date, units }: { camera: Camera; segment: S
     <div><span className="eyebrow">Solar cycle</span><ul className="chips"><li><Link to={`/day/${date}/`}>All cameras for this day</Link></li></ul></div>
   </nav>;
 }
-function Side({ video, camera, segment, date, units }: { video: Timelapse; camera: Camera; segment: Segment; date: string; units: string }) {
+function Side({ video, camera, segment, date, units, panel }: { video: Timelapse; camera: Camera; segment: Segment; date: string; units: string; panel: ReactNode }) {
   return <>
     <div className="card"><Switcher camera={camera} segment={segment} date={date} units={units} /></div>
-    <div className="card analysis-card"><div className="card-head"><h2>{video.analysis.author === "editor" ? "Weather description" : "AI weather description"}</h2></div><AnalysisPanel analysis={video.analysis} /><EditorialPanel editorial={video.editorial} /></div>
+    {panel}
     <div className="card"><div className="card-head"><h2>Recording</h2><Status state={video.state} reason={video.reason} /></div>
       <SourceInterval video={video} />
       <dl className="kv video-meta"><dt>Frames</dt><dd>{video.allocated_frames.toLocaleString("en-US")} at 60 fps ({(video.allocated_frames / 60).toFixed(1)} s)</dd><dt>Keogram</dt><dd>{video.keogram_state}</dd><dt>Revision</dt><dd>{video.revision} · <time dateTime={video.updated_at}>{localTime(video.updated_at)}</time></dd></dl>
       <p className="small">Processed, accelerated imagery: 7,200 frames per camera cycle across both segments.</p>
     </div>
+    <div className="card analysis-card"><div className="card-head"><h2>{video.analysis.author === "editor" ? "Weather description" : "AI weather description"}</h2></div><AnalysisPanel analysis={video.analysis} /><EditorialPanel editorial={video.editorial} /></div>
   </>;
 }
 export default function VideoPage() {
@@ -66,6 +69,6 @@ export default function VideoPage() {
       <p className={apiUnavailable ? "fault" : "notice"}>{apiUnavailable ? "Recording API unavailable. Source times and playback cannot be confirmed." : "No recording is available for this camera and segment yet."}</p>
       <div className="card"><Switcher camera={camera} segment={segment} date={date} units={units} /></div>
       <EventStrip title="Weather events on this date" events={events} />
-    </> : <LinkedPlayback key={`${video.video_id}-${video.revision}`} video={video} requested={requested} events={events} units={units} registry={registry} side={<Side video={video} camera={camera} segment={segment} date={date} units={units} />} />}
+    </> : <LinkedPlayback key={`${video.video_id}-${video.revision}`} video={video} requested={requested} events={events} units={units} registry={registry} side={(panel) => <Side video={video} camera={camera} segment={segment} date={date} units={units} panel={panel} />} />}
   </>;
 }

@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 import { CAMERA_LABELS } from "../lib/format";
+import { Link } from "./unit-link";
 import { captureLabel, usePreview } from "../lib/preview";
 import type { Camera } from "../lib/contracts";
 
 /** One camera's delayed preview (#39): the image with its true capture age, stale, or unavailable. */
-export function PreviewTile({ camera }: { camera: Camera }) {
+export function PreviewTile({ camera, href = null }: { camera: Camera; href?: string | null }) {
   const label = CAMERA_LABELS[camera];
   const tile = usePreview(camera);
   let body;
@@ -12,8 +13,9 @@ export function PreviewTile({ camera }: { camera: Camera }) {
     const caption = captureLabel(tile.preview.source_interval!.start, tile.age);
     const large = tile.preview.images.find((image) => image.variant === "large") || tile.preview.images[0];
     const small = tile.preview.images.find((image) => image.variant === "small") || large;
+    const image = <img src={small.url} srcSet={`${small.url} ${small.width}w, ${large.url} ${large.width}w`} sizes="(max-width: 550px) 100vw, 33vw" width={large.width} height={large.height} alt={`${label} camera, ${caption}`} decoding="async" />;
     body = <figure className="preview">
-      <img src={small.url} srcSet={`${small.url} ${small.width}w, ${large.url} ${large.width}w`} sizes="(max-width: 550px) 100vw, 33vw" width={large.width} height={large.height} alt={`${label} camera, ${caption}`} decoding="async" />
+      {href ? <Link to={href} className="preview-link">{image}<span className="play" aria-hidden="true" /><span className="screen-reader">Watch the latest recording</span></Link> : image}
       <figcaption>{tile.state === "stale" ? <span className="status status-stale">Stale</span> : <span className="dot" aria-hidden="true" />}<span>Delayed preview, {caption}</span></figcaption>
     </figure>;
   } else {

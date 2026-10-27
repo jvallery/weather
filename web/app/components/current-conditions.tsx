@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Units } from "../lib/contracts";
 import type { Current, Metric, MetricDefinition, MetricRegistry } from "../lib/weather-api";
 import { ageLabel, ageSeconds, compass, conversionAvailable, duration, humanize, localTime, metricLabel, metricValue } from "../lib/format";
@@ -8,6 +8,12 @@ import { useCurrent } from "../lib/use-current";
 type Lookup = (name: string) => { metric: Metric; definition?: MetricDefinition } | null;
 const isStale = (metric: Metric, now: number) => metric.freshness !== "fresh" || !metric.valid_until || Date.parse(metric.valid_until) <= now;
 const SUMMED = ["rain_last_hour", "rain_today"];
+/** Dew point (°C) from temperature (°C) and relative humidity (%), Magnus-Tetens; derived, never measured. */
+export function dewPoint(temperature: Metric | null, humidity: Metric | null): number | null {
+  if (!temperature || !humidity || temperature.value === null || humidity.value === null || temperature.unit !== "degC" || humidity.value <= 0) return null;
+  const gamma = Math.log(humidity.value / 100) + (17.62 * temperature.value) / (243.12 + temperature.value);
+  return (243.12 * gamma) / (17.62 - gamma);
+}
 
 /** The curated strip: what a visitor scans for. Every metric, curated or not, is in "All readings". */
 function strip(get: Lookup, units: Units): { key: string; label: string; value: string; note?: string; metric: Metric }[] {
@@ -18,33 +24,47 @@ function strip(get: Lookup, units: Units): { key: string; label: string; value: 
     if (found) rows.push({ key, label, value: value(key)!, note: note?.(found.metric), metric: found.metric });
   };
   add("humidity", "Humidity");
+  const dew = dewPoint(get("temperature")?.metric ?? null, get("humidity")?.metric ?? null);
+  const temperature = get("temperature");
+  if (dew !== null && temperature) rows.push({ key: "dew_point", label: "Dew point", value: metricValue(dew, "degC", units, temperature.definition), note: "derived", metric: temperature.metric });
   add("wind_avg", "Wind", () => { const direction = get("wind_direction")?.metric.value ?? null; const name = compass(direction); return name ? `from ${name} (${Math.round(direction!)}°)` : undefined; });
   add("wind_gust", "Gust", () => { const lull = value("wind_lull"); return lull ? `lull ${lull}` : undefined; });
   add("station_pressure", "Pressure", () => "station level");
   add("rain_today", "Rain today", () => { const hour = value("rain_last_hour"); return hour ? `${hour} last hour` : undefined; });
   add("uv", "UV index");
   add("irradiance", "Solar");
-  const strikes = get("lightning_count");
-  if (strikes && strikes.metric.value !== null && strikes.metric.value > 0) {
-    const distance = get("lightning_distance");
-    rows.push({ key: "lightning_count", label: "Lightning", value: `${strikes.metric.value}`, note: distance?.metric.value != null ? `about ${metricValue(distance.metric.value, distance.metric.unit, units, distance.definition)} away` : "strikes reported", metric: strikes.metric });
-  }
   return rows;
 }
 
 export function CurrentConditions({ initial, renderedAt, units, registry = null, apiUnavailable = false }: { initial: Current; renderedAt: number; units: Units; registry?: MetricRegistry | null; apiUnavailable?: boolean }) {
-  const result = useCurrent(initial, apiUnavailable);
-  const [now, setNow] = useState(renderedAt);
-  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
+  // Returning to a hidden tab refetches at once instead of showing values that aged while away.
+  const result = useCurrent(initial, apiUnavailable, { refreshOnResume: true });
+  const [clock, setClock] = useState(renderedAt);
+  useEffect(() => { const timer = setInterval(() => setClock(Date.now()), 1000); return () => clearInterval(timer); }, []);
   const current = result.data;
+  // Ages count on the server's clock: a device clock running ahead would otherwise make every
+  // reading look old. The offset is measured on each successful poll (no-store, so generated_at
+  // is current); latency under 2 s is ignored, and an outage keeps the last offset, so ages still grow.
+  const [skew, setSkew] = useState(0);
+  const mounted = useRef(Date.now());
+  useEffect(() => {
+    const generated = Date.parse(current.generated_at);
+    if (!Number.isFinite(generated) || result.dataUpdatedAt <= mounted.current) return;
+    const offset = result.dataUpdatedAt - generated;
+    setSkew(Math.abs(offset) > 2000 ? offset : 0);
+  }, [current.generated_at, result.dataUpdatedAt]);
+  const now = clock - skew;
   const definition = (name: string) => registry?.metrics.find((row) => row.metric === name);
   const get: Lookup = (name) => { const metric = current.metrics.find((item) => item.metric === name); return metric ? { metric, definition: definition(name) } : null; };
   const temperature = get("temperature") ?? get("air_temperature");
   const ages = current.metrics.map((metric) => ageSeconds(metric.observed_at, now)).filter((age): age is number => age !== null);
   const newest = ages.length ? Math.min(...ages) : null;
-  const anyStale = current.metrics.some((metric) => metric.value !== null && isStale(metric, now));
-  const down = result.isError || result.loaderUnavailable;
   const stats = strip(get, units);
+  // Freshness of what is shown: a 3 s rapid-wind report outlives its window between 15 s polls.
+  const shown = [temperature?.metric, ...stats.map((row) => row.metric)].filter((metric): metric is Metric => !!metric);
+  const anyStale = shown.some((metric) => metric.value !== null && isStale(metric, now));
+  const strikes = get("lightning_count")?.metric.value ?? null, distance = get("lightning_distance");
+  const down = result.isError || result.loaderUnavailable;
   return <section className="hero" aria-labelledby="conditions-title">
     <div>
       <span className="eyebrow">Longmont · backyard station</span>
@@ -52,6 +72,7 @@ export function CurrentConditions({ initial, renderedAt, units, registry = null,
       <p className="screen-reader" role="status" aria-live="polite">Current conditions refresh about every 15 seconds while this page is visible.</p>
       {temperature && <p className="hero-temp" data-metric="temperature">{metricValue(temperature.metric.value, temperature.metric.unit, units, temperature.definition)}</p>}
       {newest !== null && <p className="hero-meta"><span className={`dot${down ? " dot-off" : anyStale ? " dot-stale" : ""}`} aria-hidden="true" />Updated {duration(newest)} ago{anyStale ? " · some readings are stale" : ""}</p>}
+      {strikes !== null && strikes > 0 && <p className="hero-meta">Lightning: {strikes} {strikes === 1 ? "strike" : "strikes"} reported{distance?.metric.value != null ? `, about ${metricValue(distance.metric.value, distance.metric.unit, units, distance.definition)} away` : ""}</p>}
       {down && <p className="fault">API unavailable. Received values keep their original source times and continue aging.</p>}
       {current.data_state === "cached" && <p className="notice">Serving cached measurements; their source times keep aging.</p>}
       {current.data_state === "unavailable" && !down && <p className="notice">No qualified current measurements are available.</p>}
