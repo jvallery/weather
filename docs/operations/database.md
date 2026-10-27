@@ -58,6 +58,32 @@ privilege booleans only), then delete the Job.
   `pg_stat_wal.wal_bytes` after Tempest ingest starts, and expand storage
   through source if needed.
 
+### Backup freshness
+
+`WeatherDbBaseBackupStale` fires when the newest available Barman base backup is over 26 h old
+(the daily base runs at 09:15 UTC on a standby), or when the metric is absent.
+1. `kubectl -n weather get scheduledbackups weather-pg-daily` (LAST BACKUP) and
+   `kubectl -n weather get objectstores.barmancloud.cnpg.io weather-pg-b2 -o jsonpath='{.status}'`
+   (`lastSuccessfulBackupTime`, `firstRecoverabilityPoint`).
+2. `kubectl -n weather get backups.postgresql.cnpg.io` shows a failed Backup and its message. The
+   usual causes are B2 reachability or an expired or revoked writer key; a standby that is not ready
+   also skips the run.
+3. Re-run once with a one-off `Backup` (`method: plugin`, plugin `barman-cloud.cloudnative-pg.io`)
+   after fixing the cause. Never mint a replacement key; recover the existing identity from KSOPS
+   custody. If bases fail for more than 7 days, ask storage-infra to suspend the `cnpg/` lifecycle
+   rule (no keep-last floor, see above).
+
+### WAL archive freshness
+
+`WeatherDbWalArchiveStale` fires when `pg_stat_archiver` reports no archived WAL for 30 min
+(`archive_timeout=300s` forces a segment at least every 5 minutes), or when the metric is absent.
+1. `kubectl -n weather get cluster weather-pg -o jsonpath='{.status.conditions}'`: check
+   `ContinuousArchiving`.
+2. In the primary: `select * from pg_stat_archiver;` (`failed_count`, `last_failed_wal`) and the
+   plugin sidecar's logs.
+3. Fix the cause (B2 reachability or the writer key). Never delete WAL by hand or disable archiving;
+   `pg_wal` grows until archiving resumes, so watch the volume.
+
 ## Switchover
 
 There is no `kubectl cnpg` plugin on the operator Mac. Pick a healthy streaming
