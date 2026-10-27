@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # The commissioned predecessor is immutable; refresh this pin for each web promotion.
-FROM registry.vallery.net/jvallery/weather-web@sha256:493678a940f1a7cdd410650a29d746465bb7c1429f19954c62d4747572e28b4b AS previous
+FROM registry.vallery.net/jvallery/weather-web@sha256:ab6028f073ad7610e71fda9bf5252a635536903704c3e353535a3093956ef6aa AS previous
 FROM registry.vallery.net/jvallery/weather-node-base@sha256:1304d2735b6d11efe11501456ef9e312b1f3141341feec72d61f194c2ab7fd1c AS build
 RUN npm install --global pnpm@12.15.0
 WORKDIR /app
