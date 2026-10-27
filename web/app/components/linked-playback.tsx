@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
-import { Link } from "react-router";
+import { Link } from "./unit-link";
 import type { Units } from "../lib/contracts";
 import { localTime } from "../lib/format";
 import { binCenter, binOf, epochSeconds, frameAt, frameCenter, frameHalfWindowSeconds, frameOf, frameSeconds, gapSpans, instant, iso, isGap, KEOGRAM_BINS, parseTimeMap, resolveSeek, type Instant, type Span, type TimeMap } from "../lib/time-map";

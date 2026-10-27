@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-import { Form, Link, useLoaderData, type LoaderFunctionArgs } from "react-router";
+import { Form, useLoaderData, type LoaderFunctionArgs } from "react-router";
+import { Link } from "../components/unit-link";
 import { PageHead } from "../components/common";
 import { EventFeedItem } from "../components/events";
 import { cameraSchema } from "../lib/contracts";

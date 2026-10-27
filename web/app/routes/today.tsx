@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router";
+import { useLoaderData, type LoaderFunctionArgs } from "react-router";
+import { Link } from "../components/unit-link";
 import { CameraTiles } from "../components/camera-tiles";
 import { CurrentConditions } from "../components/current-conditions";
 import { EventItem } from "../components/events";

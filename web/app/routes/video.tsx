@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-import { Link, useLoaderData, type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { useLoaderData, type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { Link } from "../components/unit-link";
 import plotStyles from "uplot/dist/uPlot.min.css?url";
 import { AnalysisPanel, EditorialPanel } from "../components/analysis";
 import { cycleLabel, PageHead, Pager, SEGMENT_LABELS, SourceInterval, Status } from "../components/common";

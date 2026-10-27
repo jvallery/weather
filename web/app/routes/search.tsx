@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Link, useLocation, useNavigate, useNavigationType } from "react-router";
+import { useLocation, useNavigate, useNavigationType } from "react-router";
+import { Link } from "../components/unit-link";
 import { hours, percent } from "../lib/almanac";
 import type { Units } from "../lib/contracts";
 import { CAMERA_LABELS, localDate, localTime } from "../lib/format";

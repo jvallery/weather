@@ -342,6 +342,10 @@ kustomization until the deploy PR that pins the app digest carrying this code.
 Its only egress is CNPG plus DNS; its metrics listener accepts `observability`
 on port 9000. It has no Kubernetes token or RBAC.
 
+## Query planning: JIT is off
+
+`jit: 'off'` is set in `deploy/k8s/database/cluster.yaml`. The public views are security barriers with per-row subplans, so the planner's cost estimates run into the millions. Above `jit_above_cost`, every read compiled JIT code. On 2026-10-27 that was 1.47 s of a 1.55 s `public_api.stills` query; with JIT off the query took 63 ms. CNPG applies the change by reload, with no restart. To check a slow public read, run `EXPLAIN (ANALYZE)` read-only on the primary and look for a `JIT:` block.
+
 ## Failure signals
 
 | Metric | Interpretation/action |

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-import { Form, Link, useLoaderData, type LoaderFunctionArgs } from "react-router";
+import { Form, useLoaderData, type LoaderFunctionArgs } from "react-router";
+import { Link } from "../components/unit-link";
 import plotStyles from "uplot/dist/uPlot.min.css?url";
 import { HistoryPlot, historyRows, type HistoryRow } from "../components/history-plot";
 import { PageHead } from "../components/common";

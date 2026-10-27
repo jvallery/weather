@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { Link } from "react-router";
+import { Link } from "./unit-link";
 import { CAMERA_LABELS, localDate, localTime, shortDateTime, shortTime } from "../lib/format";
 import type { Timelapse, WeatherEvent } from "../lib/weather-api";
 

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { useState, type MouseEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
+import { Link } from "./unit-link";
 import { CAMERA_LABELS, localTime } from "../lib/format";
 import type { KeogramItem } from "../lib/weather-api";
 import { Status } from "./common";
