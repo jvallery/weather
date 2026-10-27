@@ -104,14 +104,20 @@ async def publication(
         )
     ).scalar_one()
     for role, (asset_class, sha, ext, mime) in roles.items():
+        # Assets are content-addressed: a later revision reuses an unchanged role's asset row.
+        object_key = f"{asset_class}/{sha}.{ext}"
         asset = (
+            await c.execute(
+                text("SELECT id FROM weather.media_asset WHERE object_key=:key"), {"key": object_key}
+            )
+        ).scalar_one_or_none() or (
             await c.execute(
                 text(ASSET_SQL),
                 {
                     "class": asset_class,
                     "sha": sha,
                     "ext": ext,
-                    "key": f"{asset_class}/{sha}.{ext}",
+                    "key": object_key,
                     "mime": mime,
                     "embargo": times["embargo"],
                 },
