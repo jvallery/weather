@@ -72,7 +72,7 @@ spec:
         - name: WEATHER_CLEANUP_ENABLED
           value: 'true'
         - name: WEATHER_IMAGE_DIGEST
-          value: sha256:0a2a99d037c8c2b18a3627d70ded484634b4207dc0c9da8b2be5b33c5ff80ff3
+          value: sha256:da849f57b3edaceb55d7da16366d3f677be49cacb64e44afe68adde5c2338767
         - name: METRICS_PORT
           value: '9000'
         - name: TMPDIR
@@ -231,7 +231,7 @@ spec:
         - name: WEATHER_CLEANUP_ENABLED
           value: 'true'
         - name: WEATHER_IMAGE_DIGEST
-          value: sha256:0a2a99d037c8c2b18a3627d70ded484634b4207dc0c9da8b2be5b33c5ff80ff3
+          value: sha256:da849f57b3edaceb55d7da16366d3f677be49cacb64e44afe68adde5c2338767
         - name: METRICS_PORT
           value: '9000'
         - name: TMPDIR
@@ -390,7 +390,7 @@ spec:
         - name: WEATHER_CLEANUP_ENABLED
           value: 'true'
         - name: WEATHER_IMAGE_DIGEST
-          value: sha256:0a2a99d037c8c2b18a3627d70ded484634b4207dc0c9da8b2be5b33c5ff80ff3
+          value: sha256:da849f57b3edaceb55d7da16366d3f677be49cacb64e44afe68adde5c2338767
         - name: METRICS_PORT
           value: '9000'
         - name: TMPDIR
