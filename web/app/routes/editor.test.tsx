@@ -4,13 +4,14 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { renderToString } from "react-dom/server";
 import { afterEach, expect, test, vi } from "vitest";
 import EditorRoute, { Editor } from "./editor";
-import { buildPatch, draftFrom, type Subject } from "../lib/operator-api";
+import { buildPatch, draftFrom, posterCandidates, type Subject } from "../lib/operator-api";
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 const VIDEO = "11111111-2222-4333-8444-555555555555";
 const subject: Subject = {
   subject_id: VIDEO, kind: "video", revision: 3, updated_at: "2026-10-24T18:00:00Z",
-  video: { camera: "skycam_east", cycle_date: "2026-10-24", segment: "daytime", start: "2026-10-24T13:00:00Z", end: "2026-10-25T00:00:00Z", state: "published", withdrawn: false },
+  video: { camera: "skycam_east", cycle_date: "2026-10-24", segment: "daytime", start: "2026-10-24T13:00:00Z", end: "2026-10-25T00:00:00Z", state: "published", withdrawn: false,
+    frames: 3600, web_url: "/media/web-asset", poster: { frame: null, published: false, url: "/media/poster-asset" } },
   description: { human: "PRIVATE-HUMAN-DRAFT clouds", active: true, stale: false, effective: "PRIVATE-HUMAN-DRAFT clouds", automated: "AI text", bound: { media_sha256: "a".repeat(64), evidence_hash: "b".repeat(64) }, current: { media_sha256: "a".repeat(64), evidence_hash: "b".repeat(64) } },
   event: null, tags: [{ tag: "snow", visibility: "public" }, { tag: "PRIVATE-TAG".toLowerCase(), visibility: "private" }],
   favorite: false, note: "PRIVATE-NOTE", audit: [{ action: "edit", actor: "jason", recorded_at: "2026-10-24T18:00:00Z", reason: "fix", old_revision: 2, new_revision: 3 }],
@@ -128,3 +129,37 @@ test("the editor route is case-sensitive, so /EDITOR never renders it outside fo
   expect(matchRoutes(objects as never, "/editor")?.[0]?.route.id).toBe("routes/editor.tsx");
   for (const path of ["/EDITOR", "/Editor"]) expect(matchRoutes(objects as never, path)?.[0]?.route.id).not.toBe("routes/editor.tsx");
 });
+
+test("a poster choice sends only the frame; it is never cleared and must lie inside the video (#78)", () => {
+  const draft = { ...draftFrom(subject), reason: "Better clouds", posterFrame: 1800 };
+  expect(buildPatch(subject, draft).body).toEqual({ expected_revision: 3, reason: "Better clouds", changes: { poster: { frame: 1800 } } });
+  expect(buildPatch(subject, { ...draft, posterFrame: 3600 }).errors).toEqual(["The poster frame is outside the video."]);
+  // Unchanged or unset sends nothing.
+  expect(buildPatch(subject, { ...draft, posterFrame: null }).errors).toEqual(["Nothing changed."]);
+  const chosen = { ...subject, video: { ...subject.video!, poster: { frame: 1800, published: true, url: "/media/p" } } };
+  expect(buildPatch(chosen, { ...draftFrom(chosen), reason: "same" }).errors).toEqual(["Nothing changed."]);
+});
+
+test("poster candidates are evenly spaced frames inside the video plus the current choice", () => {
+  expect(posterCandidates(3600, null)).toEqual([150, 450, 750, 1050, 1350, 1650, 1950, 2250, 2550, 2850, 3150, 3450]);
+  expect(posterCandidates(3600, 7)).toContain(7);
+  expect(posterCandidates(3, null)).toEqual([0, 1, 2]);
+  expect(posterCandidates(0, null)).toEqual([]);
+});
+
+test("the poster picker selects a candidate, previews it and saves only the frame", async () => {
+  const fetcher = server((url, init) => url === `/api/v1/operator/subjects/${VIDEO}` && init?.method === "PATCH"
+    ? json(200, { ...subject, revision: 4, video: { ...subject.video!, poster: { frame: 1650, published: false, url: "/media/poster-asset" } } }) : undefined);
+  vi.stubGlobal("fetch", fetcher);
+  await open(fetcher);
+  expect(screen.getByText(/Automatic poster/)).toBeTruthy();
+  const group = screen.getByRole("radiogroup", { name: "Poster frame" });
+  expect(group.querySelectorAll("input[type=radio]")).toHaveLength(12);
+  fireEvent.click(screen.getByLabelText(/^Frame 1650 /));
+  fireEvent.change(screen.getByLabelText(/Reason for this change/), { target: { value: "Sunrise colour" } });
+  await act(async () => { fireEvent.click(screen.getByText("Save")); });
+  const [[, init]] = patches(fetcher);
+  expect(JSON.parse(String(init?.body))).toEqual({ expected_revision: 3, reason: "Sunrise colour", changes: { poster: { frame: 1650 } } });
+  expect(await screen.findByText(/frame 1650 .* is being published/)).toBeTruthy();
+});
+

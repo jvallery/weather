@@ -127,11 +127,11 @@ def test_baseline_head_roles_and_least_privilege() -> None:
             async with admin.begin() as connection:
                 assert await scalar(
                     connection, "SELECT version_num FROM public.alembic_version"
-                ) == ("0013_editorial")
+                ) == ("0014_editorial_poster")
                 # Slice-1 relations, the observations view, the API's views (0002), the
                 # publication catalog (0003), search (0004), events (0005), the render
                 # schedule (0006), stills (0009), previews (0007), cleanup (0010), keograms
-                # (0008, after 0011), AI descriptions (0012) and the editor (0013).
+                # (0008, after 0011), AI descriptions (0012), the editor (0013) and posters (0014).
                 relations = (
                     await connection.execute(
                         text("""
@@ -198,6 +198,8 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     "weather.editorial_audit",
                     "weather.video_editorial_state",
                     "public_api.video_editorial",
+                    # 0014_editorial_poster (#78)
+                    "weather.editorial_poster_applied",
                 }
                 options = await scalar(
                     connection,

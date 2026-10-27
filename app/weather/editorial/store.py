@@ -29,6 +29,7 @@ from .models import (
     EventState,
     Evidence,
     ManualEvent,
+    PosterState,
     Subject,
     SubjectPatch,
     Tag,
@@ -64,7 +65,7 @@ KIND_SQL = """SELECT 'video' FROM weather.video WHERE id=:id
 UNION ALL SELECT 'event' FROM weather.weather_event WHERE id=:id"""
 HEAD_SQL = "SELECT revision,updated_at FROM weather.editorial_subject WHERE subject_id=:id"
 REVISION_SQL = """SELECT public_revision,description,media_sha256,evidence_hash,public_tags,
-  private_tags,favorite,note,event_revision FROM weather.editorial_revision
+  private_tags,favorite,note,event_revision,poster_frame FROM weather.editorial_revision
 WHERE subject_id=:id AND revision=:revision"""
 CREATE_SQL = """INSERT INTO weather.editorial_subject(subject_id,kind,video_id,event_id,revision,
   updated_at) VALUES(:id,:kind,:video,:event,1,clock_timestamp())
@@ -73,16 +74,27 @@ BUMP_SQL = """UPDATE weather.editorial_subject SET revision=revision+1,updated_a
 WHERE subject_id=:id AND revision=:expected RETURNING revision"""
 INSERT_REVISION_SQL = """INSERT INTO weather.editorial_revision(subject_id,revision,
   public_revision,description,media_sha256,evidence_hash,public_tags,private_tags,favorite,note,
-  event_revision)
+  event_revision,poster_frame)
 VALUES(:id,:revision,:public_revision,:description,:media,:evidence,CAST(:public AS varchar[]),
-  CAST(:private AS varchar[]),:favorite,:note,:event_revision)"""
+  CAST(:private AS varchar[]),:favorite,:note,:event_revision,:poster_frame)"""
 AUDIT_SQL = """INSERT INTO weather.editorial_audit(subject_id,action,actor,reason,old_revision,
   new_revision,input,media_sha256,evidence_hash,evidence_ids,event_revision)
 VALUES(:id,:action,:actor,:reason,:old,:new,CAST(:input AS jsonb),:media,:evidence,
   CAST(:evidence_ids AS uuid[]),:event_revision)"""
-VIDEO_SQL = """SELECT s.*,v.camera_id,v.cycle_date,v.segment,v.starts_at,v.ends_at,
-  v.state AS video_state FROM weather.video_editorial_state s
+VIDEO_SQL = """SELECT s.*,v.camera_id,v.cycle_date,v.segment,v.starts_at,v.ends_at,v.frames,
+  v.state AS video_state,
+  (SELECT asset_id FROM weather.publication_asset WHERE publication_id=v.publication_id
+    AND role='web') AS web_asset_id,
+  (SELECT pa.asset_id FROM weather.publication_asset pa WHERE pa.publication_id=v.publication_id
+    AND pa.role='poster') AS poster_asset_id,
+  (SELECT a.sha256 FROM weather.publication_asset pa JOIN weather.media_asset a ON a.id=pa.asset_id
+    WHERE pa.publication_id=v.publication_id AND pa.role='poster') AS poster_sha256
+FROM weather.video_editorial_state s
 JOIN weather.video v ON v.id=s.video_id WHERE s.video_id=:id"""
+# #78: the chosen frame is live when the pipeline recorded publishing it as the poster the video
+# carries now (same SHA-256). Later edits carry the frame forward and need no new publication.
+APPLIED_SQL = """SELECT EXISTS (SELECT 1 FROM weather.editorial_poster_applied
+WHERE video_id=:id AND poster_frame=:frame AND poster_sha256=:sha)"""
 EVENT_SQL = events.CURRENT_SQL + " WHERE e.id=:id"
 HUMAN_EVENT_SQL = """SELECT revision,label,visibility,withdrawal_reason,author_kind,evidence_hash
 FROM weather.weather_event_revision WHERE event_id=:id AND author_kind='operator'
@@ -102,6 +114,7 @@ EMPTY: dict[str, Any] = {
     "favorite": False,
     "note": None,
     "event_revision": None,
+    "poster_frame": None,
 }
 
 
@@ -151,6 +164,17 @@ async def read(connection: AsyncConnection, subject_id: UUID) -> Subject:
     if kind == "video":
         row = await _one(connection, VIDEO_SQL, id=subject_id)
         assert row is not None
+        frame = content["poster_frame"]
+        published = False
+        if frame is not None and row["poster_sha256"] is not None:
+            published = bool(
+                (
+                    await connection.execute(
+                        text(APPLIED_SQL),
+                        {"id": subject_id, "frame": frame, "sha": row["poster_sha256"]},
+                    )
+                ).scalar_one()
+            )
         video = VideoSummary(
             camera=row["camera_id"],
             cycle_date=row["cycle_date"],
@@ -159,6 +183,13 @@ async def read(connection: AsyncConnection, subject_id: UUID) -> Subject:
             end=row["ends_at"],
             state=row["video_state"],
             withdrawn=row["withdrawn"],
+            frames=row["frames"],
+            web_url=f"/media/{row['web_asset_id']}" if row["web_asset_id"] else None,
+            poster=PosterState(
+                frame=frame,
+                published=published,
+                url=f"/media/{row['poster_asset_id']}" if row["poster_asset_id"] else None,
+            ),
         )
         human, active = row["human"], bool(row["human_active"])
         automated = row["automated"] if row["analysis_revision"] is not None else None
@@ -269,6 +300,7 @@ async def _append(
             "favorite": content["favorite"],
             "note": content["note"],
             "event_revision": content["event_revision"],
+            "poster_frame": content["poster_frame"],
         },
     )
     await connection.execute(
@@ -357,9 +389,19 @@ async def patch(
                     media_sha256=row["media_sha256"],
                     evidence_hash=row["evidence_hash"],
                 )
+        if "poster" in fields:
+            assert changes.poster is not None  # the model refuses a null poster
+            playable = not row["withdrawn"] and row["video_state"] in ("published", "partial")
+            if not playable:
+                raise Invalid("No published rendition to take a poster from")
+            if changes.poster.frame >= row["frames"]:
+                raise Invalid("The poster frame is outside the video")
+            content["poster_frame"] = changes.poster.frame
     else:
         if "description" in fields:
             raise Invalid("Descriptions apply to videos only")
+        if "poster" in fields:
+            raise Invalid("Posters apply to videos only")
         current = await _one(connection, EVENT_SQL, id=subject_id)
         assert current is not None
         stale = current["withdrawal_reason"] == events.OVERRIDE_STALE
@@ -403,7 +445,13 @@ async def patch(
     if kind == "video":
         public = any(
             content[name] != before[name]
-            for name in ("description", "media_sha256", "evidence_hash", "public_tags")
+            for name in (
+                "description",
+                "media_sha256",
+                "evidence_hash",
+                "public_tags",
+                "poster_frame",
+            )
         )
     else:
         public = "event" in fields or "rebase" in fields

@@ -119,6 +119,13 @@ class Publisher:
         self._engine = engine
         self._stores = stores
 
+    def store(self, bucket: str) -> ObjectStore:
+        """The configured store of one bucket (read paths such as #78's poster source)."""
+        try:
+            return self._stores[bucket]
+        except KeyError:
+            raise StoreError("bucket configuration") from None
+
     def _store(self, item: StagedObject) -> ObjectStore:
         try:
             return self._stores[item.bucket]
@@ -223,3 +230,58 @@ class Publisher:
             frames=now.frames,
         )
         return await self.publish(enriched, expected_revision=now.revision, deadline=deadline)
+
+    async def publish_poster(
+        self,
+        *,
+        camera_id: str,
+        cycle_date: date,
+        segment: str,
+        files: tuple[ProductFile, ...],
+        deadline: datetime,
+        then: Then | None = None,
+    ) -> Committed:
+        """Revision N+1 of a video that replaces only its poster roles (#78: a human choice).
+
+        The renditions, sidecar and every other role are carried unchanged, under the video's
+        own embargo; `then` runs in the commit transaction."""
+        if not files or any(not file.role.startswith("poster") for file in files):
+            raise ProductError("A poster revision carries poster roles only")
+        identity = Product(
+            kind="video",
+            camera_id=camera_id,
+            key=Product.segment_key(cycle_date, segment),
+            source_start=datetime.min.replace(tzinfo=UTC),
+            source_end=datetime.min.replace(tzinfo=UTC),
+            public_not_before=datetime.min.replace(tzinfo=UTC),
+            state="unavailable",
+            reason=None,
+            files=(),
+            cycle_date=cycle_date,
+            segment=segment,
+        )
+        async with self._engine.connect() as connection:
+            now = await catalog.current(connection, identity)
+        if now.state is None or now.source is None or now.public_not_before is None:
+            raise catalog.RevisionConflict("Nothing published to take a poster")
+        replaced = {file.role for file in files}
+        enriched = dataclasses.replace(
+            identity,
+            state=now.state,  # type: ignore[arg-type]
+            reason=now.reason,
+            source_start=now.source[0],
+            source_end=now.source[1],
+            public_not_before=now.public_not_before,
+            files=files,
+            keep=tuple(
+                sorted(
+                    role
+                    for role in now.assets
+                    if not role.startswith("poster") and role not in replaced
+                )
+            ),
+            frames=now.frames,
+        )
+        return await self.publish(
+            enriched, expected_revision=now.revision, deadline=deadline, then=then
+        )

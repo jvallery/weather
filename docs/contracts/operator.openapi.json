@@ -97,6 +97,16 @@
             ],
             "title": "Note"
           },
+          "poster": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PosterChoice"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "rebase": {
             "anyOf": [
               {
@@ -508,6 +518,62 @@
         "title": "OperatorProblem",
         "type": "object"
       },
+      "PosterChoice": {
+        "additionalProperties": false,
+        "description": "An output-frame index of the video's published renditions (#78).",
+        "properties": {
+          "frame": {
+            "maximum": 7199.0,
+            "minimum": 0.0,
+            "title": "Frame",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "frame"
+        ],
+        "title": "PosterChoice",
+        "type": "object"
+      },
+      "PosterState": {
+        "additionalProperties": false,
+        "description": "The human poster choice (#78) and whether the live poster is that frame yet.",
+        "properties": {
+          "frame": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frame"
+          },
+          "published": {
+            "title": "Published",
+            "type": "boolean"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "frame",
+          "published",
+          "url"
+        ],
+        "title": "PosterState",
+        "type": "object"
+      },
       "Receipt": {
         "additionalProperties": false,
         "properties": {
@@ -794,6 +860,13 @@
             "title": "End",
             "type": "string"
           },
+          "frames": {
+            "title": "Frames",
+            "type": "integer"
+          },
+          "poster": {
+            "$ref": "#/components/schemas/PosterState"
+          },
           "segment": {
             "enum": [
               "daytime",
@@ -812,6 +885,17 @@
             "title": "State",
             "type": "string"
           },
+          "web_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Web Url"
+          },
           "withdrawn": {
             "title": "Withdrawn",
             "type": "boolean"
@@ -824,7 +908,10 @@
           "start",
           "end",
           "state",
-          "withdrawn"
+          "withdrawn",
+          "frames",
+          "web_url",
+          "poster"
         ],
         "title": "VideoSummary",
         "type": "object"

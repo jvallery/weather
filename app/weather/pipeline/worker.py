@@ -42,6 +42,7 @@ from .hourly import HourlyArchive
 from .intake import ChunkIndex, Expected, utc
 from .keogram import Region, load_regions
 from .keogram_publish import Keograms
+from .poster import Posters
 from .recipe import (
     CAMERAS,
     DEFAULT_CADENCE_MS,
@@ -166,6 +167,8 @@ class Worker:
         self.durable: set[UUID] = set()
         # Per-segment retry backoff: (consecutive failures, wall time of the next attempt).
         self.backoff: dict[UUID, tuple[int, datetime]] = {}
+        # #78: operator poster choices for this camera, published after the videos.
+        self.posters: Posters | None = None
         # #147: one line when the first loop after start has indexed the staged chunks.
         self.started = time.monotonic()
         self.indexed = False
@@ -378,6 +381,17 @@ class Worker:
             except Exception as error:
                 metrics.FAILURES.labels(camera, "keogram").inc()
                 LOG.error("Pipeline keogram failed (%s, %s)", camera, type(error).__name__)
+        # After the videos and keograms: a poster never delays or withdraws a video (#78).
+        if self.posters is None and self.publisher is not None:
+            self.posters = Posters(
+                self.engine, self.publisher, self.publisher.store(MEDIA_BUCKET), camera
+            )
+        try:
+            if self.posters is not None:
+                await self.posters.sweep(now)
+        except Exception as error:
+            metrics.FAILURES.labels(camera, "poster").inc()
+            LOG.error("Pipeline poster failed (%s, %s)", camera, type(error).__name__)
         # A segment in backoff (possibly stuck for days) must not hold every chunk since its
         # start in memory: only segments that render now set the prune floor.
         rendering = [r for r in rows if not (r.id in self.backoff and now < self.backoff[r.id][1])]
