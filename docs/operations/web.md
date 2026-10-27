@@ -159,8 +159,13 @@ the pin had stayed on the scaffold image, so a held tab's chunks 404ed after rol
 A held tab that requests a chunk the new build no longer has reloads exactly once
 (`app/lib/chunk-reload.ts`, guarded by a `sessionStorage` timestamp); a second failure within 60 seconds
 surfaces instead of looping, and a tab still open at a later promotion gets one fresh recovery.
-The e2e fixture ingress mirrors `deploy/k8s/ingress.yaml` routing: `/api/` to api, everything else to
-web. `/media/` and `/downloads/` are added there only when #20 routes them in production.
+The e2e fixture ingress (`web/e2e/fixture-ingress.mjs`) applies `deploy/k8s`'s routes, priorities and
+Middlewares from `web/e2e/fixture-ingress.json`. That file is rendered by `scripts/fixture_ingress.py`
+(`--write` regenerates it), and a unit test keeps it equal to the manifests. The fixture applies the
+security headers, the per-visitor rate limits and the in-flight limits, keyed on `Cf-Connecting-Ip`,
+and a refused request is a 429; hashed assets are never limited. It deviates from production in two
+ways, both by design: a request without `Cf-Connecting-Ip` is not limited, and the editor's
+cross-namespace auth Middlewares are not run.
 
 `ci.sh browser` runs the single-worker fixture matrix in all three engines, then
 `scripts/web-browser-report.mjs` writes the compact `/workspace/ci-test-report.json` output parameter

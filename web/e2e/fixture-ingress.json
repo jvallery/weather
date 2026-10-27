@@ -1,0 +1,119 @@
+{
+ "excluded": [
+  "network-infra/ak-forwardauth",
+  "network-infra/apps-strip-auth-headers"
+ ],
+ "middlewares": {
+  "weather-media-in-flight": {
+   "inFlightReq": {
+    "amount": 6,
+    "header": "Cf-Connecting-Ip"
+   }
+  },
+  "weather-rate-limit": {
+   "rateLimit": {
+    "average": 30,
+    "burst": 60,
+    "header": "Cf-Connecting-Ip",
+    "period": "1s"
+   }
+  },
+  "weather-search-in-flight": {
+   "inFlightReq": {
+    "amount": 2,
+    "header": "Cf-Connecting-Ip"
+   }
+  },
+  "weather-search-rate-limit": {
+   "rateLimit": {
+    "average": 30,
+    "burst": 10,
+    "header": "Cf-Connecting-Ip",
+    "period": "1m"
+   }
+  },
+  "weather-security-headers": {
+   "headers": {
+    "contentTypeNosniff": true,
+    "referrerPolicy": "strict-origin-when-cross-origin",
+    "stsSeconds": 31536000
+   }
+  }
+ },
+ "routes": [
+  {
+   "match": "Host(`weather.vallery.net`) && PathPrefix(`/api/v1/operator`)",
+   "middlewares": [
+    "weather-rate-limit",
+    "weather-security-headers"
+   ],
+   "priority": 200,
+   "upstream": "api"
+  },
+  {
+   "match": "Host(`weather.vallery.net`) && PathPrefix(`/editor`)",
+   "middlewares": [
+    "weather-rate-limit",
+    "weather-security-headers"
+   ],
+   "priority": 200,
+   "upstream": "web"
+  },
+  {
+   "match": "Host(`weather.vallery.net`) && (PathRegexp(`^/api/v1/cameras/[a-z0-9_]+/preview$`) || PathPrefix(`/media/previews/`))",
+   "middlewares": [
+    "weather-rate-limit",
+    "weather-media-in-flight",
+    "weather-security-headers"
+   ],
+   "priority": 110,
+   "upstream": "api"
+  },
+  {
+   "match": "Host(`weather.vallery.net`) && Path(`/api/v1/search`)",
+   "middlewares": [
+    "weather-search-rate-limit",
+    "weather-search-in-flight",
+    "weather-security-headers"
+   ],
+   "priority": 110,
+   "upstream": "api"
+  },
+  {
+   "match": "Host(`weather.vallery.net`) && (PathPrefix(`/media/`) || PathPrefix(`/downloads/`))",
+   "middlewares": [
+    "weather-rate-limit",
+    "weather-media-in-flight",
+    "weather-security-headers"
+   ],
+   "priority": 100,
+   "upstream": "api"
+  },
+  {
+   "match": "Host(`weather.vallery.net`) && PathPrefix(`/api/`)",
+   "middlewares": [
+    "weather-rate-limit",
+    "weather-security-headers"
+   ],
+   "priority": 100,
+   "upstream": "api"
+  },
+  {
+   "match": "Host(`weather.vallery.net`) && (PathPrefix(`/assets/`) || PathPrefix(`/fonts/`))",
+   "middlewares": [
+    "weather-security-headers"
+   ],
+   "priority": 20,
+   "upstream": "web"
+  },
+  {
+   "match": "Host(`weather.vallery.net`)",
+   "middlewares": [
+    "weather-rate-limit",
+    "weather-security-headers"
+   ],
+   "priority": 10,
+   "upstream": "web"
+  }
+ ]
+}
