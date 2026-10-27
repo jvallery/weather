@@ -504,4 +504,5 @@ def serve() -> None:
     if port == metrics_port:
         raise SystemExit(2)
     start_http_server(metrics_port)
-    uvicorn.run(create_preview_app(), host="0.0.0.0", port=port, access_log=False)
+    # log_config=None: uvicorn's own lines go through the JSON root handler (#147).
+    uvicorn.run(create_preview_app(), host="0.0.0.0", port=port, access_log=False, log_config=None)
