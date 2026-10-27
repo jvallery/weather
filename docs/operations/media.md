@@ -170,7 +170,7 @@ The `api` streams published media itself (#20); code in `app/weather/media/`
   `/downloads/{video_id}/native` serves a listed video's native rendition as
   an attachment named `weather-<camera>-<cycle-date>-<segment>-native.mp4`.
   `deploy/k8s/ingress.yaml` sends both prefixes to `api` with the per-visitor
-  rate limit and `weather-media-in-flight` (6 open requests per visitor).
+  rate limit and `weather-media-in-flight` (40 open requests per visitor: a page of images loads at once; 6 refused most of the Now page and the calendar, 2026-10-27).
 - **Probe target (#49).** `/media/latest/{video,poster,keogram,still}` serves
   the newest asset of that kind (the web rendition for `video`) whose source
   ended in the last 14 days (2 days for stills), chosen from `public_api.videos` or
