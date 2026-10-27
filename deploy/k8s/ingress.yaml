@@ -28,10 +28,13 @@ metadata:
     agent-fleet.vallery.net/owner: jvallery
     agent-fleet.vallery.net/project: weather
 spec:
-  # Open media streams per visitor (#20). A player holds one or two ranges at a time;
-  # each api pod also refuses more than 32 streams with a 503 before any body.
+  # Open media requests per visitor (#20). A page loads many small images at once:
+  # Now fetches about 18 (posters, keogram thumbnails, previews) and a month calendar
+  # up to 31 covers over one HTTP/2 connection, and 6 refused most of them with 429
+  # (2026-10-27). A player holds one or two ranges; each api pod still refuses more
+  # than 32 streams with a 503 before any body, and the rate limit bounds volume.
   inFlightReq:
-    amount: 6
+    amount: 40
     sourceCriterion:
       requestHeaderName: Cf-Connecting-Ip
 ---
