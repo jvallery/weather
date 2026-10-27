@@ -33,11 +33,15 @@ const parity = parseCurrent({ ...fixture, metrics: [
 function readings(html: string) {
   return [...html.matchAll(/<strong>([^<]*)<\/strong><p>([^<]*)<\/p><p[^>]*>Observed <time dateTime="([^"]+)"/g)].map((match) => match.slice(1));
 }
+/** The same triple from Today's "All readings" table (value, observed time, age). */
+function todayReadings(html: string) {
+  return [...html.matchAll(/<td>([^<]*)<\/td><td><time dateTime="([^"]+)"[^>]*>[^<]*<\/time><\/td><td>([^<]*)<\/td>/g)].map(([, value, observed, age]) => [value, age, observed]);
+}
 
 test("card and Today show the same values, units, ages and observed_at from one fixture", () => {
   for (const now of [Date.parse(parity.generated_at), Date.parse(parity.generated_at) + 600_000]) {
     const embedded = readings(card(parity, now));
-    const today = readings(ssr(<CurrentConditions initial={parity} renderedAt={now} units="us" registry={registry} />));
+    const today = todayReadings(ssr(<CurrentConditions initial={parity} renderedAt={now} units="us" registry={registry} />));
     expect(embedded).toHaveLength(5);
     expect(embedded).toEqual(today);
   }

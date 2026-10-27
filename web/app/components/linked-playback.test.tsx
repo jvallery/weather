@@ -148,7 +148,7 @@ test("Today tiles show the latest poster, keogram and state per camera and segme
   expect(screen.getByRole("link", { name: /^Keogram, East sky · daytime · 2026-10-31$/ }).getAttribute("href")).toBe("/timelapses/skycam_east/2026-10-31/daytime/");
   expect(screen.getAllByText("Keogram pending.").length).toBeGreaterThan(0);
   expect(screen.getByText("Keogram unavailable.")).toBeTruthy();
-  expect(screen.getAllByText(/no recording published yet/)).toHaveLength(1);
+  expect(screen.getAllByText(/No recording published yet/)).toHaveLength(1);
   expect(screen.queryByText(/latest video · coming soon/)).toBeNull();
   cleanup();
   render(<RouterProvider router={createMemoryRouter([{ path: "/", element: <CameraTiles media={null} /> }])} />);

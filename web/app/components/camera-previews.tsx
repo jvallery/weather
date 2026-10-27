@@ -14,7 +14,7 @@ export function PreviewTile({ camera }: { camera: Camera }) {
     const small = tile.preview.images.find((image) => image.variant === "small") || large;
     body = <figure className="preview">
       <img src={small.url} srcSet={`${small.url} ${small.width}w, ${large.url} ${large.width}w`} sizes="(max-width: 550px) 100vw, 33vw" width={large.width} height={large.height} alt={`${label} camera, ${caption}`} decoding="async" />
-      <figcaption>{tile.state === "stale" ? <><span className="status status-stale">Stale</span> </> : null}Delayed preview, {caption}</figcaption>
+      <figcaption>{tile.state === "stale" ? <span className="status status-stale">Stale</span> : <span className="dot" aria-hidden="true" />}<span>Delayed preview, {caption}</span></figcaption>
     </figure>;
   } else {
     body = <div className="preview-placeholder" role="status"><p>{tile.kind === "loading" ? "Checking for a delayed preview…" : `Preview unavailable. ${tile.message}`}</p></div>;

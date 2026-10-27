@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 export const meta = () => [{ title: "About these observations · Weather" }];
 export default function About() {
-  return <article className="prose"><h1>About these observations</h1>
+  return <article className="prose"><span className="eyebrow">About · methods and limits</span><h1>About these observations</h1>
     <h2>Local measurements and three cameras</h2><p>A local Tempest station records weather measurements. Three cameras record the east sky, west sky and front yard. This archive begins with received observations; it does not import a longer climate history.</p>
     <h2>Measurements and interpretation</h2><p>Measured values come from recorded instruments. Derived values are calculations from those observations. AI descriptions are labeled interpretations of recorded evidence, not measurements. Human-edited text carries its own provenance label. Missing measurements are never displayed as zero.</p>
     <h2>Solar cycles and calendar days</h2><p>A solar cycle starts at civil dawn and ends at the next civil dawn. Civil twilight uses the Sun 6° below the horizon. Daytime is dawn to dusk. Overnight is dusk to the following dawn and is labeled with both dates. Calendar-day weather history is separate from a solar cycle. Times show America/Denver and an explicit UTC offset, including the repeated hour when daylight saving time ends.</p>

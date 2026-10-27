@@ -44,7 +44,7 @@ test("the strip labels provenance and an unavailable API without substitutes", (
     return renderToStaticMarkup(<RouterProvider router={router} />);
   };
   const html = render(<EventStrip title="Events" events={feed.items} video={video} />);
-  for (const text of ["Measured · station instrument", "Visual · AI from recorded video", "Manual · human annotation", "5 events", "Seek video to precipitation onset"]) expect(html).toContain(text);
+  for (const text of ["Measured", "AI · from video", "Manual note", "5 events", "Seek video to precipitation onset"]) expect(html).toContain(text);
   expect(html).not.toMatch(/\sstyle=/);
   expect(render(<EventStrip title="Events" events={null} />)).toContain("Events API unavailable.");
   expect(render(<EventStrip title="Events" events={[]} />)).toContain("No weather events recorded for this period.");

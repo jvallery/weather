@@ -99,7 +99,7 @@ test("placeholders, About topics, repeated hour, source-only network and reduced
   expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
   await page.goto("/about/");
   for (const topic of [/Tempest/, /east sky/, /west sky/, /front yard/, /6°/, /7,200/, /not measurements/, /private notes/, /no forecast/]) await expect(page.getByText(topic).first()).toBeVisible();
-  await page.goto("/weather/history/"); await expect(page.getByText(/GMT-06:00/).first()).toBeVisible(); await expect(page.getByText(/GMT-07:00/).first()).toBeVisible();
+  await page.goto("/weather/history/"); await page.getByText(/^Data table/).click(); await expect(page.getByText(/GMT-06:00/).first()).toBeVisible(); await expect(page.getByText(/GMT-07:00/).first()).toBeVisible();
   expect(unexpected).toEqual([]);
 });
 test("preview tiles age locally past 1,800 s while the network is blocked", async ({ page }) => {
@@ -145,7 +145,7 @@ test("event bookmarks seek via ?t=, day and video strips, feed provenance and re
   await expect(day.getByText("14.2 m/s · 31.8 mph observed maximum", { exact: false })).toBeVisible();
 
   await page.goto("/events/");
-  for (const badge of ["Measured · station instrument", "Visual · AI from recorded video", "Manual · human annotation"]) await expect(page.getByText(badge).first()).toBeVisible();
+  for (const badge of ["Measured", "AI · from video", "Manual note"]) await expect(page.locator(".badge", { hasText: badge }).first()).toBeVisible();
   await expect(page.locator(".badge")).toHaveCount(5);
   await page.getByLabel("Origin").selectOption("manual");
   await page.getByRole("button", { name: "Apply filters" }).click();
@@ -166,7 +166,7 @@ test("keogram bins: keyboard selection on the day page opens the recording at th
   await page.goto("/day/2026-10-31/");
   await expect(page.getByRole("figure")).toHaveCount(1);
   await expect(page.getByText("Keogram Pending", { exact: true })).toHaveCount(4);
-  await expect(page.getByText("Keogram Unavailable · no_observations", { exact: true })).toBeVisible();
+  await expect(page.getByText("Keogram Unavailable · no observations", { exact: true })).toBeVisible();
   const east = page.getByRole("figure", { name: /^East sky · Daytime keogram/ });
   const slider = east.getByRole("slider", { name: "Keogram time" });
   await slider.focus();
@@ -246,7 +246,7 @@ test("AI description: label, model/prompt provenance, state and coverage on vide
 test("concurrent SSR requests have isolated query state and expose no private upstream", async ({ request }) => {
   await request.post("http://localhost:4174/__control", { data: { unique: true } });
   const bodies = await Promise.all(Array.from({ length: 4 }, async () => (await request.get("http://localhost:4173/")).text()));
-  const rendered = bodies.map((body) => /<h3>Temperature<\/h3><strong>([^<]+)<\/strong>/.exec(body)?.[1]);
+  const rendered = bodies.map((body) => /data-metric="temperature">([^<]+)</.exec(body)?.[1]);
   expect(rendered.every(Boolean)).toBe(true); expect(new Set(rendered).size).toBe(4);
   expect(bodies.every((body) => !body.includes("http://api") && !body.includes("localhost:4174"))).toBe(true);
 });
@@ -299,7 +299,7 @@ test("SSR admission: loader-less routes and the route manifest stay available wh
   const manifest = await request.get(`/__manifest?paths=${encodeURIComponent("/search/")}&version=${encodeURIComponent(version || "")}`);
   expect(manifest.status()).toBe(200);
   expect(await manifest.json()).toMatchObject({ "routes/search": { path: "search" } });
-  await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Archive" }).click();
+  await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Timelapses" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Weather is busy" })).toBeVisible();
   await expect(page.getByText(/Please retry in a few seconds/)).toBeVisible();
   for (const response of await Promise.all(held)) expect(response.status()).toBe(200);
@@ -565,7 +565,7 @@ test("hourly stills: day and hour navigation, the repeated 01:00 and missing slo
   await expect(page.getByRole("heading", { name: "01:00 UTC-06:00", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "01:00 UTC-07:00 (repeated hour)" })).toBeVisible();
   const cards = page.locator(".still");
-  await expect(cards.getByText("Missing · no_eligible_capture")).toBeVisible();
+  await expect(cards.getByText("Missing · no eligible capture")).toBeVisible();
   await expect(cards.getByText(/Off target · nearest capture in the hour/)).toBeVisible();
   await expect(page.getByText(/\+11 min 0\.0 s from :30/)).toBeVisible();
   await page.getByRole("link", { name: "Next day" }).click();
@@ -576,7 +576,7 @@ test("hourly stills: day and hour navigation, the repeated 01:00 and missing slo
   // The same clock hour across dates: actual capture times, offsets and the missing day.
   await expect(page.getByRole("heading", { name: "2026-10-31 · 01:00 UTC-06:00" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "2026-10-30 · 01:00 UTC-06:00" })).toBeVisible();
-  await expect(page.locator(".still").getByText("Missing · no_capture")).toBeVisible();
+  await expect(page.locator(".still").getByText("Missing · no capture")).toBeVisible();
   await expect(page.getByText(/\+12\.4 s from :30/)).toBeVisible();
   await expect(page.getByText(/same clock hour is not the same solar phase/)).toBeVisible();
   for (const image of await page.locator(".still img").all()) expect(await image.getAttribute("src")).toMatch(/^\/media\/[A-Za-z0-9_-]+$/);

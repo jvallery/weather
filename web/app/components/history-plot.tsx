@@ -34,7 +34,7 @@ export function HistoryPlot({ rows, metric, statistics, units, definition }: { r
       // Canonical values stay authoritative; only tick presentation changes units.
       const unit = rows[0].unit;
       const label = metricLabel(metric, definition);
-      plot = new UPlot({ width: element.clientWidth, height: 240, padding: [null, 64, null, 16], title: `${label} · gaps stay empty`,
+      plot = new UPlot({ width: element.clientWidth, height: 240, padding: [null, 64, null, 16], 
         series: [{}, ...statistics.map((statistic, index) => ({ label: `${label} ${statistic}`, stroke: index === 0 ? "#0e5a43" : "#9bb5ab", width: index === 0 ? 2 : 1, spanGaps: false }))],
         axes: [{ stroke: "#626b76", font: "12px IBM Plex Sans", space: 150, size: 64, values: (_plot, values) => values.map(plotTime) }, { stroke: "#626b76", values: (_plot, values) => values.map((value) => metricValue(value, unit, units, definition)) }],
         cursor: { drag: { x: true, y: false } }, legend: { show: false },
