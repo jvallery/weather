@@ -57,11 +57,7 @@ async function mount(requested: string | null = null) {
   await screen.findByText(/ of 3,600 · /);
   await screen.findByText(/Temperature mean: /);
   const readout = () => document.getElementById("cursor-readout")!;
-  const seekForm = async (value: string) => {
-    fireEvent.change(screen.getByLabelText(/Seek to source time/), { target: { value } });
-    await act(async () => { fireEvent.submit(screen.getByRole("button", { name: "Seek" })); });
-  };
-  return { player, readout, seekForm, router, client };
+  return { player, readout, router, client };
 }
 
 test("plot requests cover exactly the segment interval within the point ceiling", () => {
@@ -100,20 +96,12 @@ test("a deep link seeks once the sidecar map loads; playback moves the cursor on
   expect(readout().textContent).toMatch(/Capture gap: this frame is a slate/);
   expect(requests.filter((url) => url.startsWith("/api/v1/weather/aggregates?")).every((url) => url.includes("start=2026-10-31T12%3A30%3A00Z&end=2026-11-01T01%3A00%3A00Z"))).toBe(true);
 });
-test("time input, keyboard, events and rejection all seek through the one map", async () => {
-  const { player, readout, seekForm } = await mount();
-  expect(readout().dataset.utc).toBe("2026-10-31T12:30:06.25Z");
-  await seekForm("2026-10-31T15:10:00Z");
-  expect(readout().dataset.frame).toBe("768"); expect(player.currentTime).toBeCloseTo(768.5 / 60, 9);
+test("deep links, keyboard and events all seek through the one map", async () => {
+  const { player, readout } = await mount("2026-10-31T15:10:00Z");
+  await waitFor(() => expect(readout().dataset.frame).toBe("768"));
+  expect(player.currentTime).toBeCloseTo(768.5 / 60, 9);
   // Inside the telemetry gap: no value is interpolated.
   expect(readout().textContent).toMatch(/Temperature mean no observations/);
-  expect(window.location.search).toBe("?t=2026-10-31T15%3A10%3A00Z");
-  // The exclusive end and anything before the start are rejected, and the cursor stays.
-  await seekForm(video.source_interval.end);
-  expect(screen.getByRole("status").textContent).toMatch(/outside this recording's source interval; the seek was rejected/);
-  expect(readout().dataset.frame).toBe("768");
-  await seekForm("not a time");
-  expect(screen.getByRole("status").textContent).toMatch(/Enter a UTC time/);
   // Keyboard: one plot interval (300 s) per arrow key, to that interval's centre.
   const plots = screen.getByRole("slider", { name: /Measured weather plots/ });
   fireEvent.keyDown(plots, { key: "ArrowRight" });

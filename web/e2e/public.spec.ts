@@ -473,12 +473,11 @@ test("a telemetry gap and a partial recording: gap and coverage shown, nothing i
   await request.post("http://localhost:4174/__control", { data: { productState: "partial" } });
   await page.goto(EAST_DAY); await ready(page);
   await expect(page.getByText(/^Partial coverage · 95\.0% of the source interval was captured/)).toBeVisible();
-  await expect(page.getByText(/^Capture gaps: 2 ranges of slate frames totalling 16 min, shown at their true length/)).toBeVisible();
-  await page.getByLabel(/Seek to source time/).fill("2026-10-31T15:10:00Z"); await page.getByLabel(/Seek to source time/).press("Enter");
+  await page.goto(`${EAST_DAY}?t=2026-10-31T15:10:00Z`); await ready(page);
   await expect(page.locator("#cursor-readout")).toContainText("Temperature mean no observations");
   await expect(page.getByText(/^Temperature mean: .*, 9 without observations; coverage 94\.0%\.$/)).toBeVisible();
   // Inside the 15-minute capture gap the frame is a labelled slate, at its own source time.
-  await page.getByLabel(/Seek to source time/).fill("2026-10-31T16:45:00Z"); await page.getByLabel(/Seek to source time/).press("Enter");
+  await page.goto(`${EAST_DAY}?t=2026-10-31T16:45:00Z`); await ready(page);
   await expect(page.locator("#cursor-readout")).toContainText("Capture gap: this frame is a slate");
   agree(await linked(page), "2026-10-31T12:30:00Z");
   await request.post("http://localhost:4174/__control", { data: {} });
@@ -487,12 +486,10 @@ test("a telemetry gap and a partial recording: gap and coverage shown, nothing i
   await expect(page.locator("video")).toHaveCount(1);
 });
 test("midnight and both DST transitions: repeated local hours carry different offsets and the UTC selection is stable", async ({ page }) => {
-  await page.goto("/timelapses/skycam_east/2026-10-31/overnight/"); await ready(page);
-  const input = page.getByLabel(/Seek to source time/);
-  await input.fill("2026-11-01T07:30:00Z"); await input.press("Enter");
+  await page.goto("/timelapses/skycam_east/2026-10-31/overnight/?t=2026-11-01T07:30:00Z"); await ready(page);
   await expect(page.locator("#cursor-readout")).toContainText("01:30:00 GMT-06:00");
   const first = await linked(page);
-  await input.fill("2026-11-01T08:30:00Z"); await input.press("Enter");
+  await page.goto("/timelapses/skycam_east/2026-10-31/overnight/?t=2026-11-01T08:30:00Z"); await ready(page);
   await expect(page.locator("#cursor-readout")).toContainText("01:30:00 GMT-07:00");
   const second = await linked(page);
   expect(second.frame - first.frame).toBe(288);
@@ -504,8 +501,7 @@ test("midnight and both DST transitions: repeated local hours carry different of
   agree(await linked(page), "2026-03-08T00:27:00Z", 44_700 / 3600);
 });
 test("a copied ?t= link restores camera, segment and cursor in a fresh context", async ({ page, browser }) => {
-  await page.goto(EAST_DAY); await ready(page);
-  await page.getByLabel(/Seek to source time/).fill("2026-10-31T18:00:00.5Z"); await page.getByRole("button", { name: "Seek" }).click();
+  await page.goto(`${EAST_DAY}?t=2026-10-31T18:00:00.5Z`); await ready(page);
   await expect.poll(async () => (await linked(page)).utc).toBe("2026-10-31T18:00:00.5Z");
   const href = await page.getByRole("link", { name: "Link to this moment" }).getAttribute("href");
   expect(href).toBe("?t=2026-10-31T18%3A00%3A00.5Z");
