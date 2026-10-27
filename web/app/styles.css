@@ -109,7 +109,7 @@ main>section>h2,main>section>.section-head{margin:2rem 0 .6rem}
 .two,.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .grid-auto{grid-template-columns:repeat(auto-fill,minmax(min(100%,15rem),1fr))}
 @media(max-width:900px){.three,.grid-3{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:600px){.three,.two,.grid-3,.grid-2{grid-template-columns:1fr}}
+@media(max-width:600px){.three,.two,.grid-3,.grid-2{grid-template-columns:minmax(0,1fr)}}
 
 /* Cards, tags, buttons, chips */
 .card{border:1px solid var(--line);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow-xs);padding:1rem;min-width:0}
@@ -120,6 +120,7 @@ main>section>h2,main>section>.section-head{margin:2rem 0 .6rem}
 .status-published,.status-complete,.status-on_target,.badge-measured,.tag-ok{background:var(--tint-ok);border-color:#bfe3d3;color:var(--forest)}
 .status-partial,.status-stale,.status-degraded,.status-off_target,.status-processing,.status-capturing,.status-queued,.status-pending,.badge-visual,.badge-synthesis,.tag-warn{background:var(--tint-warn);border-color:#ecd798;color:#5c4407}
 .status-unavailable,.status-expired,.status-withdrawn,.status-failed,.status-missing,.tag-fault{background:var(--tint-fault);border-color:#f1c4bf;color:var(--fault)}
+.badge{white-space:normal;text-align:left}
 .badge-manual{background:#ecebf6;border-color:#d5d2ea;color:#3f3a77}
 .status .status-reason{text-transform:none;letter-spacing:0;font-family:"IBM Plex Sans",system-ui,sans-serif}
 .button-link,.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;min-height:2.75rem;padding:.5rem .95rem;border:1px solid var(--line-strong);border-radius:var(--radius-sm);background:#fff;color:var(--forest);font-size:.875rem;font-weight:700;text-decoration:none;text-align:center}
@@ -241,7 +242,7 @@ main>section>h2,main>section>.section-head{margin:2rem 0 .6rem}
 
 /* Day */
 .day-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
-@media(max-width:1000px){.day-grid{grid-template-columns:1fr}}
+@media(max-width:1000px){.day-grid{grid-template-columns:minmax(0,1fr)}}
 .segment-card{display:grid;gap:.45rem;padding-top:.75rem;border-top:1px solid var(--line);margin-top:.75rem}
 .segment-card:first-of-type{border-top:0;margin-top:0;padding-top:0}
 .segment-card h3{display:flex;align-items:center;justify-content:space-between;gap:.5rem;font:400 .7rem/1.3 var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--forest)}
@@ -265,7 +266,7 @@ main>section>h2,main>section>.section-head{margin:2rem 0 .6rem}
 .theater-main{min-width:0}
 .theater-side{display:grid;gap:1rem;min-width:0}
 .theater-side h2{font-size:1rem;letter-spacing:-.01em}
-@media(max-width:1000px){.theater{grid-template-columns:1fr}}
+@media(max-width:1000px){.theater{grid-template-columns:minmax(0,1fr)}}
 .switcher{display:grid;gap:.6rem}
 .switcher>div{display:grid;gap:.3rem}
 .switcher .eyebrow{margin:0}
@@ -360,10 +361,10 @@ main>section>h2,main>section>.section-head{margin:2rem 0 .6rem}
 .search-filter{display:flex}
 .search-results{list-style:none;padding:0;display:grid;gap:1rem;margin:1rem 0}
 .search-result{display:grid;grid-template-columns:minmax(0,16rem) minmax(0,1fr);gap:.25rem 1.25rem}
-.search-result>*{grid-column:2}
+.search-result>*{grid-column:2;min-width:0}
 .search-result>img{grid-column:1;grid-row:1/span 8;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:var(--radius-sm);background:var(--ink)}
 .search-result h4{margin:.6rem 0 .2rem;font:400 .68rem/1.3 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--forest)}
-@media(max-width:700px){.search-result{grid-template-columns:1fr}.search-result>*,.search-result>img{grid-column:1;grid-row:auto}}
+@media(max-width:700px){.search-result{grid-template-columns:minmax(0,1fr)}.search-result>*,.search-result>img{grid-column:1;grid-row:auto}}
 .search-state{padding:1rem;border:1px solid var(--line);border-radius:var(--radius);background:#fff}
 .segment-list{padding-left:1.1rem;margin:.35rem 0;font-size:.875rem}
 .segment-list li{margin:.3rem 0}

@@ -20,7 +20,7 @@ test("the section owning a recording or a day is Timelapses, and metric readers 
     expect(nav.getByRole("link", { name: "Timelapses" }).getAttribute("aria-current")).toBe("page");
     expect(nav.getByRole("link", { name: "Now" }).getAttribute("aria-current")).toBeNull();
     expect(nav.getByRole("link", { name: "History" }).getAttribute("href")).toBe("/weather/history/?units=metric");
-    const units = within(screen.getByRole("navigation", { name: "Units" }));
+    const units = within(screen.getByRole("navigation", { name: "Measurement system" }));
     expect(units.getByRole("link", { name: /°C/ }).getAttribute("aria-current")).toBe("true");
     expect(units.getByRole("link", { name: /°F/ }).getAttribute("href")).toBe("/timelapses/skycam_east/2026-10-31/daytime/");
   } finally { router.dispose(); }

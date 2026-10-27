@@ -32,7 +32,7 @@ export function SiteHeader() {
     <Link className="brand" to={`/${carry}`} aria-label="Weather, home"><Wordmark /><span>Weather<small> · vallery.net</small></span></Link>
     <nav className="primary-nav" aria-label="Primary">{SECTIONS.map((section) => <Link key={section.to} to={`${section.to}${carry}`} aria-current={section.owns(pathname) ? "page" : undefined}>{section.label}</Link>)}</nav>
     <div className="header-tools">
-      <nav className="units" aria-label="Units"><Link to={unitsHref(pathname, search, "us")} aria-current={!metric} aria-label="US customary units (°F)">°F</Link><Link to={unitsHref(pathname, search, "metric")} aria-current={metric} aria-label="Metric units (°C)">°C</Link></nav>
+      <nav className="units" aria-label="Measurement system"><Link to={unitsHref(pathname, search, "us")} aria-current={!metric} aria-label="US customary units (°F)">°F</Link><Link to={unitsHref(pathname, search, "metric")} aria-current={metric} aria-label="Metric units (°C)">°C</Link></nav>
       <a href="https://vallery.net/">vallery.net ↗</a>
     </div>
   </div></header>;
