@@ -104,14 +104,21 @@ async def publication(
         )
     ).scalar_one()
     for role, (asset_class, sha, ext, mime) in roles.items():
+        # Assets are content-addressed: a later revision reuses an unchanged role's asset row.
+        object_key = f"{asset_class}/{sha}.{ext}"
         asset = (
+            await c.execute(
+                text("SELECT id FROM weather.media_asset WHERE object_key=:key"),
+                {"key": object_key},
+            )
+        ).scalar_one_or_none() or (
             await c.execute(
                 text(ASSET_SQL),
                 {
                     "class": asset_class,
                     "sha": sha,
                     "ext": ext,
-                    "key": f"{asset_class}/{sha}.{ext}",
+                    "key": object_key,
                     "mime": mime,
                     "embargo": times["embargo"],
                 },
@@ -550,7 +557,6 @@ def test_new_web_bytes_reset_the_head_and_the_old_revision_is_hidden() -> None:
     database(body)
 
 
-
 def test_model_output_never_replaces_a_human_revision() -> None:
     async def body(admin: AsyncEngine, worker: AsyncEngine, api: AsyncEngine) -> None:
         video, publication_id = await seed(admin)
@@ -599,9 +605,7 @@ def test_model_output_never_replaces_a_human_revision() -> None:
         assert await unit.check_evidence(datetime.now(UTC)) == 0
         # ...and a refresh or late result based on it publishes nothing.
         async with worker.begin() as c:
-            assert await store.request_refresh(
-                c, video, publication_id, 2, datetime.now(UTC)
-            )
+            assert await store.request_refresh(c, video, publication_id, 2, datetime.now(UTC))
         context = await claim(worker, store.SYNTHESIZE_KIND, admin)
         await unit.synthesize(context)
         result = unit._result(

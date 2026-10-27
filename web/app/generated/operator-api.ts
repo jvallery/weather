@@ -104,6 +104,7 @@ export interface components {
             readonly favorite?: boolean | null;
             /** Note */
             readonly note?: string | null;
+            readonly poster?: components["schemas"]["PosterChoice"] | null;
             /** Rebase */
             readonly rebase?: true | null;
             /** Tags */
@@ -230,6 +231,26 @@ export interface components {
             /** Message */
             readonly message: string;
         };
+        /**
+         * PosterChoice
+         * @description An output-frame index of the video's published renditions (#78).
+         */
+        readonly PosterChoice: {
+            /** Frame */
+            readonly frame: number;
+        };
+        /**
+         * PosterState
+         * @description The human poster choice (#78) and whether the live poster is that frame yet.
+         */
+        readonly PosterState: {
+            /** Frame */
+            readonly frame: number | null;
+            /** Published */
+            readonly published: boolean;
+            /** Url */
+            readonly url: string | null;
+        };
         /** Receipt */
         readonly Receipt: {
             /** Bytes */
@@ -332,6 +353,9 @@ export interface components {
              * Format: date-time
              */
             readonly end: string;
+            /** Frames */
+            readonly frames: number;
+            readonly poster: components["schemas"]["PosterState"];
             /**
              * Segment
              * @enum {string}
@@ -344,6 +368,8 @@ export interface components {
             readonly start: string;
             /** State */
             readonly state: string;
+            /** Web Url */
+            readonly web_url: string | null;
             /** Withdrawn */
             readonly withdrawn: boolean;
         };

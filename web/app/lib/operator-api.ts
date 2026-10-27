@@ -17,7 +17,7 @@ export type OperatorProblem = Schemas["OperatorProblem"];
 export type ManualEvent = Schemas["ManualEvent"];
 export type EventChange = { label?: string; visibility?: "public" | "private" | "withdrawn" };
 /** The PATCH changes object: an omitted field is unchanged; null clears description or note. */
-export type Changes = { description?: string | null; tags?: Tag[]; favorite?: boolean; note?: string | null; rebase?: true; event?: EventChange };
+export type Changes = { description?: string | null; tags?: Tag[]; favorite?: boolean; note?: string | null; rebase?: true; event?: EventChange; poster?: { frame: number } };
 export type SubjectPatch = { expected_revision: number; reason: string; changes: Changes };
 
 export const MAX_DESCRIPTION = 8000;
@@ -44,6 +44,9 @@ const subject = z.object({
   subject_id: text, kind: z.enum(["video", "event"]), revision: z.number(), updated_at: text.nullable().default(null),
   video: z.object({
     camera: text, cycle_date: text, segment: z.enum(["daytime", "overnight"]), start: text, end: text, state: text, withdrawn: z.boolean(),
+    frames: z.number().int().nonnegative().catch(0), web_url: text.nullable().catch(null),
+    poster: z.object({ frame: z.number().int().nullable().catch(null), published: z.boolean().catch(false), url: text.nullable().catch(null) })
+      .catch({ frame: null, published: false, url: null }),
   }).nullable().default(null),
   description: z.object({
     human: text.nullable(), active: z.boolean(), stale: z.boolean(), effective: text.nullable(), automated: text.nullable(),
@@ -99,11 +102,13 @@ export const operatorApi = (fetcher: Fetcher) => ({
 export type Draft = {
   reason: string; description: string; clearDescription: boolean; tags: Tag[]; favorite: boolean;
   note: string; clearNote: boolean; label: string; visibility: "public" | "private" | "withdrawn";
+  posterFrame: number | null;
 };
 export function draftFrom(subject: Subject): Draft {
   return {
     reason: "", description: subject.description?.human ?? "", clearDescription: false, tags: [...subject.tags], favorite: subject.favorite,
     note: subject.note ?? "", clearNote: false, label: subject.event?.current.label ?? "", visibility: subject.event?.current.visibility ?? "public",
+    posterFrame: subject.video?.poster.frame ?? null,
   };
 }
 
@@ -127,6 +132,12 @@ export function buildPatch(subject: Subject, draft: Draft, rebase = false): { bo
     else if (draft.description !== (human ?? "")) {
       const issue = plainProblem(draft.description, "Description", MAX_DESCRIPTION);
       if (issue) errors.push(issue); else changes.description = draft.description;
+    }
+    // #78: a poster frame is chosen, never cleared; it must lie inside the video.
+    if (draft.posterFrame !== null && draft.posterFrame !== (subject.video?.poster.frame ?? null)) {
+      const frames = subject.video?.frames ?? 0;
+      if (!Number.isInteger(draft.posterFrame) || draft.posterFrame < 0 || draft.posterFrame >= frames) errors.push("The poster frame is outside the video.");
+      else changes.poster = { frame: draft.posterFrame };
     }
   } else if (subject.event) {
     const event: EventChange = {};
@@ -153,6 +164,15 @@ export function buildPatch(subject: Subject, draft: Draft, rebase = false): { bo
   if (rebase) changes.rebase = true;
   if (!errors.length && !Object.keys(changes).length) errors.push("Nothing changed.");
   return errors.length ? { body: null, errors } : { body: { expected_revision: subject.revision, reason: draft.reason, changes }, errors };
+}
+
+/** #78: `count` evenly spaced frames (each at the middle of its share) plus the current choice. */
+export function posterCandidates(frames: number, chosen: number | null, count = 12): number[] {
+  if (frames <= 0) return [];
+  const picks = new Set<number>();
+  for (let i = 0; i < Math.min(count, frames); i += 1) picks.add(Math.min(frames - 1, Math.floor(((i + 0.5) * frames) / Math.min(count, frames))));
+  if (chosen !== null && chosen >= 0 && chosen < frames) picks.add(chosen);
+  return [...picks].sort((a, b) => a - b);
 }
 
 export function manualEventProblems(value: { reason: string; label: string; start: string; end: string }): string[] {

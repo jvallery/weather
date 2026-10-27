@@ -143,6 +143,17 @@ function preview(camera) {
     ],
   };
 }
+function operatorSubject(video) {
+  const web = video.renditions.find((rendition) => rendition.role === "web");
+  return {
+    subject_id: video.video_id, kind: "video", revision: state.posterRevision ?? 0, updated_at: null,
+    video: { camera: video.camera, cycle_date: video.cycle_date, segment: video.segment, start: video.source_interval.start, end: video.source_interval.end,
+      state: video.state, withdrawn: false, frames: video.allocated_frames, web_url: web?.asset.url ?? null,
+      poster: { frame: state.posterFrame ?? null, published: false, url: video.poster?.url ?? null } },
+    description: { human: null, active: false, stale: false, effective: null, automated: null, bound: null, current: { media_sha256: null, evidence_hash: null } },
+    event: null, tags: [], favorite: false, note: null, audit: [],
+  };
+}
 createServer(async (req, res) => {
   const url = new URL(req.url, "http://localhost");
   if (url.pathname === "/__control" && req.method === "POST") {
@@ -204,6 +215,23 @@ createServer(async (req, res) => {
   if (url.pathname.startsWith("/api/v1/timelapses/")) {
     const value = snapshot().items.find((video) => video.video_id === url.pathname.split("/").at(-1));
     return json(res, value || { code: "not-found" }, value ? 200 : 404);
+  }
+  // The private editor's operator API (#44, #78) for the first catalog video; edge auth is not
+  // part of this fixture. The PATCH accepts only a poster choice here.
+  if (url.pathname === "/api/v1/operator/session") return json(res, { username: "jason" });
+  const subjectMatch = /^\/api\/v1\/operator\/subjects\/([0-9a-f-]{36})$/.exec(url.pathname);
+  if (subjectMatch) {
+    const video = catalog.items.find((item) => item.video_id === subjectMatch[1]);
+    if (!video) return json(res, { code: "not_found", message: "No such subject." }, 404);
+    if (req.method === "PATCH") {
+      let body = "";
+      for await (const chunk of req) body += chunk;
+      const patch = JSON.parse(body);
+      if (patch.expected_revision !== (state.posterRevision ?? 0)) return json(res, { code: "conflict", message: "Revision conflict.", current_revision: state.posterRevision ?? 0 }, 409);
+      if (!patch.reason || Object.keys(patch.changes ?? {}).join() !== "poster") return json(res, { code: "invalid", message: "Invalid change." }, 422);
+      state.posterRevision = (state.posterRevision ?? 0) + 1; state.posterFrame = patch.changes.poster.frame;
+    }
+    return json(res, operatorSubject(video));
   }
   // Delayed previews (#39): east fresh, west stale, front yard unavailable (no eligible preview).
   const previewMatch = /^\/api\/v1\/cameras\/([a-z0-9_]+)\/preview$/.exec(url.pathname);

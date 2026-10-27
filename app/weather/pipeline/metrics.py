@@ -88,8 +88,16 @@ INDEX_READY = Gauge(
 )
 
 
+HUMAN_POSTERS = Counter(
+    "weather_pipeline_human_posters_total",
+    "Operator poster choices published as the video's poster (#78)",
+    ["camera"],
+)
+
+
 def zero_pipeline(camera: str) -> None:
     LATENCY.labels(camera)
+    HUMAN_POSTERS.labels(camera)
     for result in ("rendered", "gap", "interpolated", "held"):
         FRAMES.labels(camera, result)
     for state in STILL_STATES:

@@ -662,3 +662,84 @@ def test_an_ai_republish_never_overwrites_an_editor_revision() -> None:
         )
 
     database(body)
+
+
+def test_a_poster_choice_is_recorded_published_by_the_pipeline_and_survives_a_rerun() -> None:
+    """#78: the editor records a frame; the camera's pipeline publishes it (pending until the
+    live poster carries it); a later edit keeps it; a new video revision makes it pending
+    again, so no rerun overwrites a human poster."""
+    from weather.editorial.models import Changes
+    from weather.pipeline import poster
+
+    async def body(admin: AsyncEngine, worker: AsyncEngine, api: AsyncEngine, editor: Any) -> None:
+        video, _publication = await seed(admin)
+        assert await poster.pending(worker, "skycam_east") is None
+        with pytest.raises(ValueError):
+            Changes.model_validate({"poster": None})
+        with pytest.raises(store.Invalid):
+            await edit(editor, video, change(0, poster={"frame": 900}))
+        subject = await edit(editor, video, change(0, poster={"frame": 450}))
+        assert (subject.video.frames, subject.video.poster.frame) == (900, 450)
+        assert subject.video.poster.published is False
+        assert subject.video.web_url and subject.video.poster.url
+        audit = await scalar(
+            admin, "SELECT input FROM weather.editorial_audit WHERE subject_id=:v", v=video
+        )
+        assert audit == {"poster": {"frame": 450}}
+        pending = await poster.pending(worker, "skycam_east")
+        assert pending is not None and (pending.video_id, pending.frame) == (video, 450)
+        assert pending.web_key == f"video/{sha('web-1')}.mp4"
+        # The pipeline publishes revision 2 with the chosen poster, recording it as it commits.
+        times = {"start": START, "end": END, "embargo": END + timedelta(seconds=630)}
+        key = f"{START.date().isoformat()}/daytime"
+        roles = {
+            "native": ("video", sha("web-1n"), "mp4", "video/mp4"),
+            "web": ("video", sha("web-1"), "mp4", "video/mp4"),
+            "mobile": ("video", sha("web-1m"), "mp4", "video/mp4"),
+            "poster": ("poster", sha("human-450"), "jpg", "image/jpeg"),
+        }
+        async with admin.begin() as c:
+            second = await publication(c, "video", key, roles, revision=2, **times)
+            await c.execute(
+                text("UPDATE weather.video SET publication_id=:p,revision=2 WHERE id=:v"),
+                {"p": second, "v": video},
+            )
+        async with worker.begin() as c:
+            await c.execute(
+                text(poster.APPLIED_SQL),
+                {
+                    "video": video,
+                    "editorial": 1,
+                    "frame": 450,
+                    "revision": 2,
+                    "sha": sha("human-450"),
+                },
+            )
+        assert await poster.pending(worker, "skycam_east") is None
+        assert (await read(editor, video)).video.poster.published is True
+        served = await public(api, video)
+        assert served.poster is not None
+        # A later private edit carries the frame forward and needs no new publication.
+        await edit(editor, video, change(1, favorite=True))
+        assert await poster.pending(worker, "skycam_east") is None
+        assert (await read(editor, video)).video.poster.published is True
+        # A pipeline re-render (revision 3, automatic poster) makes the choice pending again.
+        roles["poster"] = ("poster", sha("auto-3"), "jpg", "image/jpeg")
+        async with admin.begin() as c:
+            third = await publication(c, "video", key, roles, revision=3, **times)
+            await c.execute(
+                text("UPDATE weather.video SET publication_id=:p,revision=3 WHERE id=:v"),
+                {"p": third, "v": video},
+            )
+        again = await poster.pending(worker, "skycam_east")
+        assert again is not None and again.frame == 450 and again.editorial_revision == 2
+        assert (await read(editor, video)).video.poster.published is False
+        # The applied record is append-only, and the worker cannot edit editorial history.
+        with pytest.raises(DBAPIError):
+            async with admin.begin() as c:
+                await c.execute(text("DELETE FROM weather.editorial_poster_applied"))
+        with pytest.raises(DBAPIError):
+            async with worker.begin() as c:
+                await c.execute(text("UPDATE weather.editorial_revision SET poster_frame=1"))
+
+    database(body)

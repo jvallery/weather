@@ -77,6 +77,42 @@ Events follow #41: a rule rerun withdraws a stale operator override with `overri
 `rebase` re-applies the last operator decision (or the requested change) to the current
 evidence.
 
+### Poster selection (#78)
+
+The poster picker lists twelve evenly spaced frames of the video (plus the current choice) and
+previews each one in the browser from the public web rendition. Saving sends only
+`changes.poster = {frame}`. The frame is an output-frame index of the published renditions, at
+60 fps. It goes through the same CAS, audit and outbox as any edit, and it moves the public
+revision. A poster choice can be changed but never cleared.
+
+The editor never writes media: the operator listener has only the read-only media key. The
+camera's pipeline publishes the choice after its videos and keograms, one video per loop
+(`weather/pipeline/poster.py`):
+1. It streams the published **web** rendition (about 30–150 MB) into its `/tmp`.
+2. It decodes exactly that frame and writes the same six poster roles finalize writes: JPEG and
+   WebP at 1920, 960 and 480 px, never upscaled. Pillow writes no EXIF or GPS.
+3. It publishes them as revision N+1 of the video, carrying every other role. The posters are
+   content-addressed and keep the video's own embargo.
+4. In the commit transaction it records `editorial_poster_applied` (frame, video revision,
+   poster SHA-256) and queues `editorial.changed` to re-project search.
+
+A choice is live while some applied row for its frame carries the SHA-256 of the video's current
+`poster` asset. The editor shows that as "is live", or as "is being published" while it is
+pending. A pipeline re-render (or any other new video revision) replaces the poster, so the
+choice becomes pending again and is re-published: no rerun overwrites a human poster. Re-running
+analysis is not triggered, because the web rendition bytes are unchanged.
+
+The only source is the published web rendition, by design. Deriving a poster from the private
+originals is a separate, deferred follow-up behind its own flag. It is not implemented, and no
+switch here enables it.
+
+Checks:
+- `weather_pipeline_human_posters_total{camera}` counts publications.
+- `weather_pipeline_failures_total{stage="poster"}` counts failures; the sweep retries next loop.
+- `poster_published` log events.
+- A choice pending for more than a few loops means the pipeline cannot read the web rendition
+  or publish. Check its logs for `Pipeline poster failed (<camera>, <type>)`.
+
 ## Raw receipts
 
 `GET /api/v1/operator/telemetry/receipts?start=&end=&family=&limit=&cursor=` returns at most

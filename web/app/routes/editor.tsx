@@ -5,10 +5,11 @@
  * to /api/v1/operator/*, so private data is never serialized into SSR or hydration. Drafts live
  * only in React state; a mutation is sent once and never retried automatically.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { localTime } from "../lib/format";
 import { parseEvents, parseTimelapses } from "../lib/weather-api";
 import {
-  buildPatch, draftFrom, MAX_DESCRIPTION, MAX_NOTE, manualEventProblems, operatorApi, UUID_PATTERN,
+  buildPatch, draftFrom, MAX_DESCRIPTION, MAX_NOTE, manualEventProblems, operatorApi, posterCandidates, UUID_PATTERN,
   type Draft, type ManualEvent, type OperatorProblem, type Result, type Subject, type Tag,
 } from "../lib/operator-api";
 
@@ -130,6 +131,32 @@ function RecentList({ title, items, onPick }: { title: string; items: Recent[]; 
   return <div className="card"><h3>{title}</h3>{items.length === 0 ? <p className="small">None loaded.</p> : <ul className="editor-picks">{items.map((item) => <li key={item.id}><button type="button" onClick={() => onPick(item.id)}>{item.label}</button></li>)}</ul>}</div>;
 }
 
+/** #78: candidate frames of the published web rendition; the camera's pipeline publishes the choice. */
+function PosterPicker({ video, draft, set }: { video: NonNullable<Subject["video"]>; draft: Draft; set: (changes: Partial<Draft>) => void }) {
+  const chosen = video.poster.frame ?? null;
+  const candidates = useMemo(() => posterCandidates(video.frames, chosen), [video.frames, chosen]);
+  const preview = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const element = preview.current;
+    // The middle of the frame's 1/60 s interval, so the browser shows that frame.
+    if (element && draft.posterFrame !== null) element.currentTime = (draft.posterFrame + 0.5) / 60;
+  }, [draft.posterFrame]);
+  const start = Date.parse(video.start), span = Date.parse(video.end) - start;
+  const when = (frame: number) => localTime(new Date(start + (video.frames ? (frame / video.frames) * span : 0)).toISOString());
+  const status = chosen === null ? "Automatic poster: the observed frame nearest the middle."
+    : video.poster.published ? `Your choice, frame ${chosen} (${when(chosen)}), is live.`
+      : `Your choice, frame ${chosen} (${when(chosen)}), is being published by the camera's pipeline.`;
+  return <fieldset className="editor-poster"><legend>Poster</legend>
+    <p className="small" role="status">{status}</p>
+    {video.poster.url && <img src={video.poster.url} alt={`Current poster, ${video.camera} ${video.cycle_date} ${video.segment}`} width={480} />}
+    {video.web_url ? <video ref={preview} src={video.web_url} muted playsInline preload="metadata" controls aria-label="Preview of the selected poster frame" width={480}
+      onLoadedMetadata={(e) => { if (draft.posterFrame !== null) e.currentTarget.currentTime = (draft.posterFrame + 0.5) / 60; }} />
+      : <p className="small">No published web rendition to choose from.</p>}
+    {candidates.length > 0 && <div role="radiogroup" aria-label="Poster frame" className="poster-candidates">{candidates.map((frame) =>
+      <label key={frame} className="inline"><input type="radio" name="poster-frame" value={frame} checked={draft.posterFrame === frame} onChange={() => set({ posterFrame: frame })} /> Frame {frame} · {when(frame)}{frame === chosen ? " (current choice)" : ""}</label>)}</div>}
+  </fieldset>;
+}
+
 function Hash({ value }: { value: string | null | undefined }) {
   return <span className="monospace text-break">{value ? value.slice(0, 16) : "none"}</span>;
 }
@@ -153,6 +180,7 @@ function SubjectForm({ subject, draft, setDraft, errors, saving, rebaseRequired,
         <label>Human description ({draft.description.length.toLocaleString("en-US")} of {MAX_DESCRIPTION.toLocaleString("en-US")})<textarea name="description" rows={8} value={draft.description} disabled={draft.clearDescription} onChange={(e) => set({ description: e.target.value })} /></label>
         {subject.description.human !== null && <label className="inline"><input type="checkbox" checked={draft.clearDescription} onChange={(e) => set({ clearDescription: e.target.checked })} /> Clear the human description (falls back to the validated AI description, if any)</label>}
       </fieldset>}
+      {subject.video && <PosterPicker video={subject.video} draft={draft} set={set} />}
       {subject.event && <fieldset><legend>Event correction</legend>
         <p className="small">{subject.event.origin} · {subject.event.basis} · {subject.event.start} to {subject.event.end}{subject.event.camera ? ` · ${subject.event.camera}` : " · station-wide"}</p>
         <label>Label<input name="label" value={draft.label} maxLength={240} onChange={(e) => set({ label: e.target.value })} /></label>

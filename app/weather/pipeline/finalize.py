@@ -140,6 +140,36 @@ def _write_image(image: Image.Image, path: Path, extension: str) -> None:
     durable_write(path, buffer.getvalue())
 
 
+def write_posters(image: Image.Image, out: Path, frame: int) -> list[Poster]:
+    """The six poster roles of one frame (JPEG and WebP at 1920, 960 and 480 px wide, never
+    upscaled), written to `<role>.<extension>` in `out`. Pillow writes no EXIF or GPS. Finalize
+    and the human poster choice (#78) use the same derivatives."""
+    posters: list[Poster] = []
+    for target, jpeg_role, webp_role in POSTERS:
+        width = min(target, image.width)
+        height = max(1, round(image.height * width / image.width))
+        scaled = (
+            image
+            if width == image.width
+            else image.resize((width, height), Image.Resampling.LANCZOS)
+        )
+        for extension, role in (("jpg", jpeg_role), ("webp", webp_role)):
+            name = f"{role}.{extension}"
+            _write_image(scaled, out / name, extension)
+            posters.append(
+                Poster(
+                    role=role,
+                    extension=extension,  # type: ignore[arg-type]
+                    width=width,
+                    height=height,
+                    frame=frame,
+                    sha256=file_sha256(out / name),
+                    bytes=(out / name).stat().st_size,
+                )
+            )
+    return posters
+
+
 def prepare(
     renderer: SegmentRenderer,
     *,
@@ -278,38 +308,17 @@ def prepare(
         rgb = np.frombuffer(
             extract_frame(out / "native.mp4", index, native.width, native.height), dtype=np.uint8
         ).reshape(native.height, native.width, 3)
-        image = Image.fromarray(rgb, "RGB")
-        for target, jpeg_role, webp_role in POSTERS:
-            width = min(target, native.width)
-            height = max(1, round(native.height * width / native.width))
-            scaled = (
-                image
-                if width == native.width
-                else image.resize((width, height), Image.Resampling.LANCZOS)
+        for poster in write_posters(Image.fromarray(rgb, "RGB"), out, index):
+            posters.append(poster)
+            files.append(
+                {
+                    "role": poster.role,
+                    "extension": poster.extension,
+                    "path": f"out/{poster.role}.{poster.extension}",
+                    "width": poster.width,
+                    "height": poster.height,
+                }
             )
-            for extension, role in (("jpg", jpeg_role), ("webp", webp_role)):
-                name = f"{role}.{extension}"
-                _write_image(scaled, out / name, extension)
-                posters.append(
-                    Poster(
-                        role=role,
-                        extension=extension,  # type: ignore[arg-type]
-                        width=width,
-                        height=height,
-                        frame=index,
-                        sha256=file_sha256(out / name),
-                        bytes=(out / name).stat().st_size,
-                    )
-                )
-                files.append(
-                    {
-                        "role": role,
-                        "extension": extension,
-                        "path": f"out/{name}",
-                        "width": width,
-                        "height": height,
-                    }
-                )
     segment = Segment(job.kind, job.cycle_date, job.starts_at, job.ends_at, job.frames)  # type: ignore[arg-type]
     step = geometry.step
     sidecar = {

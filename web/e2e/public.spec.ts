@@ -584,3 +584,36 @@ test("hourly stills: day and hour navigation, the repeated 01:00 and missing slo
   await expect(page).toHaveURL(/hour=2/);
   await context.close();
 });
+
+// #78: the editor's poster picker against the fixture operator API (edge auth is not part of
+// the fixture; production keeps /editor behind Authentik forward-auth).
+test("the editor poster picker previews candidate frames, saves only the frame and passes axe", async ({ page, request }) => {
+  await request.post("http://localhost:4174/__control", { data: {} });
+  await page.setViewportSize({ width: 375, height: 900 });
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/editor");
+  await page.getByLabel("Video or event ID").fill("9bce6d37-455a-5be9-bfe2-991a7fb3fdfc");
+  await page.getByRole("button", { name: "Open" }).click();
+  await expect(page.getByText(/Automatic poster/)).toBeVisible();
+  const group = page.getByRole("radiogroup", { name: "Poster frame" });
+  await expect(group.getByRole("radio")).toHaveCount(12);
+  // Keyboard selection moves between candidates; the preview seeks to the chosen frame.
+  await group.getByRole("radio").first().focus();
+  await page.keyboard.press("Space");
+  await page.keyboard.press("ArrowRight");
+  await expect(group.getByRole("radio").nth(1)).toBeChecked();
+  await group.getByRole("radio", { name: /Frame 1650 ·/ }).check();
+  const preview = page.getByLabel("Preview of the selected poster frame");
+  await expect.poll(async () => preview.evaluate((element: HTMLVideoElement) => Math.round(element.currentTime * 60 - 0.5))).toBe(1650);
+  await page.getByLabel(/Reason for this change/).fill("Sunrise colour");
+  const patch = page.waitForRequest((r) => r.method() === "PATCH");
+  await page.getByRole("button", { name: "Save" }).click();
+  expect(JSON.parse((await patch).postData() || "{}")).toEqual({ expected_revision: 0, reason: "Sunrise colour", changes: { poster: { frame: 1650 } } });
+  await expect(page.getByText(/frame 1650 .* is being published/)).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const result = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
+  expect(result.violations).toEqual([]);
+  expect(errors).toEqual([]);
+  expect(await page.evaluate(() => (window as Window & { cspViolations?: string[] }).cspViolations?.filter((directive) => directive !== "style-src-attr"))).toEqual([]);
+});

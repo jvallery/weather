@@ -1241,6 +1241,8 @@ Table(
     Column("favorite", Boolean, nullable=False, server_default=text("false")),
     Column("note", Text),
     Column("event_revision", Integer),
+    # 0014_editorial_poster (#78): the chosen output-frame index of the video's poster.
+    Column("poster_frame", Integer),
 )
 editorial_audit = Table(
     "editorial_audit",
@@ -1276,4 +1278,25 @@ editorial_audit = Table(
 )
 Index(
     "ix_editorial_audit_subject_id", editorial_audit.c.subject_id, editorial_audit.c.recorded_at
+)
+# 0014_editorial_poster (#78): each publication of a human poster choice, by video revision.
+Table(
+    "editorial_poster_applied",
+    metadata,
+    Column(
+        "video_id",
+        PGUUID(as_uuid=True),
+        ForeignKey("weather.video.id", ondelete="RESTRICT"),
+        primary_key=True,
+    ),
+    Column("editorial_revision", Integer, primary_key=True, autoincrement=False),
+    Column("poster_frame", Integer, nullable=False),
+    Column("video_revision", Integer, primary_key=True, autoincrement=False),
+    Column("poster_sha256", String(64), nullable=False),
+    Column(
+        "applied_at",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("clock_timestamp()"),
+    ),
 )

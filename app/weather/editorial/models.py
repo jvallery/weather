@@ -88,6 +88,12 @@ class EventChange(OperatorModel):
         return self
 
 
+class PosterChoice(OperatorModel):
+    """An output-frame index of the video's published renditions (#78)."""
+
+    frame: int = Field(ge=0, le=7199)
+
+
 class Changes(OperatorModel):
     description: Description | None = None
     tags: list[Tag] = Field(default_factory=list, max_length=MAX_TAGS)
@@ -96,12 +102,14 @@ class Changes(OperatorModel):
     # Re-bind the human description (or event override) to the current media and evidence.
     rebase: Literal[True] | None = None
     event: EventChange | None = None
+    # A human poster choice (#78); the camera's pipeline publishes it.
+    poster: PosterChoice | None = None
 
     @model_validator(mode="after")
     def checked(self) -> Changes:
         if not self.model_fields_set:
             raise ValueError("No changes")
-        for name in ("favorite", "rebase", "event"):
+        for name in ("favorite", "rebase", "event", "poster"):
             if name in self.model_fields_set and getattr(self, name) is None:
                 raise ValueError("Only description and note can be cleared")
         names = [tag.tag for tag in self.tags]
@@ -155,6 +163,14 @@ class DescriptionState(OperatorModel):
     current: Evidence
 
 
+class PosterState(OperatorModel):
+    """The human poster choice (#78) and whether the live poster is that frame yet."""
+
+    frame: int | None
+    published: bool
+    url: str | None
+
+
 class VideoSummary(OperatorModel):
     camera: str
     cycle_date: date
@@ -163,6 +179,10 @@ class VideoSummary(OperatorModel):
     end: UTCInstant
     state: str
     withdrawn: bool
+    # Poster picker inputs (#78): output frames at 60 fps and the public web rendition.
+    frames: int
+    web_url: str | None
+    poster: PosterState
 
 
 class EventRevision(OperatorModel):
