@@ -4,6 +4,22 @@
 
 > **Amended 2026-10-24** by the [2026-10-24 simplification record](2026-10-24-simplification.md): Unchanged in substance. Camera access is via view-only users (sentinel#550); cadence is commissioned in WX-03. Where this ADR conflicts with that record or [architecture.md](../architecture.md), they win.
 
+
+> **Config epoch 2026-10-27 (#4; Jason's decision):** production cadence is **0.5 Hz (2,000 ms grid) with a 180° synthetic shutter**, and the 1 Hz commissioning run is waived. Measured at 0.5 Hz over 24 h ending 2026-10-27 15:00Z (Prometheus; no identifiers):
+>
+> | Camera | Request p50 / p95 / p99 | Frame bytes p50 / p95 / p99 | Staging ingest |
+> |---|---|---|---|
+> | skycam_east | 1.57 / 2.74 / 2.95 s | 957 / 3,734 / 4,024 KiB | 51.0 GB/day |
+> | skycam_west | 1.45 / 2.69 / 2.95 s | 965 / 3,743 / 4,025 KiB | 47.4 GB/day |
+> | frontyard_1 | 1.47 / 2.71 / 2.96 s | 1,984 / 3,885 / 4,054 KiB | 73.3 GB/day |
+>
+> - **Requests:** every poll is two round trips (the cameras invalidate each Digest nonce), so p90 of about 2.4–2.6 s is the accepted floor. Geometry is native 4096×1856. Last-good-frame age stays under 2 s.
+> - **Misses:** overdue is 0.33–0.38 % per camera since the #145 deploy (2026-10-26 20:38Z); timeout and backoff are under 0.05 %. The 24 h window above includes the eight hours before that deploy.
+> - **Fresh frames:** 99.0–99.1 % of slots per camera over the 18.4 h after the #145 deploy, counting slots lost to deploy restarts.
+> - **CPU:** collectors use 0.03–0.05 cores each and pipelines 0.05–0.12 cores each (24 h average).
+> - **Storage:** staging ingest is about 172 GB/day across three cameras and is released within about an hour of integration (#19). The 300 GB quota (storage-infra#1106) was sized for 1 Hz, so it has wide headroom. Persistent growth is about 2.85 GB of published media per daily cycle plus about 0.12 GB/day of hourly originals: about 1.1 TB/year at 365-day video retention.
+> - **Frigate:** no regression; the numbers are on sentinel#550.
+
 Status: **three snapshot endpoints verified; full-view/no-mask public policy approved; sustained cadence, source-time calibration and keogram-region qualification pending**. Requirements R03–R06/R08/R30–R32; WX-09/10/36/37/38/39. Camera ownership and commissioning are tracked by [OWN-CAM](https://github.com/jvallery/sentinel/issues/550); no camera settings or NVR deployment changed.
 
 ## Selected adapter and E06
