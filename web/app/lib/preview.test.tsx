@@ -71,3 +71,21 @@ test("tiles show the image with its capture age, then age out with the network g
   expect(screen.queryAllByRole("img")).toHaveLength(0);
   expect(fetchMock.mock.calls.every(([url]) => /^\/api\/v1\/cameras\/(skycam_east|skycam_west|frontyard_1)\/preview$/.test(url))).toBe(true);
 });
+
+test("a transient image-read failure keeps the last good preview and retries in 15 s", async () => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "performance", "Date"] });
+  let stalled = false;
+  const fetchMock = vi.fn(async () => new Response(JSON.stringify(stalled ? { ...pointer(0), state: "unavailable", reason: "media_unavailable", images: [] } : pointer(700))));
+  vi.stubGlobal("fetch", fetchMock);
+  await act(async () => { render(<PreviewTile camera="skycam_east" />); await vi.advanceTimersByTimeAsync(0); });
+  const tile = document.querySelector("[data-preview-state]") as HTMLElement;
+  expect(tile.dataset.previewState).toBe("fresh");
+  stalled = true;
+  await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+  // Still the last good image, ageing from its own capture time.
+  expect(tile.dataset.previewState).toBe("fresh");
+  expect(screen.getByRole("img", { name: /^East sky camera, captured 12:00/ })).toBeTruthy();
+  await act(async () => { await vi.advanceTimersByTimeAsync(15_000); });
+  expect(fetchMock).toHaveBeenCalledTimes(3);
+});
