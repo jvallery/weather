@@ -72,6 +72,9 @@ HISTORY_SQL = """SELECT min(first) AS first FROM (
    WHERE valid AND observed_at < :now ORDER BY observed_at LIMIT 1)
   UNION ALL
   (SELECT start AS first FROM public_api.imported_history WHERE start < :now)) h"""
+# A year of day bins sorts ~400k samples: in memory it takes 4.6 s, spilled to disk 9.2 s (measured
+# 2026-10-28). Bounded: at most two aggregate statements per api pod, each a few sorts.
+AGGREGATE_WORK_MEM = "64MB"
 # The imported range (#167): before the first live report, from another source's records.
 IMPORTED_SQL = "SELECT source,start,last FROM public_api.imported_history"
 SNAPSHOT_SQL = f"SELECT now() - interval '{SNAPSHOT_MARGIN_SECONDS} seconds' AS snapshot"
@@ -222,7 +225,10 @@ class WeatherReader:
         self._aggregate_slots = asyncio.Semaphore(aggregate_slots)
 
     async def _run(
-        self, statements: Sequence[tuple[str, dict[str, Any]]], timeout_ms: int
+        self,
+        statements: Sequence[tuple[str, dict[str, Any]]],
+        timeout_ms: int,
+        work_mem: str | None = None,
     ) -> list[list[Row]]:
         try:
             # The whole read, including waiting for a pooled connection, has one deadline.
@@ -233,6 +239,8 @@ class WeatherReader:
             ):
                 await connection.execute(text("SET TRANSACTION READ ONLY"))
                 await connection.execute(text(f"SET LOCAL statement_timeout = {int(timeout_ms)}"))
+                if work_mem:
+                    await connection.execute(text(f"SET LOCAL work_mem = '{work_mem}'"))
                 results: list[list[Row]] = []
                 for sql, parameters in statements:
                     result = await connection.execute(text(sql), parameters)
@@ -357,7 +365,7 @@ class WeatherReader:
         except TimeoutError:
             raise SourceUnavailable() from None
         try:
-            results = await self._run(statements, self._aggregate_ms)
+            results = await self._run(statements, self._aggregate_ms, AGGREGATE_WORK_MEM)
         finally:
             self._aggregate_slots.release()
         return results[0], results[1] if rose else []

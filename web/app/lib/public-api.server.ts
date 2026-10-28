@@ -22,7 +22,7 @@ function origin(): string {
 const problemSchema = z.object({ code: z.string().max(64), suggested_resolution_seconds: z.number().int().positive().nullable().default(null) });
 export type InputIssue = { code: "invalid_request" | "unknown_metric" | "unsupported_statistic" | "unsupported_unit" | "invalid_cursor" | "range_too_large"; suggestedResolutionSeconds: number | null };
 export type PublicResult<T> = { kind: "ok"; data: T } | { kind: "invalid"; issue: InputIssue } | { kind: "unavailable" };
-export async function publicReadResult<T>(path: string, parse: Parser<T>, requestSignal: AbortSignal, params = new URLSearchParams()): Promise<PublicResult<T>> {
+export async function publicReadResult<T>(path: string, parse: Parser<T>, requestSignal: AbortSignal, params = new URLSearchParams(), timeoutMs = 6000): Promise<PublicResult<T>> {
   const route = path.startsWith("/api/v1/timelapses/") ? "/api/v1/timelapses/:id" : path;
   if (!ALLOWED.test(path)) { requests.labels("other", "invalid_response").inc(); return { kind: "unavailable" }; }
   if (active >= API_SLOTS) { requests.labels(route, "overloaded").inc(); throw busy(); }
@@ -30,7 +30,7 @@ export async function publicReadResult<T>(path: string, parse: Parser<T>, reques
   try {
     const target = new URL(path, origin());
     target.search = params.toString();
-    const response = await fetch(target, { signal: AbortSignal.any([requestSignal, AbortSignal.timeout(6000)]), redirect: "error", headers: { Accept: "application/json" } });
+    const response = await fetch(target, { signal: AbortSignal.any([requestSignal, AbortSignal.timeout(timeoutMs)]), redirect: "error", headers: { Accept: "application/json" } });
     if ((!response.ok && response.status !== 400) || !response.body) { requests.labels(route, "http_error").inc(); return { kind: "unavailable" }; }
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -76,7 +76,8 @@ export async function catalogRead(request: Request, extra = new URLSearchParams(
   return publicRead("/api/v1/timelapses", parseTimelapses, request.signal, extra);
 }
 export async function aggregatesRead(request: Request, params: URLSearchParams) {
-  return publicReadResult("/api/v1/weather/aggregates", parseAggregates, request.signal, params);
+  // A year of local-day bins (the History year view) takes several seconds on the database.
+  return publicReadResult("/api/v1/weather/aggregates", parseAggregates, request.signal, params, params.get("resolution") === "day" ? 15_000 : 6000);
 }
 /** The archive month page: its month (or other filters) and at most 100 entries per page. */
 export async function archiveRead(request: Request, params: URLSearchParams) {
