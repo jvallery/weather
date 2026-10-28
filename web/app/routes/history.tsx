@@ -4,7 +4,7 @@ import { Link } from "../components/unit-link";
 import plotStyles from "uplot/dist/uPlot.min.css?url";
 import { HistoryPlot, historyRows, type HistoryRow } from "../components/history-plot";
 import { PageHead } from "../components/common";
-import { conversionAvailable, humanize, localTime, metricLabel, metricValue, shortDateTime } from "../lib/format";
+import { conversionAvailable, dateShift, humanize, localDate, localDayStart, localTime, metricLabel, metricValue, shortDateTime } from "../lib/format";
 import { intervalSchema } from "../lib/contracts";
 import { aggregatesRead, metricRegistryRead } from "../lib/public-api.server";
 import { unitsFrom } from "../lib/route-params";
@@ -21,17 +21,20 @@ export function chartStatistics(definition?: MetricDefinition): string[] {
 }
 /** One aggregate request covers the whole window, so a 24 h view is never truncated. */
 export function resolutionFor(spanMs: number): string {
-  return spanMs <= 2 * DAY ? "300" : spanMs <= 7 * DAY ? "3600" : "10800";
+  return spanMs <= 2 * DAY ? "300" : spanMs <= 7 * DAY ? "3600" : spanMs <= 31 * DAY ? "10800" : "day";
 }
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const now = Date.now();
-  const end = url.searchParams.get("end") || new Date(now).toISOString();
-  const start = url.searchParams.get("start") || new Date(now - DAY).toISOString();
+  // A local date range (the date selector: first and last day, inclusive) or explicit UTC bounds.
+  const from = url.searchParams.get("from"), to = url.searchParams.get("to");
+  if ((from || to) && !(from && to && DATE.test(from) && DATE.test(to) && from <= to)) throw new Response("Invalid history dates", { status: 400 });
+  const end = from && to ? localDayStart(dateShift(to, 1)) : url.searchParams.get("end") || new Date(now).toISOString();
+  const start = from && to ? localDayStart(from) : url.searchParams.get("start") || new Date(now - DAY).toISOString();
   const metric = url.searchParams.get("metric") || "temperature";
   if (!/^[a-z][a-z0-9_]{0,63}$/.test(metric) || !intervalSchema.safeParse({ start, end }).success) throw new Response("Invalid history range", { status: 400 });
   const span = Date.parse(end) - Date.parse(start);
-  if (span > 31 * DAY) throw new Response("Select a history interval of 31 days or less; older data remains available in successive intervals", { status: 400 });
+  if (span > 366 * DAY) throw new Response("Select a history interval of a year (366 days) or less; older data remains available in successive intervals", { status: 400 });
   const registry = await metricRegistryRead(request);
   const definition = registry?.metrics.find((item) => item.metric === metric);
   if (registry && !definition) throw new Response("Unknown public metric", { status: 400 });
@@ -42,9 +45,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
   for (const statistic of statistics) parameters.append("statistics", statistic);
   const result = await aggregatesRead(request, parameters);
   const raw = new URLSearchParams({ start, end, metrics: metric, limit: "5000" });
-  return { aggregates: result.kind === "ok" ? result.data : null, issue: result.kind === "invalid" ? result.issue : null, registry, start, end, metric, statistics, resolution, units: unitsFrom(url), now, exportUrl: `/api/v1/weather/observations?${raw}` };
+  // The raw export reads at most 31 days per request; longer views export the charted intervals.
+  return { aggregates: result.kind === "ok" ? result.data : null, issue: result.kind === "invalid" ? result.issue : null, registry, start, end, metric, statistics, resolution, units: unitsFrom(url), now, exportUrl: span <= 31 * DAY ? `/api/v1/weather/observations?${raw}` : null, from: from && to ? from : localDate(start), to: from && to ? to : localDate(new Date(Date.parse(end) - 1).toISOString()) };
 }
-const PRESETS = [["24 h", DAY], ["3 days", 3 * DAY], ["7 days", 7 * DAY], ["31 days", 31 * DAY]] as const;
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const PRESETS = [["24 h", DAY], ["7 days", 7 * DAY], ["31 days", 31 * DAY], ["90 days", 90 * DAY], ["365 days", 365 * DAY]] as const;
 /** Low, mean, high (or total) over the window, from the interval statistics; gaps are skipped, never zero. */
 export function summarize(rows: HistoryRow[], statistics: string[]): { label: string; value: number; at?: string }[] {
   const series = (statistic: string) => rows.flatMap((row) => row.values[statistic] === null || row.values[statistic] === undefined ? [] : [{ value: row.values[statistic]!, at: row.start }]);
@@ -63,7 +68,7 @@ export function summarize(rows: HistoryRow[], statistics: string[]): { label: st
   return [];
 }
 export default function HistoryPage() {
-  const { aggregates, issue, registry, start, end, metric, statistics, resolution, units, exportUrl, now } = useLoaderData<typeof loader>();
+  const { aggregates, issue, registry, start, end, metric, statistics, resolution, units, exportUrl, now, from, to } = useLoaderData<typeof loader>();
   const definition = registry?.metrics.find((row) => row.metric === metric);
   const rows = aggregates ? historyRows(aggregates, metric, statistics) : [];
   const hasValues = rows.some((row) => row.values[statistics[0]] !== null);
@@ -80,6 +85,7 @@ export default function HistoryPage() {
     <div className="actions" role="group" aria-label="History selection">
       <ul className="chips" aria-label="Range">{PRESETS.map(([label, ms]) => <li key={label}><Link to={preset(ms)} aria-current={live && Math.abs(span - ms) < 60_000 ? "page" : undefined}>{label}</Link></li>)}</ul>
     </div>
+    <Form key={`${from}|${to}|${metric}`} method="get" className="filters date-range" aria-label="Date range"><label>From<input type="date" name="from" defaultValue={from} max={to} required /></label><label>To<input type="date" name="to" defaultValue={to} required /></label><input type="hidden" name="metric" value={metric} />{units === "metric" && <input type="hidden" name="units" value="metric" />}<button type="submit">Show</button><span className="small">Local days, America/Denver; up to a year. Longer than 31 days shows one point per day.</span></Form>
     {metrics.length > 0 && <ul className="chips chips-sm" aria-label="Measurement">{metrics.map((item) => <li key={item.metric}><Link to={query({ metric: item.metric })} aria-current={item.metric === metric ? "page" : undefined}>{item.label}</Link></li>)}</ul>}
     {!conversionAvailable(definition?.canonical_unit || "", units, definition) && <p className="notice">Display conversions unavailable; source units shown.</p>}
     {aggregates?.imported && <p className="notice" data-provenance="imported">Imported history: through <time dateTime={aggregates.imported.last}>{shortDateTime(aggregates.imported.last)}</time>, values come from this station&apos;s readings kept by the greenhouse controller (verdify-platform), about one every 1–5 minutes, with rain only where the station reported it. The live receiver covers everything after.</p>}
@@ -92,11 +98,7 @@ export default function HistoryPage() {
       </details>
     </>}
     </section>
-    <details><summary>Custom range (UTC)</summary>
-      <Form key={`${start}|${end}|${metric}`} method="get" className="filters"><label>Source start (UTC)<input name="start" defaultValue={start} required /></label><label>Source end (UTC, exclusive)<input name="end" defaultValue={end} required /></label><label>Metric{registry ? <select name="metric" defaultValue={metric}>{metrics.map((item) => <option value={item.metric} key={item.metric}>{item.label} · {item.canonical_unit}</option>)}</select> : <input name="metric" defaultValue={metric} required pattern="[a-z][a-z0-9_]{0,63}" />}</label><input type="hidden" name="units" value={units} /><button type="submit">Show history</button></Form>
-      <p className="small">Up to 31 days per view. Local days have 23, 24 or 25 hours; repeated hours carry their UTC offset.</p>
-    </details>
-    {aggregates ? <p className="actions"><a className="button-link" href={exportUrl} download>Export raw observations for this window as JSON</a></p> : <p className="muted">Export is unavailable until observations can be read.</p>}
+    {!aggregates ? <p className="muted">Export is unavailable until observations can be read.</p> : exportUrl ? <p className="actions"><a className="button-link" href={exportUrl} download>Export raw observations for this window as JSON</a></p> : <p className="small">Raw observations export up to 31 days at a time; choose a shorter range to export.</p>}
     <p className="small">JSON exports carry original source and receipt times, units and quality; follow next_cursor for later pages.</p>
   </>;
 }

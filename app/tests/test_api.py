@@ -279,6 +279,17 @@ def test_over_range_suggests_a_resolution() -> None:
     )
     assert aggregates.status_code == 400 and aggregates.json()["code"] == "range_too_large"
     assert aggregates.json()["suggested_resolution_seconds"] == 519
+    # Local-day bins reach a year for station reports; finer bins stay within 92 days.
+    year = client.get(
+        "/api/v1/weather/aggregates?start=2025-07-01T06:00:00Z&end=2026-07-01T06:00:00Z"
+        "&metrics=temperature&statistics=mean&statistics=min&statistics=max&resolution=day"
+    )
+    assert year.status_code == 200, year.json()
+    too_long = client.get(
+        "/api/v1/weather/aggregates?start=2025-06-01T06:00:00Z&end=2026-07-01T06:00:00Z"
+        "&metrics=temperature&statistics=mean&resolution=day"
+    )
+    assert too_long.status_code == 400 and too_long.json()["code"] == "range_too_large"
     day = "/api/v1/weather/aggregates?start=2026-06-01T00:00:00Z&end=2026-06-02T00:00:00Z"
     for bad in (
         "metrics=temperature&statistics=median&resolution=3600",
