@@ -520,6 +520,8 @@ def test_imported_history_reads_before_live_and_live_wins() -> None:
                 device,
                 "obs_st",
                 [(live_start + timedelta(minutes=n), {"air_temperature": 10.0}) for n in range(60)],
+                # Before the export's snapshot margin, like rows that landed long ago.
+                inserted=datetime.now(UTC) - timedelta(hours=1),
             )
         weather = service(api)
         result = await weather.aggregates(
