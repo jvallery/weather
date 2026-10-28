@@ -204,6 +204,9 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     # 0016_obs_import (#167)
                     "weather.import_batch",
                     "weather.obs_import",
+                    "public_api.obs_st_history",
+                    "public_api.rapid_wind_history",
+                    "public_api.imported_history",
                 }
                 options = await scalar(
                     connection,

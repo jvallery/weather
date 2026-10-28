@@ -133,7 +133,7 @@ def test_registry_columns_match_the_migration_views() -> None:
     assert {k: tuple(v) for k, v in module.COLUMNS.items()} == COLUMNS
     for statement in module.statements():
         assert not text(statement)._bindparams
-    # 0016 (#167) replaces the views column for column: the same allowlist.
+    # 0016 (#167) builds the imported branch from the same allowlist.
     spec = importlib.util.spec_from_file_location(
         "migration_0016", ROOT / "app/migrations/versions/0016_obs_import.py"
     )

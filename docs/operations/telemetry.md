@@ -20,7 +20,7 @@ The slice-1 alert rules in jvallery/monitoring-stack link here. Each section nam
 
 ## Imported history
 
-Station history before the live receiver (first report 2026-10-24 20:39Z) is imported from the verdify-platform greenhouse controller's TimescaleDB (#167). It is `verdify-db-0` in `verdify-prod`, table `public.climate`, and holds this Tempest's outdoor readings from 2025-10-23 in US units. Imported rows live in `weather.obs_import`, one batch per month in `weather.import_batch`. `public_api.obs_st` shows them only before the first live report, so live data always wins. They carry `provenance = 'verdify-platform'` and no receipt.
+Station history before the live receiver (first report 2026-10-24 20:39Z) is imported from the verdify-platform greenhouse controller's TimescaleDB (#167). It is `verdify-db-0` in `verdify-prod`, table `public.climate`, and holds this Tempest's outdoor readings from 2025-10-23 in US units. Imported rows live in `weather.obs_import`, one batch per month in `weather.import_batch`. Aggregate reads use `public_api.obs_st_history`, which shows them only before the first live report, so live data always wins. They carry `provenance = 'verdify-platform'` and no receipt. The live views `public_api.obs_st` and `rapid_wind`, current conditions and the raw export are unchanged.
 
 - **What is imported.** Mapping and rules: `app/weather/importer/verdify.py`, tests in `app/tests/test_verdify_import.py`.
   - Temperature, humidity, station pressure, illuminance, solar radiation and UV come from every outdoor row.

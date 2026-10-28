@@ -9,12 +9,14 @@ reported every one to five minutes, so a reading is held at most `cap_seconds` (
 the registry's two-interval cap). `import_batch` records every batch: the cutoff (the first live
 report at import time), the source row count, inserted, overlapping and duplicate rows.
 
-`public_api.obs_st` is replaced column for column (as 0002 left it) with two appended columns,
-`cap_seconds` and `provenance` ('live' or the import source), and with the imported rows in a
-second branch. Live wins: an imported row shows only before the first live report, so live
-`obs_st`, its aggregates and its exports are unchanged for every period the receiver covers.
-`public_api.rapid_wind` gains the same two columns (always null and 'live'). Imported rows carry
-no receipt (`received_at` is null) and are never mistaken for live receipts.
+The live views `public_api.obs_st` and `public_api.rapid_wind` are unchanged (current
+conditions, the raw export and the history start keep their btree plans). Aggregate reads use
+`public_api.obs_st_history`: the live view's rows with `cap_seconds` null and `provenance` 'live',
+plus the imported rows, shown only before the first live report. Live wins, so live `obs_st` and
+its aggregates are unchanged for every period the receiver covers. `public_api.rapid_wind_history`
+is the live rapid-wind view with the same two columns. `public_api.imported_history` gives the
+imported range in two index probes. Imported rows carry no receipt (`received_at` is null) and are
+never mistaken for live receipts.
 """
 
 from alembic import op
@@ -43,32 +45,16 @@ COLUMNS = {
     ),
     "rapid_wind": ("wind_direction", "wind_speed"),
 }
-VALID = (
-    "coalesce(o.quality->'valid'='true'::jsonb,false)"
-    " AND jsonb_typeof(o.quality->'invalid')='array'"
-)
 SOURCES = "'verdify-platform'"
 
 
-def invalid_fields(family: str) -> str:
-    names = ",".join(COLUMNS[family])
-    return f"""CASE WHEN {VALID} THEN ARRAY(
-          SELECT f FROM jsonb_array_elements_text(o.quality->'invalid') AS f
-          WHERE f = ANY('{{{names}}}'::text[])) ELSE '{{}}'::text[] END AS invalid_fields"""
-
-
 def live(family: str) -> str:
-    """0002's view body for `family`, unchanged, plus the two appended columns."""
-    fields = ",".join(
-        f"""CASE WHEN {VALID} AND NOT (o.quality->'invalid') ? '{name}'
-              AND jsonb_typeof(o."values"->'{name}')='number'
-             THEN (o."values"->>'{name}')::double precision END AS {name}"""
-        for name in COLUMNS[family]
-    )
-    return f"""SELECT o.id,o.source_ts AS observed_at,r.received_at,o.inserted_at,{VALID} AS valid,
-          {invalid_fields(family)},{fields},
-          CAST(NULL AS integer) AS cap_seconds,CAST('live' AS varchar(32)) AS provenance
-        FROM weather.{family} o JOIN weather.telemetry_receipt r ON r.id=o.receipt_id"""
+    return f"""SELECT o.*,CAST(NULL AS integer) AS cap_seconds,
+          CAST('live' AS varchar(32)) AS provenance
+        FROM public_api.{family} o"""
+
+
+CUTOFF = "coalesce((SELECT min(source_ts) FROM weather.obs_st),'infinity'::timestamptz)"
 
 
 def imported() -> str:
@@ -80,9 +66,7 @@ def imported() -> str:
     return f"""SELECT i.id,i.source_ts AS observed_at,CAST(NULL AS timestamptz) AS received_at,
           i.imported_at AS inserted_at,true AS valid,'{{}}'::text[] AS invalid_fields,{fields},
           i.cap_seconds,i.source AS provenance
-        FROM weather.obs_import i
-        WHERE i.source_ts < coalesce((SELECT min(source_ts) FROM weather.obs_st),
-                                     'infinity'::timestamptz)"""
+        FROM weather.obs_import i WHERE i.source_ts < {CUTOFF}"""
 
 
 def statements() -> list[str]:
@@ -123,10 +107,23 @@ def statements() -> list[str]:
         )""",
         "CREATE INDEX ix_obs_import_source_ts ON weather.obs_import (source_ts)",
         "CREATE INDEX ix_obs_import_batch_id ON weather.obs_import (batch_id)",
-        f"CREATE OR REPLACE VIEW public_api.obs_st AS {live('obs_st')} UNION ALL {imported()}",
-        f"CREATE OR REPLACE VIEW public_api.rapid_wind AS {live('rapid_wind')}",
-        # Only the migrator (owner) loads and rolls back batches; the API reads through the view.
+        f"CREATE VIEW public_api.obs_st_history AS {live('obs_st')} UNION ALL {imported()}",
+        f"CREATE VIEW public_api.rapid_wind_history AS {live('rapid_wind')}",
+        f"""CREATE VIEW public_api.imported_history AS
+            SELECT i.source,i.start,i.last FROM (
+              SELECT CAST('verdify-platform' AS varchar(32)) AS source,
+                (SELECT min(source_ts) FROM weather.obs_import
+                  WHERE source_ts < {CUTOFF}) AS start,
+                (SELECT max(source_ts) FROM weather.obs_import
+                  WHERE source_ts < {CUTOFF}) AS last) i
+            WHERE i.start IS NOT NULL""",
+        # Only the migrator (owner) loads and rolls back batches; readers use the views.
         "REVOKE ALL ON weather.import_batch,weather.obs_import FROM PUBLIC",
+        "REVOKE ALL ON public_api.obs_st_history,public_api.rapid_wind_history,"
+        "public_api.imported_history FROM PUBLIC",
+        # The api and the worker (the pipeline's station summaries) read aggregates.
+        "GRANT SELECT ON public_api.obs_st_history,public_api.rapid_wind_history,"
+        "public_api.imported_history TO weather_api,weather_worker",
     ]
 
 

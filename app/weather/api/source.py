@@ -66,11 +66,14 @@ GROUP BY w.name"""
 STATION_SQL = "SELECT alias FROM public_api.station ORDER BY alias LIMIT 1"
 # Station history starts at the first valid report; the source_ts btree answers it without a scan.
 # Every device at the site counts, so a replaced station continues the same history (P20).
-HISTORY_SQL = """SELECT observed_at AS first FROM public_api.obs_st
-WHERE valid AND observed_at < :now ORDER BY observed_at LIMIT 1"""
+# Imported history (#167) starts earlier when there is one; each branch is one index probe.
+HISTORY_SQL = """SELECT min(first) AS first FROM (
+  (SELECT observed_at AS first FROM public_api.obs_st
+   WHERE valid AND observed_at < :now ORDER BY observed_at LIMIT 1)
+  UNION ALL
+  (SELECT start AS first FROM public_api.imported_history WHERE start < :now)) h"""
 # The imported range (#167): before the first live report, from another source's records.
-IMPORTED_SQL = """SELECT min(observed_at) AS start,max(observed_at) AS last,
-  min(provenance) AS source FROM public_api.obs_st WHERE provenance <> 'live'"""
+IMPORTED_SQL = "SELECT source,start,last FROM public_api.imported_history"
 SNAPSHOT_SQL = f"SELECT now() - interval '{SNAPSHOT_MARGIN_SECONDS} seconds' AS snapshot"
 
 
@@ -79,8 +82,7 @@ def observations_sql(family: Family) -> str:
     # The snapshot is database insert time: late drain/reproject rows keep an old received_at.
     return f"""SELECT id,observed_at,received_at,valid,invalid_fields,{_columns(family)}
 FROM public_api.{family}
-WHERE provenance = 'live'
-  AND observed_at >= :after_time AND observed_at < :end AND inserted_at <= :snapshot
+WHERE observed_at >= :after_time AND observed_at < :end AND inserted_at <= :snapshot
   AND (observed_at, id) > (CAST(:after_time AS timestamptz), CAST(:after_id AS uuid))
 ORDER BY observed_at, id LIMIT :rows"""
 
@@ -126,7 +128,7 @@ def _cells_sql(source: Source, *, day: bool, wind: bool, intervals: bool = False
                          date_bin({stride}, {last}, CAST(:origin AS timestamptz)), {stride}) AS b"""
     return f"""WITH raw AS (
   SELECT id,observed_at AS ts,{value} AS v{direction},cap_seconds
-  FROM public_api.{source.family}
+  FROM public_api.{source.family}_history
   WHERE observed_at >= CAST(:fetch_start AS timestamptz)
     AND observed_at < CAST(:fetch_end AS timestamptz)
     -- An imported row lacking this field neither supports nor interrupts it (#167): the source
