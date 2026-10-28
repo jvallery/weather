@@ -23,7 +23,8 @@ The slice-1 alert rules in jvallery/monitoring-stack link here. Each section nam
 Station history before the live receiver (first report 2026-10-24 20:39Z) is imported from the verdify-platform greenhouse controller's TimescaleDB (#167). It is `verdify-db-0` in `verdify-prod`, table `public.climate`, and holds this Tempest's outdoor readings from 2025-10-23 in US units. Imported rows live in `weather.obs_import`, one batch per month in `weather.import_batch`. Aggregate reads use `public_api.obs_st_history`, which shows them only before the first live report, so live data always wins. They carry `provenance = 'verdify-platform'` and no receipt. The live views `public_api.obs_st` and `rapid_wind`, current conditions and the raw export are unchanged.
 
 - **What is imported.** Mapping and rules: `app/weather/importer/verdify.py`, tests in `app/tests/test_verdify_import.py`.
-  - Temperature, humidity, station pressure, illuminance, solar radiation and UV come from every outdoor row.
+  - Temperature, humidity, station pressure, illuminance, solar radiation and UV come from every outdoor row that carries them. Before April 2026, light, solar and UV also came on their own two-minute rows.
+  - Each Tempest row's rapid-wind sample (`wind_speed_mph`, `wind_direction_deg`) goes into the rapid-wind history (`family = 'rapid_wind'`, `public_api.rapid_wind_history`). It is held at most 6 s, like a live 3 s sample.
   - Averaged wind, gust, lull and direction come only from Tempest rows (`wind_speed_avg_mph` present).
   - Rain and lightning come only from Tempest rows that also carry `precip_intensity_in_h`. Home Assistant poll rows put a rate in `precip_in`.
   - Out-of-range values are dropped, never clamped.
@@ -33,7 +34,7 @@ Station history before the live receiver (first report 2026-10-24 20:39Z) is imp
   2. The transform in the weather app pod.
   3. One transaction into weather-pg.
 
-  It needs the app image with `weather.importer` (0016 or later). A rerun inserts nothing (`ON CONFLICT (source, source_ts) DO NOTHING`) and records the rows as duplicates in its batch.
+  It needs the app image with `weather.importer` (0016 or later). A rerun inserts nothing (`ON CONFLICT (source, family, source_ts) DO NOTHING`) and records the rows as duplicates in its batch.
 - **Check.** `SELECT source_start, source_rows, inserted_rows, overlap_rows, duplicate_rows, state FROM weather.import_batch ORDER BY source_start`. Per day, `count(*)` in `weather.obs_import` equals the source's outdoor rows that carried a valid reading, less any overlap with live. `/api/v1/weather/aggregates` and the almanac return an `imported` range, and the History and Almanac pages label it.
 - **Roll back a batch.** As the migrator, in one transaction:
   1. `DELETE FROM weather.obs_import WHERE batch_id = '<id>'`

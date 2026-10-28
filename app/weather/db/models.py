@@ -1343,7 +1343,11 @@ obs_import = Table(
         nullable=False,
         server_default=text("clock_timestamp()"),
     ),
-    UniqueConstraint("source", "source_ts"),
+    # 0017 (#167): which history the row belongs to.
+    Column(
+        "family", String(16), nullable=False, server_default=text("'obs_st'::character varying")
+    ),
+    UniqueConstraint("source", "family", "source_ts"),
 )
 Index("ix_obs_import_source_ts", obs_import.c.source_ts)
 Index("ix_obs_import_batch_id", obs_import.c.batch_id)

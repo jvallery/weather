@@ -81,14 +81,38 @@ def test_loader_rows_are_utc_instants_with_the_import_cap() -> None:
     with SAMPLE.open() as handle:
         assert verdify.main(handle, out) == 0
     loaded = list(csv.reader(io.StringIO(out.getvalue())))
-    # Every sample row carries at least one valid reading.
-    assert len(loaded) == 6
-    first = loaded[0]
-    assert first[0] == "2026-10-26T18:00:07.099546+00:00"
-    assert json.loads(first[1])["air_temperature"] == 8.11
-    assert first[2] == str(verdify.CAP_SECONDS)
+    reports = [row for row in loaded if row[0] == "obs_st"]
+    # Every sample row with a valid reading, including the light-only row.
+    assert len(reports) == 7
+    family, at, values, cap = reports[0]
+    assert at == "2026-10-26T18:00:07.099546+00:00"
+    assert json.loads(values)["air_temperature"] == 8.11
+    assert cap == str(verdify.CAP_SECONDS)
     with pytest.raises(ValueError):
         verdify.instant("2026-10-26 18:00:07")
+
+
+def test_rapid_wind_comes_only_from_tempest_rows() -> None:
+    rows = sample()
+    # The 18:00 Tempest row's 3 s sample (0.02 mph from 310 degrees), held at most 6 s.
+    assert verdify.rapid(rows[0]) == {"wind_speed": 0.01, "wind_direction": 310}
+    # A poll row's wind columns hold the lagged average, not a sample.
+    assert verdify.rapid(rows[1]) == {}
+    out = io.StringIO()
+    with SAMPLE.open() as handle:
+        verdify.main(handle, out)
+    samples = [row for row in csv.reader(io.StringIO(out.getvalue())) if row[0] == "rapid_wind"]
+    assert [row[1][:19] for row in samples] == [
+        "2026-10-26T18:00:07",
+        "2026-10-26T08:00:05",
+        "2025-11-03T06:10:00",
+    ]
+    assert all(row[3] == str(verdify.RAPID_CAP_SECONDS) for row in samples)
+
+
+def test_a_light_only_row_keeps_its_light_readings() -> None:
+    values = verdify.transform(sample()[6])
+    assert values == {"illuminance": 57965, "solar_radiation": 483, "uv": 1.44}
 
 
 def test_the_fixture_carries_no_station_identity() -> None:
