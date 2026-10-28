@@ -146,7 +146,7 @@ export default function AlmanacPage() {
     {rejected ? <p className="fault">The API rejected this almanac selection. Choose whole local dates within 366 days.</p>
       : !almanac ? <p className="fault">Almanac API unavailable. No substitute values are displayed.</p>
       : <>
-        <p className="notice">{history ? <>Station history since <time dateTime={history.start}>{localDate(history.start)}</time> (first observation {localTime(history.start)}).</> : <>No station history yet. Observed products will fill in as the station reports.</>}{almanac.coverage && <> Coverage of the selected dates: {percent(almanac.coverage.fraction)}.</>}{almanac.imported && <> History through <time dateTime={almanac.imported.last}>{localDate(almanac.imported.last)}</time> is imported from the greenhouse controller&apos;s records of this station (verdify-platform); live reports follow.</>}</p>
+        <p className="notice">{history ? <>Station history since <time dateTime={history.start}>{localDate(history.start)}</time> (first observation {localTime(history.start)}).</> : <>No station history yet. Observed products will fill in as the station reports.</>}{almanac.coverage && <> Coverage of the selected dates: {percent(almanac.coverage.fraction)}.</>}</p>
         <View almanac={almanac} units={units} definition={definition} registry={registry} />
         <p className="small provenance">Formula {almanac.formula_revision} · {almanac.library_revision} · {almanac.evidence_count.toLocaleString("en-US")} source rows{almanac.evidence_hash && <> · evidence <span className="monospace">{almanac.evidence_hash.slice(0, 12)}</span></>} · computed {localTime(almanac.generated_at)}</p>
       </>}

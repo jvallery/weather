@@ -38,14 +38,28 @@ INCH_MM = 25.4
 MILE_KM = 1.609344
 
 # Read-only export, one bounded window per call; :from and :to are UTC instants.
-EXPORT_SQL = """COPY (SELECT ts,outdoor_temp_f,outdoor_rh_pct,pressure_hpa,outdoor_lux,
+# `outdoor_illuminance` (from 2026-03-29) is a second Home Assistant entity for the same Tempest
+# illuminance; it fills minutes `outdoor_lux` lacks and never overrides it.
+EXPORT_SQL = """COPY (SELECT ts,outdoor_temp_f,outdoor_rh_pct,pressure_hpa,
+  coalesce(outdoor_lux,outdoor_illuminance) AS outdoor_lux,
   solar_irradiance_w_m2,uv_index,wind_speed_avg_mph,wind_direction_avg_deg,wind_gust_mph,
   wind_lull_mph,precip_in,precip_intensity_in_h,lightning_count,lightning_avg_dist_mi,
   wind_speed_mph,wind_direction_deg
 FROM public.climate
 WHERE ts >= '{start}' AND ts < '{end}' AND (outdoor_temp_f IS NOT NULL OR outdoor_rh_pct IS NOT NULL
-  OR pressure_hpa IS NOT NULL OR outdoor_lux IS NOT NULL OR solar_irradiance_w_m2 IS NOT NULL
+  OR pressure_hpa IS NOT NULL OR outdoor_lux IS NOT NULL OR outdoor_illuminance IS NOT NULL
+  OR solar_irradiance_w_m2 IS NOT NULL
   OR uv_index IS NOT NULL OR wind_speed_avg_mph IS NOT NULL)
+ORDER BY ts) TO STDOUT WITH (FORMAT csv, HEADER true)"""
+
+# `public.weather_station` (2026-03-23..05-22): 891 more Tempest reports at their own times, with
+# the same meanings under other column names; aliased to the `climate` names for `transform`.
+WEATHER_STATION_EXPORT_SQL = """COPY (SELECT ts,temp_f AS outdoor_temp_f,rh_pct AS outdoor_rh_pct,
+  pressure_hpa,outdoor_lux,solar_irradiance_w_m2,uv_index,wind_speed_avg_mph,
+  wind_dir_avg_deg AS wind_direction_avg_deg,wind_gust_mph,wind_lull_mph,precip_in,
+  precip_intensity_in_h,lightning_count,lightning_avg_dist_mi,wind_speed_mph,
+  wind_dir_deg AS wind_direction_deg
+FROM public.weather_station WHERE ts >= '{start}' AND ts < '{end}'
 ORDER BY ts) TO STDOUT WITH (FORMAT csv, HEADER true)"""
 
 # Canonical bounds; a value outside them is dropped as a sensor or transport fault.

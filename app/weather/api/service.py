@@ -75,6 +75,8 @@ MIN_RESOLUTION_SECONDS = 60
 # Raw history and aggregate windows per source family (rows scanned stay bounded).
 RAW_WINDOW = {"obs_st": timedelta(days=31), "rapid_wind": timedelta(days=1)}
 AGGREGATE_WINDOW = {"obs_st": timedelta(days=92), "rapid_wind": timedelta(days=7)}
+# A year of local-day bins (366 per statistic) for station reports: the History year view.
+DAY_WINDOW = {"obs_st": timedelta(days=366), "rapid_wind": timedelta(days=7)}
 ROSE_MAX_BINS = 400
 VARIABLE_RESULTANT = 0.1
 # Almanac windows are whole local days; one window reads at most a year of one-minute reports.
@@ -518,7 +520,8 @@ class WeatherService:
                 raise PublicError("unsupported_statistic", "Use observations for raw values.")
         # Bound the window before building any bins (day bins cost one time-model day each).
         for _, source in selected:
-            if query.end - query.start > AGGREGATE_WINDOW[source.family]:
+            window = (DAY_WINDOW if query.resolution == "day" else AGGREGATE_WINDOW)[source.family]
+            if query.end - query.start > window:
                 raise PublicError(
                     "range_too_large", "The aggregate window is too long for this metric."
                 )
