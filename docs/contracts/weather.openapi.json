@@ -136,6 +136,16 @@
             "title": "Generated At",
             "type": "string"
           },
+          "imported": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImportedHistory"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/Aggregate"
@@ -159,7 +169,8 @@
           "start",
           "end",
           "resolution",
-          "items"
+          "items",
+          "imported"
         ],
         "title": "Aggregates",
         "type": "object"
@@ -221,6 +232,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/weather__api__models__Interval"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "imported": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImportedHistory"
               },
               {
                 "type": "null"
@@ -358,6 +379,7 @@
           "interval",
           "comparison_interval",
           "history_interval",
+          "imported",
           "timezone",
           "label",
           "derived",
@@ -1618,6 +1640,36 @@
           "next_cursor"
         ],
         "title": "Events",
+        "type": "object"
+      },
+      "ImportedHistory": {
+        "additionalProperties": false,
+        "description": "History imported from another record (#167): readings before the first live report.",
+        "properties": {
+          "last": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "Last",
+            "type": "string"
+          },
+          "source": {
+            "const": "verdify-platform",
+            "title": "Source",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,6})?Z$",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "start",
+          "last"
+        ],
+        "title": "ImportedHistory",
         "type": "object"
       },
       "Keogram": {

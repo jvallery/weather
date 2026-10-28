@@ -75,7 +75,9 @@ const aggregate = z.object({
   direction_state: z.enum(["directional", "variable", "calm", "missing"]).nullable().default(null).catch(null),
   rose: z.array(rose).nullable().default(null),
 });
-const aggregates = z.object({ generated_at: text, start: text, end: text, resolution: text, items: z.array(aggregate) });
+// History imported from another record (#167); an unparseable label is dropped, never the data.
+const imported = z.object({ source: z.literal("verdify-platform"), start: text, last: text }).nullable().catch(null).default(null);
+const aggregates = z.object({ generated_at: text, start: text, end: text, resolution: text, items: z.array(aggregate), imported });
 // Almanac (#42): a reason code the UI does not know yet is dropped rather than failing the page.
 type AlmanacReason = Schemas["RecordItem"]["missing_reasons"][number];
 const REASONS = ["no_observations", "partial_coverage", "below_record_coverage", "before_history", "inadequate_coverage", "site_not_configured", "solar_events_unavailable", "no_moonrise", "no_moonset"] as const satisfies readonly AlmanacReason[];
@@ -104,7 +106,7 @@ const comparisonItem = z.object({ product: z.literal("comparison"), first: compa
 const almanacItem = z.union([recordItem, rainDayItem, roseItem, astronomyItem, comparisonItem]).nullable().catch(null);
 const almanac = z.object({
   generated_at: text, product: z.enum(["record", "rain_day", "wind_rose_bin", "astronomy", "comparison"]), interval,
-  comparison_interval: interval.nullable().default(null), history_interval: interval.nullable(), timezone: z.literal("America/Denver"),
+  comparison_interval: interval.nullable().default(null), history_interval: interval.nullable(), imported, timezone: z.literal("America/Denver"),
   label: text, derived: z.boolean(), metric: text.nullable(), statistic: text.nullable(), unit: text.nullable(),
   formula_revision: text, library_revision: text, evidence_count: z.number(), evidence_hash: text.nullable().default(null),
   coverage: coverage.nullable().default(null), missing_reasons: reasons, next_cursor: text.nullable().default(null),

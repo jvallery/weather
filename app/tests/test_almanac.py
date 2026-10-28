@@ -79,6 +79,9 @@ class Reader:
     async def history_start(self, now: datetime) -> datetime | None:
         return self.history
 
+    async def imported(self) -> None:
+        return None
+
     async def aggregates(
         self, source: Any, bins: BinSpec, *, cap: timedelta, wind: bool, rose: bool
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:

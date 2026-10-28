@@ -76,6 +76,9 @@ def cadences(settings: Settings) -> dict[Family, Cadence]:
     }
 
 
+# The largest per-row cap an imported reading may carry (#167); aggregate reads fetch this far back.
+IMPORT_CAP_SECONDS = 600
+
 DEFAULT_CADENCES: dict[Family, Cadence] = {
     "obs_st": Cadence(60, 150),
     "rapid_wind": Cadence(3, 15),

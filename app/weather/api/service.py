@@ -35,6 +35,7 @@ from .models import (
     Event,
     EventQuery,
     Events,
+    ImportedHistory,
     Interval,
     Metric,
     MetricDefinition,
@@ -539,13 +540,27 @@ class WeatherService:
         items: list[Aggregate] = []
         for entry, _ in selected:
             items.extend(await self._summaries(entry, query.statistics, bins, "aggregates"))
+        imported = await self._imported()
         return Aggregates(
             generated_at=self.now(),
             start=query.start,
             end=query.end,
             resolution=query.resolution,
             items=items,
+            imported=imported
+            if imported and imported.start < query.end and imported.last >= query.start
+            else None,
         )
+
+    async def _imported(self) -> ImportedHistory | None:
+        """The imported range (#167); a failed read only omits the label, never the data."""
+        try:
+            row = await self.reader.imported()
+        except SourceUnavailable:
+            return None
+        if row is None:
+            return None
+        return ImportedHistory(source=row["source"], start=row["start"], last=row["last"])
 
     async def _summaries(
         self, entry: Entry, statistics: list[str], bins: BinSpec, operation: str
@@ -673,6 +688,7 @@ class WeatherService:
             history_interval=(
                 Interval(start=history_start, end=now) if history_start is not None else None
             ),
+            imported=await self._imported(),
             timezone="America/Denver",
             label=label,
             derived=product == "astronomy",
