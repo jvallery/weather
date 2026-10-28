@@ -8,13 +8,17 @@ holds this station's outdoor readings from 2025-10-23, in US units, on two kinds
   `wind_speed_avg_mph`/`wind_direction_avg_deg` (`wind_speed_mph`/`wind_direction_deg` are rapid
   samples); `precip_in` is the report minute's amount when `precip_intensity_in_h` is present.
 * Home Assistant poll rows (no `wind_speed_avg_mph`): about one a minute, repeating the latest
-  temperature, humidity, pressure, light and UV. Their wind and rain columns are not the report's
-  values (`precip_in` holds a rate), so only those five scalar readings are taken from them.
+  temperature, humidity, pressure, light and UV (before April 2026, light, solar and UV also came
+  on their own two-minute rows). Their wind and rain columns are not the report's values
+  (`precip_in` holds a rate), so only the scalar readings are taken from them.
+
+Each Tempest row also carries the rapid-wind sample (`wind_speed_mph`, `wind_direction_deg`),
+imported into the rapid-wind history.
 
 `transform` turns one source row into the live `obs_st` value keys in canonical metric units,
 dropping (never guessing) a missing or out-of-range field. `python -m weather.importer.verdify
-transform` reads the export CSV on stdin and writes `source_ts,values,cap_seconds` CSV for the
-loader (docs/operations/telemetry.md, "Imported history"). It needs no database access.
+transform` reads the export CSV on stdin and writes `family,source_ts,values,cap_seconds` CSV
+for the loader (docs/operations/telemetry.md, "Imported history"). It needs no database access.
 """
 
 import csv
@@ -27,6 +31,8 @@ from typing import IO
 SOURCE = "verdify-platform"
 # The source reported every one to five minutes: a reading is held at most ten minutes (#167).
 CAP_SECONDS = 600
+# A rapid-wind sample is a 3 s reading: held at most 6 s, like a live one, never across a gap.
+RAPID_CAP_SECONDS = 6
 MPH = 0.44704
 INCH_MM = 25.4
 MILE_KM = 1.609344
@@ -34,9 +40,12 @@ MILE_KM = 1.609344
 # Read-only export, one bounded window per call; :from and :to are UTC instants.
 EXPORT_SQL = """COPY (SELECT ts,outdoor_temp_f,outdoor_rh_pct,pressure_hpa,outdoor_lux,
   solar_irradiance_w_m2,uv_index,wind_speed_avg_mph,wind_direction_avg_deg,wind_gust_mph,
-  wind_lull_mph,precip_in,precip_intensity_in_h,lightning_count,lightning_avg_dist_mi
+  wind_lull_mph,precip_in,precip_intensity_in_h,lightning_count,lightning_avg_dist_mi,
+  wind_speed_mph,wind_direction_deg
 FROM public.climate
-WHERE outdoor_temp_f IS NOT NULL AND ts >= '{start}' AND ts < '{end}'
+WHERE ts >= '{start}' AND ts < '{end}' AND (outdoor_temp_f IS NOT NULL OR outdoor_rh_pct IS NOT NULL
+  OR pressure_hpa IS NOT NULL OR outdoor_lux IS NOT NULL OR solar_irradiance_w_m2 IS NOT NULL
+  OR uv_index IS NOT NULL OR wind_speed_avg_mph IS NOT NULL)
 ORDER BY ts) TO STDOUT WITH (FORMAT csv, HEADER true)"""
 
 # Canonical bounds; a value outside them is dropped as a sensor or transport fault.
@@ -54,6 +63,7 @@ BOUNDS: dict[str, tuple[float, float]] = {
     "precip_accumulated": (0.0, 50.0),
     "lightning_strike_count": (0.0, 10_000.0),
     "lightning_strike_avg_distance": (0.0, 100.0),
+    "wind_speed": (0.0, 90.0),
 }
 
 
@@ -102,6 +112,21 @@ def transform(row: Mapping[str, str]) -> dict[str, float]:
     return values
 
 
+def rapid(row: Mapping[str, str]) -> dict[str, float]:
+    """A Tempest row's rapid-wind sample (`wind_speed_mph`, `wind_direction_deg`), canonical units.
+
+    Only on a Tempest row: a poll row carries the lagged average in those columns."""
+    if _number(row, "wind_speed_avg_mph") is None:
+        return {}
+    values: dict[str, float] = {}
+    speed, direction = _number(row, "wind_speed_mph"), _number(row, "wind_direction_deg")
+    if speed is not None and BOUNDS["wind_speed"][0] <= speed * MPH <= BOUNDS["wind_speed"][1]:
+        values["wind_speed"] = round(speed * MPH, 2)
+    if direction is not None and 0 <= direction <= 360:
+        values["wind_direction"] = round(direction)
+    return values
+
+
 def instant(text: str) -> str:
     """The source's timestamptz text (`2026-10-26 18:00:07.1+00`) as a UTC ISO instant."""
     value = datetime.fromisoformat(text.strip().replace(" ", "T"))
@@ -110,12 +135,17 @@ def instant(text: str) -> str:
     return value.isoformat()
 
 
-def rows(source: Iterable[Mapping[str, str]]) -> Iterator[tuple[str, str, int]]:
-    """Loader rows: one per source row that carries at least one valid reading."""
+def rows(source: Iterable[Mapping[str, str]]) -> Iterator[tuple[str, str, str, int]]:
+    """Loader rows (family, source time, values, cap): a station-report row for every source row
+    with a valid reading, and a rapid-wind row for every Tempest row with a valid sample."""
     for row in source:
+        at = instant(row["ts"])
         values = transform(row)
         if values:
-            yield instant(row["ts"]), json.dumps(values, sort_keys=True), CAP_SECONDS
+            yield "obs_st", at, json.dumps(values, sort_keys=True), CAP_SECONDS
+        sample = rapid(row)
+        if sample:
+            yield "rapid_wind", at, json.dumps(sample, sort_keys=True), RAPID_CAP_SECONDS
 
 
 def main(stdin: IO[str], stdout: IO[str]) -> int:

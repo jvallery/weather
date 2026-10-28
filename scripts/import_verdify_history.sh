@@ -7,7 +7,8 @@
 # One batch per month, streamed in-cluster: a read-only COPY out of verdify-db (owner role, read-only
 # transaction), the tested transform in the weather app pod (weather.importer.verdify), and one
 # transaction into weather-pg that inserts only rows before the first live report. Reruns insert
-# nothing (ON CONFLICT DO NOTHING on source and source time). The Mac only pipes the bytes; nothing is
+# nothing (ON CONFLICT DO NOTHING on source, family and source time). Rows are station reports
+# (family obs_st) and the Tempest's rapid-wind samples (rapid_wind). The Mac only pipes the bytes; nothing is
 # written to disk. Runbook: docs/operations/telemetry.md, "Imported history".
 set -euo pipefail
 CONTEXT=${KUBE_CONTEXT:-vallery}
@@ -36,10 +37,10 @@ while [[ $month < $(next_month "$last") ]]; do
             coalesce((SELECT min(source_ts) FROM weather.obs_st),'infinity'::timestamptz))"
   load_sql="WITH c AS (SELECT cutoff FROM weather.import_batch WHERE id='$batch'),
     ins AS (
-      INSERT INTO weather.obs_import(batch_id,source,source_ts,\"values\",cap_seconds)
-      SELECT '$batch','verdify-platform',s.source_ts,s.\"values\",s.cap_seconds
+      INSERT INTO weather.obs_import(batch_id,source,family,source_ts,\"values\",cap_seconds)
+      SELECT '$batch','verdify-platform',s.family,s.source_ts,s.\"values\",s.cap_seconds
       FROM staging s CROSS JOIN c WHERE s.source_ts < c.cutoff
-      ON CONFLICT (source,source_ts) DO NOTHING RETURNING 1)
+      ON CONFLICT (source,family,source_ts) DO NOTHING RETURNING 1)
     UPDATE weather.import_batch i SET
       source_rows=(SELECT count(*) FROM staging),
       inserted_rows=(SELECT count(*) FROM ins),
@@ -53,7 +54,7 @@ while [[ $month < $(next_month "$last") ]]; do
   src exec verdify-db-0 -c postgres -- sh -c 'psql -U "${POSTGRES_USER:-postgres}" -d verdify -X -q -v ON_ERROR_STOP=1 -c "SET default_transaction_read_only = on" -c "$1"' sh "$export_sql" \
     | dst exec -i "$app" -- python -m weather.importer.verdify transform \
     | dst exec -i "$primary" -c postgres -- psql -d weather -X -q -v ON_ERROR_STOP=1 -1 \
-        -c "CREATE TEMP TABLE staging (source_ts timestamptz NOT NULL, \"values\" jsonb NOT NULL, cap_seconds integer NOT NULL)" \
+        -c "CREATE TEMP TABLE staging (family varchar(16) NOT NULL, source_ts timestamptz NOT NULL, \"values\" jsonb NOT NULL, cap_seconds integer NOT NULL)" \
         -c "COPY staging FROM STDIN WITH (FORMAT csv)" \
         -c "$batch_sql" \
         -c "$load_sql"

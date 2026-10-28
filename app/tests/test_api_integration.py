@@ -523,6 +523,26 @@ def test_imported_history_reads_before_live_and_live_wins() -> None:
                 # Before the export's snapshot margin, like rows that landed long ago.
                 inserted=datetime.now(UTC) - timedelta(hours=1),
             )
+        # 0017: imported rapid-wind samples feed the rapid-wind history only, before live.
+        async with admin.begin() as c:
+            await c.execute(
+                text("""INSERT INTO weather.obs_import(batch_id,source,family,source_ts,
+                          "values",cap_seconds)
+                        VALUES(:batch,'verdify-platform','rapid_wind',:at,
+                          '{"wind_speed": 2.5, "wind_direction": 90}',6)"""),
+                {"batch": batch, "at": imported_start + timedelta(minutes=5)},
+            )
+        async with api.connect() as c:
+            counts = (
+                await c.execute(
+                    text("""SELECT
+                      (SELECT count(*) FROM public_api.rapid_wind_history
+                        WHERE provenance <> 'live'),
+                      (SELECT count(*) FROM public_api.obs_st_history
+                        WHERE provenance <> 'live')""")
+                )
+            ).one()
+        assert tuple(counts) == (1, 25)
         weather = service(api)
         result = await weather.aggregates(
             AggregateQuery.model_validate(
