@@ -29,7 +29,9 @@ next_month() { python3 -c "import sys; y, m = map(int, sys.argv[1].split('-')); 
 month=$first
 while [[ $month < $(next_month "$last") ]]; do
   start="${month}-01T00:00:00Z"; end="$(next_month "$month")-01T00:00:00Z"
-  export_sql=$(dst exec "$app" -- python -c "from weather.importer.verdify import EXPORT_SQL; print(EXPORT_SQL.format(start='$start', end='$end'))")
+  # IMPORT_TABLE=weather_station exports public.weather_station instead of public.climate.
+  query=$([ "${IMPORT_TABLE:-climate}" = weather_station ] && echo WEATHER_STATION_EXPORT_SQL || echo EXPORT_SQL)
+  export_sql=$(dst exec "$app" -- python -c "from weather.importer.verdify import $query; print($query.format(start='$start', end='$end'))")
   batch=$(python3 -c "import uuid; print(uuid.uuid4())")
   # Two statements: the batch row first (its cutoff is the first live report now), then the rows.
   batch_sql="INSERT INTO weather.import_batch(id,source,source_start,source_end,cutoff)

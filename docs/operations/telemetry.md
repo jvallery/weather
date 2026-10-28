@@ -28,6 +28,11 @@ Station history before the live receiver (first report 2026-10-24 20:39Z) is imp
   - Averaged wind, gust, lull and direction come only from Tempest rows (`wind_speed_avg_mph` present).
   - Rain and lightning come only from Tempest rows that also carry `precip_intensity_in_h`. Home Assistant poll rows put a rate in `precip_in`.
   - Out-of-range values are dropped, never clamped.
+- **Other source tables.**
+  - `public.weather_station` (2026-03-23 to 05-22) holds 891 more Tempest reports at timestamps not in `climate`. Import it with `IMPORT_TABLE=weather_station scripts/import_verdify_history.sh 2026-03 2026-05`.
+  - `climate` keeps 365 days (TimescaleDB `drop_after`), so raw readings before 2025-10-23 are gone at the source. `daily_summary` has outdoor min/max back to 2025-08-05; those are derived daily extremes, not observations, and are not imported.
+  - Not weather observations: `observations` (plant health), `image_observations` (greenhouse images) and `weather_forecast` (forecasts).
+  - 4 `climate` rows are left out: 3 poll-row wind averages and 1 rain rate. None is a report value.
 - **Coverage.** The source reported every 1 to 5 minutes, so each imported reading is held up to `cap_seconds` (600 s). Live readings keep the registry's two-interval cap. Rain exists only for minutes the station reported, so imported rain coverage is low by design: an unreported minute is a gap, never zero.
 - **Run or re-run.** `scripts/import_verdify_history.sh 2025-10 2026-10` handles one month per batch:
   1. A read-only `COPY` out of verdify-db, using the owner role in a read-only transaction. Run it with no new credentials or network policy.
