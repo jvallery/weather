@@ -39,7 +39,7 @@ Station history before the live receiver (first report 2026-10-24 20:39Z) is imp
   2. The transform in the weather app pod.
   3. One transaction into weather-pg.
 
-  It needs the app image with `weather.importer` (0016 or later). A rerun inserts nothing (`ON CONFLICT (source, family, source_ts) DO NOTHING`) and records the rows as duplicates in its batch.
+  It needs the app image with `weather.importer` (0016 or later). A rerun inserts nothing. On a conflict over (source, family, source_ts), a row only gains keys it lacks and no value is overwritten; the batch records the rest as duplicates. `outdoor_illuminance` (a second entity for the same Tempest illuminance) fills minutes `outdoor_lux` lacks: 1,423 rows plus 5 merged.
 - **Check.** `SELECT source_start, source_rows, inserted_rows, overlap_rows, duplicate_rows, state FROM weather.import_batch ORDER BY source_start`. Per day, `count(*)` in `weather.obs_import` equals the source's outdoor rows that carried a valid reading, less any overlap with live. `/api/v1/weather/aggregates` and the almanac return an `imported` range (the pages show the history without a label, at Jason's request, 2026-10-28).
 - **Roll back a batch.** As the migrator, in one transaction:
   1. `DELETE FROM weather.obs_import WHERE batch_id = '<id>'`
