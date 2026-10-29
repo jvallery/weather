@@ -11,8 +11,11 @@ PVCs or the namespace to redeploy.**
   anti-affinity on `topology.vallery.net/proxmox-host` and control-plane nodes
   excluded. The first commissioning placed them on opal, oro and onyx.
   Quorum sync `ANY 1` with `synchronous_commit=on`.
-- Requests 250m/1Gi and limits 1 CPU/2Gi per instance, plus the Barman sidecar
-  (100m/128Mi, limit 1/512Mi). Grow from observed working sets.
+- Requests 250m/1Gi and limits 4 CPU/2Gi per instance, plus the Barman sidecar
+  (100m/128Mi, limit 1/512Mi). The CPU burst allowance keeps the bounded concurrent
+  API aggregate reads from starving ordinary reads on the primary; requests and
+  memory bounds stay unchanged. Recheck node capacity, namespace quota and actual
+  SQL/HTTP latency before changing these bounds.
 - Image: the zot mirror of PostgreSQL 16.15, pinned as `:16.15@sha256:…` with
   `imagePullSecrets: zot-origin-cluster-pull`. CNPG admission rejects a
   digest-only `imageName`. pgvector 0.8.6.
@@ -34,6 +37,28 @@ PVCs or the namespace to redeploy.**
 Role check: render `deploy/acceptance/restore/role-logins.yaml` with a unique
 operation and future expiry, apply it, read the Job log (role names and
 privilege booleans only), then delete the Job.
+
+## CPU saturation and read latency
+
+Compare the primary's CPU usage with its CFS throttled-period ratio and read-only
+`pg_stat_activity` wait/age summaries. A Ready three-instance cluster proves
+availability, not query latency. Check the running app digest as well as Argo's
+source revision: the aggregate `work_mem` fix must be in the built app image.
+Never log query parameters or enable statement logging to investigate latency.
+
+The 4-CPU PostgreSQL caps add 9 CPU to the former three-instance limit total.
+At the recovery preflight, namespace limits were 25.5/40 CPU; this change makes
+them 34.5/40 without changing reservations. The commissioning/drill envelope in
+the deployment runbook is historical sizing, not permission to exceed quota;
+recalculate it before admitting a drill alongside these caps.
+
+Deliver a Cluster resource change in a coordinated maintenance window: CNPG can
+roll its instances, including a brief primary restart under the configured
+`primaryUpdateMethod`. Keep the maintenance Lease, healthy standbys, synchronous
+replication and WAL archiving; never delete a Cluster or PVC. After the intended
+source is live, verify actual pod limits, replication/archive health, ordinary
+and aggregate HTTP requests, then complete the stateful-change soak. Revert the
+source CPU cap if the change causes harm; do not bypass admission or alert rules.
 
 ## Backups and WAL
 

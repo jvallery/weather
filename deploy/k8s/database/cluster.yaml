@@ -79,13 +79,14 @@ spec:
     nodeSelector:
       agentfleet.vallery.net/control-plane: 'false'
       storage.vallery.net/longhorn: 'true'
-  # Sized like the options-pg pattern (C15); grow from observed working sets.
+  # Four concurrent API aggregate reads saturate a one-CPU primary and delay ordinary reads.
+  # Keep the reservation and memory bound; permit bounded CPU bursts on the primary/replicas.
   resources:
     requests:
       cpu: 250m
       memory: 1Gi
     limits:
-      cpu: '1'
+      cpu: '4'
       memory: 2Gi
   inheritedMetadata:
     annotations:
