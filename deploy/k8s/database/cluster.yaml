@@ -122,5 +122,6 @@ spec:
       enabled: true
       isWALArchiver: true
       parameters:
-        barmanObjectName: weather-pg-b2
+        # storage-infra#1253: archive to the in-cluster Garage (works with no WAN).
+        barmanObjectName: weather-pg-local
         serverName: weather-pg

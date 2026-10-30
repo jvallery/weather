@@ -58,6 +58,16 @@ spec:
       ports:
         - {port: 53, protocol: UDP}
         - {port: 53, protocol: TCP}
+    # storage-infra#1253: the local WAL archive on the availability Garage.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: garage-k3s
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: garage-k3s
+      ports:
+        - {port: 3900, protocol: TCP}
     # B2 has dynamic addresses; the instance manager also requires the
     # Kubernetes API (443 Service, 6443 endpoint after service translation).
     # Native NetworkPolicy has no FQDN selector. Admit these TLS ports

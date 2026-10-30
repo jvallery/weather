@@ -1,0 +1,48 @@
+# Local WAL archive (storage-infra#1253, Wave 2.5 B2; T1 checklist row 7). The WAL archiver
+# and the daily base backup go to the availability Garage in the cluster, so archiving keeps
+# working with both WANs down and pg_wal never fills. Precedent: auth-pg -> garage-k3s.
+# Offsite copy: storage-infra's daily Longhorn B2 backup of the garage-k3s volume (as for
+# auth-pg). The B2 store weather-pg-b2 stays declared, unused by the archiver, so its
+# history remains restorable until its own provider lifecycle expires it.
+# Credentials: Secret weather-pg-backup-s3-writer-k3s (bucket weather-pg, read/write), sealed
+# into the agents KSOPS weather lane by the coordinator; it must exist before this syncs.
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: weather-pg-local
+  namespace: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '-6'
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  configuration:
+    destinationPath: s3://weather-pg/cnpg
+    endpointURL: http://garage-k3s.garage-k3s.svc.cluster.local:3900
+    s3Credentials:
+      accessKeyId:
+        name: weather-pg-backup-s3-writer-k3s
+        key: AWS_ACCESS_KEY_ID
+      secretAccessKey:
+        name: weather-pg-backup-s3-writer-k3s
+        key: AWS_SECRET_ACCESS_KEY
+      region:
+        name: weather-pg-backup-s3-writer-k3s
+        key: AWS_DEFAULT_REGION
+    data:
+      compression: gzip
+      jobs: 1
+    wal:
+      compression: gzip
+      maxParallel: 2
+  # Garage has no provider lifecycle on this bucket: CNPG's policy is the only pruner
+  # (a provider rule would break the WAL chain). 7 days covers the T1 >= 7 d runway.
+  retentionPolicy: 7d
+  instanceSidecarConfiguration:
+    logLevel: info
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: '1'
+        memory: 512Mi
