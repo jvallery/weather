@@ -91,7 +91,9 @@ class DatabaseManifestTests(unittest.TestCase):
     def test_wal_archiver_is_the_local_garage_store(self):
         # storage-infra#1253: archiving must keep working with both WANs down.
         cluster = yaml.safe_load((ROOT / "deploy/k8s/database/cluster.yaml").read_text())
-        local = yaml.safe_load((ROOT / "deploy/k8s/database/object-store-local.yaml").read_text())
+        local = yaml.safe_load(
+            (ROOT / "deploy/k8s/database/object-store-local.yaml").read_text()
+        )
         archiver = [p for p in cluster["spec"]["plugins"] if p.get("isWALArchiver")]
         self.assertEqual(len(archiver), 1)
         self.assertEqual(archiver[0]["parameters"]["barmanObjectName"], "weather-pg-local")
@@ -102,14 +104,18 @@ class DatabaseManifestTests(unittest.TestCase):
             "Prune=false,Delete=false",
         )
         conf = local["spec"]["configuration"]
-        self.assertEqual(conf["endpointURL"], "http://garage-k3s.garage-k3s.svc.cluster.local:3900")
+        self.assertEqual(
+            conf["endpointURL"], "http://garage-k3s.garage-k3s.svc.cluster.local:3900"
+        )
         self.assertEqual(conf["destinationPath"], "s3://weather-pg/cnpg")
         self.assertEqual(
             {r["name"] for r in conf["s3Credentials"].values()},
             {"weather-pg-backup-s3-writer-k3s"},
         )
         self.assertEqual(local["spec"]["retentionPolicy"], "7d")
-        kustomization = yaml.safe_load((ROOT / "deploy/k8s/database/kustomization.yaml").read_text())
+        kustomization = yaml.safe_load(
+            (ROOT / "deploy/k8s/database/kustomization.yaml").read_text()
+        )
         self.assertIn("object-store-local.yaml", kustomization["resources"])
 
     def test_drill_has_only_reader_and_no_archiver_or_password_rewrite(self):
