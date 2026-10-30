@@ -61,6 +61,8 @@ class DatabaseManifestTests(unittest.TestCase):
         )
         self.assertEqual(cluster["spec"]["postgresql"]["parameters"]["archive_timeout"], "300s")
         parameters = cluster["spec"]["postgresql"]["parameters"]
+        # Slot-retained WAL must stay bounded (jvallery/agents#5375).
+        self.assertEqual(parameters["max_slot_wal_keep_size"], "5GB")
         self.assertEqual(parameters["log_error_verbosity"], "terse")
         self.assertEqual(parameters["log_parameter_max_length"], "0")
         self.assertEqual(parameters["log_parameter_max_length_on_error"], "0")
