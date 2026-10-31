@@ -89,7 +89,8 @@ The WAL archiver and the daily base backup write to ObjectStore `weather-pg-loca
 (bucket `weather-pg` on the in-cluster availability Garage, retention 7 days), so
 archiving keeps working with both WANs down and pg_wal never fills. The offsite copy is
 storage-infra's daily Longhorn B2 backup of the garage-k3s volume, as for auth-pg. The
-B2 store `weather-pg-b2` stays declared for its history and the restore drill reader.
+B2 store `weather-pg-b2` stays declared for its pre-2026-10-31 history; the restore drill
+reads `weather-pg-local` with the reader key.
 The writer and reader Secrets (`weather-pg-backup-s3-{writer,reader}-k3s`) are created
 create-only in the cluster by the change-gate and carry only `AWS_ACCESS_KEY_ID` and
 `AWS_SECRET_ACCESS_KEY`; the Garage region `garage` comes from the sidecar env in
@@ -147,8 +148,11 @@ does the following:
 1. Inserts three sentinel rows one minute apart in
    `weather_recovery_drill.sentinel`.
 2. Forces a WAL switch and waits until it is archived.
-3. Restores a `weather-drill-pg-<id>` Cluster, using only the reader key and no
-   WAL archiver, to a target between sentinels 1 and 2.
+3. Restores a `weather-drill-pg-<id>` Cluster from `weather-pg-local` (the Garage
+   store production archives to), using only the read-only key
+   `weather-pg-backup-s3-reader-k3s` and no WAL archiver, to a target between
+   sentinels 1 and 2. The drill NetworkPolicy admits only DNS, garage-k3s :3900 and
+   the API servers :6443, so the restore needs no WAN.
 4. Verifies that sentinels 0 and 1 are present, sentinel 2 is absent and pgvector
    is 0.8.6.
 
@@ -158,7 +162,10 @@ failed drill is preserved for inspection; never rerun the same operation ID.
 Measured on 2026-10-24 (`pitr20261024a`): the forced WAL was archived before
 the restore. **RTO 74 s** (restore start to verified readback). **RPO 1 s**
 against the target (60 s sentinel resolution). The drill resources were then
-deleted.
+deleted. That drill read the B2 store; since storage-infra#1253 the drill reads the local
+store. Its preflight refuses unless the WAL archiver is `weather-pg-local` and that store
+reports a `firstRecoverabilityPoint`. Production RPO for an unplanned loss is bounded by
+`archive_timeout` (300 s) plus the archive lag.
 
 After a real production recovery, give the recovered cluster a new Barman
 `serverName`. Never point a recovered writer at the source archive prefix.
