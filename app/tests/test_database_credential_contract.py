@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DATABASE = ROOT / "deploy/k8s/database"
 CONTRACT_PATH = DATABASE / "weather-pg-backup-credential-contract.yaml"
 STORE_PATH = DATABASE / "object-store-local.yaml"
+DRILL_PATH = ROOT / "deploy/acceptance/restore/drill.yaml"
 UID = r"^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$"
 
 
@@ -69,6 +70,21 @@ class CredentialContract(unittest.TestCase):
             self.assertEqual(row["observed"]["change_id"], row["provisioned"]["change_id"])
             self.assertRegex(row["provisioned"]["uid"], UID)
             self.assertRegex(row["observed"]["at"], r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$")
+
+    def test_the_drill_reads_with_the_attested_reader_only(self):
+        # storage-infra#1253 step 7: a drill can never archive into s3://weather-pg/cnpg.
+        rows = {row["role"]: row for row in self.contract["credentials"]}
+        self.assertEqual(rows["reader"]["consumed_by"], "deploy/acceptance/restore/drill.yaml")
+        drill_store = next(
+            doc
+            for doc in yaml.safe_load_all(DRILL_PATH.read_text())
+            if doc["kind"] == "ObjectStore"
+        )
+        self.assertEqual(blockers(self.contract, drill_store), [])
+        selected = {
+            s["name"] for s in drill_store["spec"]["configuration"]["s3Credentials"].values()
+        }
+        self.assertEqual(selected, {rows["reader"]["secret"]})
 
     def test_region_comes_from_sidecar_env_not_a_secret(self):
         # The gate writes no region key; selecting one would break WAL archiving at runtime.
