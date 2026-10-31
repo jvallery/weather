@@ -88,6 +88,36 @@ class DatabaseManifestTests(unittest.TestCase):
             next(r for r in roles if r["name"] == "weather_api")["connectionLimit"], 40
         )
 
+    def test_wal_archiver_is_the_local_garage_store(self):
+        # storage-infra#1253: archiving must keep working with both WANs down.
+        cluster = yaml.safe_load((ROOT / "deploy/k8s/database/cluster.yaml").read_text())
+        local = yaml.safe_load(
+            (ROOT / "deploy/k8s/database/object-store-local.yaml").read_text()
+        )
+        archiver = [p for p in cluster["spec"]["plugins"] if p.get("isWALArchiver")]
+        self.assertEqual(len(archiver), 1)
+        self.assertEqual(archiver[0]["parameters"]["barmanObjectName"], "weather-pg-local")
+        self.assertEqual(archiver[0]["parameters"]["serverName"], "weather-pg")
+        self.assertEqual(local["metadata"]["name"], "weather-pg-local")
+        self.assertEqual(
+            local["metadata"]["annotations"]["argocd.argoproj.io/sync-options"],
+            "Prune=false,Delete=false",
+        )
+        conf = local["spec"]["configuration"]
+        self.assertEqual(
+            conf["endpointURL"], "http://garage-k3s.garage-k3s.svc.cluster.local:3900"
+        )
+        self.assertEqual(conf["destinationPath"], "s3://weather-pg/cnpg")
+        self.assertEqual(
+            {r["name"] for r in conf["s3Credentials"].values()},
+            {"weather-pg-backup-s3-writer-k3s"},
+        )
+        self.assertEqual(local["spec"]["retentionPolicy"], "7d")
+        kustomization = yaml.safe_load(
+            (ROOT / "deploy/k8s/database/kustomization.yaml").read_text()
+        )
+        self.assertIn("object-store-local.yaml", kustomization["resources"])
+
     def test_drill_has_only_reader_and_no_archiver_or_password_rewrite(self):
         objects = list(
             yaml.safe_load_all(drill.manifest("123", "2026-10-24T03:00:00+00:00", "2026-10-25"))
@@ -143,7 +173,7 @@ class DatabaseManifestTests(unittest.TestCase):
             }
             for policy in policies
         }
-        self.assertEqual(ports["weather-pg"], {53, 443, 5432, 6443, 8000})
+        self.assertEqual(ports["weather-pg"], {53, 443, 3900, 5432, 6443, 8000})
         self.assertEqual(ports["weather-database-clients"], {53, 5432})
         # storage-infra#1253: only the change-gate probe pods, only DNS and Garage S3.
         probe = next(p for p in policies if p["metadata"]["name"] == "garage-change-gate-probe")

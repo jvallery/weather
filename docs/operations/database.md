@@ -83,12 +83,28 @@ source CPU cap if the change causes harm; do not bypass admission or alert rules
   `pg_stat_wal.wal_bytes` after Tempest ingest starts, and expand storage
   through source if needed.
 
+### Local WAL archive (storage-infra#1253)
+
+The WAL archiver and the daily base backup write to ObjectStore `weather-pg-local`
+(bucket `weather-pg` on the in-cluster availability Garage, retention 7 days), so
+archiving keeps working with both WANs down and pg_wal never fills. The offsite copy is
+storage-infra's daily Longhorn B2 backup of the garage-k3s volume, as for auth-pg. The
+B2 store `weather-pg-b2` stays declared for its history and the restore drill reader.
+The writer and reader Secrets (`weather-pg-backup-s3-{writer,reader}-k3s`) are created
+create-only in the cluster by the change-gate and carry only `AWS_ACCESS_KEY_ID` and
+`AWS_SECRET_ACCESS_KEY`; the Garage region `garage` comes from the sidecar env in
+`object-store-local.yaml`, not from the Secret. The dated key-name attestation is
+`deploy/k8s/database/weather-pg-backup-credential-contract.yaml`; refresh it with its
+range-only probe after any credential change.
+Read archiving state with
+`kubectl -n weather get objectstores.barmancloud.cnpg.io weather-pg-local -o jsonpath='{.status}'`.
+
 ### Backup freshness
 
 `WeatherDbBaseBackupStale` fires when the newest available Barman base backup is over 26 h old
 (the daily base runs at 09:15 UTC on a standby), or when the metric is absent.
 1. `kubectl -n weather get scheduledbackups weather-pg-daily` (LAST BACKUP) and
-   `kubectl -n weather get objectstores.barmancloud.cnpg.io weather-pg-b2 -o jsonpath='{.status}'`
+   `kubectl -n weather get objectstores.barmancloud.cnpg.io weather-pg-local -o jsonpath='{.status}'`
    (`lastSuccessfulBackupTime`, `firstRecoverabilityPoint`).
 2. `kubectl -n weather get backups.postgresql.cnpg.io` shows a failed Backup and its message. The
    usual causes are B2 reachability or an expired or revoked writer key; a standby that is not ready

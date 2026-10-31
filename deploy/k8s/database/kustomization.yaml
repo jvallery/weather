@@ -4,6 +4,7 @@ namespace: weather
 resources:
   - cluster.yaml
   - object-store.yaml
+  - object-store-local.yaml
   - scheduled-backup.yaml
   - network-policies.yaml
   - recovery-policy.yaml
