@@ -145,6 +145,14 @@ class DatabaseManifestTests(unittest.TestCase):
         }
         self.assertEqual(ports["weather-pg"], {53, 443, 5432, 6443, 8000})
         self.assertEqual(ports["weather-database-clients"], {53, 5432})
+        # storage-infra#1253: only the change-gate probe pods, only DNS and Garage S3.
+        probe = next(p for p in policies if p["metadata"]["name"] == "garage-change-gate-probe")
+        self.assertEqual(
+            probe["spec"]["podSelector"],
+            {"matchLabels": {"app.kubernetes.io/managed-by": "garage-change-gate"}},
+        )
+        self.assertEqual(probe["spec"]["policyTypes"], ["Egress"])
+        self.assertEqual(ports["garage-change-gate-probe"], {53, 3900})
 
     def test_migrate_is_a_wave_1_sync_hook_and_db_clients_follow_it(self):
         objects = [
