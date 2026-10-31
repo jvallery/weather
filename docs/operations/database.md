@@ -90,6 +90,12 @@ The WAL archiver and the daily base backup write to ObjectStore `weather-pg-loca
 archiving keeps working with both WANs down and pg_wal never fills. The offsite copy is
 storage-infra's daily Longhorn B2 backup of the garage-k3s volume, as for auth-pg. The
 B2 store `weather-pg-b2` stays declared for its history and the restore drill reader.
+The writer and reader Secrets (`weather-pg-backup-s3-{writer,reader}-k3s`) are created
+create-only in the cluster by the change-gate and carry only `AWS_ACCESS_KEY_ID` and
+`AWS_SECRET_ACCESS_KEY`; the Garage region `garage` comes from the sidecar env in
+`object-store-local.yaml`, not from the Secret. The dated key-name attestation is
+`deploy/k8s/database/weather-pg-backup-credential-contract.yaml`; refresh it with its
+range-only probe after any credential change.
 Read archiving state with
 `kubectl -n weather get objectstores.barmancloud.cnpg.io weather-pg-local -o jsonpath='{.status}'`.
 

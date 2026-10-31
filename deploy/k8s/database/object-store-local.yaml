@@ -4,8 +4,10 @@
 # Offsite copy: storage-infra's daily Longhorn B2 backup of the garage-k3s volume (as for
 # auth-pg). The B2 store weather-pg-b2 stays declared, unused by the archiver, so its
 # history remains restorable until its own provider lifecycle expires it.
-# Credentials: Secret weather-pg-backup-s3-writer-k3s (bucket weather-pg, read/write), sealed
-# into the agents KSOPS weather lane by the coordinator; it must exist before this syncs.
+# Credentials: Secret weather-pg-backup-s3-writer-k3s (bucket weather-pg, read/write), created
+# create-only in the cluster by the agents change-gate Garage target (change-id
+# weather-pg-availability-garage-1253); no value is in Git in any form. The keys this store
+# selects are attested in weather-pg-backup-credential-contract.yaml.
 apiVersion: barmancloud.cnpg.io/v1
 kind: ObjectStore
 metadata:
@@ -25,9 +27,8 @@ spec:
       secretAccessKey:
         name: weather-pg-backup-s3-writer-k3s
         key: AWS_SECRET_ACCESS_KEY
-      region:
-        name: weather-pg-backup-s3-writer-k3s
-        key: AWS_DEFAULT_REGION
+      # No `region` selector: the gate writes only the two key fields, and Garage's region
+      # is not a secret. It comes from the sidecar env below instead.
     data:
       compression: gzip
       jobs: 1
@@ -38,6 +39,20 @@ spec:
   # (a provider rule would break the WAL chain). 7 days covers the T1 >= 7 d runway.
   retentionPolicy: 7d
   instanceSidecarConfiguration:
+    # Garage validates the SigV4 credential scope against its s3_region (`garage` on
+    # garage-k3s), so a wrong or default region is an auth failure. The plugin only takes a
+    # region from a Secret key; boto3 in barman-cloud reads these env vars otherwise. Same
+    # shape as the live plugin stores research-vault-postgresql-backup and
+    # cortex-rag-postgresql-backup on Garage.
+    env:
+      - name: AWS_DEFAULT_REGION
+        value: garage
+      - name: AWS_REGION
+        value: garage
+      - name: AWS_REQUEST_CHECKSUM_CALCULATION
+        value: when_required
+      - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+        value: when_required
     logLevel: info
     resources:
       requests:
