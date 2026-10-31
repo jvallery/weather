@@ -144,10 +144,26 @@ class DatabaseManifestTests(unittest.TestCase):
             cluster["spec"]["externalClusters"][0]["plugin"]["parameters"]["serverName"],
             "weather-pg",
         )
+        # storage-infra#1253: the drill reads the store production archives to, with the
+        # read-only key only, and takes the Garage region from the sidecar env.
+        production = yaml.safe_load(
+            (ROOT / "deploy/k8s/database/object-store-local.yaml").read_text()
+        )["spec"]["configuration"]
+        conf = store["spec"]["configuration"]
+        self.assertEqual(conf["destinationPath"], production["destinationPath"])
+        self.assertEqual(conf["endpointURL"], production["endpointURL"])
         self.assertEqual(
-            {r["name"] for r in store["spec"]["configuration"]["s3Credentials"].values()},
-            {"weather-pg-backup-b2-reader"},
+            (conf["destinationPath"], conf["endpointURL"]),
+            (drill.SOURCE_PATH, drill.SOURCE_ENDPOINT),
         )
+        self.assertEqual(
+            {r["name"] for r in conf["s3Credentials"].values()},
+            {"weather-pg-backup-s3-reader-k3s"},
+        )
+        self.assertNotIn("region", conf["s3Credentials"])
+        self.assertNotIn("retentionPolicy", store["spec"])
+        env = {e["name"]: e["value"] for e in store["spec"]["instanceSidecarConfiguration"]["env"]}
+        self.assertEqual((env["AWS_DEFAULT_REGION"], env["AWS_REGION"]), ("garage", "garage"))
         policy = next(x for x in objects if x["kind"] == "NetworkPolicy")["spec"]
         self.assertEqual(
             policy["ingress"][0]["from"],
@@ -160,8 +176,82 @@ class DatabaseManifestTests(unittest.TestCase):
             ],
         )
         self.assertEqual(
-            {p["port"] for rule in policy["egress"] for p in rule["ports"]}, {53, 443, 6443}
+            {p["port"] for rule in policy["egress"] for p in rule["ports"]}, {53, 3900, 6443}
         )
+        # No internet egress: every rule names its destination, and 6443 reaches only the
+        # API server endpoints and the VIP.
+        for rule in policy["egress"]:
+            self.assertTrue(rule.get("to"), rule)
+        api = next(r for r in policy["egress"] if r["ports"] == [{"port": 6443, "protocol": "TCP"}])
+        self.assertEqual(
+            {peer["ipBlock"]["cidr"] for peer in api["to"]},
+            {"192.168.30.31/32", "192.168.30.32/32", "192.168.30.33/32", "192.168.30.240/32"},
+        )
+        s3 = next(r for r in policy["egress"] if r["ports"] == [{"port": 3900, "protocol": "TCP"}])
+        self.assertEqual(
+            s3["to"][0]["namespaceSelector"]["matchLabels"],
+            {"kubernetes.io/metadata.name": "garage-k3s"},
+        )
+
+    def _preflight_reads(self, archiver_store="weather-pg-local", window=True):
+        cluster = {
+            "spec": {
+                "plugins": [
+                    {
+                        "isWALArchiver": True,
+                        "parameters": {
+                            "barmanObjectName": archiver_store,
+                            "serverName": "weather-pg",
+                        },
+                    }
+                ]
+            },
+            "status": {
+                "readyInstances": 3,
+                "conditions": [{"type": "ContinuousArchiving", "status": "True"}],
+            },
+        }
+        store = yaml.safe_load((ROOT / "deploy/k8s/database/object-store-local.yaml").read_text())
+        if window:
+            store["status"] = {
+                "serverRecoveryWindow": {
+                    "weather-pg": {"firstRecoverabilityPoint": "2026-10-31T11:37:44Z"}
+                }
+            }
+        backups = {
+            "items": [
+                {"spec": {"cluster": {"name": "weather-pg"}}, "status": {"phase": "completed"}}
+            ]
+        }
+
+        def read(kind, name):
+            return {"cluster": cluster, "objectstore": store}[kind]
+
+        def kubectl(*args, stdin=None):
+            if args[:2] == ("get", "backups.postgresql.cnpg.io"):
+                return json.dumps(backups)
+            self.assertEqual(args[:2], ("get", "secret"))
+            self.assertIn(args[2], {drill.WRITER_SECRET, drill.READER_SECRET})
+            self.assertTrue(args[4].startswith("go-template={{range"))
+            return "AWS_ACCESS_KEY_ID\nAWS_SECRET_ACCESS_KEY"
+
+        return read, kubectl
+
+    def test_preflight_accepts_the_local_store_and_records_its_recoverability_point(self):
+        read, kubectl = self._preflight_reads()
+        with patch.object(drill, "read", read), patch.object(drill, "kubectl", kubectl):
+            source = drill.preflight()
+        self.assertEqual(source["sourceRecoverabilityPoint"], "2026-10-31T11:37:44Z")
+
+    def test_preflight_refuses_a_b2_archiver_or_a_store_without_a_base(self):
+        for reads in (self._preflight_reads("weather-pg-b2"), self._preflight_reads(window=False)):
+            read, kubectl = reads
+            with (
+                patch.object(drill, "read", read),
+                patch.object(drill, "kubectl", kubectl),
+                self.assertRaises(RuntimeError),
+            ):
+                drill.preflight()
 
     def test_instance_api_egress_includes_endpoint_port_without_widening_clients(self):
         policies = list(

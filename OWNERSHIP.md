@@ -52,7 +52,7 @@ Disposable restore-drill resources (`weather-drill-*`) are created by `scripts/r
 | Object | Used by | State |
 |---|---|---|
 | Secrets `weather-pg-api`, `-editor`, `-ingest`, `-migrator`, `-worker` (database roles) | DB clients | live |
-| Secrets `weather-pg-backup-b2-writer`, `weather-pg-backup-b2-reader` | `weather-pg` backups, restore drills | live |
+| Secrets `weather-pg-backup-b2-writer`, `weather-pg-backup-b2-reader` | `weather-pg-b2` history (WAL archiving moved to `weather-pg-local`, storage-infra#1253) | live |
 | Secret `weather-media-s3-reader` | api media origin, intel (#23) | live |
 | Secrets `weather-media-s3-writer`, `weather-originals-s3-writer`, `weather-custody-restore-reader` | pipelines, custody drill (#77) | live |
 | Secrets `weather-camera-skycam-east`, `-skycam-west`, `-frontyard-1` | collectors | live |

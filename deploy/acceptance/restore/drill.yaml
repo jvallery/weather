@@ -1,6 +1,10 @@
 # Rendered by scripts/restore-drill.sh; never included in deploy/k8s.
-# All resources stay in weather; the independent reader Secret is referenced
+# All resources stay in weather; the read-only reader Secret is referenced
 # in place, never exported or copied into a separate namespace.
+# Source archive (storage-infra#1253): the availability Garage store that
+# weather-pg archives to (weather-pg-local, s3://weather-pg/cnpg), read with the
+# gate-created read-only key weather-pg-backup-s3-reader-k3s. The drill has no
+# internet egress, so a pass also shows the restore needs no WAN.
 apiVersion: barmancloud.cnpg.io/v1
 kind: ObjectStore
 metadata:
@@ -12,25 +16,34 @@ metadata:
     weather.vallery.net/restore-drill: '__OPERATION__'
 spec:
   configuration:
-    destinationPath: s3://weather-db-vallery/cnpg
-    endpointURL: https://s3.us-west-000.backblazeb2.com
+    destinationPath: s3://weather-pg/cnpg
+    endpointURL: http://garage-k3s.garage-k3s.svc.cluster.local:3900
     s3Credentials:
       accessKeyId:
-        name: weather-pg-backup-b2-reader
+        name: weather-pg-backup-s3-reader-k3s
         key: AWS_ACCESS_KEY_ID
       secretAccessKey:
-        name: weather-pg-backup-b2-reader
+        name: weather-pg-backup-s3-reader-k3s
         key: AWS_SECRET_ACCESS_KEY
-      region:
-        name: weather-pg-backup-b2-reader
-        key: AWS_REGION
+      # No region selector: the gate writes only the two key fields. Garage checks the
+      # SigV4 scope against s3_region `garage`, supplied by the sidecar env below.
     data:
       compression: gzip
       jobs: 1
     wal:
       compression: gzip
       maxParallel: 2
+  # No retentionPolicy: this store is read-only and must never prune.
   instanceSidecarConfiguration:
+    env:
+      - name: AWS_DEFAULT_REGION
+        value: garage
+      - name: AWS_REGION
+        value: garage
+      - name: AWS_REQUEST_CHECKSUM_CALCULATION
+        value: when_required
+      - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+        value: when_required
     resources:
       requests: {cpu: 100m, memory: 128Mi}
       limits: {cpu: '1', memory: 512Mi}
@@ -62,7 +75,7 @@ spec:
         parameters:
           barmanObjectName: __DRILL_NAME__-reader
           serverName: weather-pg
-  # Deliberately no spec.plugins: recovery reads B2 but enables no WAL archiver.
+  # Deliberately no spec.plugins: recovery reads the archive but enables no WAL archiver.
   # No managed roles or owner/password rewrite: restored role state is retained.
   storage:
     size: 20Gi
@@ -124,6 +137,23 @@ spec:
       ports:
         - {port: 53, protocol: UDP}
         - {port: 53, protocol: TCP}
-    - ports:
-        - {port: 443, protocol: TCP}
+    # The availability Garage S3 port only (garage-k3s admits 10.42.0.0/16 on 3900).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: garage-k3s
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: garage-k3s
+      ports:
+        - {port: 3900, protocol: TCP}
+    # The instance manager and plugin sidecar read the API; kube-router matches the
+    # post-DNAT server endpoints (precedent: auth/egress-allow-management-auth-pg-kube-api).
+    # No 443 and no other destination: the drill has no internet egress.
+    - to:
+        - ipBlock: {cidr: 192.168.30.31/32}
+        - ipBlock: {cidr: 192.168.30.32/32}
+        - ipBlock: {cidr: 192.168.30.33/32}
+        - ipBlock: {cidr: 192.168.30.240/32}
+      ports:
         - {port: 6443, protocol: TCP}
