@@ -127,12 +127,12 @@ def test_baseline_head_roles_and_least_privilege() -> None:
             async with admin.begin() as connection:
                 assert await scalar(
                     connection, "SELECT version_num FROM public.alembic_version"
-                ) == ("0017_obs_import_rapid")
+                ) == ("0018_visible_asset")
                 # Slice-1 relations, the observations view, the API's views (0002), the
                 # publication catalog (0003), search (0004), events (0005), the render
                 # schedule (0006), stills (0009), previews (0007), cleanup (0010), keograms
                 # (0008, after 0011), AI descriptions (0012), the editor (0013), posters (0014)
-                # and imported history (0016, rapid wind 0017).
+                # imported history (0016, rapid wind 0017) and asset visibility (0018).
                 relations = (
                     await connection.execute(
                         text("""
@@ -207,7 +207,23 @@ def test_baseline_head_roles_and_least_privilege() -> None:
                     "public_api.obs_st_history",
                     "public_api.rapid_wind_history",
                     "public_api.imported_history",
+                    # 0018_visible_asset
+                    "weather.visible_asset",
                 }
+                # A public view that joins another barrier view per row cannot push the join
+                # key into it: the catalog re-read every asset per video and timed out
+                # (2026-11-04). Views share the visibility rule through weather.visible_asset.
+                nested = (
+                    await connection.execute(
+                        text("""
+                    SELECT DISTINCT v.relname FROM pg_depend d
+                    JOIN pg_rewrite r ON r.oid=d.objid
+                    JOIN pg_class v ON v.oid=r.ev_class
+                    WHERE d.refobjid='public_api.assets'::regclass AND v.relname<>'assets'
+                """)
+                    )
+                ).scalars()
+                assert set(nested) == set()
                 options = await scalar(
                     connection,
                     "SELECT reloptions FROM pg_class WHERE oid='public_api.observations'::regclass",
