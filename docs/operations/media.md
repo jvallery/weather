@@ -446,6 +446,14 @@ Measured 2026-10-26 on the 300 GiB `weather-staging` share (NAS Volume 2), three
   of backlog), and rendering and cleanup waited the whole time.
 - **A due cleanup pass runs as a background task,** one at a time. The render loop only
   checks pressure (the 97% render stop) and never waits for an inventory or deletion pass.
+- **Cleanup and the pressure level tick on their own loop** (every 10 s, beside the render
+  loop and the preview producer). A segment finalize encodes inside one render-loop step for
+  up to about 80 minutes; when housekeeping ticked from that loop, no pass ran for the whole
+  encode and `WeatherStagingCleanupStale` fired after each dusk and dawn finalize (2026-11-05).
+- **`WeatherStagingChunkNotDeleted` goes pending briefly every hour.** Its gauge is the age
+  since the chunk's slot-window end, and the oldest chunk of an hour becomes deletable only
+  once that hour's still is archived, at about 3,700-4,200 s. The next pass (at most 5 minutes
+  later) deletes it, inside the rule's 15-minute `for`. A firing alert means passes stopped.
 
 **What may go.** Catalog rows decide (P3). A sealed chunk is deleted only when every
 condition holds; a kept chunk reports the first unmet one:

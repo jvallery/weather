@@ -7,11 +7,13 @@ import asyncio
 import contextlib
 import itertools
 import os
+import time
 import uuid
 from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 from weather.pipeline import synthetic
@@ -642,6 +644,45 @@ def test_housekeeping_survives_a_failing_share(tmp_path: Path) -> None:
     finally:
         cleanup_module.scan_sealed = original
     assert cleanup.healthy is False
+
+
+
+def test_cleanup_keeps_running_while_a_finalize_holds_the_render_loop(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """2026-11-05: a daytime finalize held the render loop for 57-80 minutes and, ticked from
+    that loop, no cleanup pass ran meanwhile (WeatherStagingCleanupStale). Housekeeping now
+    ticks on its own loop, so passes continue while a render step is busy."""
+    corpus(tmp_path)
+    catalog = FakeCatalog(at(24 * 60))
+    catalog.segments = [SegmentSpan(at(-60), at(600), None, True)]
+    cleanup = make(tmp_path, catalog, interval_seconds=300)
+    housekeeping = Housekeeping(cleanup, Pressure(CAMERA, tmp_path, statvfs=FakeShare()))
+    passes: list[float] = []
+    original = cleanup.run
+
+    async def counted(**kwargs: Any) -> dict[str, int]:
+        passes.append(time.monotonic())
+        return await original(**kwargs)
+
+    monkeypatch.setattr(cleanup, "run", counted)
+    ticks = iter(range(0, 10**9, 400))  # every tick is a full interval after the last
+
+    async def scenario() -> None:
+        stop = asyncio.Event()
+
+        async def render_loop() -> None:
+            # One long step: the encode runs in a thread and the loop awaits it.
+            await asyncio.to_thread(time.sleep, 0.5)
+            stop.set()
+
+        await asyncio.gather(
+            render_loop(), housekeeping.run(stop, 0.01, clock=lambda: float(next(ticks)))
+        )
+
+    asyncio.run(scenario())
+    assert len(passes) >= 2
+    assert sealed(tmp_path) == set()
 
 
 # GC grace guard -------------------------------------------------------------------------------
