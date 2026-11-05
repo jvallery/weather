@@ -1330,8 +1330,9 @@ class Cleanup:
 
 
 class Housekeeping:
-    """The pipeline loop's hook: watermark every loop, cleanup every interval, or every loop
-    (ahead of rendering) under urgent pressure. Failures are counted, never fatal."""
+    """The pipeline's housekeeping loop (`run`), beside the render loop: watermark every tick,
+    cleanup every interval, or every minute under urgent pressure. Failures are counted, never
+    fatal."""
 
     def __init__(self, cleanup: Cleanup, pressure: Pressure) -> None:
         self.cleanup, self.pressure = cleanup, pressure
@@ -1372,6 +1373,26 @@ class Housekeeping:
         self.last_pass = monotonic
         self.next_pass = monotonic + self.cleanup.settings.interval_seconds
         self._pass = asyncio.create_task(self._run_pass())
+
+    async def run(
+        self,
+        stop: asyncio.Event,
+        period: float = 10.0,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
+        """Tick on its own loop beside the render loop, like the preview producer. A segment
+        finalize encodes for up to about 80 minutes inside one render-loop step; ticking from
+        that loop stopped cleanup and the pressure level for the whole encode (2026-11-05,
+        `WeatherStagingCleanupStale`). Returns once `stop` is set and the pass in flight ends."""
+        while not stop.is_set():
+            try:
+                await self.tick(clock())
+            except Exception as error:
+                FAILURES.labels(self.cleanup.camera, "pass").inc()
+                LOG.error("Housekeeping failed (%s, %s)", self.cleanup.camera, type(error).__name__)
+            with contextlib.suppress(TimeoutError):
+                await asyncio.wait_for(stop.wait(), period)
+        await self.wait()
 
     async def wait(self) -> None:
         """Await the pass in flight, if any (shutdown and tests)."""

@@ -438,9 +438,6 @@ class Worker:
     async def run(self, stop: asyncio.Event) -> None:
         while not stop.is_set():
             self.catching_up = False
-            if self.housekeeping is not None:
-                # Staging cleanup (#19) runs ahead of rendering; it never raises.
-                await self.housekeeping.tick(time.monotonic())
             try:
                 await self.step(datetime.now(UTC))
             except Exception as error:
@@ -478,23 +475,27 @@ async def main_async(config: PipelineConfig) -> None:
                 config.expected.height,
             ),
         )
+        # statvfs on a path that is the share itself: each pod mounts only its camera's
+        # subPaths, so /staging is not on NFS.
+        housekeeping = Housekeeping(
+            cleanup, Pressure(config.camera, config.staging / "sealed" / config.camera)
+        )
         worker = Worker(
             config,
             engine,
             Publisher(engine, {MEDIA_BUCKET: store, ORIGINALS_BUCKET: originals}),
             AggregateWeather(engine),
             archive_hours=True,
-            # statvfs on a path that is the share itself: each pod mounts only its camera's
-            # subPaths, so /staging is not on NFS.
-            housekeeping=Housekeeping(
-                cleanup, Pressure(config.camera, config.staging / "sealed" / config.camera)
-            ),
+            housekeeping=housekeeping,
         )
-        # Previews (#39) run beside the renderer, so a long finalize never stalls them.
+        # Previews (#39) and staging cleanup with the pressure level (#19) run beside the
+        # renderer, so a long finalize never stalls them.
         previews = PreviewProducer(
             config.staging, config.expected, engine, skew=timedelta(seconds=config.skew_seconds)
         )
-        await asyncio.gather(worker.run(stop), previews.run(stop))
+        await asyncio.gather(
+            worker.run(stop), previews.run(stop), housekeeping.run(stop, LOOP_SECONDS)
+        )
     finally:
         await store.aclose()
         await originals.aclose()
