@@ -527,7 +527,7 @@ async def view_uses_inclusive_embargo() -> bool:
     try:
         async with db.connect() as connection:
             definition = (await connection.execute(
-                text("SELECT pg_get_viewdef('public_api.assets'::regclass)"))).scalar_one()
+                text("SELECT pg_get_viewdef('weather.visible_asset'::regclass)"))).scalar_one()
     finally:
         await db.dispose()
     flat = " ".join(str(definition).split())
