@@ -622,12 +622,14 @@ test("the editor poster picker previews candidate frames, saves only the frame a
 test("the fixture ingress limits each visitor separately and never limits hashed assets", async ({ request, browserName }) => {
   if (browserName !== "chromium") return; // HTTP only; one engine is enough.
   const burst = async (path: string, visitor: string, count: number) => {
+    const started = Date.now();
     const codes = await Promise.all(Array.from({ length: count }, () => request.get(path, { headers: { "Cf-Connecting-Ip": visitor } }).then((r) => r.status())));
-    return { ok: codes.filter((c) => c < 400).length, limited: codes.filter((c) => c === 429).length };
+    return { ok: codes.filter((c) => c < 400).length, limited: codes.filter((c) => c === 429).length, seconds: (Date.now() - started) / 1000 };
   };
   const first = await burst("/api/v1/weather/current", "198.51.100.1", 90);
   expect(first.limited).toBeGreaterThan(0);
-  expect(first.ok).toBeLessThanOrEqual(62);
+  // weather-rate-limit: burst 60, refilling at 30/s while the burst is in flight (slow CI runners).
+  expect(first.ok).toBeLessThanOrEqual(60 + Math.ceil(first.seconds * 30) + 1);
   expect((await request.get("/api/v1/weather/current", { headers: { "Cf-Connecting-Ip": "198.51.100.2" } })).status()).toBe(200);
   const page = await request.get("/", { headers: { "Cf-Connecting-Ip": "198.51.100.3" } });
   const assets = [...(await page.text()).matchAll(/\/assets\/[^"]+\.js/g)].map(([path]) => path);
