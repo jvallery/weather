@@ -80,10 +80,14 @@ spec:
       agentfleet.vallery.net/control-plane: 'false'
       storage.vallery.net/longhorn: 'true'
   # Four concurrent API aggregate reads saturate a one-CPU primary and delay ordinary reads.
-  # Keep the reservation and memory bound; permit bounded CPU bursts on the primary/replicas.
+  # The CPU request is sized to the primary's measured p95 (7d p95 1.94 cores, 24h p95
+  # 2.20, max 2.54 on 2026-11-05; the weather-history metrics read is the busiest query),
+  # so the scheduler reserves what the primary actually uses. CNPG applies one resource
+  # spec to every instance, so a standby (p95 ~0.1) can take over without re-sizing.
+  # The 4-core limit and the memory bound are unchanged.
   resources:
     requests:
-      cpu: 250m
+      cpu: '2'
       memory: 1Gi
     limits:
       cpu: '4'
