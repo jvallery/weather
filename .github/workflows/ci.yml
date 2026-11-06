@@ -23,21 +23,67 @@ jobs:
     uses: jvallery/estate-ci/.github/workflows/lint.yml@f2d40e7df657822465b091e52c0ca31eab0f3194 # estate-ci main 2026-11-06 (#38)
     with: {strict: true}
 
+  # D-55 (CI-SHARD-ALL): the former single `application` (~26 min) and `browser`
+  # (~21 min) jobs run as parallel shards. The required contexts "application /
+  # application" and "browser / browser" are now aggregate jobs that fail unless
+  # every shard succeeded; the shards together run exactly the former commands.
+  application-checks:
+    uses: jvallery/estate-ci/.github/workflows/checks.yml@f2d40e7df657822465b091e52c0ca31eab0f3194 # estate-ci main 2026-11-06 (#38)
+    with:
+      name: lint-typecheck-supply-chain
+      in-job-image: true
+      run: WEATHER_CI_IN_CLUSTER=1 bash scripts/bootstrap-ci.sh bash scripts/ci.sh lint typecheck supply-chain
+      timeout-minutes: 45
+
+  application-unit:
+    uses: jvallery/estate-ci/.github/workflows/checks.yml@f2d40e7df657822465b091e52c0ca31eab0f3194 # estate-ci main 2026-11-06 (#38)
+    with:
+      name: unit
+      in-job-image: true
+      run: WEATHER_CI_IN_CLUSTER=1 bash scripts/bootstrap-ci.sh bash scripts/ci.sh unit
+      timeout-minutes: 45
+
+  application-integration:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [heavy, rest]
+    uses: jvallery/estate-ci/.github/workflows/checks.yml@f2d40e7df657822465b091e52c0ca31eab0f3194 # estate-ci main 2026-11-06 (#38)
+    with:
+      name: integration-${{ matrix.shard }}
+      in-job-image: true
+      run: WEATHER_CI_IN_CLUSTER=1 WEATHER_CI_INTEGRATION_SHARD=${{ matrix.shard }} bash scripts/bootstrap-ci.sh bash scripts/ci.sh integration
+      timeout-minutes: 45
+
   application:
+    needs: [application-checks, application-unit, application-integration]
+    if: ${{ !cancelled() }}
     uses: jvallery/estate-ci/.github/workflows/checks.yml@f2d40e7df657822465b091e52c0ca31eab0f3194 # estate-ci main 2026-11-06 (#38)
     with:
       name: application
+      run: bash scripts/ci-require-success.sh checks=${{ needs.application-checks.result }} unit=${{ needs.application-unit.result }} integration=${{ needs.application-integration.result }}
+      timeout-minutes: 5
+
+  browser-engine:
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit, firefox]
+    uses: jvallery/estate-ci/.github/workflows/checks.yml@f2d40e7df657822465b091e52c0ca31eab0f3194 # estate-ci main 2026-11-06 (#38)
+    with:
+      name: browser-${{ matrix.engine }}
       in-job-image: true
-      run: WEATHER_CI_IN_CLUSTER=1 bash scripts/bootstrap-ci.sh bash scripts/ci.sh all
+      run: WEATHER_CI_IN_CLUSTER=1 WEATHER_BROWSER_PROJECT=${{ matrix.engine }} bash scripts/bootstrap-ci.sh bash scripts/ci.sh browser
       timeout-minutes: 45
 
   browser:
+    needs: [browser-engine]
+    if: ${{ !cancelled() }}
     uses: jvallery/estate-ci/.github/workflows/checks.yml@f2d40e7df657822465b091e52c0ca31eab0f3194 # estate-ci main 2026-11-06 (#38)
     with:
       name: browser
-      in-job-image: true
-      run: WEATHER_CI_IN_CLUSTER=1 bash scripts/bootstrap-ci.sh bash scripts/ci.sh browser
-      timeout-minutes: 45
+      run: bash scripts/ci-require-success.sh browser-engines=${{ needs.browser-engine.result }}
+      timeout-minutes: 5
 
   manifests:
     uses: jvallery/estate-ci/.github/workflows/checks.yml@f2d40e7df657822465b091e52c0ca31eab0f3194 # estate-ci main 2026-11-06 (#38)

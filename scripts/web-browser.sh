@@ -8,6 +8,12 @@ bash scripts/bootstrap-browser.sh
 (cd web && pnpm build)
 node scripts/check-web-build.mjs
 result=0
-(cd web && pnpm test:browser) || result=$?
+# WEATHER_BROWSER_PROJECT runs one engine (CI runs the three engines as parallel jobs).
+project_args=()
+if [[ -n "${WEATHER_BROWSER_PROJECT:-}" ]]; then
+  [[ "$WEATHER_BROWSER_PROJECT" =~ ^(chromium|webkit|firefox)$ ]] || { echo "Unknown browser project: $WEATHER_BROWSER_PROJECT" >&2; exit 2; }
+  project_args=(--project "$WEATHER_BROWSER_PROJECT")
+fi
+(cd web && pnpm test:browser "${project_args[@]}") || result=$?
 node scripts/web-browser-report.mjs "$result" || result=1
 exit "$result"
