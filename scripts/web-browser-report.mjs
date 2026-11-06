@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 /** Retain compact fixture outcomes in the existing repo-validate report parameter. */
 import { createHash } from "node:crypto";
-import { lstatSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 if (process.platform !== "linux" || process.env.WEATHER_CI_IN_CLUSTER !== "1") throw new Error("Browser evidence requires approved fleet CI");
 const input = "artifacts/playwright-results.json";
 if (!lstatSync(input).isFile() || lstatSync(input).size > 16 * 1024 * 1024) throw new Error("Invalid browser report size/type");
@@ -27,6 +27,8 @@ const complete = projects.join(",") === "chromium,firefox,webkit" && value.stats
 const report = { schema: "weather.web-browser-fixtures/v1", result: exitCode === 0 && complete ? "passed" : "failed", engine_projects: projects, stats: value.stats, failures, screenshots, synthetic_only: true };
 const json = JSON.stringify(report);
 if (Buffer.byteLength(json) > 60_000) throw new Error("Browser evidence exceeds Argo parameter budget");
-writeFileSync("/workspace/ci-test-report.json", `${json}\n`);
-process.stdout.write(`Browser evidence: ${report.result}; ${screenshots.length} checksummed screenshots; report /workspace/ci-test-report.json\n`);
+// Native repo-validate reads /workspace; GitHub Actions/ARC has no /workspace, so keep the report under artifacts/.
+const reportPath = existsSync("/workspace") ? "/workspace/ci-test-report.json" : "artifacts/ci-test-report.json";
+writeFileSync(reportPath, `${json}\n`);
+process.stdout.write(`Browser evidence: ${report.result}; ${screenshots.length} checksummed screenshots; report ${reportPath}\n`);
 if (report.result !== "passed") process.exitCode = 1;
