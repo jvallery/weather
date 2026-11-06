@@ -19,6 +19,19 @@ spec:
   primaryUpdateStrategy: unsupervised
   minSyncReplicas: 1
   maxSyncReplicas: 1
+  # Estate CNPG default for quorum-sync clusters (jvallery/agents#6087; see
+  # jvallery/agents platform/kubernetes/cnpg-operator/README.md): the primary
+  # isolation check is off. In CNPG 1.30 it kills a primary when one API GET
+  # misses a hard-coded 500 ms AND any member is unreachable, so a planned
+  # worker stop plus API latency failed over cortex-rag on 2026-11-05. With
+  # minSyncReplicas 1 an isolated primary cannot commit, so RPO 0 holds
+  # without it. The check is read at probe time: changing it rolls nothing.
+  probes:
+    liveness:
+      isolationCheck:
+        enabled: false
+        requestTimeout: 1000
+        connectionTimeout: 1000
   bootstrap:
     initdb:
       database: weather
