@@ -18,15 +18,13 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # R1-R3 lint: ARC labels only, checkout + estate-ci only. Context "workflow-lint / lint".
   workflow-lint:
-    uses: jvallery/estate-ci/.github/workflows/checks.yml@b5ed574e55dbd3c73b802c6f42a2f58de4612871 # estate-ci main 2026-11-06
-    with:
-      name: workflow-lint
-      run: '"$ESTATE_CI/check-runner-labels.sh" .'
-      timeout-minutes: 5
+    uses: jvallery/estate-ci/.github/workflows/lint.yml@f2d40e7df657822465b091e52c0ca31eab0f3194 # estate-ci main 2026-11-06 (#38)
+    with: {strict: true}
 
   application:
-    uses: jvallery/estate-ci/.github/workflows/checks.yml@b5ed574e55dbd3c73b802c6f42a2f58de4612871 # estate-ci main 2026-11-06
+    uses: jvallery/estate-ci/.github/workflows/checks.yml@f2d40e7df657822465b091e52c0ca31eab0f3194 # estate-ci main 2026-11-06 (#38)
     with:
       name: application
       in-job-image: true
@@ -34,7 +32,7 @@ jobs:
       timeout-minutes: 45
 
   browser:
-    uses: jvallery/estate-ci/.github/workflows/checks.yml@b5ed574e55dbd3c73b802c6f42a2f58de4612871 # estate-ci main 2026-11-06
+    uses: jvallery/estate-ci/.github/workflows/checks.yml@f2d40e7df657822465b091e52c0ca31eab0f3194 # estate-ci main 2026-11-06 (#38)
     with:
       name: browser
       in-job-image: true
@@ -42,7 +40,7 @@ jobs:
       timeout-minutes: 45
 
   manifests:
-    uses: jvallery/estate-ci/.github/workflows/checks.yml@b5ed574e55dbd3c73b802c6f42a2f58de4612871 # estate-ci main 2026-11-06
+    uses: jvallery/estate-ci/.github/workflows/checks.yml@f2d40e7df657822465b091e52c0ca31eab0f3194 # estate-ci main 2026-11-06 (#38)
     with:
       name: manifests
       run: bash ci/manifests.sh
