@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: MIT
+# Weather CI on estate-ci (jvallery/estate-ci): ARC runners in the vallery
+# cluster only. Logic lives in scripts/ and ci/; this file only calls them.
+# Parallel run with native fleet CI (jvallery/agents#6092, weather#204).
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  workflow-lint:
+    uses: jvallery/estate-ci/.github/workflows/checks.yml@b5ed574e55dbd3c73b802c6f42a2f58de4612871 # estate-ci main 2026-11-06
+    with:
+      name: workflow-lint
+      run: '"$ESTATE_CI/check-runner-labels.sh" .'
+      timeout-minutes: 5
+
+  application:
+    uses: jvallery/estate-ci/.github/workflows/checks.yml@b5ed574e55dbd3c73b802c6f42a2f58de4612871 # estate-ci main 2026-11-06
+    with:
+      name: application
+      in-job-image: true
+      run: WEATHER_CI_IN_CLUSTER=1 bash scripts/bootstrap-ci.sh bash scripts/ci.sh all
+      timeout-minutes: 45
+
+  browser:
+    uses: jvallery/estate-ci/.github/workflows/checks.yml@b5ed574e55dbd3c73b802c6f42a2f58de4612871 # estate-ci main 2026-11-06
+    with:
+      name: browser
+      in-job-image: true
+      run: WEATHER_CI_IN_CLUSTER=1 bash scripts/bootstrap-ci.sh bash scripts/ci.sh browser
+      timeout-minutes: 45
+
+  manifests:
+    uses: jvallery/estate-ci/.github/workflows/checks.yml@b5ed574e55dbd3c73b802c6f42a2f58de4612871 # estate-ci main 2026-11-06
+    with:
+      name: manifests
+      run: bash ci/manifests.sh
+      timeout-minutes: 10
