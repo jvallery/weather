@@ -1,0 +1,79 @@
+# Image builds on the estate-ci ARC runners (BUILD-APPS, Jason D-22; jvallery/agents#6092).
+# Replaces native event-ci's push-triggered builds of weather-app, weather-web, weather-python-base, weather-node-base, weather-ci.
+# ci/build_plan.py picks the images in ci/images.tsv whose paths changed in
+# the pushed range (or the dispatched names); each builds in-cluster (Kaniko) on
+# weather-build and is pushed to registry.vallery.net/jvallery/<name> by digest
+# (tag gha-<sha12>). Digest pins in deploy/ stay a reviewed manual edit, as with native CI.
+# Portability (Forgejo/Gitea Actions): checkout + a stdlib repo script + the
+# estate-ci reusable workflow; no cache, artifact, Environment or OIDC use.
+name: build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.dockerignore'
+      - '.python-version'
+      - 'Dockerfile.app'
+      - 'Dockerfile.ci'
+      - 'Dockerfile.web'
+      - 'LICENSE'
+      - 'THIRD_PARTY_NOTICES.md'
+      - 'app/**'
+      - 'ci/browser/**'
+      - 'ci/build_plan.py'
+      - 'ci/images.tsv'
+      - 'docs/operations/ffmpeg.md'
+      - 'images/upstream-imports/node/**'
+      - 'images/upstream-imports/python/**'
+      - 'pyproject.toml'
+      - 'requirements.lock'
+      - 'scripts/retain-web-assets.mjs'
+      - 'scripts/weather'
+      - 'uv.lock'
+      - 'web/**'
+  workflow_dispatch:
+    inputs:
+      images:
+        description: Image names from ci/images.tsv (space-separated), or "all"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+# No concurrency group on purpose: a shared group drops a pending run when a
+# third push arrives, and that run's images would never build. Runs queue on
+# the weather-build set (max 1) instead.
+
+jobs:
+  plan:
+    runs-on: weather-ci
+    timeout-minutes: 10
+    outputs:
+      images: ${{ steps.plan.outputs.images }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: plan
+        env:
+          IMAGES: ${{ inputs.images }}
+        run: python3 ci/build_plan.py
+
+  image:
+    needs: [plan]
+    if: needs.plan.outputs.images != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.images) }}
+    uses: jvallery/estate-ci/.github/workflows/image-build.yml@d3cbf977d4567979e8fe21f1fcf77ce598c81b68
+    with:
+      image: jvallery/${{ matrix.name }}
+      dockerfile: ${{ matrix.dockerfile }}
+      context: ${{ matrix.context }}
+      push: true
+      timeout-minutes: 90
