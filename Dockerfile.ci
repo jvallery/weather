@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Tooling image only: the exact same PostgreSQL/pgvector bytes as weather-pg.
+# The apt step upgrades the base image's Debian packages from the snapshot (trixie-security included) so security
+# fixes land (perl 5.40.1-6+deb13u1, libbrotli1 1.1.0-2+deb13u1); PostgreSQL comes from PGDG, whose source is dropped.
 FROM registry.vallery.net/jvallery/weather-node-base@sha256:1304d2735b6d11efe11501456ef9e312b1f3141341feec72d61f194c2ab7fd1c AS node
 FROM registry.vallery.net/jvallery/weather-app@sha256:30adc5315ae33e453adde6591054df938291813e1d1f39173fd0a5d8d7f0c4d2 AS media_tools
 
@@ -9,11 +11,12 @@ RUN mkdir -p /usr/share/doc/weather-ci \
  && dpkg-query -W -f='${Package} ${Version}\n' tzdata > /usr/share/doc/weather-ci/production-tzdata.txt \
  && sha256sum /usr/share/zoneinfo/America/Denver > /usr/share/doc/weather-ci/production-denver.sha256 \
  && printf '%s\n' \
- 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20261023T000000Z trixie main' \
- 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20261023T000000Z trixie-updates main' \
- 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/20261023T000000Z trixie-security main' > /etc/apt/sources.list \
+ 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20261106T000000Z trixie main' \
+ 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20261106T000000Z trixie-updates main' \
+ 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/20261106T000000Z trixie-security main' > /etc/apt/sources.list \
  && rm -f /etc/apt/sources.list.d/*.sources /etc/apt/sources.list.d/*.list \
  && apt-get update \
+ && apt-get upgrade -y --no-install-recommends \
  && apt-get install -y --no-install-recommends ca-certificates curl unzip passwd \
  && rm -rf /var/lib/apt/lists/* \
  && groupadd --gid 1001 weatherci \
