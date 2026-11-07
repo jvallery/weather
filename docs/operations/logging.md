@@ -15,7 +15,7 @@ its type (`error`). Steady state stays below about one line a minute per pod.
 | pipeline | `index_ready` | info | `camera`, `seconds` since start, `chunks`, `segments` (once per start; the restart-time check for #146) |
 | pipeline | `segment_started` | info | `camera`, `segment_id`, `cycle_date`, `segment`, `recipe`, `resumed` (once per renderer, so also after a restart) |
 | pipeline | `segment_finished` | info | `camera`, `segment_id`, `cycle_date`, `segment`, `state`, `reason`, `slot_coverage`, `gap_frames`, `frames`, `late_seconds` (finalized and published, or the recorded outcome) |
-| pipeline | `segment_retry` / `segment_stuck` | warning / error | `camera`, `segment_id`, `stage`, `error`, `failures`, `retry_seconds`; `segment_stuck` once the backoff reaches its 30-minute maximum |
+| pipeline | `segment_retry` / `segment_stuck` | warning / error | `camera`, `segment_id`, `stage`, `error`, `detail` (the FFmpeg step or validation reason, a fixed name), `failures`, `retry_seconds`; `segment_stuck` once the backoff reaches its 30-minute maximum |
 | pipeline | `cleanup_pass` | info | `camera`, `apply`, `seconds`, and the pass report counts (`deleted_*`, `deleted_bytes`, `pinned_*`, `eligible`, …) |
 | scheduler, intel | `job_finished` | info | `kind`, `attempt`, `state` |
 | scheduler, intel | `job_failed` | warning (retry) / error (last attempt) | `kind`, `attempt`, `error`, `retry`, `retry_seconds` |

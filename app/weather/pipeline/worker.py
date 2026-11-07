@@ -354,6 +354,9 @@ class Worker:
                     segment_id=str(row.id),
                     stage=stage,
                     error=type(error).__name__,
+                    # FFmpegError.stage and ValidationError.reason are fixed names (never
+                    # paths or driver text), so a stuck segment says which step fails.
+                    detail=getattr(error, "stage", None) or getattr(error, "reason", None),
                     failures=failures,
                     retry_seconds=round(delay),
                 )
