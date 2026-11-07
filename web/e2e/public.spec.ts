@@ -313,7 +313,10 @@ test("station history holds at most 3 of the 4 SSR slots, so the home page keeps
   const busy = await request.get("/weather/history/?metric=temperature");
   expect(busy.status()).toBe(503); expect(busy.headers()["retry-after"]).toBe("5");
   expect((await request.get("/")).status()).toBe(200);
-  for (const response of await Promise.all(held)) expect(response.status()).toBe(200);
+  // The held renders were admitted (inflight reached 3); with two sequential 5 s API reads their
+  // loaders may end in the API-unavailable state, which is not what this test is about.
+  await Promise.all(held);
+  await expect.poll(async () => (await request.get("http://localhost:9175/metrics")).text()).toMatch(/^weather_web_ssr_inflight 0$/m);
   const robots = await request.get("/robots.txt");
   expect(robots.status()).toBe(200); expect(await robots.text()).toContain("Disallow: /weather/history/?");
 });
