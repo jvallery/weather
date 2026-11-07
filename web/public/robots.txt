@@ -1,0 +1,6 @@
+# Station history query variants are unbounded (every render links fresh start/end
+# timestamps), so crawlers stay on the bare page.
+User-agent: *
+Disallow: /weather/history/?
+Disallow: /weather/history?
+Disallow: /api/
