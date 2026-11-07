@@ -47,6 +47,10 @@ app.use((req, res, next) => {
 });
 app.use(express.static("build/client", { immutable: true, maxAge: "1y", setHeaders(res) { res.setHeader("Cache-Control", "public, max-age=31536000, immutable"); } }));
 let rendering = 0;
+// Station history is the expensive, crawlable route (unbounded start/end query variants); it may
+// hold at most 3 of the 4 slots, so the home page and other API-backed routes keep one.
+const HISTORY = /^\/weather\/history(?:\/|\/_\.data|\.data)?$/;
+let historyRendering = 0;
 const renderFailures = new Counter({ name: "weather_web_ssr_failures_total", help: "Bounded SSR failures by cause", labelNames: ["reason"] });
 for (const reason of ["overloaded", "deadline", "render_error"]) renderFailures.labels(reason).inc(0);
 const activeRenders = new Gauge({ name: "weather_web_ssr_inflight", help: "Active bounded document/data responses" });
@@ -58,11 +62,12 @@ app.use((req, res, next) => {
   if (UNMETERED.test(req.path)) return next();
   // A hydrated client turns a plain 503 on its single-fetch .data request into a route error response
   // whose data is this body; "busy" is the marker the root ErrorBoundary renders as the busy state.
-  if (rendering >= 4) { renderFailures.labels("overloaded").inc(); res.setHeader("Retry-After", "5"); return res.status(503).type("text").send(req.path.endsWith(".data") ? "busy" : "Weather is busy. Please retry shortly."); }
-  rendering += 1; activeRenders.inc();
+  const history = HISTORY.test(req.path);
+  if (rendering >= 4 || (history && historyRendering >= 3)) { renderFailures.labels("overloaded").inc(); res.setHeader("Retry-After", "5"); return res.status(503).type("text").send(req.path.endsWith(".data") ? "busy" : "Weather is busy. Please retry shortly."); }
+  rendering += 1; activeRenders.inc(); if (history) historyRendering += 1;
   let released = false;
   const timer = setTimeout(() => { renderFailures.labels("deadline").inc(); res.destroy(); }, 15_000); timer.unref();
-  const release = () => { if (!released) { released = true; rendering -= 1; activeRenders.dec(); clearTimeout(timer); } };
+  const release = () => { if (!released) { released = true; rendering -= 1; activeRenders.dec(); if (history) historyRendering -= 1; clearTimeout(timer); } };
   res.once("finish", release); res.once("close", release);
   next();
 });

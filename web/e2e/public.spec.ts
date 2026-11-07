@@ -306,6 +306,17 @@ test("SSR admission: loader-less routes and the route manifest stay available wh
   await expect(page.getByText(/Please retry in a few seconds/)).toBeVisible();
   for (const response of await Promise.all(held)) expect(response.status()).toBe(200);
 });
+test("station history holds at most 3 of the 4 SSR slots, so the home page keeps one", async ({ request }) => {
+  await request.post("http://localhost:4174/__control", { data: { delayMs: 5000 } });
+  const held = Array.from({ length: 3 }, () => request.get("/weather/history/"));
+  await expect.poll(async () => (await request.get("http://localhost:9175/metrics")).text()).toMatch(/^weather_web_ssr_inflight 3$/m);
+  const busy = await request.get("/weather/history/?metric=temperature");
+  expect(busy.status()).toBe(503); expect(busy.headers()["retry-after"]).toBe("5");
+  expect((await request.get("/")).status()).toBe(200);
+  for (const response of await Promise.all(held)) expect(response.status()).toBe(200);
+  const robots = await request.get("/robots.txt");
+  expect(robots.status()).toBe(200); expect(await robots.text()).toContain("Disallow: /weather/history/?");
+});
 test("a failed lazy chunk reloads the page exactly once", async ({ page, request }) => {
   // Every module the document names loads; the lazily imported chart chunk is gone, as after a rollout.
   const documentAssets = new Set([...(await (await request.get("/weather/history/")).text()).matchAll(/\/assets\/[^"'\s]+\.js/g)].map((match) => match[0]));
