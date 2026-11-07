@@ -184,8 +184,8 @@ and a refused request is a 429; hashed assets are never limited. It deviates fro
 ways, both by design: a request without `Cf-Connecting-Ip` is not limited, and the editor's
 cross-namespace auth Middlewares are not run.
 
-`ci.sh browser` runs the single-worker fixture matrix in all three engines (GitHub CI runs one
-engine per parallel job with `WEATHER_BROWSER_PROJECT`, and the `browser` check requires all three), then
+`ci.sh browser` runs the single-worker fixture matrix in all three engines (`WEATHER_BROWSER_PROJECT`
+limits a run to one engine), then
 `scripts/web-browser-report.mjs` writes the compact `/workspace/ci-test-report.json` output parameter
 (capped at 60 KiB). It requires every configured case to pass without skips or retries and records
 checksums for the 27 synthetic Today/history/About screenshots; the full test output, traces and
