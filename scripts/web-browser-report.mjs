@@ -7,24 +7,29 @@ const input = "artifacts/playwright-results.json";
 if (!lstatSync(input).isFile() || lstatSync(input).size > 16 * 1024 * 1024) throw new Error("Invalid browser report size/type");
 const value = JSON.parse(readFileSync(input, "utf8"));
 const projects = value.config.projects.map((project) => project.name).sort();
+// One engine per CI job when WEATHER_BROWSER_PROJECT is set; otherwise all three.
+const only = process.env.WEATHER_BROWSER_PROJECT || "";
+if (only && !["chromium", "webkit", "firefox"].includes(only)) throw new Error("Unknown browser project");
+const engines = only ? [only] : ["chromium", "firefox", "webkit"];
+const ran = new Set();
 const failures = [];
 function walk(suites) {
   for (const suite of suites) {
-    for (const spec of suite.specs || []) for (const test of spec.tests || []) if (test.status !== "expected") failures.push({ title: spec.title, engine: test.projectName, status: test.status });
+    for (const spec of suite.specs || []) for (const test of spec.tests || []) { ran.add(test.projectName); if (test.status !== "expected") failures.push({ title: spec.title, engine: test.projectName, status: test.status }); }
     walk(suite.suites || []);
   }
 }
 walk(value.suites || []);
 const screenshots = [];
 let total = 0;
-for (const file of readdirSync("artifacts").filter((file) => /^synthetic-[a-z]+-(320|768|1440)-(chromium|webkit|firefox)\.png$/.test(file)).sort()) {
+for (const file of readdirSync("artifacts").filter((file) => /^synthetic-[a-z]+-(320|768|1440)-(chromium|webkit|firefox)\.png$/.test(file) && engines.some((engine) => file.endsWith(`-${engine}.png`))).sort()) {
   const path = `artifacts/${file}`, stat = lstatSync(path);
   if (!stat.isFile() || stat.size > 4 * 1024 * 1024 || (total += stat.size) > 32 * 1024 * 1024) throw new Error("Screenshot evidence exceeds size/type budget");
   screenshots.push({ path, bytes: stat.size, sha256: createHash("sha256").update(readFileSync(path)).digest("hex") });
 }
 const exitCode = Number(process.argv[2]);
-const complete = projects.join(",") === "chromium,firefox,webkit" && value.stats.expected >= 93 && value.stats.unexpected === 0 && value.stats.flaky === 0 && value.stats.skipped === 0 && failures.length === 0 && screenshots.length === 27;
-const report = { schema: "weather.web-browser-fixtures/v1", result: exitCode === 0 && complete ? "passed" : "failed", engine_projects: projects, stats: value.stats, failures, screenshots, synthetic_only: true };
+const complete = projects.join(",") === "chromium,firefox,webkit" && [...ran].sort().join(",") === engines.join(",") && value.stats.expected >= 93 && value.stats.unexpected === 0 && value.stats.flaky === 0 && value.stats.skipped === 0 && failures.length === 0 && screenshots.length === 9 * engines.length;
+const report = { schema: "weather.web-browser-fixtures/v1", result: exitCode === 0 && complete ? "passed" : "failed", engine_projects: engines, stats: value.stats, failures, screenshots, synthetic_only: true };
 const json = JSON.stringify(report);
 if (Buffer.byteLength(json) > 60_000) throw new Error("Browser evidence exceeds Argo parameter budget");
 // Native repo-validate reads /workspace; GitHub Actions/ARC has no /workspace, so keep the report under artifacts/.

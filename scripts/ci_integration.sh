@@ -115,7 +115,16 @@ uv run --frozen python -m alembic upgrade head
 # A repeated upgrade at head is a no-op.
 uv run --frozen python -m alembic upgrade head
 uv run --frozen python -m alembic check
-uv run --frozen pytest -m integration
+# CI may split the suite across parallel jobs, each with its own disposable servers.
+# "heavy" is the two longest files; "rest" is every other integration test, so the
+# two shards together are always the whole suite. Unset runs everything.
+wx_heavy=(app/tests/test_pipeline_integration.py app/tests/test_media_integration.py)
+case "${WEATHER_CI_INTEGRATION_SHARD:-}" in
+  '') uv run --frozen pytest -m integration ;;
+  heavy) uv run --frozen pytest -m integration "${wx_heavy[@]}" ;;
+  rest) uv run --frozen pytest -m integration "${wx_heavy[@]/#/--ignore=}" ;;
+  *) echo "Unknown WEATHER_CI_INTEGRATION_SHARD: ${WEATHER_CI_INTEGRATION_SHARD}" >&2; exit 2 ;;
+esac
 # Confirm terminal test success before removing all disposable server state.
 # A loaded runner can take longer than 20 s to finish a fast shutdown; fall back to immediate.
 pg_ctl -D "$wx_pg_root/data" -m fast -w -t 60 stop >/dev/null \
