@@ -82,12 +82,17 @@ def test_an_event_replaces_a_refused_value_instead_of_raising() -> None:
 def test_http_client_request_lines_never_reach_the_logs() -> None:
     from weather.logs import configure
 
+    # The runtime client is httpx2 (logger "httpx2", transport "httpcore2"); its INFO
+    # request lines carry the full object-store URL, so every name must stay quiet.
+    names = ("httpx", "httpx2", "httpcore", "httpcore2")
     root = logging.getLogger()
-    saved = root.handlers[:], root.level, logging.getLogger("httpx").level
+    saved = root.handlers[:], root.level, {name: logging.getLogger(name).level for name in names}
     try:
         configure("pipeline")
-        assert not logging.getLogger("httpx").isEnabledFor(logging.INFO)
+        for name in names:
+            assert not logging.getLogger(name).isEnabledFor(logging.INFO), name
         assert logging.getLogger("weather.pipeline").isEnabledFor(logging.INFO)
     finally:
         root.handlers[:], root.level = saved[0], saved[1]
-        logging.getLogger("httpx").setLevel(saved[2])
+        for name, level in saved[2].items():
+            logging.getLogger(name).setLevel(level)
