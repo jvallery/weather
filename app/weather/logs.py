@@ -18,7 +18,7 @@ from typing import Any
 
 _UNSAFE = re.compile(r"/|\\|://|@")
 _SCALARS = (str, int, float, bool, type(None))
-QUIET = ("httpx", "httpcore", "botocore", "boto3", "urllib3", "aiobotocore")
+QUIET = ("httpx", "httpx2", "httpcore", "httpcore2", "botocore", "boto3", "urllib3", "aiobotocore")
 
 
 class JsonFormatter(logging.Formatter):
