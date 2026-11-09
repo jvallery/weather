@@ -678,7 +678,27 @@ def test_pipeline_deployments_run_with_only_their_inputs() -> None:
     kustomization = yaml.safe_load((root / "kustomization.yaml").read_text())
     assert "pipeline" in kustomization["resources"]
     app_pin = next(i["digest"] for i in kustomization["images"] if i["name"] == "weather-app")
+    assert app_pin.startswith("sha256:")
     deployments = list(yaml.safe_load_all((root / "pipeline/deployments.yaml").read_text()))
+    # weather#223: WEATHER_IMAGE_DIGEST has one source, the weather-app pin. A kustomize
+    # replacement copies each pipeline container's resolved image digest into its env;
+    # ci/manifests.sh checks the rendered values equal the pin.
+    replaced = {
+        r["source"]["name"]
+        for r in kustomization["replacements"]
+        if r["source"]["kind"] == "Deployment"
+        and r["source"]["fieldPath"] == "spec.template.spec.containers.[name=pipeline].image"
+        and r["source"]["options"] == {"delimiter": "@", "index": 1}
+        and r["targets"]
+        == [
+            {
+                "select": {"kind": "Deployment", "name": r["source"]["name"]},
+                "fieldPaths": [
+                    "spec.template.spec.containers.[name=pipeline].env.[name=WEATHER_IMAGE_DIGEST].value"
+                ],
+            }
+        ]
+    }
     policy = yaml.safe_load((root / "pipeline/network-policy.yaml").read_text())
     assert {d["metadata"]["name"] for d in deployments} == {
         "pipeline-skycam-east",
@@ -690,8 +710,10 @@ def test_pipeline_deployments_run_with_only_their_inputs() -> None:
         assert deployment["spec"]["replicas"] == 1
         assert spec["priorityClassName"] == "estate-app"
         env = {e["name"]: e.get("value") for e in spec["containers"][0]["env"]}
-        # RenderResult records the image that rendered; keep it equal to the app pin.
-        assert env["WEATHER_IMAGE_DIGEST"] == app_pin
+        # RenderResult records the image that rendered; the replacement sets it to the app pin.
+        assert spec["containers"][0]["image"] == "weather-app"
+        assert env["WEATHER_IMAGE_DIGEST"] == "set-by-kustomize-replacement"
+        assert deployment["metadata"]["name"] in replaced
         labels = deployment["spec"]["template"]["metadata"]["labels"]
         assert policy["spec"]["podSelector"]["matchLabels"].items() <= labels.items()
         assert spec["automountServiceAccountToken"] is False

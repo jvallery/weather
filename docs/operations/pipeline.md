@@ -236,7 +236,7 @@ it relies on:
 | `WEATHER_PIPELINE_BLOCK_FRAMES` | 60 | 1–60; resources only |
 | `WEATHER_CAPTURE_CHUNK_SECONDS` | 60 | Collector chunk length |
 | `WEATHER_KEOGRAM_REGIONS` | packaged `keogram-regions.json` | Keogram region file ([regions](#keogram-regions)) |
-| `WEATHER_IMAGE_DIGEST` | `unpinned` | Recorded in every RenderResult; #49 sets it to the app pin |
+| `WEATHER_IMAGE_DIGEST` | `unpinned` | Recorded in every RenderResult; deployed value is the `weather-app` pin, copied by a kustomize replacement (weather#223) |
 | `WEATHER_FFMPEG` | `ffmpeg` on PATH | Tests only |
 | `WEATHER_PREVIEW_SKEW_SECONDS` | 30 | Preview skew margin, 30–600 ([clock offset](media.md#clock-offset)) |
 | `WEATHER_CLEANUP_*` | dry run | Staging cleanup; see [media operations](media.md#staging-cleanup-and-pressure) |
