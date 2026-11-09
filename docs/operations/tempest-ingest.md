@@ -1,6 +1,6 @@
 # Tempest receive and drain
 
-`weather tempest-receiver` receives Tempest hub UDP broadcasts on port 50222, commits each datagram to a local SQLite spool, and drains the spool to `weather-pg`. It runs as Deployment `tempest-receiver` in `weather` (#5, `deploy/k8s/receiver/`). Integration, kill and outage tests run only in fleet CI, never on the Mac.
+`weather tempest-receiver` receives Tempest hub UDP broadcasts on port 50222, commits each datagram to a local SQLite spool, and drains the spool to `weather-pg`. It runs as Deployment `tempest-receiver` in `weather` (#5, `deploy/k8s/receiver/`). Integration, kill and outage tests run only in-cluster on the estate-ci ARC runners, never on the Mac.
 
 ## Deployment and data path
 

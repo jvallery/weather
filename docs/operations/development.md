@@ -5,8 +5,8 @@ Install these through the existing operator/toolbox paths. Run `uv sync --frozen
 `cd web && pnpm install --frozen-lockfile --ignore-scripts`.
 
 On the Mac, only `scripts/ci.sh lint typecheck unit` and the image-free supply-chain scan are allowed.
-`integration`, `all`, image builds, SBOM generation and browser suites run in fleet CI only;
-set `WEATHER_CI_IN_CLUSTER=1` in the approved submission profile. No integration cases exist yet.
+`integration`, `all`, image builds, SBOM generation and browser suites run only on the estate-ci
+ARC runners through `.github/workflows/`, which set `WEATHER_CI_IN_CLUSTER=1`. No integration cases exist yet.
 The approved runner entrypoint is `WEATHER_CI_IN_CLUSTER=1 bash scripts/bootstrap-ci.sh bash scripts/ci.sh all`;
 it installs checksum-verified tools and the uv-managed pinned interpreter into disposable `/tmp` storage.
 
@@ -46,7 +46,7 @@ SHA-256: `7f143a8127ad4873862d70854b5bd2abd0085aa73e64fd2b08704a3b9f5c07fc`.
 The inventory generator restricts this exception to that exact release.
 
 The image scan writes `artifacts/sbom-app.json` or `artifacts/sbom-web.json` and its SHA-256 sidecar.
-The SBOM stays with that fleet CI run's artifacts; there is no separate scan workflow.
+The SBOM stays with that GitHub Actions run's artifacts; there is no separate scan workflow.
 
 The Python 3.14.9 and Node 24.22.1 runtime bases are imported by the fixed in-cluster profiles and
 pinned by digest in the Dockerfiles.

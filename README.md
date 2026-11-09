@@ -2,7 +2,7 @@
 
 Source for **[weather.vallery.net](https://weather.vallery.net)**: a public weather history and timelapse service built from three cameras, direct Tempest UDP telemetry, CNPG PostgreSQL, Garage object storage and local inference. It is MIT licensed, fleet-first and has documented customization points.
 
-**Status (2026-10-24):** the walking skeleton is live; slice 1 is in progress. Claude took over from Codex after a full audit, and the [takeover re-plan](docs/decisions/2026-10-24-takeover-replan.md) records the findings, decisions C1–C16 and the critical path. Work is tracked in GitHub issues with native dependencies.
+**Status (2026-11-09):** the service is live at weather.vallery.net: current conditions and history, timelapses, keograms, stills and previews, AI descriptions and search, deployed from `main` by Argo CD Application `weather`. The launch-tracking issues (#36, #48, #49, #50) were closed in the 2026-11 estate backlog reset; remaining work is open GitHub issues with native dependencies, including the estate convergence milestones. History: Claude took over from Codex on 2026-10-24 after a full audit; the [takeover re-plan](docs/decisions/2026-10-24-takeover-replan.md) records the findings, decisions C1–C16 and the critical path at that time.
 
 ## Start here
 

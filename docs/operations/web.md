@@ -151,8 +151,8 @@ The fixture source contains synthetic timestamps/measurements only and is never 
 route. Tests and fixture API code are excluded from the runtime image.
 
 Lightweight verification: `pnpm --dir web typecheck`, `pnpm --dir web lint`, and `pnpm --dir web test`.
-Builds, Playwright and synthetic media generation run only through approved
-in-cluster fleet CI. The shared Weather CI tooling image bakes PostgreSQL, exact Playwright 1.64.1
+Builds, Playwright and synthetic media generation run only in-cluster, on the
+estate-ci ARC runners through `.github/workflows/`. The shared Weather CI tooling image bakes PostgreSQL, exact Playwright 1.64.1
 browsers and system libraries, and qualified FFmpeg 9.0.2; `bootstrap-browser.sh` only verifies the
 readable `/opt/ms-playwright` closure and generates synthetic fixtures as UID1001. It never runs apt
 or installs system libraries at validation runtime. The browser check also scans every compiled client

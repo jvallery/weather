@@ -56,13 +56,14 @@ Planned homes as jvallery/agents retires: the central KSOPS set moves to jvaller
 |---|---|---|
 | Secrets `weather-pg-api`, `-editor`, `-ingest`, `-migrator`, `-worker` (database roles) | DB clients | live |
 | Secrets `weather-pg-backup-b2-writer`, `weather-pg-backup-b2-reader` | `weather-pg-b2` history (WAL archiving moved to `weather-pg-local`, storage-infra#1253) | live |
+| Secrets `weather-pg-backup-s3-writer-k3s`, `weather-pg-backup-s3-reader-k3s` (Garage `garage-k3s` bucket `weather-pg`; minted by the change-gate, adopted into KSOPS by agents#6190) | `weather-pg-local` WAL archive and base backups (writer), restore drills (reader) | live |
 | Secret `weather-media-s3-reader` | api media origin, intel (#23) | live |
 | Secrets `weather-media-s3-writer`, `weather-originals-s3-writer`, `weather-custody-restore-reader` | pipelines, custody drill (#77) | live |
 | Secrets `weather-camera-skycam-east`, `-skycam-west`, `-frontyard-1` | collectors | live |
 | Secret `weather-cortex` | api search, intel, `weather-intel-smoke` | live (unused until #25 and #50 enable them) |
 | Secret `weather-api-cursor` | api | live |
 | Secret `weather-tempest` (hub and device serials) | `tempest-receiver` | live |
-| Secret `weather-site` (almanac sun/moon position) | api | planned |
+| Secret `weather-site` (almanac sun/moon position) | api, optional `scheduler` mount | live |
 | NetworkPolicies `collector-skycam-east-egress`, `collector-skycam-west-egress`, `collector-frontyard-1-egress` | collectors | live |
 | NetworkAttachmentDefinition `weather-tempest-vlan10` (VLAN 10 /32, Argo Application `multus`) | `tempest-receiver` | live (agents#5368) |
 
