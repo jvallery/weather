@@ -12,16 +12,22 @@ browser suites and SBOM generation through fleet CI. Never run those on the
 operator Mac. Fork pull requests do not execute in fleet CI; a maintainer must
 review and re-push a same-repository branch.
 
-Build both `weather-app` and `weather-web` at an immutable source revision.
-Retain the terminal workflow results and image-ref/digest outputs. Verify each
-output against registry manifest metadata. Fleet validation runs three steps
-from the registry record: `application` (`scripts/ci.sh all`, including
-gitleaks and the license allowlist), `browser` (the in-cluster Playwright
-suite, `scripts/ci.sh browser`) and `manifests`. Generic candidates have no
-registry credentials.
+`.github/workflows/build.yml` (weather#223) builds the images whose inputs
+changed. On a pull request each one builds with `push: false` on
+`weather-buildcheck` (no registry credential) and `mirrors.txt` is checked. On
+main, `mirrors.txt` is copied into zot first (the `weather-python-base` and
+`weather-node-base` bases are digest-preserving mirrors of the upstream images),
+then the images build on `weather-build` and are pushed by digest. The required
+checks are `application` (`scripts/ci.sh` lint, typecheck, unit and integration
+shards), `browser` (the in-cluster Playwright suite) and `manifests`
+(`ci/manifests.sh`, which also checks the pipeline digest env).
 
-A `deploy:` commit sets both entries in the root kustomization's `images`
-list to the verified `registry.vallery.net/jvallery/weather-*` digests.
+When a main run rebuilds `weather-app` or `weather-web`, its `pin` job opens one
+pin PR as `vallery-pin-bot` that sets the root kustomization's `images` entries
+to the new `registry.vallery.net/jvallery/weather-*` digests; that PR is the
+promotion (`deploy:` commit). Do not hand-edit those two digests. The pipeline
+`WEATHER_IMAGE_DIGEST` env follows the `weather-app` pin through the
+kustomization's `replacements`, so it needs no edit.
 Enable a new workload only after its Secrets, volumes and image exist. During
 initial commissioning, application and ingress definitions are excluded from
 the root kustomization and Deployments have zero replicas. Once prerequisites

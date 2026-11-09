@@ -11,6 +11,11 @@ images.tsv columns (tab-separated): name, dockerfile, context, paths. Paths are
 space-separated path prefixes (a trailing "/" means a directory), the same
 build_paths native CI used. Prints a JSON array of {name, dockerfile, context}
 and, under a forge, writes images=<json> to $GITHUB_OUTPUT.
+
+On a pull_request event the diff is HEAD^..HEAD of the checked-out merge commit,
+which is the whole PR. $PINNED (space-separated names) lists images that build.yml
+builds as their own jobs so pin-bump.yml can read their digests: for each one it
+also writes <name>=true|false, and "unpinned" is the picked set without them.
 """
 import json, os, subprocess, sys
 
@@ -49,8 +54,20 @@ else:
     pick = [r for r in rows if any(c == p or c.startswith(p if p.endswith("/") else p + "/") or c == p.rstrip("/")
                                    for c in changed for p in r["paths"])]
 
-out = json.dumps([{k: r[k] for k in ("name", "dockerfile", "context")} for r in pick])
+def as_json(selected):
+    return json.dumps([{k: r[k] for k in ("name", "dockerfile", "context")} for r in selected])
+
+
+pinned = os.environ.get("PINNED", "").split()
+unknown = [p for p in pinned if p not in {r["name"] for r in rows}]
+if unknown:
+    sys.exit(f"unknown PINNED image(s): {' '.join(unknown)}")
+out = as_json(pick)
 print(out)
 if os.environ.get("GITHUB_OUTPUT"):
+    picked = {r["name"] for r in pick}
     with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
         fh.write(f"images={out}\n")
+        fh.write(f"unpinned={as_json([r for r in pick if r['name'] not in pinned])}\n")
+        for name in pinned:
+            fh.write(f"{name}={'true' if name in picked else 'false'}\n")
