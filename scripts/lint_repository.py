@@ -46,5 +46,3 @@ assert "8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e" in bod
 assert "sha256sum -c" in body
 print("SPDX, mirror digest, non-root and FFmpeg checksum checks passed")
 
-for source_import in (ROOT / "images/upstream-imports").rglob("Dockerfile"):
-    assert has_spdx(source_import), f"Missing import SPDX: {source_import}"

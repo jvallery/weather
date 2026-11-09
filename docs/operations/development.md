@@ -27,9 +27,11 @@ The web image starts `node server.mjs`, HTTP on 3000 and metrics on 9000.
 Both images run UID/GID 10001, need no service-account token, and support a read-only root filesystem.
 Runtime assets and React scripts are served locally; no CDN or remote font is configured.
 
-Import the Dockerfile's exact upstream Python/Node digests through the approved `weather-python-base`
-and `weather-node-base` registry profiles before WX-01 builds, using `images/upstream-imports/`.
-Final app/web bases use the resulting verified `registry.vallery.net/jvallery/weather-*-base` digests.
+The Python and Node bases are digest-preserving mirrors listed in `mirrors.txt` (weather#223):
+`build.yml` copies each upstream digest into `registry.vallery.net/jvallery/weather-python-base` and
+`weather-node-base` with crane before any image build, so the `FROM` digests in `Dockerfile.app`,
+`Dockerfile.web` and `Dockerfile.ci` equal the upstream digests. To move a base, change its
+`mirrors.txt` line and the matching `FROM` lines in one PR, after the mirror line has merged once.
 
 One TypeScript, 6.0.3, serves both `tsc --noEmit` (the typecheck) and ESLint's typescript-eslint, whose
 supported range stops below 6.1; move to TypeScript 7 when typescript-eslint supports it.
@@ -48,5 +50,5 @@ The inventory generator restricts this exception to that exact release.
 The image scan writes `artifacts/sbom-app.json` or `artifacts/sbom-web.json` and its SHA-256 sidecar.
 The SBOM stays with that GitHub Actions run's artifacts; there is no separate scan workflow.
 
-The Python 3.14.9 and Node 24.22.1 runtime bases are imported by the fixed in-cluster profiles and
-pinned by digest in the Dockerfiles.
+The Python 3.14.9 and Node 24.22.1 runtime bases are mirrored from `mirrors.txt` and pinned by
+digest in the Dockerfiles.
