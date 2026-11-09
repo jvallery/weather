@@ -26,7 +26,7 @@ Owns the public Weather application at `weather.vallery.net`: Tempest telemetry 
 
 ## Owns
 
-Application lane. Per-item detail: [OWNERSHIP.md](OWNERSHIP.md). Central record: [ESTATE-INVENTORY.md](https://github.com/jvallery/agents/blob/main/docs/fleet-inventory/ESTATE-INVENTORY.md). Change the central entry and OWNERSHIP.md in the same change set.
+Product/service repository (not one of the seven core repos). Per-item detail: [OWNERSHIP.md](OWNERSHIP.md). Central record: [ESTATE-INVENTORY.md](https://github.com/jvallery/agents/blob/main/docs/fleet-inventory/ESTATE-INVENTORY.md), rendered from the ownership record in jvallery/agents; the record and its render path are planned to move to jvallery/estate-platform as jvallery/agents retires. Change the central entry and OWNERSHIP.md in the same change set.
 
 - Namespace `weather` and everything `deploy/k8s` renders into it, including CNPG Cluster `weather-pg`, its PVCs and generated Secrets.
 - `weather.vallery.net`, as both backend and route owner (IngressRoutes in `weather`).
@@ -34,9 +34,10 @@ Application lane. Per-item detail: [OWNERSHIP.md](OWNERSHIP.md). Central record:
 
 ## Adjacent lanes
 
-Lane table and rules: [estate README](https://github.com/jvallery/agents/blob/main/docs/estate/README.md) 4.1 and 4.3. The Weather agent authors each change below in the owning repository and links it from the owner issue in the [simplification record](docs/decisions/2026-10-24-simplification.md#owner-prerequisites-after-the-re-plan).
+Lane table and rules: [estate README](https://github.com/jvallery/agents/blob/main/docs/estate/README.md) 4.1 and 4.3 (planned to move to jvallery/estate-platform). Weather authors each change below in the owning repository and links it from the owner issue in the [simplification record](docs/decisions/2026-10-24-simplification.md#owner-prerequisites-after-the-re-plan).
 
-- **agents:** fleet CI registry record `gh-1431367372` (`ci-only`; no coding repo pod), AppProject/Application, `secrets-ksops/weather`, Authentik, Multus NAD.
+- **agents (being retired):** repo registry record, AppProject/Application, `secrets-ksops/weather` and Authentik, all planned to move to jvallery/estate-platform; the Multus NAD, planned to move to network-infra with Multus.
+- **estate-ci:** the GitHub Actions ARC runner scale sets `weather-ci`, `weather-build` and `weather-buildcheck`.
 - **storage-infra:** Garage buckets and keys, the NFS staging PV, the B2 buckets and keys, central custody.
 - **network-infra:** IPAM, hostname and tunnel records, `ak-forwardauth`.
 - **monitoring-stack:** probes, alert rules and dashboards (R13).
@@ -49,8 +50,7 @@ Lane table and rules: [estate README](https://github.com/jvallery/agents/blob/ma
 - Claude took over from Codex on 2026-10-24. The [takeover re-plan](docs/decisions/2026-10-24-takeover-replan.md) records the audit, decisions C1–C17 and the critical path (C18 arrives with #123). Codex's shutdown handoff branch (`docs/weather-shutdown-20261024`) is history, not instructions. Claude stopped on 2026-10-25; the resume handoff is the latest comment on #36.
 - Live (2026-10-25 17:45Z): slice 1, search (UI and query embedding), the media origin and catalog, `weather-pg`, the Tempest receiver, collectors at 0.5 Hz, the three camera pipelines, delayed previews and hourly stills. Running app image predates #114/#115/#132/#123; the next app promote of main runs 0010 → 0011_gc_kept → 0008 → 0012 and deploys keograms, cleanup (disabled) and AI descriptions. Status and next steps: the resume handoff, the latest comment on #36.
 - Migration chain on main: 0001 → 0002 → 0003 → 0004 → 0005 → 0006 → 0009_stills → 0007_previews → 0010_cleanup → 0011_gc_kept → 0008_keograms → 0012_analysis (#23) → 0013_editorial (#44) → 0014_editorial_poster (#78). New migrations chain on the newest head. `0015_catalog_thumbnails` (catalog thumbnails) chains on `0014_editorial_poster`, `0016_obs_import` (#167, imported history) on `0015_catalog_thumbnails`, `0017_obs_import_rapid` on `0016_obs_import`, and `0018_visible_asset` (catalog latency) on `0017_obs_import_rapid`.
-- Fleet CI shares 16 `repo-validate` slots across the estate and a Weather PR needs up to 3 for about 25 minutes. Keep at most about 3 Weather PRs in CI at once and terminate superseded runs; nine at once queued for hours on 2026-10-25.
-- agents#5366 delivered Weather's `ci-only` ownership, registry, generated CI profiles, GitOps roots and enforced branch protection. Weather has no coding repository pod. Planning history lives in [docs/archive/planning-2026-10/](docs/archive/planning-2026-10).
+- agents#5366 delivered Weather's ownership record, GitOps roots and enforced branch protection. Planning history lives in [docs/archive/planning-2026-10/](docs/archive/planning-2026-10).
 
 ## Deliver and verify
 
@@ -61,23 +61,27 @@ Lane table and rules: [estate README](https://github.com/jvallery/agents/blob/ma
   gh api repos/jvallery/weather/issues/N/dependencies/blocked_by --jq '.[]|"\(.state) \(.html_url)"'
   ```
 
-- **Local checks.** Run `scripts/ci.sh` locally only for lint, typecheck and focused unit tests. Integration suites, Playwright, image builds and media or render pilots run in-cluster through fleet `ci_submission` / repo-build (Kaniko → zot). Never run them on the Mac.
+- **Local checks.** Run `scripts/ci.sh` locally only for lint, typecheck and focused unit tests. Integration suites, Playwright, image builds and media or render pilots run in-cluster on the GitHub Actions ARC runners (Kaniko → zot; see CI under Hazards). Never run them on the Mac.
 - **Promotion.** A `deploy:` commit pins image digests in `deploy/k8s`, and Argo auto-syncs Application `weather`. A change is deployed when Argo shows Synced + Healthy at the intended revision and the pinned digest is running.
 - **Definition of done** (every issue):
   1. Merged to `main`.
-  2. Checks green in fleet CI.
+  2. Required GitHub Actions checks green.
   3. Deployed and verified live, for deployable work.
   4. New failure modes expose metrics, and the alert/probe PR to monitoring-stack is merged where the issue says so.
   5. A runbook section is added under `docs/operations/` for anything operable.
   6. OWNERSHIP.md is updated for new objects.
   7. No secret, exact coordinates, camera IP or station serial in Git, issues or logs.
   8. The issue gets a closing comment: what changed, what was verified (command plus result), and remaining limits.
-- **Proof and comments (C2).** Don't commit evidence, receipt, custody or handoff files. CI proof is the PR's fleet check link; live proof goes in the closing comment. Each issue gets at most one blocker note, naming the decision or owner, and one closing comment. Don't post progress checkpoints, workflow or pod UIDs, or local paths.
+- **Proof and comments (C2).** Don't commit evidence, receipt, custody or handoff files. CI proof is the PR's check run link; live proof goes in the closing comment. Each issue gets at most one blocker note, naming the decision or owner, and one closing comment. Don't post progress checkpoints, workflow or pod UIDs, or local paths.
 - **No self-imposed gates (C1).** Acceptance is the issue's checklist. Don't add qualification programs, held-tab or placement-reservation proofs, or zero-failure clocks. A probe window means availability ≥99.5% over the window, measured after the relevant digests are live.
-- **Issue bodies.** Outcome; Acceptance (at most about 10 checkboxes, each one a command or an observable behaviour); Blocked by (native links only); Not in scope. Refer to issues by number; WX keys are retired.
+- **Issue bodies.** Product issues: Outcome; Acceptance (at most about 10 checkboxes, each one a command or an observable behaviour); Blocked by (native links only); Not in scope. Convergence issues follow the estate issue contract (see Backlog and standards). Refer to issues by number; WX keys are retired.
 - **Contracts.** API contracts are code-first (Pydantic → OpenAPI → `openapi-typescript`). A vector file in `docs/contracts/` exists only if a test loads it.
 - **Disposable namespaces.** Pilots and qualification namespaces carry `estate.vallery.net/disposable=true` and `estate.vallery.net/expires=<date>` (estate R23). Delete them once the result is recorded in the issue.
 - **Restore drills.** Restore drills (#6 and #33) are the exception: they run as `weather-drill-*` resources inside `weather` with the disposable/expires labels, so read-only restore keys are referenced in place and never copied. A drill NetworkPolicy isolates them from production, and they are deleted after use.
+
+## Backlog and standards
+
+Estate standards are the register `docs/estate/STANDARDS.md` in jvallery/agents (`STD-` clauses; planned to move to jvallery/estate-platform). Convergence work is planned in waves, one milestone per wave ("W1 Convergence foundations" through "W5 BCDR"), with sprint labels `sprint:w1-convergence` .. `sprint:w5-bcdr` and domain labels `conv`, `cicd`, `obs`, `sec`, `ha`, `dr`; estate epics (label `epic`) live in jvallery/estate-platform. Each convergence issue follows the estate issue contract: current problem and impact, dated evidence, the applicable `STD-` clause and bounded target, owner repo and scope, remediation, dependencies (native blocked-by, mirrored in the body), priority, testable acceptance and rollback where material. File one canonical issue per remediation unit, in the repo that owns the change.
 
 ## Hazards
 
