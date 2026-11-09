@@ -1,6 +1,6 @@
 # Weather ownership
 
-What this repository owns and its state: **live** (running or applied), **disabled** (source in `deploy/k8s` but not rendered or at zero replicas) or **planned** (no source yet). Central record: agents `control-plane/agent-fleet-control/registry/policy/estate-ownership/`; update both in the same change set. Everything in namespace `weather` inherits Weather ownership except the agents-contributed objects listed below.
+What this repository owns and its state: **live** (running or applied), **disabled** (source in `deploy/k8s` but not rendered or at zero replicas) or **planned** (no source yet). Central record: agents `control-plane/agent-fleet-control/registry/policy/estate-ownership/` (planned to move to jvallery/estate-platform as jvallery/agents retires); update both in the same change set. Everything in namespace `weather` inherits Weather ownership except the agents-contributed objects listed below.
 
 ## Rendered by `deploy/k8s` (Argo Application `weather`)
 
@@ -50,6 +50,8 @@ Disposable restore-drill resources (`weather-drill-*`) are created by `scripts/r
 
 ## Contributed into `weather` by agents (Argo Application `weather-secrets`, `secrets-ksops/weather`)
 
+Planned homes as jvallery/agents retires: the central KSOPS set moves to jvallery/estate-platform; the NAD moves to network-infra with Multus.
+
 | Object | Used by | State |
 |---|---|---|
 | Secrets `weather-pg-api`, `-editor`, `-ingest`, `-migrator`, `-worker` (database roles) | DB clients | live |
@@ -64,17 +66,18 @@ Disposable restore-drill resources (`weather-drill-*`) are created by `scripts/r
 | NetworkPolicies `collector-skycam-east-egress`, `collector-skycam-west-egress`, `collector-frontyard-1-egress` | collectors | live |
 | NetworkAttachmentDefinition `weather-tempest-vlan10` (VLAN 10 /32, Argo Application `multus`) | `tempest-receiver` | live (agents#5368) |
 
-Secret `zot-origin-cluster-pull` is reflected from `agent-fleet-runners` for image pulls.
+Secret `zot-origin-cluster-pull` is reflected from `agent-fleet-runners` for image pulls; its source is planned to move to storage-infra.
 
 ## Owned elsewhere, consumed here
 
 | Item | Owner | State |
 |---|---|---|
-| Fleet registry record `gh-1431367372` (`ci-only`), AppProject and Applications | agents | live |
+| Repo registry record, AppProject and Applications | agents (planned: estate-platform) | live |
+| ARC runner scale sets `weather-ci`, `weather-build`, `weather-buildcheck` (namespace `ci-runners`) | estate-ci | live |
 | Garage buckets `weather-media`, `weather-originals` and custody mirrors (Weather owns their objects and catalog) | storage-infra#1107 | live |
 | B2 bucket for CNPG archives | storage-infra#1112 | live |
 | NFS PV `weather-staging` | storage-infra#1106 | live (bound to PVC `weather/weather-staging`) |
 | Hostname record, `apps-strip-auth-headers`, `ak-forwardauth` | network-infra | live |
-| Authentik application and provider `weather-editor` (Jason-only, MFA) | agents#5366 | live |
+| Authentik application and provider `weather-editor` (Jason-only, MFA) | agents#5366 (planned: estate-platform) | live |
 | Scrape, probes, alert rules, dashboards | monitoring-stack#1072 | live (slice 1) |
 | Cameras (sentinel), Tempest hub (homeassistant), Cortex routes (cortex-ai-compute), vallery.net homepage (VerdifyConsultancy/wordpress) | — | — |
