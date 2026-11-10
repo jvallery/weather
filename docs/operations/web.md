@@ -185,7 +185,9 @@ ways, both by design: a request without `Cf-Connecting-Ip` is not limited, and t
 cross-namespace auth Middlewares are not run.
 
 `ci.sh browser` runs the single-worker fixture matrix in all three engines (`WEATHER_BROWSER_PROJECT`
-limits a run to one engine), then
+limits a run to one engine; GitHub CI runs one engine per parallel `browser-<engine>` job, and the
+required `browser` check passes only when all three pass). `e2e/warm-up.ts` renders each route once
+before the first test, and webkit/firefox allow 45 s per test. Then
 `scripts/web-browser-report.mjs` writes the compact `/workspace/ci-test-report.json` output parameter
 (capped at 60 KiB). It requires every configured case to pass without skips or retries and records
 checksums for the 27 synthetic Today/history/About screenshots; the full test output, traces and
