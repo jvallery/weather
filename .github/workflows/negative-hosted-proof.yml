@@ -1,0 +1,10 @@
+# NEGATIVE PROOF for jvallery/estate-ci#5 (do not merge). workflow_dispatch only, so it never runs.
+name: negative-hosted-proof
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  hosted:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo never-runs
