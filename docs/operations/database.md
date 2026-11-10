@@ -282,9 +282,9 @@ For each schema change:
 
 1. Add compatible columns/tables/views with a new revision and update
    `models.metadata`.
-2. Fleet CI upgrades an empty database to head, re-runs the upgrade and
+2. CI (the `application` check) upgrades an empty database to head, re-runs the upgrade and
    requires `alembic check` to be clean.
-3. Build and promote the app digest through fleet CI; the migrate hook runs
+3. Build and promote the app digest through `build.yml`; the migrate hook runs
    that digest.
 4. Observe the migration Job complete and `alembic current` at the expected
    head, then Argo Synced/Healthy at the promoted digest.
@@ -424,10 +424,10 @@ version and Denver TZif checksum. Both the final image build and integration
 runner verify that exact file remains unchanged. Integration reports base and
 current package versions alongside pinned Python tzdata/IANA versions; it never
 changes global timezone configuration or `TZPATH`.
-It is a fleet validation image, not an application runtime or another database
-service. Build it through the registry-owned `weather-ci` repo-build profile,
-pin its actual returned digest in the agents validation profile, and run the
-normal bootstrap plus `scripts/ci.sh all` in that image.
+It is the CI validation image, not an application runtime or another database
+service. Build it through `build.yml` (row `weather-ci` in `ci/images.tsv`), pin
+its returned digest as the `weather-ci` runner set's `job_image` in jvallery/estate-ci
+`runners.yaml`, and run the normal bootstrap plus `scripts/ci.sh all` in that image.
 
 `ci.sh integration` delegates `scripts/ci_integration.sh`. The script refuses
 non-Linux, root or non-fleet execution; it creates an isolated temporary

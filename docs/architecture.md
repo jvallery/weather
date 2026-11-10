@@ -122,7 +122,7 @@ app/tests/        pytest (unit + integration against ephemeral Postgres/pgvector
 web/              React Router (TypeScript), Vitest, Playwright + axe
 deploy/k8s/       Kustomize rendered by Argo: namespace, quotas, netpols, CNPG, workloads, IngressRoutes
 docs/             requirements, architecture, decisions, contracts, operations (runbooks)
-scripts/ci.sh     single check entrypoint used by fleet ci_submission
+scripts/ci.sh     single check entrypoint, called by .github/workflows/ci.yml on estate-ci ARC runners
 Dockerfile.app, Dockerfile.web
 ```
 
@@ -148,4 +148,4 @@ Pins start from [backend](research/backend-pin-evidence.json) and [frontend](res
   - **Observability:** delivered through monitoring-stack.
   - **Inherited and disclosed, not gated:** STD-DR-05 bootstrap, CI-04 signature admission, CNPG primary PDB, and the DR-01 third copy (a WX-35 decision).
   - Pilots run in R23 disposable namespaces.
-- **Execution placement.** Mac sessions edit and orchestrate. Builds, test suites, render pilots and media processing run in-cluster through fleet CI or `weather` workloads.
+- **Execution placement.** Mac sessions edit and orchestrate. Builds, test suites, render pilots and media processing run in-cluster through GitHub Actions on the estate-ci ARC runners or `weather` workloads.

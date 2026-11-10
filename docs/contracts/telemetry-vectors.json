@@ -5,7 +5,7 @@
   "identity_policy": "All station and receiver identifiers in these fixtures are synthetic.",
   "suites": {
     "unit": "app/tests/telemetry/test_vectors.py (parser, admission, spool)",
-    "integration": "app/tests/telemetry/test_ingest_integration.py (PostgreSQL, fleet CI only)"
+    "integration": "app/tests/telemetry/test_ingest_integration.py (PostgreSQL, in-cluster CI image only)"
   },
   "vectors": [
     {

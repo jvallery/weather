@@ -34,7 +34,7 @@ log a key, request header or signed URL.
    stored `x-amz-meta-sha256` must match, or the publish fails with
    `ObjectConflict` and the object is never overwritten. Otherwise PUT with
    `If-None-Match: *` and the signed payload hash, so the store rejects bytes
-   that don't match. Garage v2.3.0 ignores `If-None-Match` (fleet CI shows a
+   that don't match. Garage v2.3.0 ignores `If-None-Match` (CI shows a
    second PUT succeeding), so a race between two writers can only rewrite a key
    with the same bytes: the signed hash must equal the key's hash. Files over 64 MiB use 16 MiB multipart parts, hashed as
    they stream; the upload completes with `If-None-Match: *` only if the whole
@@ -721,4 +721,4 @@ with the pipeline Deployments once the bucket keys exist.
 `scripts/ci_integration.sh` starts a loopback, single-node Garage v2.3.0 next
 to the disposable PostgreSQL, with both bucket names and one test key. The
 checksum-pinned binary comes from `scripts/bootstrap_ci.py`. These tests run
-only in fleet CI.
+only in-cluster on the estate-ci ARC runners.

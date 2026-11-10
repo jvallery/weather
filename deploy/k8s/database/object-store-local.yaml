@@ -4,9 +4,11 @@
 # Offsite copy: storage-infra's daily Longhorn B2 backup of the garage-k3s volume (as for
 # auth-pg). The B2 store weather-pg-b2 stays declared, unused by the archiver, so its
 # history remains restorable until its own provider lifecycle expires it.
-# Credentials: Secret weather-pg-backup-s3-writer-k3s (bucket weather-pg, read/write), created
-# create-only in the cluster by the agents change-gate Garage target (change-id
-# weather-pg-availability-garage-1253); no value is in Git in any form. The keys this store
+# Credentials: Secret weather-pg-backup-s3-writer-k3s (bucket weather-pg, read/write). The
+# agents change-gate Garage target minted it on 2026-10-31 (change-id
+# weather-pg-availability-garage-1253); since agents#6190 (2026-11-06) it is a SOPS-encrypted
+# KSOPS manifest in jvallery/agents secrets-ksops/weather, delivered by Argo Application
+# weather-secrets with the same UID. No plaintext value is in Git. The keys this store
 # selects are attested in weather-pg-backup-credential-contract.yaml.
 apiVersion: barmancloud.cnpg.io/v1
 kind: ObjectStore

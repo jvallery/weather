@@ -2,15 +2,18 @@
 
 Weather runs in context `vallery`, namespace `weather`. Argo Application
 `weather` renders `deploy/k8s` from this repository. The fleet registry in
-`jvallery/agents` owns the build profiles and generated CI configuration.
+`jvallery/estate-ci` owns the shared build workflows and the ARC runner scale sets
+(`weather-ci`, `weather-build`, `weather-buildcheck`); this repository's
+`.github/workflows/` call them.
 
 ## Build and promote
 
 Run lightweight lint, type checking and focused unit checks with
 `scripts/ci.sh lint typecheck unit`. Submit image builds, integration tests,
-browser suites and SBOM generation through fleet CI. Never run those on the
-operator Mac. Fork pull requests do not execute in fleet CI; a maintainer must
-review and re-push a same-repository branch.
+browser suites and SBOM generation through GitHub Actions on the estate-ci ARC
+runners (`ci.yml`, `build.yml`). Never run those on the operator Mac. Fork pull
+requests do not execute on the ARC runners; a maintainer must review and re-push
+a same-repository branch.
 
 Build both `weather-app` and `weather-web` at an immutable source revision.
 Retain the terminal workflow results and image-ref/digest outputs. Verify each

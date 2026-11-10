@@ -12,4 +12,4 @@ Use synthetic fixtures in public contributions. Never publish camera credentials
 
 Original contributions use the [MIT license](LICENSE). Third-party source and assets follow the [reuse policy](docs/decisions/license-and-reuse.md), with provenance and notices recorded before import.
 
-Checks run through `scripts/ci.sh` in fleet CI, inside the cluster. Builds, integration suites and media pilots never run on a workstation. **Pull requests from forks are not executed by fleet CI.** A maintainer reviews the change and re-pushes it as a same-repository branch to run checks.
+Checks run through `scripts/ci.sh` in GitHub Actions on the estate-ci ARC runners (`weather-ci`, `weather-build`) inside the cluster; `.github/workflows/ci.yml` and `build.yml` call the shared estate-ci workflows. Builds, integration suites and media pilots never run on a workstation. **Pull requests from forks are not executed on the ARC runners.** A maintainer reviews the change and re-pushes it as a same-repository branch to run checks.
