@@ -26,3 +26,47 @@ images:
 - name: weather-web
   newName: registry.vallery.net/jvallery/weather-web
   digest: sha256:d6ddb140bc4e45a73357bfb58f8096972bef8f9ad0f56cafcf7b2486876768a1
+# weather#223: one digest source. Each pipeline Deployment's WEATHER_IMAGE_DIGEST is
+# copied from its own container image after the images transformer above resolves
+# weather-app, so a pin PR that moves the weather-app digest cannot leave the env
+# behind. deployments.yaml holds a placeholder that this replacement overwrites.
+replacements:
+- source:
+    kind: Deployment
+    name: pipeline-skycam-east
+    fieldPath: spec.template.spec.containers.[name=pipeline].image
+    options:
+      delimiter: '@'
+      index: 1
+  targets:
+  - select:
+      kind: Deployment
+      name: pipeline-skycam-east
+    fieldPaths:
+    - spec.template.spec.containers.[name=pipeline].env.[name=WEATHER_IMAGE_DIGEST].value
+- source:
+    kind: Deployment
+    name: pipeline-skycam-west
+    fieldPath: spec.template.spec.containers.[name=pipeline].image
+    options:
+      delimiter: '@'
+      index: 1
+  targets:
+  - select:
+      kind: Deployment
+      name: pipeline-skycam-west
+    fieldPaths:
+    - spec.template.spec.containers.[name=pipeline].env.[name=WEATHER_IMAGE_DIGEST].value
+- source:
+    kind: Deployment
+    name: pipeline-frontyard-1
+    fieldPath: spec.template.spec.containers.[name=pipeline].image
+    options:
+      delimiter: '@'
+      index: 1
+  targets:
+  - select:
+      kind: Deployment
+      name: pipeline-frontyard-1
+    fieldPaths:
+    - spec.template.spec.containers.[name=pipeline].env.[name=WEATHER_IMAGE_DIGEST].value

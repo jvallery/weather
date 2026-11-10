@@ -1,7 +1,8 @@
 # Enabled 2026-10-25 (#15, ahead of #49): one replica per camera, cleanup not yet deployed (#19).
 # #49 enables them once the cameras (#4), the staging PVC and the weather-media and
-# weather-originals writer keys (storage-infra#1107) exist. WEATHER_IMAGE_DIGEST must then
-# equal the app digest pin, so every RenderResult records the image that produced it. Runbook: docs/operations/pipeline.md.
+# weather-originals writer keys (storage-infra#1107) exist. WEATHER_IMAGE_DIGEST equals the
+# app digest pin, so every RenderResult records the image that produced it; the replacements
+# in deploy/k8s/kustomization.yaml copy it from the resolved image (weather#223). Runbook: docs/operations/pipeline.md.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -72,7 +73,7 @@ spec:
         - name: WEATHER_CLEANUP_ENABLED
           value: 'true'
         - name: WEATHER_IMAGE_DIGEST
-          value: sha256:f01910d1120afa9dbe861ca77222d3bd0f9865c0179d646b33046e1f84faeabb
+          value: set-by-kustomize-replacement  # weather-app digest, deploy/k8s/kustomization.yaml
         - name: METRICS_PORT
           value: '9000'
         - name: TMPDIR
@@ -231,7 +232,7 @@ spec:
         - name: WEATHER_CLEANUP_ENABLED
           value: 'true'
         - name: WEATHER_IMAGE_DIGEST
-          value: sha256:f01910d1120afa9dbe861ca77222d3bd0f9865c0179d646b33046e1f84faeabb
+          value: set-by-kustomize-replacement  # weather-app digest, deploy/k8s/kustomization.yaml
         - name: METRICS_PORT
           value: '9000'
         - name: TMPDIR
@@ -390,7 +391,7 @@ spec:
         - name: WEATHER_CLEANUP_ENABLED
           value: 'true'
         - name: WEATHER_IMAGE_DIGEST
-          value: sha256:f01910d1120afa9dbe861ca77222d3bd0f9865c0179d646b33046e1f84faeabb
+          value: set-by-kustomize-replacement  # weather-app digest, deploy/k8s/kustomization.yaml
         - name: METRICS_PORT
           value: '9000'
         - name: TMPDIR

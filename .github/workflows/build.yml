@@ -1,18 +1,30 @@
-# Image builds on the estate-ci ARC runners (BUILD-APPS, Jason D-22; jvallery/agents#6092).
-# Replaces native event-ci's push-triggered builds of weather-app, weather-web, weather-python-base, weather-node-base, weather-ci.
-# ci/build_plan.py picks the images in ci/images.tsv whose paths changed in
-# the pushed range (or the dispatched names); each builds in-cluster (Kaniko) on
-# weather-build and is pushed to registry.vallery.net/jvallery/<name> by digest
-# (tag gha-<sha12>). Digest pins in deploy/ stay a reviewed manual edit, as with native CI.
+# Image builds on the estate-ci ARC runners (BUILD-APPS, Jason D-22; jvallery/agents#6092;
+# weather#223 for the PR build check, base mirrors and pin PRs).
+# ci/build_plan.py picks the images in ci/images.tsv whose paths changed (the pushed
+# range, the whole pull request, or the dispatched names).
+# - Pull requests: each picked image builds in-cluster (Kaniko) with push: false on the
+#   credential-free weather-buildcheck set, and mirrors.txt is checked on weather-ci.
+#   Fork pull requests are refused by the estate-ci job-started guard on every set.
+# - Push to main / dispatch: mirrors.txt is copied into zot (crane, digest-preserving),
+#   then each picked image builds on weather-build and is pushed to
+#   registry.vallery.net/jvallery/<name> by digest (tag gha-<sha12>). When weather-app
+#   or weather-web was rebuilt, pin-bump.yml opens one pin PR for
+#   deploy/k8s/kustomization.yaml as vallery-pin-bot (D-52), so required checks attach.
+#   The pin job is the only writer of those two digests; the pipeline
+#   WEATHER_IMAGE_DIGEST env follows the weather-app pin through a kustomize replacement.
+#   Build-input pins (Dockerfile.web previous assets, Dockerfile.ci media tools) stay
+#   reviewed manual edits: Dockerfile.web is a build trigger, so a pin job writing it
+#   would loop.
 # Portability (Forgejo/Gitea Actions): checkout + a stdlib repo script + the
-# estate-ci reusable workflow; no cache, artifact, Environment or OIDC use.
+# estate-ci reusable workflows; no cache, artifact, Environment or OIDC use.
 name: build
 
 on:
-  push:
-    branches: [main]
+  # Keep the two path lists identical.
+  pull_request:
     paths:
       - '.dockerignore'
+      - '.github/workflows/build.yml'
       - '.python-version'
       - 'Dockerfile.app'
       - 'Dockerfile.ci'
@@ -26,6 +38,32 @@ on:
       - 'docs/operations/ffmpeg.md'
       - 'images/upstream-imports/node/**'
       - 'images/upstream-imports/python/**'
+      - 'mirrors.txt'
+      - 'pyproject.toml'
+      - 'requirements.lock'
+      - 'scripts/retain-web-assets.mjs'
+      - 'scripts/weather'
+      - 'uv.lock'
+      - 'web/**'
+  push:
+    branches: [main]
+    paths:
+      - '.dockerignore'
+      - '.github/workflows/build.yml'
+      - '.python-version'
+      - 'Dockerfile.app'
+      - 'Dockerfile.ci'
+      - 'Dockerfile.web'
+      - 'LICENSE'
+      - 'THIRD_PARTY_NOTICES.md'
+      - 'app/**'
+      - 'ci/browser/**'
+      - 'ci/build_plan.py'
+      - 'ci/images.tsv'
+      - 'docs/operations/ffmpeg.md'
+      - 'images/upstream-imports/node/**'
+      - 'images/upstream-imports/python/**'
+      - 'mirrors.txt'
       - 'pyproject.toml'
       - 'requirements.lock'
       - 'scripts/retain-web-assets.mjs'
@@ -44,7 +82,7 @@ permissions:
 
 # No concurrency group on purpose: a shared group drops a pending run when a
 # third push arrives, and that run's images would never build. Runs queue on
-# the weather-build set (max 1) instead.
+# the weather-build set instead.
 
 jobs:
   plan:
@@ -52,6 +90,9 @@ jobs:
     timeout-minutes: 10
     outputs:
       images: ${{ steps.plan.outputs.images }}
+      unpinned: ${{ steps.plan.outputs.unpinned }}
+      weather-app: ${{ steps.plan.outputs.weather-app }}
+      weather-web: ${{ steps.plan.outputs.weather-web }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -60,20 +101,85 @@ jobs:
       - id: plan
         env:
           IMAGES: ${{ inputs.images }}
+          PINNED: weather-app weather-web
         run: python3 ci/build_plan.py
 
-  image:
+  # Pull requests: validate the list (no credential). main: copy missing digests.
+  mirrors:
+    uses: jvallery/estate-ci/.github/workflows/mirror.yml@a2f86619b01f21e18c17a6bb7b35376985507fe4
+    with:
+      apply: ${{ github.event_name != 'pull_request' }}
+      prefix: jvallery/weather-
+      timeout-minutes: 30
+
+  buildcheck:
     needs: [plan]
-    if: needs.plan.outputs.images != '[]'
+    if: github.event_name == 'pull_request' && needs.plan.outputs.images != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.images) }}
+    uses: jvallery/estate-ci/.github/workflows/image-build.yml@a2f86619b01f21e18c17a6bb7b35376985507fe4
+    with:
+      image: jvallery/${{ matrix.name }}
+      dockerfile: ${{ matrix.dockerfile }}
+      context: ${{ matrix.context }}
+      push: false
+      timeout-minutes: 90
+
+  app:
+    needs: [plan, mirrors]
+    if: github.event_name != 'pull_request' && needs.plan.outputs.weather-app == 'true'
+    uses: jvallery/estate-ci/.github/workflows/image-build.yml@a2f86619b01f21e18c17a6bb7b35376985507fe4
+    with:
+      image: jvallery/weather-app
+      dockerfile: Dockerfile.app
+      context: .
+      push: true
+      timeout-minutes: 90
+
+  web:
+    needs: [plan, mirrors]
+    if: github.event_name != 'pull_request' && needs.plan.outputs.weather-web == 'true'
+    uses: jvallery/estate-ci/.github/workflows/image-build.yml@a2f86619b01f21e18c17a6bb7b35376985507fe4
+    with:
+      image: jvallery/weather-web
+      dockerfile: Dockerfile.web
+      context: .
+      push: true
+      timeout-minutes: 90
+
+  image:
+    needs: [plan, mirrors]
+    if: github.event_name != 'pull_request' && needs.plan.outputs.unpinned != '[]'
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
-        include: ${{ fromJSON(needs.plan.outputs.images) }}
-    uses: jvallery/estate-ci/.github/workflows/image-build.yml@d3cbf977d4567979e8fe21f1fcf77ce598c81b68
+        include: ${{ fromJSON(needs.plan.outputs.unpinned) }}
+    uses: jvallery/estate-ci/.github/workflows/image-build.yml@a2f86619b01f21e18c17a6bb7b35376985507fe4
     with:
       image: jvallery/${{ matrix.name }}
       dockerfile: ${{ matrix.dockerfile }}
       context: ${{ matrix.context }}
       push: true
       timeout-minutes: 90
+
+  # One pin PR for whichever of weather-app / weather-web this run rebuilt (an empty
+  # digest line is skipped by pin-bump). Merging that PR deploys: Argo weather auto-syncs.
+  pin:
+    needs: [app, web]
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && (needs.app.result == 'success' || needs.web.result == 'success') }}
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    uses: jvallery/estate-ci/.github/workflows/pin-bump.yml@a2f86619b01f21e18c17a6bb7b35376985507fe4
+    secrets:
+      pin-bot-private-key: ${{ secrets.PIN_BOT_PRIVATE_KEY }}
+    with:
+      pins: |
+        deploy/k8s/kustomization.yaml registry.vallery.net/jvallery/weather-app ${{ needs.app.outputs.digest }}
+        deploy/k8s/kustomization.yaml registry.vallery.net/jvallery/weather-web ${{ needs.web.outputs.digest }}
+      checks-workflow: ci.yml
