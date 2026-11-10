@@ -1,4 +1,4 @@
-# Images this repo builds on estate-ci (ci/build_plan.py, .github/workflows/build.yml).
+# Images this repo builds on estate-ci (estate-ci build-plan.yml via .github/workflows/build.yml).
 # name<TAB>dockerfile (repo-relative)<TAB>context<TAB>space-separated path prefixes that trigger a build on main.
 # Ported from native CI's agents registry ci_submission profiles/build_paths (BUILD-APPS, D-22).
 weather-app	Dockerfile.app	.	Dockerfile.app .dockerignore app/ pyproject.toml uv.lock requirements.lock .python-version scripts/weather LICENSE THIRD_PARTY_NOTICES.md docs/operations/ffmpeg.md

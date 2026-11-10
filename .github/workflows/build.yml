@@ -1,7 +1,7 @@
 # Image builds on the estate-ci ARC runners (BUILD-APPS, Jason D-22; jvallery/agents#6092;
 # weather#223 for the PR build check, base mirrors and pin PRs).
-# ci/build_plan.py picks the images in ci/images.tsv whose paths changed (the pushed
-# range, the whole pull request, or the dispatched names).
+# The estate-ci build-plan.yml planner picks the images in ci/images.tsv whose paths
+# changed (the pushed range, the whole pull request, or the dispatched names).
 # - Pull requests: each picked image builds in-cluster (Kaniko) with push: false on the
 #   credential-free weather-buildcheck set, and mirrors.txt is checked on weather-ci.
 #   Fork pull requests are refused by the estate-ci job-started guard on every set.
@@ -15,8 +15,8 @@
 #   Build-input pins (Dockerfile.web previous assets, Dockerfile.ci media tools) stay
 #   reviewed manual edits: Dockerfile.web is a build trigger, so a pin job writing it
 #   would loop.
-# Portability (Forgejo/Gitea Actions): checkout + a stdlib repo script + the
-# estate-ci reusable workflows; no cache, artifact, Environment or OIDC use.
+# Portability (Forgejo/Gitea Actions): the estate-ci reusable workflows only; no cache,
+# artifact, Environment or OIDC use.
 name: build
 
 on:
@@ -33,7 +33,6 @@ on:
       - 'THIRD_PARTY_NOTICES.md'
       - 'app/**'
       - 'ci/browser/**'
-      - 'ci/build_plan.py'
       - 'ci/images.tsv'
       - 'docs/operations/ffmpeg.md'
       - 'images/upstream-imports/node/**'
@@ -58,7 +57,6 @@ on:
       - 'THIRD_PARTY_NOTICES.md'
       - 'app/**'
       - 'ci/browser/**'
-      - 'ci/build_plan.py'
       - 'ci/images.tsv'
       - 'docs/operations/ffmpeg.md'
       - 'images/upstream-imports/node/**'
@@ -85,24 +83,14 @@ permissions:
 # the weather-build set instead.
 
 jobs:
+  # The shared estate-ci planner (estate-ci#156) reads ci/images.tsv. On main and
+  # dispatch, weather-app and weather-web are split out of the matrix into their own
+  # jobs so pin-bump.yml can read their digests; pull requests check every picked image.
   plan:
-    runs-on: weather-ci
-    timeout-minutes: 10
-    outputs:
-      images: ${{ steps.plan.outputs.images }}
-      unpinned: ${{ steps.plan.outputs.unpinned }}
-      weather-app: ${{ steps.plan.outputs.weather-app }}
-      weather-web: ${{ steps.plan.outputs.weather-web }}
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - id: plan
-        env:
-          IMAGES: ${{ inputs.images }}
-          PINNED: weather-app weather-web
-        run: python3 ci/build_plan.py
+    uses: jvallery/estate-ci/.github/workflows/build-plan.yml@8a693b2cae23c80d5963302ebd681031a81c138c
+    with:
+      images: ${{ inputs.images }}
+      split: ${{ github.event_name != 'pull_request' && 'weather-app weather-web' || '' }}
 
   # Pull requests: validate the list (no credential). main: copy missing digests.
   mirrors:
@@ -130,7 +118,7 @@ jobs:
 
   app:
     needs: [plan, mirrors]
-    if: github.event_name != 'pull_request' && needs.plan.outputs.weather-app == 'true'
+    if: github.event_name != 'pull_request' && fromJSON(needs.plan.outputs.split)['weather-app']
     uses: jvallery/estate-ci/.github/workflows/image-build.yml@a2f86619b01f21e18c17a6bb7b35376985507fe4
     with:
       image: jvallery/weather-app
@@ -141,7 +129,7 @@ jobs:
 
   web:
     needs: [plan, mirrors]
-    if: github.event_name != 'pull_request' && needs.plan.outputs.weather-web == 'true'
+    if: github.event_name != 'pull_request' && fromJSON(needs.plan.outputs.split)['weather-web']
     uses: jvallery/estate-ci/.github/workflows/image-build.yml@a2f86619b01f21e18c17a6bb7b35376985507fe4
     with:
       image: jvallery/weather-web
@@ -152,12 +140,12 @@ jobs:
 
   image:
     needs: [plan, mirrors]
-    if: github.event_name != 'pull_request' && needs.plan.outputs.unpinned != '[]'
+    if: github.event_name != 'pull_request' && needs.plan.outputs.images != '[]'
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
-        include: ${{ fromJSON(needs.plan.outputs.unpinned) }}
+        include: ${{ fromJSON(needs.plan.outputs.images) }}
     uses: jvallery/estate-ci/.github/workflows/image-build.yml@a2f86619b01f21e18c17a6bb7b35376985507fe4
     with:
       image: jvallery/${{ matrix.name }}
