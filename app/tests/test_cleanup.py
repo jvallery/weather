@@ -7,6 +7,7 @@ import asyncio
 import contextlib
 import itertools
 import os
+import threading
 import time
 import uuid
 from collections.abc import AsyncIterator, Sequence
@@ -661,8 +662,12 @@ def test_cleanup_keeps_running_while_a_finalize_holds_the_render_loop(
     passes: list[float] = []
     original = cleanup.run
 
+    second_pass = threading.Event()
+
     async def counted(**kwargs: Any) -> dict[str, int]:
         passes.append(time.monotonic())
+        if len(passes) >= 2:
+            second_pass.set()
         return await original(**kwargs)
 
     monkeypatch.setattr(cleanup, "run", counted)
@@ -672,8 +677,10 @@ def test_cleanup_keeps_running_while_a_finalize_holds_the_render_loop(
         stop = asyncio.Event()
 
         async def render_loop() -> None:
-            # One long step: the encode runs in a thread and the loop awaits it.
-            await asyncio.to_thread(time.sleep, 0.5)
+            # One long step: the encode runs in a thread and the loop awaits it. The step
+            # lasts until housekeeping has run twice (capped), not a fixed wall-clock time,
+            # so a contended CI runner cannot end the step before the second pass.
+            await asyncio.to_thread(second_pass.wait, 30)
             stop.set()
 
         await asyncio.gather(
