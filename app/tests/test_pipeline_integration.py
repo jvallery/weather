@@ -89,6 +89,19 @@ def clean_test_database() -> Iterator[None]:
     yield
 
 
+@pytest.fixture(autouse=True)
+def render_whole_segments_per_step(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests count Worker.step calls: each step must render its segments to the end.
+
+    On a contended CI runner the 30 s per-segment render budget can stop a segment early
+    (catching up) and leave its video and keogram for a later loop the test never runs, so a
+    keogram stays 'pending' or a step misses an expected attempt (weather#223).
+    """
+    from weather.pipeline import worker as worker_module
+
+    monkeypatch.setattr(worker_module, "RENDER_BUDGET_SECONDS", 3600)
+
+
 async def rows(db: AsyncEngine, sql: str, **params: Any) -> list[Any]:
     async with db.connect() as connection:
         return list(await connection.execute(text(sql), params))
