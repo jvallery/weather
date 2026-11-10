@@ -44,7 +44,7 @@ What this repository owns and its state: **live** (running or applied), **disabl
 | Job kinds `analysis.describe`, `analysis.synthesize` (claimed by `intel`, queued by the scheduler's `media.changed` hook and intel's nightly retry); `search.embed` claimed by `intel` | `app/weather/ai/`, `app/weather/scheduler/handlers.py` | source (#23) |
 | Job and NetworkPolicy `weather-intel-smoke` (disposable one-call Cortex check) | `intel/smoke-job.yaml`, never in a kustomization | applied by hand, then deleted |
 | Images `weather-app`, `weather-web` (digests in `kustomization.yaml`) | `registry.vallery.net/jvallery/` | live |
-| Images `weather-python-base`, `weather-node-base`, `weather-ci` | `registry.vallery.net/jvallery/` | live |
+| Images `weather-ci` (built) and `weather-python-base`, `weather-node-base` (digest-preserving mirrors of the upstream Python and Node images, `mirrors.txt`; also the shared bases for jvallery/docs) | `registry.vallery.net/jvallery/` | live |
 
 Disposable restore-drill resources (`weather-drill-*`) are created by `scripts/restore-drill.sh`, labelled disposable with an expiry, never added to Argo, and deleted after use ([database runbook](docs/operations/database.md)).
 
