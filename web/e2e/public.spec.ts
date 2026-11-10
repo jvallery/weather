@@ -47,6 +47,8 @@ test("almanac: empty history passes axe, and every product has a text alternativ
   await page.goto("/weather/almanac/?product=wind_rose_bin"); await expect(page.getByRole("img", { name: /Wind rose/ })).toBeVisible();
 });
 test("native select CSP control and real inline-style negative control", async ({ page, browserName }) => {
+  // DO NOT MERGE: weather#209 criterion-3 negative proof; fails on firefox only.
+  expect(browserName, "weather#209 negative proof").not.toBe("firefox");
   const csp = "default-src 'self'; script-src 'self'; style-src 'self'";
   await page.route("**/__csp-control/*", async (route) => {
     const name = new URL(route.request().url()).pathname.split("/").at(-1);
