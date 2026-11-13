@@ -5,7 +5,9 @@ PostgreSQL in test_cleanup_integration.py; here an in-memory catalog stands in f
 
 import asyncio
 import contextlib
+import errno
 import itertools
+import logging
 import os
 import threading
 import time
@@ -646,6 +648,57 @@ def test_housekeeping_survives_a_failing_share(tmp_path: Path) -> None:
         cleanup_module.scan_sealed = original
     assert cleanup.healthy is False
 
+
+def test_statvfs_failures_are_logged_with_their_errno_once_per_interval(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """#19: statvfs failures were counted but never logged, so Loki could not say whether
+    they were the 30 s timeout or an OSError. One warning per camera per 5 minutes names the
+    exception type and errno, never the staging path."""
+    staging = tmp_path / "staging-share"
+
+    def stale(path: Path) -> FakeStat:
+        raise OSError(errno.ETIMEDOUT, "Connection timed out", str(path))
+
+    now = [1000.0]
+    housekeeping = Housekeeping(
+        make(tmp_path, FakeCatalog(at(0))), Pressure(CAMERA, staging, statvfs=stale)
+    )
+    housekeeping.clock = lambda: now[0]
+    failures = cleanup_module.FAILURES.labels(CAMERA, "statvfs")
+    before = failures._value.get()
+    caplog.set_level(logging.WARNING, logger="weather.cleanup")
+
+    def lines() -> list[dict[str, Any]]:
+        return [
+            r.fields  # type: ignore[attr-defined]
+            for r in caplog.records
+            if getattr(r, "fields", {}).get("event") == "staging_statvfs_failed"
+        ]
+
+    asyncio.run(housekeeping._level())
+    now[0] += 10
+    asyncio.run(housekeeping._level())
+    assert failures._value.get() == before + 2  # every failure still counts
+    assert lines() == [
+        {
+            "event": "staging_statvfs_failed",
+            "camera": CAMERA,
+            "error": "TimeoutError",  # OSError(ETIMEDOUT) is built as its subclass
+            "errno": "ETIMEDOUT",
+        }
+    ]
+    assert str(staging) not in caplog.text
+    # The 30 s wait_for timeout: a TimeoutError without an errno, logged after the interval.
+    now[0] += cleanup_module.STATVFS_LOG_INTERVAL
+    housekeeping._log_statvfs_failure(TimeoutError())
+    assert lines()[-1] == {
+        "event": "staging_statvfs_failed",
+        "camera": CAMERA,
+        "error": "TimeoutError",
+        "errno": None,
+    }
+    assert len(lines()) == 2
 
 
 def test_cleanup_keeps_running_while_a_finalize_holds_the_render_loop(

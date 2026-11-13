@@ -35,6 +35,7 @@ default) a pass inventories, evaluates and exports metrics but deletes nothing.
 
 import asyncio
 import contextlib
+import errno
 import hashlib
 import json
 import logging
@@ -73,6 +74,8 @@ LATE_RENDER = timedelta(hours=12)
 CLOCK_MARGIN = timedelta(hours=1)
 # Under urgent pressure cleanup runs ahead of rendering, but at most this often (seconds).
 URGENT_INTERVAL = 60.0
+# A failed staging statvfs is logged at most this often per camera (seconds).
+STATVFS_LOG_INTERVAL = 300.0
 MAX_MANIFEST_BYTES = 1024 * 1024
 HOUR_DIR = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}Z\Z")
 SEALED_FILE = re.compile(r"[A-Za-z0-9_-]{1,120}\.tar\Z")
@@ -1340,6 +1343,8 @@ class Housekeeping:
         self.last_pass = float("-inf")
         self._statvfs: asyncio.Task[Any] | None = None
         self._pass: asyncio.Task[None] | None = None
+        self.clock: Callable[[], float] = time.monotonic
+        self._statvfs_logged = float("-inf")
 
     async def _level(self) -> None:
         # One statvfs in flight at most: a hung soft mount must not pile up threads.
@@ -1352,8 +1357,27 @@ class Housekeeping:
             )
         try:
             await asyncio.wait_for(asyncio.shield(self._statvfs), 30)
-        except OSError, TimeoutError:
+        except (OSError, TimeoutError) as error:
             FAILURES.labels(self.cleanup.camera, "statvfs").inc()
+            self._log_statvfs_failure(error)
+
+    def _log_statvfs_failure(self, error: OSError) -> None:
+        """One warning per camera per `STATVFS_LOG_INTERVAL` (#19): the counter alone did not
+        say whether a failure was the 30 s timeout or an OSError, or which errno. The line
+        carries the camera, the exception type and the errno name, never the path."""
+        now = self.clock()
+        if now < self._statvfs_logged + STATVFS_LOG_INTERVAL:
+            return
+        self._statvfs_logged = now
+        code = error.errno if isinstance(error.errno, int) else None
+        event(
+            LOG,
+            "staging_statvfs_failed",
+            logging.WARNING,
+            camera=self.cleanup.camera,
+            error=type(error).__name__,
+            errno=errno.errorcode.get(code, str(code)) if code is not None else None,
+        )
 
     def render_allowed(self) -> bool:
         """Above the render stop (97 %) the pipeline adds no mezzanine bytes (finalize still

@@ -586,7 +586,7 @@ instruction.
 | `weather_staging_oldest_unfinalized_segment_seconds{camera}`, `weather_staging_unfinalized_render_bytes{camera}` | A started segment that has not finalized (see stuck segments); `WeatherStagingSegmentStuck` above 24 h |
 | `weather_staging_unindexed_files{camera}` | Sealed files no row covers; never deleted |
 | `weather_staging_deletions_total{camera,class}` | `chunk`, `tmp`, `render` deletions |
-| `weather_staging_cleanup_failures_total{camera,stage}` | `scan`, `identity`, `unlink`, `unsafe_target`, `statvfs`, `pass` |
+| `weather_staging_cleanup_failures_total{camera,stage}` | `scan`, `identity`, `unlink`, `unsafe_target`, `statvfs`, `pass`. A `statvfs` failure also logs `staging_statvfs_failed` (camera, `error` type, `errno` name; `TimeoutError` with no errno is the 30 s wait), at most once per camera per 5 minutes: `{namespace="weather"} \|= "staging_statvfs_failed"` in Loki |
 | `weather_staging_cleanup_last_success_timestamp_seconds{camera}`, `weather_staging_cleanup_enabled{camera}` | Pass freshness and mode |
 
 Metrics: `weather_pipeline_index_ready_seconds{camera}` (start until the first loop has indexed
