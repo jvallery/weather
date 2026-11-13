@@ -3,6 +3,7 @@ kind: Namespace
 metadata:
   name: weather
   labels:
+    estate.vallery.net/owner: jvallery.weather
     app.kubernetes.io/part-of: weather
     agent-fleet.vallery.net/owner: jvallery
     agent-fleet.vallery.net/project: weather
