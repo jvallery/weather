@@ -17,6 +17,10 @@ spec:
   enableSuperuserAccess: false
   enablePDB: true
   primaryUpdateStrategy: unsupervised
+  # estate-platform#294 (COORD-W2 2026-11-15T06:42:25Z): a rollout that reaches the primary switches over to an
+  # updated replica instead of restarting it in place (smart shutdown held auth-pg writes ~3-4 min). Not part of
+  # the pod spec, so it rolls no instance.
+  primaryUpdateMethod: switchover
   minSyncReplicas: 1
   maxSyncReplicas: 1
   # Estate CNPG default for quorum-sync clusters (jvallery/agents#6087; see
