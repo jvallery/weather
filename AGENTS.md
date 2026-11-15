@@ -26,7 +26,7 @@ Owns the public Weather application at `weather.vallery.net`: Tempest telemetry 
 
 ## Owns
 
-Product/service repository (not one of the seven core repos). Per-item detail: [OWNERSHIP.md](OWNERSHIP.md). Central record: [ESTATE-INVENTORY.md](https://github.com/jvallery/agents/blob/main/docs/fleet-inventory/ESTATE-INVENTORY.md), rendered from the ownership record in jvallery/agents; the record and its render path are planned to move to jvallery/estate-platform as jvallery/agents retires. Change the central entry and OWNERSHIP.md in the same change set.
+Product/service repository (not one of the seven core repos). Per-item detail: [OWNERSHIP.md](OWNERSHIP.md). Central record: [ESTATE-INVENTORY.md](https://github.com/jvallery/estate-platform/blob/main/docs/estate/ESTATE-INVENTORY.md), rendered from `ownership/record/` in jvallery/estate-platform. Change the central entry and OWNERSHIP.md in the same change set.
 
 - Namespace `weather` and everything `deploy/k8s` renders into it, including CNPG Cluster `weather-pg`, its PVCs and generated Secrets.
 - `weather.vallery.net`, as both backend and route owner (IngressRoutes in `weather`).

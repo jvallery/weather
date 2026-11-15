@@ -1,6 +1,6 @@
 # Weather ownership
 
-What this repository owns and its state: **live** (running or applied), **disabled** (source in `deploy/k8s` but not rendered or at zero replicas) or **planned** (no source yet). Central record: agents `control-plane/agent-fleet-control/registry/policy/estate-ownership/` (planned to move to jvallery/estate-platform as jvallery/agents retires); update both in the same change set. Everything in namespace `weather` inherits Weather ownership except the agents-contributed objects listed below.
+What this repository owns and its state: **live** (running or applied), **disabled** (source in `deploy/k8s` but not rendered or at zero replicas) or **planned** (no source yet). Central record: `ownership/record/` in `jvallery/estate-platform`; update both in the same change set. Everything in namespace `weather` inherits Weather ownership except the agents-contributed objects listed below.
 
 ## Rendered by `deploy/k8s` (Argo Application `weather`)
 
