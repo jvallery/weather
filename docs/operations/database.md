@@ -16,9 +16,12 @@ PVCs or the namespace to redeploy.**
   API aggregate reads from starving ordinary reads on the primary; requests and
   memory bounds stay unchanged. Recheck node capacity, namespace quota and actual
   SQL/HTTP latency before changing these bounds.
-- Image: the zot mirror of PostgreSQL 16.15, pinned as `:16.15@sha256:…` with
-  `imagePullSecrets: zot-origin-cluster-pull`. CNPG admission rejects a
-  digest-only `imageName`. pgvector 0.8.6.
+- Image: the zot custody copy of upstream `ghcr.io/cloudnative-pg/postgresql:16.16-standard-trixie`
+  (storage-infra custody entry `w3-weather-pg-postgresql-16.16-standard-trixie`, #213), pinned as
+  `:16.16-standard-trixie-<12 hex>@sha256:…` with `imagePullSecrets: zot-origin-cluster-pull`.
+  CNPG admission rejects a digest-only `imageName`. The image ships pgvector 0.8.7; the
+  installed extension stays at its created version until `ALTER EXTENSION vector UPDATE`.
+  `Dockerfile.ci` still derives from the previous 16.15 mirror build until weather-ci is rebuilt.
 - Database `weather` is owned by `weather_migrator`. Managed login roles are
   `weather_ingest`, `weather_worker`, `weather_api` (40-connection limit) and
   `weather_editor`. None is superuser, createdb or createrole, and superuser
