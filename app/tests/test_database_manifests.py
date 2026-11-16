@@ -52,7 +52,7 @@ class DatabaseManifestTests(unittest.TestCase):
             "Prune=false,Delete=false",
         )
         self.assertEqual(cluster["spec"]["instances"], 3)
-        self.assertIn(":16.15@sha256:", cluster["spec"]["imageName"])
+        self.assertIn(":16.16-standard-trixie-", cluster["spec"]["imageName"])
         self.assertEqual(cluster["spec"]["imagePullSecrets"], [{"name": "zot-origin-cluster-pull"}])
         self.assertFalse(cluster["spec"]["enableSuperuserAccess"])
         self.assertEqual(cluster["spec"]["affinity"]["podAntiAffinityType"], "required")
@@ -131,7 +131,7 @@ class DatabaseManifestTests(unittest.TestCase):
         cluster = next(x for x in objects if x["kind"] == "Cluster")
         store = next(x for x in objects if x["kind"] == "ObjectStore")
         self.assertNotIn("plugins", cluster["spec"])
-        self.assertIn(":16.15@sha256:", cluster["spec"]["imageName"])
+        self.assertIn(":16.16-standard-trixie-", cluster["spec"]["imageName"])
         self.assertEqual(cluster["spec"]["imagePullSecrets"], [{"name": "zot-origin-cluster-pull"}])
         self.assertNotIn("managed", cluster["spec"])
         self.assertEqual(
