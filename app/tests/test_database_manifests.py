@@ -408,7 +408,9 @@ class DatabaseManifestTests(unittest.TestCase):
 
     def _plan_with_restored_volume(self, pv_claim_uid, pv_name="pv-drill"):
         labels = {drill.LABEL: "proof", "estate.vallery.net/disposable": "true"}
-        cluster = {"metadata": {"name": "weather-drill-pg-proof", "uid": "cluster-a", "labels": labels}}
+        cluster = {
+            "metadata": {"name": "weather-drill-pg-proof", "uid": "cluster-a", "labels": labels}
+        }
         pvc = {
             "metadata": {
                 "name": "weather-drill-pg-proof-1",
@@ -421,7 +423,11 @@ class DatabaseManifestTests(unittest.TestCase):
         pv = {
             "metadata": {"name": pv_name, "uid": "pv-uid"},
             "spec": {
-                "claimRef": {"namespace": "weather", "name": "weather-drill-pg-proof-1", "uid": pv_claim_uid},
+                "claimRef": {
+                    "namespace": "weather",
+                    "name": "weather-drill-pg-proof-1",
+                    "uid": pv_claim_uid,
+                },
                 "csi": {"driver": "driver.longhorn.io", "volumeHandle": pv_name},
             },
         }
@@ -429,8 +435,16 @@ class DatabaseManifestTests(unittest.TestCase):
             "metadata": {"name": pv_name, "uid": "lh-uid"},
             "status": {"kubernetesStatus": {"pvName": pv_name}},
         }
-        store = {"metadata": {"name": "weather-drill-pg-proof-reader", "uid": "os-a", "labels": labels}}
-        policy = {"metadata": {"name": "weather-drill-pg-proof-isolation", "uid": "np-a", "labels": labels}}
+        store = {
+            "metadata": {"name": "weather-drill-pg-proof-reader", "uid": "os-a", "labels": labels}
+        }
+        policy = {
+            "metadata": {
+                "name": "weather-drill-pg-proof-isolation",
+                "uid": "np-a",
+                "labels": labels,
+            }
+        }
 
         def fake_kubectl(*args, stdin=None):
             if args[:2] == ("get", "pvc"):

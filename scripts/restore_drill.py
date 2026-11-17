@@ -171,16 +171,25 @@ def cleanup(operation, evidence, evidence_path):
             handle = (pv["spec"].get("csi") or {}).get("volumeHandle")
             if (pv["spec"].get("csi") or {}).get("driver") == "driver.longhorn.io" and handle:
                 volume = json.loads(
-                    kubectl("get", "volumes.longhorn.io", handle, "--namespace", "longhorn-system", "-o", "json")
+                    kubectl(
+                        "get",
+                        "volumes.longhorn.io",
+                        handle,
+                        "--namespace",
+                        "longhorn-system",
+                        "-o",
+                        "json",
+                    )
                 )
-                if (volume.get("status", {}).get("kubernetesStatus") or {}).get("pvName") != volume_name:
+                k8s_status = volume.get("status", {}).get("kubernetesStatus") or {}
+                if k8s_status.get("pvName") != volume_name:
                     raise RuntimeError("Longhorn volume is not this drill PV's; refuse deletion")
                 restored.append(("volumes.longhorn.io", volume))
         objects += [
             ("objectstore", read("objectstore", name + "-reader")),
             ("networkpolicy", read("networkpolicy", name + "-isolation")),
         ]
-        for kind, obj in objects:
+        for _kind, obj in objects:
             labels = obj["metadata"].get("labels", {})
             if (
                 labels.get(LABEL) != operation
@@ -196,12 +205,13 @@ def cleanup(operation, evidence, evidence_path):
     # response loss. Every DELETE uses UID and resourceVersion preconditions.
     for item in evidence["cleanupPlan"]:
         kind, target_name = item["kind"], item["name"]
+        selector = "metadata.name=" + target_name
         bound = kind in scoped
         if kind not in paths or not (bound or target_name.startswith(name)):
             raise RuntimeError("cleanup plan leaves this exact disposable operation")
         extra = scoped.get(kind, [])
         current = json.loads(
-            kubectl("get", kind, *extra, "--field-selector", "metadata.name=" + target_name, "-o", "json")
+            kubectl("get", kind, *extra, "--field-selector", selector, "-o", "json")
         )["items"]
         if not current:
             continue
@@ -228,9 +238,7 @@ def cleanup(operation, evidence, evidence_path):
         deadline = time.monotonic() + 180
         while True:
             observed = json.loads(
-                kubectl(
-                    "get", kind, *extra, "--field-selector", "metadata.name=" + target_name, "-o", "json"
-                )
+                kubectl("get", kind, *extra, "--field-selector", selector, "-o", "json")
             )["items"]
             if not observed:
                 break
