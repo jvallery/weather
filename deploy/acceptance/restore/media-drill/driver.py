@@ -164,29 +164,61 @@ async def main() -> int:
     exact = marked == expected
 
     # Achieved RPO: newest production asset (read by the orchestrator) present in custody.
-    rpo = None
+    # The custody reader holds readFiles without listFiles, so B2 answers a HEAD for a
+    # key it does not hold with 403, not 404. A 403 counts as absent ONLY for keys
+    # newer than the newest key custody does hold (expected not yet copied). A 403 on
+    # an expected-present key (at or older than that point), a 403 on the positive
+    # control, or no present key at all is a hard RPO failure: a permission regression
+    # must never read as clean.
     candidates = json.loads(Path("/drill/rpo-candidates.json").read_text())
-    absent_newer = 0
-    absent_status: dict[str, int] = {}
+    rpo_failures: list[str] = []
+    control = next((r for r in rows if str(r.id) not in custody_missing), None)
+    control_ok = False
+    if control is not None:
+        try:
+            control_ok = (
+                await custody.head(f"object-custody/{control.bucket}/{control.object_key}")
+                is not None
+            )
+        except StoreError as err:
+            rpo_failures.append(f"positive control HEAD failed ({err.status})")
+    if not control_ok and not rpo_failures:
+        rpo_failures.append("positive control key not visible in custody")
+    states: list[str] = []
     for c in candidates:
         try:
             info = await custody.head(f"object-custody/{c['bucket']}/{c['object_key']}")
+            states.append("present" if info is not None else "404")
         except StoreError as err:
-            # The custody reader holds readFiles without listFiles, so B2 answers a
-            # HEAD for a key it does not hold with 403 rather than 404.
             if err.status != 403:
                 raise
-            info = None
-            absent_status["403"] = absent_status.get("403", 0) + 1
-        if info is not None:
-            rpo = {
-                "newest_present_created_epoch": c["created_epoch"],
-                "achieved_rpo_seconds": round(start - c["created_epoch"]),
-                "newer_production_objects_not_yet_in_custody": absent_newer,
-                "absent_by_status": absent_status,
-            }
-            break
-        absent_newer += 1
+            states.append("403")
+    newest = states.index("present") if "present" in states else None
+    rpo = None
+    if newest is None:
+        rpo_failures.append("no RPO candidate present in custody; 403s cannot be classified")
+    else:
+        expected_present_403 = [
+            candidates[i]["object_key"] for i in range(newest + 1, len(states))
+            if states[i] == "403"
+        ]
+        if expected_present_403:
+            rpo_failures.append(
+                f"403 on {len(expected_present_403)} expected-present key(s): "
+                + ", ".join(expected_present_403[:5])
+            )
+        c = candidates[newest]
+        rpo = {
+            "newest_present_created_epoch": c["created_epoch"],
+            "achieved_rpo_seconds": round(start - c["created_epoch"]),
+            "newer_production_objects_not_yet_in_custody": newest,
+            "newer_absent_by_status": {
+                k: states[:newest].count(k) for k in ("403", "404") if states[:newest].count(k)
+            },
+            "older_candidates_checked": len(states) - newest - 1,
+            "positive_control_present": control_ok,
+        }
+    rpo_ok = not rpo_failures
     await custody.aclose()
     for store in drill.values():
         await store.aclose()
@@ -197,6 +229,7 @@ async def main() -> int:
         and withheld is not None
         and all(v["rc"] == 0 for v in reconcile.values())
         and all(t["copied"] > 0 for t in tally.values())
+        and rpo_ok
     )
     receipt = {
         "event": "weather_media_drill_receipt",
@@ -214,6 +247,8 @@ async def main() -> int:
         "marked_unavailable": len(marked),
         "expected_unavailable": len(expected),
         "rpo": rpo,
+        "rpo_ok": rpo_ok,
+        "rpo_failures": rpo_failures,
         # Asset ids (UUIDs) for the orchestrator's port-forward probes.
         "probe_ids": {
             "withheld": str(withheld.id) if withheld else None,
