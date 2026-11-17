@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from prometheus_client import REGISTRY
 from sqlalchemy import make_url, text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from weather.db import jobs
@@ -385,6 +386,16 @@ def test_stopped_camera_is_unavailable_and_others_publish_exactly_once(
                     "skycam_east", HookedPublisher(worker_db, buckets, kill_commit=KillOnce(False))
                 )
                 await fresh.step(now)
+            # #146: the first loop after each restart is split by phase, so a slow restart says
+            # where its index_ready seconds went.
+            for phase in ("schedule", "renderer", "refresh"):
+                assert (
+                    REGISTRY.get_sample_value(
+                        "weather_pipeline_first_loop_phase_seconds",
+                        {"camera": "skycam_east", "phase": phase},
+                    )
+                    is not None
+                ), phase
 
             pending = await rows(
                 admin,

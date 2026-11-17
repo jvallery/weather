@@ -86,6 +86,12 @@ INDEX_READY = Gauge(
     "Seconds from pipeline start until the first loop had indexed the staged chunks (#146)",
     ["camera"],
 )
+FIRST_LOOP_PHASE = Gauge(
+    "weather_pipeline_first_loop_phase_seconds",
+    "Seconds of the first loop after start (the span weather_pipeline_index_ready_seconds"
+    " reports) by phase: schedule, renderer, refresh, render, finalize, failed (#146)",
+    ["camera", "phase"],
+)
 
 
 HUMAN_POSTERS = Counter(
