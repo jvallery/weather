@@ -81,6 +81,21 @@ spec:
         ports:
         - name: metrics
           containerPort: 9000
+        # #225: restart a hung main loop. The loop beats about every second when idle and every
+        # 15 s while a job runs (job lease heartbeat); the longest legitimate gap is one tick or
+        # outbox pass, each bounded by the database pool timeout (30 s). Stale after 300 s, three
+        # failures 30 s apart: a hang restarts within about 6-7 minutes.
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -I
+            - -c
+            - import os,sys,time; sys.exit(0 if time.time() - os.stat('/tmp/weather-scheduler-heartbeat').st_mtime < 300 else 1)
+          initialDelaySeconds: 90
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
       volumes:
       - name: database
         projected:
