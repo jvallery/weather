@@ -16,6 +16,8 @@ base=$(python3 -c 'import json;b=[x for x in json.load(open("/pgdata/backups.jso
 echo "[catalog] restoring base $base"
 barman-cloud-restore $ep "$src" weather-pg "$base" "$PGDATA"
 chmod 0700 "$PGDATA"
+# Restored config files can arrive read-only; the drill owns this copy.
+chmod u+w "$PGDATA"/postgresql.conf "$PGDATA"/postgresql.auto.conf "$PGDATA"/pg_hba.conf 2>/dev/null || true
 sed -i -E 's/^(include|include_if_exists|include_dir)/#&/' "$PGDATA/postgresql.conf" || true
 cat >> "$PGDATA/postgresql.auto.conf" <<CONF
 restore_command = 'barman-cloud-wal-restore $ep $src weather-pg %f %p'
