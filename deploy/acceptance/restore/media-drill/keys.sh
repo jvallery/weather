@@ -33,7 +33,7 @@ for b in weather-media weather-originals; do
   printf '%s' "$id" > "$K/garage/$b/access_key_id"
   printf '%s' "$secret" > "$K/garage/$b/secret_access_key"
 done
-chmod -R g+rX "$K"
+find "$K" -mindepth 1 -exec chmod g+rX {} +
 chmod 0700 "$K/pgkey"
 chmod 0600 "$K/pgkey/server.key"
 echo "[keys] generated"
