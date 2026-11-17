@@ -49,6 +49,16 @@ spec:
               topologyKey: topology.vallery.net/proxmox-host
               labelSelector:
                 matchLabels: *id001
+      # estate-platform#113 (STD-HA-08): hard spread across Proxmox hosts. nodeTaintsPolicy Honor
+      # keeps the frigate-tainted olivine worker and cordoned servers out of the domain count, so
+      # 2 replicas plus one surge pod fit the four general workers.
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.vallery.net/proxmox-host
+        whenUnsatisfiable: DoNotSchedule
+        nodeTaintsPolicy: Honor
+        labelSelector:
+          matchLabels: *id001
       containers:
       - name: api
         image: weather-app
@@ -300,6 +310,16 @@ spec:
               topologyKey: topology.vallery.net/proxmox-host
               labelSelector:
                 matchLabels: *id001
+      # estate-platform#113 (STD-HA-08): hard spread across Proxmox hosts. nodeTaintsPolicy Honor
+      # keeps the frigate-tainted olivine worker and cordoned servers out of the domain count, so
+      # 2 replicas plus one surge pod fit the four general workers.
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.vallery.net/proxmox-host
+        whenUnsatisfiable: DoNotSchedule
+        nodeTaintsPolicy: Honor
+        labelSelector:
+          matchLabels: *id001
       containers:
       - name: web
         image: weather-web
