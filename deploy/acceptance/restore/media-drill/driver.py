@@ -53,7 +53,7 @@ async def fetch(custody: ObjectStore, key: str, size: int, target: Path) -> str 
 
 async def main() -> int:
     start = time.time()
-    while not Path("/garage/ready").exists():
+    while not Path("/gdata/ready").exists():
         await asyncio.sleep(2)
     os.environ["DATABASE_CREDENTIAL_DIRECTORY"] = "/keys/db-weather_worker"
     engine = create_database_engine()

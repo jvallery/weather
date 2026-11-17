@@ -116,9 +116,14 @@ def configmap(name, operation, candidates):
 
 def wait_receipt(name, deadline):
     while time.time() < deadline:
-        phase = json.loads(kubectl("get", "pod", name, "-o", "json"))["status"].get("phase")
-        if phase in ("Failed", "Succeeded"):
-            raise RuntimeError(f"drill pod ended early ({phase})")
+        status = json.loads(kubectl("get", "pod", name, "-o", "json"))["status"]
+        if status.get("phase") in ("Failed", "Succeeded"):
+            raise RuntimeError(f"drill pod ended early ({status.get('phase')})")
+        ended = [
+            c["name"] for c in status.get("containerStatuses", []) if "terminated" in c["state"]
+        ]
+        if ended:
+            raise RuntimeError(f"drill containers ended early: {ended}")
         try:
             log = kubectl("logs", name, "-c", "driver")
         except subprocess.CalledProcessError:

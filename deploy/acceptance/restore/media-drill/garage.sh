@@ -3,10 +3,10 @@
 # weather#77 media drill: single-node Garage on emptyDir with pod-generated keys. Listens on
 # 127.0.0.1 only; buckets weather-media and weather-originals; one imported drill key.
 set -Eeuo pipefail
-mkdir -p /garage/meta /garage/data
-cat > /garage/garage.toml <<CONF
-metadata_dir = "/garage/meta"
-data_dir = "/garage/data"
+mkdir -p /gdata/meta /gdata/data
+cat > /gdata/garage.toml <<CONF
+metadata_dir = "/gdata/meta"
+data_dir = "/gdata/data"
 db_engine = "sqlite"
 replication_factor = 1
 rpc_bind_addr = "127.0.0.1:3901"
@@ -19,7 +19,7 @@ api_bind_addr = "127.0.0.1:3900"
 api_bind_addr = "127.0.0.1:3903"
 admin_token_file = "/keys/garage-server/admin_token"
 CONF
-export GARAGE_CONFIG_FILE=/garage/garage.toml
+export GARAGE_CONFIG_FILE=/gdata/garage.toml
 /garage server &
 pid=$!
 for _ in $(seq 1 60); do /garage status >/dev/null 2>&1 && break; sleep 1; done
@@ -31,6 +31,6 @@ for b in weather-media weather-originals; do
   /garage bucket create "$b" >/dev/null
   /garage bucket allow --read --write --owner "$b" --key drill >/dev/null
 done
-touch /garage/ready
+touch /gdata/ready
 echo "[garage] ready"
 wait "$pid"

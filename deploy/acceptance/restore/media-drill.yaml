@@ -108,7 +108,7 @@ spec:
     resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: '1', memory: 512Mi}}
     volumeMounts:
     - {name: keys, mountPath: /keys, readOnly: true}
-    - {name: garage, mountPath: /garage}
+    - {name: garage, mountPath: /gdata}
     - {name: drill, mountPath: /drill, readOnly: true}
     - {name: tmp, mountPath: /tmp}
   - name: driver
@@ -123,7 +123,7 @@ spec:
     resources: {requests: {cpu: 250m, memory: 256Mi}, limits: {cpu: '1', memory: 1Gi}}
     volumeMounts:
     - {name: keys, mountPath: /keys, readOnly: true}
-    - {name: garage, mountPath: /garage, readOnly: true}
+    - {name: garage, mountPath: /gdata, readOnly: true}
     - {name: work, mountPath: /work}
     - {name: drill, mountPath: /drill, readOnly: true}
     - {name: tmp, mountPath: /tmp}
