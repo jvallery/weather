@@ -14,11 +14,15 @@ for role in weather_api weather_worker weather_editor; do
 done
 # Throwaway CA and a server certificate for the name the app dials (weather-pg-rw); the pod's
 # hostAliases pin that name to 127.0.0.1.
+# Extensions satisfy Python's VERIFY_X509_STRICT (the app's default TLS context).
 openssl req -x509 -newkey rsa:2048 -nodes -days 2 -subj '/CN=weather-media-drill-ca' \
-  -keyout "$K/tls/ca.key" -out "$K/tls/ca.crt" 2>/dev/null
+  -addext 'basicConstraints=critical,CA:TRUE' -addext 'keyUsage=critical,keyCertSign,cRLSign' \
+  -addext 'subjectKeyIdentifier=hash' -keyout "$K/tls/ca.key" -out "$K/tls/ca.crt" 2>/dev/null
 openssl req -newkey rsa:2048 -nodes -subj '/CN=weather-pg-rw' \
   -keyout "$K/pgkey/server.key" -out "$K/tls/server.csr" 2>/dev/null
-printf 'subjectAltName=DNS:weather-pg-rw,IP:127.0.0.1\n' > "$K/tls/san.ext"
+printf '%s\n' 'subjectAltName=DNS:weather-pg-rw,IP:127.0.0.1' 'basicConstraints=critical,CA:FALSE' \
+  'keyUsage=critical,digitalSignature,keyEncipherment' 'extendedKeyUsage=serverAuth' \
+  'authorityKeyIdentifier=keyid,issuer' 'subjectKeyIdentifier=hash' > "$K/tls/san.ext"
 openssl x509 -req -in "$K/tls/server.csr" -CA "$K/tls/ca.crt" -CAkey "$K/tls/ca.key" \
   -CAcreateserial -days 2 -extfile "$K/tls/san.ext" -out "$K/tls/server.crt" 2>/dev/null
 rm -f "$K/tls/ca.key" "$K/tls/server.csr"
