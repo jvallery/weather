@@ -167,13 +167,23 @@ async def main() -> int:
     rpo = None
     candidates = json.loads(Path("/drill/rpo-candidates.json").read_text())
     absent_newer = 0
+    absent_status: dict[str, int] = {}
     for c in candidates:
-        info = await custody.head(f"object-custody/{c['bucket']}/{c['object_key']}")
+        try:
+            info = await custody.head(f"object-custody/{c['bucket']}/{c['object_key']}")
+        except StoreError as err:
+            # The custody reader holds readFiles without listFiles, so B2 answers a
+            # HEAD for a key it does not hold with 403 rather than 404.
+            if err.status != 403:
+                raise
+            info = None
+            absent_status["403"] = absent_status.get("403", 0) + 1
         if info is not None:
             rpo = {
                 "newest_present_created_epoch": c["created_epoch"],
                 "achieved_rpo_seconds": round(start - c["created_epoch"]),
                 "newer_production_objects_not_yet_in_custody": absent_newer,
+                "absent_by_status": absent_status,
             }
             break
         absent_newer += 1
