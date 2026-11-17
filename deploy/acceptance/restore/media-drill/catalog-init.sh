@@ -30,6 +30,11 @@ CONF
 printf 'local all all trust\n' > "$PGDATA/pg_hba.conf"
 touch "$PGDATA/recovery.signal"
 pg_ctl -D "$PGDATA" -w -t 3000 start -l /pgdata/recovery.log >/dev/null
+# hot_standby is off, so connections open only once replay ends and the copy promotes.
+for _ in $(seq 1 1500); do
+  [ "$(psql -d postgres -Atc 'select pg_is_in_recovery()' 2>/dev/null)" = f ] && break
+  sleep 2
+done
 test "$(psql -d postgres -Atc 'select pg_is_in_recovery()')" = f
 replay=$(psql -d postgres -Atc "select coalesce(extract(epoch from pg_last_xact_replay_timestamp())::bigint,0)")
 q() { psql -d weather -v ON_ERROR_STOP=1 -Atc "$1"; }
