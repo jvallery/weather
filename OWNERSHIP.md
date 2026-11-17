@@ -48,6 +48,12 @@ What this repository owns and its state: **live** (running or applied), **disabl
 
 Disposable restore-drill resources (`weather-drill-*`) are created by `scripts/restore-drill.sh`, labelled disposable with an expiry, never added to Argo, and deleted after use ([database runbook](docs/operations/database.md)).
 
+## Singleton records (STD-HA-10)
+
+| Workloads | Reason | Measured restart (index ready) | Release path |
+|---|---|---|---|
+| Deployments `pipeline-skycam-east`, `pipeline-skycam-west`, `pipeline-frontyard-1` (namespace `weather`; `replicas: 1`, `strategy: Recreate`, `deploy/k8s/pipeline/deployments.yaml`) | Single writer of its camera's staging subPath, segments, keogram bins and catalog rows; a second replica would race the render and cleanup passes (#19, #132 safety rules), so one replica per camera with Recreate and no concurrent writer. Data: staging on the NFS PV `weather-staging` (storage-infra#1106), outputs in Garage `weather-media` / `weather-originals`, rows in `weather-pg` (CNPG 3 instances). | Prometheus `max by (camera, pod) (weather_pipeline_index_ready_seconds)`, read 2026-11-17T05:06Z. Latest restart, pods started 2026-11-17T04:22:45Z (app pin #258): skycam_east 15.9 s, skycam_west 18.6 s, frontyard_1 33.3 s. Previous restart, 2026-11-13T22:14Z (app pin #250): skycam_east 3,363 s, skycam_west 3,432 s, frontyard_1 5,096 s. Ten-day range 16-7,203 s (worst: frontyard_1 2026-11-07T05:04Z). Target 120 s (#146): **not bounded**; the figure varies by two orders of magnitude between restarts with no code change, which points at NFS metadata latency on NAS Volume 2 rather than the header reads (profile pending, #146 acceptance 2). | #220 (render and staging scratch off Volume 2 NFS) if the profile attributes the time to NFS metadata, otherwise a persisted chunk index in `app/weather/pipeline/`; then re-measure here. Until then a drain or promote costs up to about 2 h of render time per camera; list the pipelines in every drain's impact. |
+
 ## Contributed into `weather` by agents (Argo Application `weather-secrets`, `secrets-ksops/weather`)
 
 Planned homes as jvallery/agents retires: the central KSOPS set moves to jvallery/estate-platform; the NAD moves to network-infra with Multus.
