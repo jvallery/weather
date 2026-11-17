@@ -133,7 +133,11 @@ def cleanup(operation, evidence, evidence_path):
         "pvc": "/api/v1/namespaces/weather/persistentvolumeclaims/",
         "objectstore": "/apis/barmancloud.cnpg.io/v1/namespaces/weather/objectstores/",
         "networkpolicy": "/apis/networking.k8s.io/v1/namespaces/weather/networkpolicies/",
+        # weather#33: the restored copy outlives its PVC when the PV is Retain.
+        "pv": "/api/v1/persistentvolumes/",
+        "volumes.longhorn.io": "/apis/longhorn.io/v1beta2/namespaces/longhorn-system/volumes/",
     }
+    scoped = {"pv": [], "volumes.longhorn.io": ["--namespace", "longhorn-system"]}
     if "cleanupPlan" not in evidence:
         cluster = read("cluster", name)
         pvcs = json.loads(kubectl("get", "pvc", "-l", "cnpg.io/cluster=" + name, "-o", "json"))[
@@ -148,11 +152,35 @@ def cleanup(operation, evidence, evidence_path):
             ):
                 raise RuntimeError("PVC ownership differs; refuse deletion")
         objects = [("cluster", cluster)] + [("pvc", p) for p in pvcs]
+        # Bind each drill PVC's PV and Longhorn volume by UID now, so the Released
+        # PV and its volume are removed after the PVC and nothing else is.
+        restored = []
+        for pvc in pvcs:
+            volume_name = pvc["spec"].get("volumeName")
+            if not volume_name:
+                continue
+            pv = json.loads(kubectl("get", "pv", volume_name, "-o", "json"))
+            ref = pv["spec"].get("claimRef") or {}
+            if (ref.get("namespace"), ref.get("name"), ref.get("uid")) != (
+                "weather",
+                pvc["metadata"]["name"],
+                pvc["metadata"]["uid"],
+            ):
+                raise RuntimeError("PV claimRef differs from the drill PVC; refuse deletion")
+            restored.append(("pv", pv))
+            handle = (pv["spec"].get("csi") or {}).get("volumeHandle")
+            if (pv["spec"].get("csi") or {}).get("driver") == "driver.longhorn.io" and handle:
+                volume = json.loads(
+                    kubectl("get", "volumes.longhorn.io", handle, "--namespace", "longhorn-system", "-o", "json")
+                )
+                if (volume.get("status", {}).get("kubernetesStatus") or {}).get("pvName") != volume_name:
+                    raise RuntimeError("Longhorn volume is not this drill PV's; refuse deletion")
+                restored.append(("volumes.longhorn.io", volume))
         objects += [
             ("objectstore", read("objectstore", name + "-reader")),
             ("networkpolicy", read("networkpolicy", name + "-isolation")),
         ]
-        for _, obj in objects:
+        for kind, obj in objects:
             labels = obj["metadata"].get("labels", {})
             if (
                 labels.get(LABEL) != operation
@@ -161,25 +189,31 @@ def cleanup(operation, evidence, evidence_path):
                 raise RuntimeError("disposable object labels differ; refuse cleanup")
         evidence["cleanupPlan"] = [
             {"kind": kind, "name": obj["metadata"]["name"], "uid": obj["metadata"]["uid"]}
-            for kind, obj in objects
+            for kind, obj in objects + restored
         ]
         evidence_path.write_text(json.dumps(evidence, indent=2) + "\n")
     # Record identities before mutation; cleanup can resume the same plan after
     # response loss. Every DELETE uses UID and resourceVersion preconditions.
     for item in evidence["cleanupPlan"]:
         kind, target_name = item["kind"], item["name"]
-        if kind not in paths or not target_name.startswith(name):
+        bound = kind in scoped
+        if kind not in paths or not (bound or target_name.startswith(name)):
             raise RuntimeError("cleanup plan leaves this exact disposable operation")
+        extra = scoped.get(kind, [])
         current = json.loads(
-            kubectl("get", kind, "--field-selector", "metadata.name=" + target_name, "-o", "json")
+            kubectl("get", kind, *extra, "--field-selector", "metadata.name=" + target_name, "-o", "json")
         )["items"]
         if not current:
             continue
         metadata = current[0]["metadata"]
-        if (
-            metadata["uid"] != item["uid"]
-            or metadata.get("labels", {}).get(LABEL) != operation
-            or metadata.get("labels", {}).get("estate.vallery.net/disposable") != "true"
+        # A PV or Longhorn volume carries no drill label: its UID, bound to the
+        # drill PVC's claimRef when the plan was written, is its identity.
+        if metadata["uid"] != item["uid"] or (
+            not bound
+            and (
+                metadata.get("labels", {}).get(LABEL) != operation
+                or metadata.get("labels", {}).get("estate.vallery.net/disposable") != "true"
+            )
         ):
             raise RuntimeError("disposable resource was replaced; refuse deletion")
         options = {
@@ -195,7 +229,7 @@ def cleanup(operation, evidence, evidence_path):
         while True:
             observed = json.loads(
                 kubectl(
-                    "get", kind, "--field-selector", "metadata.name=" + target_name, "-o", "json"
+                    "get", kind, *extra, "--field-selector", "metadata.name=" + target_name, "-o", "json"
                 )
             )["items"]
             if not observed:
@@ -211,6 +245,10 @@ def cleanup(operation, evidence, evidence_path):
         "remainingPvcCount": 0,
         "readerObjectStoreRemoved": True,
         "isolationPolicyRemoved": True,
+        "removedPvUids": [p["uid"] for p in evidence["cleanupPlan"] if p["kind"] == "pv"],
+        "removedLonghornVolumeUids": [
+            p["uid"] for p in evidence["cleanupPlan"] if p["kind"] == "volumes.longhorn.io"
+        ],
     }
 
 

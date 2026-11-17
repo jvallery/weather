@@ -6,7 +6,13 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: '-6'
 data:
-  recovery.pitr_window_days: '30'
+  # D-460 (a), Jason 2026-11-09: weather-pg recovers from the 7-day local WAL
+  # archive (ObjectStore weather-pg-local, retentionPolicy 7d) plus a daily
+  # off-site copy of it (storage-infra#1567), so the off-site RPO is about 24 h
+  # (26 h with schedule jitter). weather#33.
+  recovery.pitr_window_days: '7'
+  recovery.db_offsite_age_target_hours: '26'
+  # Lifecycle of the frozen B2 store weather-pg-b2 (history before 2026-10-31).
   recovery.b2_hide_after_days: '33'
   recovery.b2_delete_hidden_after_days: '7'
   recovery.media_gc_grace_days: '90'

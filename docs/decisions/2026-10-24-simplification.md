@@ -78,7 +78,7 @@ Each item names what it replaces. Mechanisms not listed here keep their current 
   - **Keys.** Content-addressed and immutable (`<class>/<sha256>.<ext>`). Writers never overwrite a different hash.
   - **Previews** are not stored in Garage or custody: the pipeline writes them to the staging share's `previews/` directory, which `api` mounts read-only, with a DB pointer. R18 holds natively, because no media identity can read backups or originals.
 - **P7 Recovery.**
-  - **Database.** Barman sends WAL and daily base backups to B2 with `archive_timeout` 300 s, then runs a PITR restore drill. DB offsite age is under 30 minutes by construction. The declared PITR window is **30 days**, enforced by B2 lifecycle rules because the writer key cannot delete.
+  - **Database.** Superseded 2026-11-09 by D-460 (a) (weather#33): Barman sends WAL (`archive_timeout` 300 s) and daily base backups to the in-cluster `weather-pg-local` store (7-day retention), and storage-infra copies that archive off site daily. The declared PITR window is **7 days** and the declared DB off-site age target is **26 h** (about 24 h RPO off site). The original text (B2 direct, under 30 minutes off-site age, 30-day window) no longer holds.
   - **Media.** Central custody `mirror` rows cover both buckets.
   - **GC grace.** 90 days, which exceeds max(PITR window, B2 version retention) + 7 days. No object referenced by any restorable catalog state is ever deleted.
   - **After a restore,** a reconcile job HEADs every referenced object and marks missing ones `unavailable`; the UI already models that state.
@@ -117,7 +117,7 @@ Each item names what it replaces. Mechanisms not listed here keep their current 
     1. Segment published within 2 h of its boundary for ≥95% of segments.
     2. Current-conditions age ≤90 s for 99% of the time while the station is reporting.
     3. Public page and media probe availability ≥99.5%.
-    4. DB offsite age ≤30 min.
+    4. DB offsite age ≤26 h (D-460 a, weather#33; was ≤30 min).
   - Everything else is a signal, not an SLO.
   - **Service tier: Tier 2.** NAS-dependent capture and media outages are accepted. STD-HA-01 does not apply.
 - **P16 Acceptance.** Every issue meets the common definition of done in [AGENTS.md](../../AGENTS.md). The integrated WX-31/33/34 issues are dissolved into per-issue DoD and the slice launch issues WX-47/48/49. Inherited estate gaps (STD-DR-05 bootstrap, CI-04 signing admission, the CNPG primary PDB) are disclosed, not gated.

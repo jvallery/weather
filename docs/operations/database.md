@@ -65,17 +65,21 @@ source CPU cap if the change causes harm; do not bypass admission or alert rules
 
 ## Backups and WAL
 
-- The Barman Cloud plugin writes base backups and WAL to
-  `s3://weather-db-vallery/cnpg/weather-pg` using `weather-pg-backup-b2-writer`.
-  That key cannot permanently erase versions (storage-infra#1112). The daily
-  base runs at 09:15 UTC on a standby. `archive_timeout=300s`.
-- **No `retentionPolicy`.** Expiry is the B2 lifecycle: hide after 33 days,
-  delete hidden versions 7 days later. That covers the 30-day PITR window
-  (`ConfigMap/weather-database-policy`). Don't add a retention policy: Barman's
-  deletes would hide archive objects early.
-- There is no keep-last floor. If base backups fail for more than 7 days, ask
-  storage-infra to suspend the `cnpg/` lifecycle rule before it expires the last
-  base.
+- **One current backup path (D-460 a, weather#33).** The Barman Cloud plugin
+  writes WAL (`archive_timeout=300s`) and the daily base backup (09:15 UTC, on a
+  standby) to ObjectStore `weather-pg-local` (bucket `weather-pg` on the
+  in-cluster garage-k3s, `retentionPolicy: 7d`; see "Local WAL archive" below).
+  The declared PITR window is **7 days** (`recovery.pitr_window_days` in
+  `ConfigMap/weather-database-policy`). The off-site copy is a daily copy of that
+  archive owned by storage-infra (storage-infra#1567), so the declared off-site
+  age target is **26 h** (`recovery.db_offsite_age_target_hours`; about 24 h RPO
+  off-site). No sub-30-minute off-site age is claimed.
+- **Historical B2 store.** `weather-pg-b2` (`s3://weather-db-vallery/cnpg/weather-pg`,
+  writer `weather-pg-backup-b2-writer`, which cannot permanently erase versions,
+  storage-infra#1112) has received nothing since 2026-10-31. It has no
+  `retentionPolicy`; its B2 lifecycle hides objects after 33 days and deletes
+  hidden versions 7 days later, so its history expires on its own. Don't add a
+  retention policy to it.
 - Alerts (monitoring-stack): `WeatherDbBaseBackupStale` (>26 h) and
   `WeatherDbWalArchiveStale` (>30 min). Inspect with
   `kubectl -n weather get backups.postgresql.cnpg.io,scheduledbackups,objectstores`
@@ -91,7 +95,8 @@ source CPU cap if the change causes harm; do not bypass admission or alert rules
 The WAL archiver and the daily base backup write to ObjectStore `weather-pg-local`
 (bucket `weather-pg` on the in-cluster availability Garage, retention 7 days), so
 archiving keeps working with both WANs down and pg_wal never fills. The offsite copy is
-storage-infra's daily Longhorn B2 backup of the garage-k3s volume, as for auth-pg. The
+storage-infra's daily copy of this archive (storage-infra#1567; D-460 a names the Longhorn
+B2 backup of the garage-k3s volume, and a bucket-level custody copy is the alternative). The
 B2 store `weather-pg-b2` stays declared for its pre-2026-10-31 history; the restore drill
 reads `weather-pg-local` with the reader key.
 The writer and reader Secrets (`weather-pg-backup-s3-{writer,reader}-k3s`) are created
