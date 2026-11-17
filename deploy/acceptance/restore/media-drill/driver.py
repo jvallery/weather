@@ -10,6 +10,7 @@ exactly the withheld or custody-missing objects were marked unavailable. Prints 
 """
 
 import asyncio
+import datetime
 import hashlib
 import json
 import os
@@ -24,6 +25,7 @@ from weather.publish.objects import ObjectStore, StoreError
 
 WORK = Path("/work")
 DAY = os.environ["DRILL_DAY"]
+DAY_DATE = datetime.date.fromisoformat(DAY)  # asyncpg binds a date, not a string
 B2 = "https://s3.us-west-000.backblazeb2.com"
 INDAY = "(created_at AT TIME ZONE 'America/Denver')::date = CAST(:day AS date)"
 
@@ -64,7 +66,7 @@ async def main() -> int:
                 text(f"""SELECT id, bucket, class, object_key, sha256, bytes, content_type
                          FROM weather.media_asset WHERE state='available' AND {INDAY}
                          ORDER BY bucket, class, bytes, id"""),
-                {"day": DAY},
+                {"day": DAY_DATE},
             )
         ).all()
     custody = ObjectStore(
@@ -154,7 +156,7 @@ async def main() -> int:
                     text(
                         f"SELECT id FROM weather.media_asset WHERE state='unavailable' AND {INDAY}"
                     ),
-                    {"day": DAY},
+                    {"day": DAY_DATE},
                 )
             ).all()
         }
