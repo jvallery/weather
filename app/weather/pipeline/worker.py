@@ -172,6 +172,16 @@ class Worker:
         # #147: one line when the first loop after start has indexed the staged chunks.
         self.started = time.monotonic()
         self.indexed = False
+        # #146: where the first loop after start spends its time, so a slow restart is
+        # attributed (schedule read, renderer construction, index refresh, render, finalize).
+        self.first_phases: dict[str, float] | None = {}
+
+    def _phase(self, name: str, since: float) -> float:
+        """Add the time since `since` to phase `name` while the first loop runs; returns now."""
+        now = time.monotonic()
+        if self.first_phases is not None:
+            self.first_phases[name] = self.first_phases.get(name, 0.0) + now - since
+        return now
 
     def render_allowed(self) -> bool:
         return self.housekeeping is None or self.housekeeping.render_allowed()
@@ -236,7 +246,9 @@ class Worker:
             self.keograms = Keograms(
                 self.engine, self.publisher, self.config.region, asyncio.get_running_loop()
             )
+        mark = time.monotonic()
         rows = await schedule.active(self.engine, camera, now)
+        mark = self._phase("schedule", mark)
         live = {row.id for row in rows}
         for stale in set(self.renderers) - live:
             del self.renderers[stale]
@@ -252,7 +264,9 @@ class Worker:
                 # its first index refresh sees those blocks' chunks for the first time, and
                 # they are not late.
                 resumed = row.id not in self.renderers
+                mark = time.monotonic()
                 renderer = self.renderer(row)
+                mark = self._phase("renderer", mark)
                 if not renderer.complete and not self.render_allowed():
                     # Render stop (>= 97 %, #19): add no mezzanine blocks to the share.
                     # Complete mezzanines still finalize and publish, which frees them.
@@ -272,6 +286,7 @@ class Worker:
                         )
                         if late:
                             metrics.LATE.labels(camera).inc(late)
+                mark = self._phase("refresh", mark)
                 # One block at a time within a time budget, so housekeeping and the pressure
                 # checks keep running while a backlog catches up (#19); the loop then
                 # returns at once instead of sleeping.
@@ -287,6 +302,7 @@ class Worker:
                     if time.monotonic() >= budget:
                         self.catching_up = True
                         break
+                mark = self._phase("render", mark)
                 if not renderer.complete:
                     continue
                 if row.id not in self.durable:
@@ -316,6 +332,7 @@ class Worker:
                 result = prepared.result.model_dump(mode="json")
                 await schedule.finish(self.engine, row.id, result, outcome=outcome)
                 metrics.SEGMENTS.labels(camera, outcome[0] if outcome else result["state"]).inc()
+                mark = self._phase("finalize", mark)
                 event(
                     LOG,
                     "segment_finished",
@@ -338,6 +355,7 @@ class Worker:
                 self.durable.discard(row.id)
                 self.backoff.pop(row.id, None)
             except Exception as error:
+                mark = self._phase("failed", mark)
                 metrics.FAILURES.labels(camera, stage).inc()
                 # Back off so a deterministic failure never re-reads gigabytes every loop or
                 # starves the camera's live segment: 10 s doubling to 30 min.
@@ -363,6 +381,10 @@ class Worker:
         if not self.indexed and rows:
             self.indexed = True
             metrics.INDEX_READY.labels(camera).set(time.monotonic() - self.started)
+            phases = self.first_phases or {}
+            for name, seconds in phases.items():
+                metrics.FIRST_LOOP_PHASE.labels(camera, name).set(seconds)
+            self.first_phases = None
             event(
                 LOG,
                 "index_ready",
@@ -370,6 +392,8 @@ class Worker:
                 seconds=round(time.monotonic() - self.started, 1),
                 chunks=len(self.index.chunks),
                 segments=len(rows),
+                # #146: the same seconds split by phase (fixed names, scalar fields).
+                **{f"phase_{name}": round(seconds, 1) for name, seconds in sorted(phases.items())},
             )
         if self.hourly is not None:
             try:

@@ -589,8 +589,11 @@ instruction.
 | `weather_staging_cleanup_failures_total{camera,stage}` | `scan`, `identity`, `unlink`, `unsafe_target`, `statvfs`, `pass`. A `statvfs` failure also logs `staging_statvfs_failed` (camera, `error` type, `errno` name; `TimeoutError` with no errno is the 30 s wait), at most once per camera per 5 minutes: `{namespace="weather"} \|= "staging_statvfs_failed"` in Loki |
 | `weather_staging_cleanup_last_success_timestamp_seconds{camera}`, `weather_staging_cleanup_enabled{camera}` | Pass freshness and mode |
 
-Metrics: `weather_pipeline_index_ready_seconds{camera}` (start until the first loop has indexed
-staged chunks; the target is under 120 s) and `weather_staging_cleanup_pass_seconds{camera}` (the last
+Metrics: `weather_pipeline_index_ready_seconds{camera}` (start until the end of the first loop that
+had segments, which includes that loop's render and any finalize; the target is under 120 s),
+`weather_pipeline_first_loop_phase_seconds{camera,phase}` (the same span split into `schedule`,
+`renderer`, `refresh`, `render`, `finalize` and `failed`, also logged as `phase_*` fields on the
+`index_ready` line, #146) and `weather_staging_cleanup_pass_seconds{camera}` (the last
 complete pass; target under 600 s).
 
 ## Object lifecycle
