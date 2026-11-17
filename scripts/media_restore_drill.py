@@ -64,9 +64,17 @@ def rpo_candidates():
             "json",
         )
     )["items"]
+    # The newest 40 rows plus the newest row of every hour for 21 days, newest first:
+    # custody trails production by more than 40 objects, so the hourly series is
+    # what locates the custody frontier (RPO resolution one hour).
     sql = (
-        "SELECT json_agg(t) FROM (SELECT bucket, object_key, extract(epoch FROM created_at)::bigint"
-        " AS created_epoch FROM weather.media_asset ORDER BY created_at DESC LIMIT 40) t"
+        "SELECT json_agg(t ORDER BY created_epoch DESC) FROM ("
+        "SELECT bucket, object_key, extract(epoch FROM created_at)::bigint AS created_epoch"
+        " FROM (SELECT * FROM weather.media_asset ORDER BY created_at DESC LIMIT 40) n"
+        " UNION SELECT bucket, object_key, extract(epoch FROM created_at)::bigint"
+        " FROM (SELECT DISTINCT ON (date_trunc('hour', created_at)) bucket, object_key, created_at"
+        " FROM weather.media_asset WHERE created_at > now() - interval '21 days'"
+        " ORDER BY date_trunc('hour', created_at) DESC, created_at DESC) h) t"
     )
     out = kubectl(
         "exec",
@@ -152,7 +160,7 @@ def probes(name, receipt, day):
     try:
         time.sleep(5)
         ids = receipt["probe_ids"]
-        status, body = get(f"http://127.0.0.1:18300/day/{day}")
+        status, body = get(f"http://localhost:18300/day/{day}")
         page = body.decode(errors="replace")
         result = {
             "day_page_status": status,

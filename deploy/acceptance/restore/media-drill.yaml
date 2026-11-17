@@ -151,7 +151,11 @@ spec:
     env:
     - {name: PORT, value: '3000'}
     - {name: METRICS_PORT, value: '9001'}
-    - {name: API_ORIGIN, value: 'http://127.0.0.1:8000'}
+    # web pins production to Host weather.vallery.net and upstream http://api; its
+    # in-cluster fixture mode admits Host localhost and upstream localhost instead.
+    # Rendering is unchanged; only those two admission checks differ.
+    - {name: WEATHER_CI_IN_CLUSTER, value: '1'}
+    - {name: API_ORIGIN, value: 'http://localhost:8000'}
     securityContext: *app
     resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: '1', memory: 512Mi}}
     volumeMounts:
