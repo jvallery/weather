@@ -27,6 +27,8 @@ spec:
         # Admits egress to weather-pg (weather-database-clients NetworkPolicy).
         weather.vallery.net/database-role: api
     spec:
+      # STD-HA-06 PriorityClass ladder (weather#224).
+      priorityClassName: estate-production
       serviceAccountName: api
       enableServiceLinks: false
       automountServiceAccountToken: false
@@ -276,6 +278,8 @@ spec:
     metadata:
       labels: *id001
     spec:
+      # STD-HA-06 PriorityClass ladder (weather#224).
+      priorityClassName: estate-production
       serviceAccountName: web
       enableServiceLinks: false
       automountServiceAccountToken: false
