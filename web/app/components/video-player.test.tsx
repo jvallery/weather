@@ -59,6 +59,29 @@ test("seek requests apply once metadata is known and player time is reported, ne
   view.rerender(<VideoPlayer video={video} seek={{ seconds: 1.5, serial: 2 }} onTime={onTime} />);
   expect(element.currentTime).toBe(1.5);
 });
+test("a stale pre-seek report never moves time back; the sought position, a native seek or Play releases it (weather#276)", () => {
+  vi.spyOn(HTMLMediaElement.prototype, "readyState", "get").mockReturnValue(1);
+  const onTime = vi.fn();
+  const video = published();
+  const view = render(<VideoPlayer video={video} onTime={onTime} />);
+  const element = view.container.querySelector("video")!;
+  Object.defineProperty(element, "duration", { configurable: true, value: 60 });
+  element.currentTime = 0.6083;
+  view.rerender(<VideoPlayer video={video} seek={{ seconds: 0.6417, serial: 1, tolerance: 0.0093 }} onTime={onTime} />);
+  expect(element.currentTime).toBeCloseTo(0.6417, 6);
+  // WebKit can still read the previous position on a later event: that report is dropped.
+  element.currentTime = 0.6083; fireEvent.timeUpdate(element); expect(onTime).not.toHaveBeenCalled();
+  // The frame start of the sought frame is within half a frame: it counts as arrived.
+  element.currentTime = 0.6334; fireEvent.seeked(element); expect(onTime).toHaveBeenLastCalledWith(0.6334);
+  element.currentTime = 0.7; fireEvent.timeUpdate(element); expect(onTime).toHaveBeenLastCalledWith(0.7);
+  // A native-controls seek elsewhere supersedes an outstanding target.
+  view.rerender(<VideoPlayer video={video} seek={{ seconds: 5.0083, serial: 2, tolerance: 0.0093 }} onTime={onTime} />);
+  element.currentTime = 30; fireEvent.seeking(element); fireEvent.seeked(element); expect(onTime).toHaveBeenLastCalledWith(30);
+  // So does Play: from then on the presented frames are the truth.
+  view.rerender(<VideoPlayer video={video} seek={{ seconds: 10.0083, serial: 3, tolerance: 0.0093 }} onTime={onTime} />);
+  element.currentTime = 40; fireEvent.timeUpdate(element); expect(onTime).toHaveBeenLastCalledWith(30);
+  fireEvent.play(element); fireEvent.timeUpdate(element); expect(onTime).toHaveBeenLastCalledWith(40);
+});
 test("a partial-coverage recording plays with a visible coverage label", () => {
   const video = { ...published(), state: "partial" as const };
   const view = render(<VideoPlayer video={video} coverageLabel="Partial coverage · 62.5% of the source interval was captured; this recording has gaps." />);

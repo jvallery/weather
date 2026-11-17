@@ -117,6 +117,13 @@ test("deep links, keyboard and events all seek through the one map", async () =>
   fireEvent.keyDown(keogram, { key: "ArrowRight" });
   expect(readout().dataset.utc).toBe("2026-10-31T15:20:34.375Z");
   expect(keogram.getAttribute("aria-valuetext")).toMatch(/^Bin 328 of 1440.*±15\.6 s$/);
+  // A stale report of the previous position (WebKit, weather#276) does not pull the cursor back a bin.
+  const sought = player.currentTime;
+  player.currentTime = 816.5 / 60; fireEvent.timeUpdate(player);
+  expect(readout().dataset.utc).toBe("2026-10-31T15:20:34.375Z");
+  expect(keogram.getAttribute("aria-valuetext")).toMatch(/^Bin 328 of 1440.*±15\.6 s$/);
+  player.currentTime = sought; fireEvent.seeked(player);
+  expect(readout().dataset.utc).toBe("2026-10-31T15:20:34.375Z");
   expect(screen.getByText(/Station measurements · shared by all cameras/)).toBeTruthy();
 });
 test("a sidecar from another revision disables linking without breaking playback", async () => {

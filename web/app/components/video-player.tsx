@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { playable, type Timelapse } from "../lib/weather-api";
 
-export type SeekRequest = { seconds: number; serial: number };
+/** A seek to player `seconds`. `tolerance` is how far (s) a player report may sit from it and still count
+ * as the sought position: the controller passes half a frame's display window. */
+export type SeekRequest = { seconds: number; serial: number; tolerance?: number };
+type SeekTarget = { seconds: number; tolerance: number };
 type FrameCallback = (now: number, metadata: { mediaTime: number }) => void;
 type FrameVideo = HTMLVideoElement & { requestVideoFrameCallback?: (callback: FrameCallback) => number; cancelVideoFrameCallback?: (handle: number) => void };
 const MOBILE = "(max-width: 767px)";
@@ -46,13 +49,29 @@ export function VideoPlayer({ video, seek = null, onTime, coverageLabel = null, 
   const report = useRef(onTime);
   useEffect(() => { report.current = onTime; }, [onTime]);
   // A seek before metadata is known applies once it is; a later seek moves the loaded player.
-  const pendingSeek = useRef<number | null>(null);
-  useEffect(() => {
+  // The seek is applied in the same commit as the request (a layout effect), so no player report can
+  // run between the controller moving its cursor and the player starting the seek.
+  const pendingSeek = useRef<SeekTarget | null>(null);
+  // The position the player was last sent to, until it reports that position. A report elsewhere is a
+  // stale pre-seek position (WebKit can deliver one after the next seek is requested) and is dropped, so
+  // it cannot pull the cursor back (weather#276). Another seek (native controls) or Play supersedes it.
+  const target = useRef<SeekTarget | null>(null);
+  const apply = (element: HTMLVideoElement, request: SeekTarget) => {
+    const seconds = Math.min(request.seconds, Math.max(0, element.duration - 0.001));
+    target.current = { seconds, tolerance: request.tolerance };
+    element.currentTime = seconds;
+  };
+  useLayoutEffect(() => {
     if (seek === null) return;
-    const element = player.current;
-    if (element && element.readyState >= 1) { element.currentTime = Math.min(seek.seconds, Math.max(0, element.duration - 0.001)); pendingSeek.current = null; }
-    else pendingSeek.current = seek.seconds;
+    const element = player.current, request = { seconds: seek.seconds, tolerance: seek.tolerance ?? 0.001 };
+    if (element && element.readyState >= 1) { apply(element, request); pendingSeek.current = null; }
+    else pendingSeek.current = request;
   }, [seek]);
+  const deliver = (seconds: number) => {
+    const sought = target.current;
+    if (sought) { if (Math.abs(seconds - sought.seconds) > sought.tolerance) return; target.current = null; }
+    report.current?.(seconds);
+  };
   const [own, setOwn] = useState<Quality>("auto");
   const quality = controlled ?? own;
   // Auto quality is chosen once, natively, by the browser's resource selection over <source> media
@@ -76,7 +95,7 @@ export function VideoPlayer({ video, seek = null, onTime, coverageLabel = null, 
     const element = player.current;
     if (!element?.requestVideoFrameCallback) return;
     stopLoop();
-    const step: FrameCallback = (_now, metadata) => { if (!element.seeking) report.current?.(metadata.mediaTime); frameLoop.current = element.paused ? null : element.requestVideoFrameCallback!(step); };
+    const step: FrameCallback = (_now, metadata) => { if (!element.seeking) deliver(metadata.mediaTime); frameLoop.current = element.paused ? null : element.requestVideoFrameCallback!(step); };
     frameLoop.current = element.requestVideoFrameCallback(step);
   };
   useEffect(() => stopLoop, []);
@@ -85,19 +104,22 @@ export function VideoPlayer({ video, seek = null, onTime, coverageLabel = null, 
   const source = (item: string) => video.renditions.find((entry) => entry.role === item)!.asset.url;
   const sources = quality === "auto" ? [{ role: "mobile", media: MOBILE }, { role: "web", media: undefined }] : [{ role: quality, media: undefined }];
   // A report taken mid-seek would carry the old position; the seeked event reports the new one.
-  const time = () => { const element = player.current; if (element && !element.seeking) report.current?.(element.currentTime); };
+  const time = () => { const element = player.current; if (element && !element.seeking) deliver(element.currentTime); };
+  // A seek that is not ours (the native controls) replaces the outstanding target.
+  const seeking = () => { const element = player.current, sought = target.current; if (element && sought && Math.abs(element.currentTime - sought.seconds) > sought.tolerance) target.current = null; };
   return <section aria-labelledby="playback-title" className="player"><h2 id="playback-title" className="screen-reader">Recording</h2>
     <p id="playback-note" className="screen-reader">Silent, accelerated weather recording at 60 frames per second. Source times follow.</p>
     <video ref={player} aria-describedby={video.state === "partial" ? "playback-note coverage-label" : "playback-note"} controls muted playsInline preload="metadata" poster={video.poster!.url}
-      onPlay={(event) => { document.querySelectorAll("video").forEach((other) => { if (other !== event.currentTarget) other.pause(); }); startLoop(); }}
-      onPause={() => { stopLoop(); time(); }} onSeeked={time} onTimeUpdate={time} onEnded={time}
+      onPlay={(event) => { target.current = null; document.querySelectorAll("video").forEach((other) => { if (other !== event.currentTarget) other.pause(); }); startLoop(); }}
+      onPause={() => { stopLoop(); time(); }} onSeeking={seeking} onSeeked={time} onTimeUpdate={time} onEnded={time}
       onLoadedMetadata={() => {
         const element = player.current;
         if (element && pendingSeek.current !== null && !resume.current) {
-          element.currentTime = Math.min(pendingSeek.current, Math.max(0, element.duration - 0.001));
+          apply(element, pendingSeek.current);
           pendingSeek.current = null;
         }
         if (element && resume.current) {
+          target.current = null;
           element.currentTime = Math.min(resume.current.time, Math.max(0, element.duration - 0.001));
           if (resume.current.playing) void element.play().catch(() => setResumeMessage("Press Play to resume at the same point."));
           resume.current = null;
