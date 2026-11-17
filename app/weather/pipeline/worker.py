@@ -19,6 +19,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
 from prometheus_client import start_http_server
@@ -385,6 +386,10 @@ class Worker:
             for name, seconds in phases.items():
                 metrics.FIRST_LOOP_PHASE.labels(camera, name).set(seconds)
             self.first_phases = None
+            # #146: the same seconds split by phase (fixed names, scalar fields).
+            split: dict[str, Any] = {
+                f"phase_{name}": round(seconds, 1) for name, seconds in sorted(phases.items())
+            }
             event(
                 LOG,
                 "index_ready",
@@ -392,8 +397,7 @@ class Worker:
                 seconds=round(time.monotonic() - self.started, 1),
                 chunks=len(self.index.chunks),
                 segments=len(rows),
-                # #146: the same seconds split by phase (fixed names, scalar fields).
-                **{f"phase_{name}": round(seconds, 1) for name, seconds in sorted(phases.items())},
+                **split,
             )
         if self.hourly is not None:
             try:
