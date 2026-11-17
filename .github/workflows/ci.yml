@@ -34,7 +34,7 @@ jobs:
     with:
       name: lint-typecheck-supply-chain
       in-job-image: true
-      run: WEATHER_CI_IN_CLUSTER=1 bash scripts/bootstrap-ci.sh bash scripts/ci.sh lint typecheck supply-chain
+      run: WEATHER_CI_IN_CLUSTER=1 bash scripts/bootstrap-ci.sh bash scripts/ci.sh supply-chain lint typecheck
       timeout-minutes: 45
 
   application-unit:

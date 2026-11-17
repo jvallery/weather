@@ -2,4 +2,8 @@ title = "Weather secret scanning"
 [extend]
 useDefault = true
 [allowlist]
-paths = ['''(^|/)(node_modules|\.venv|\.git|\.mypy_cache|\.pytest_cache|\.ruff_cache)/''']
+# Exactly one generated tree (weather#273, estate-ci#126): bootstrap's `uv sync` creates
+# .venv/ at the repo root before the scan. The supply-chain step runs first in CI, before
+# any pnpm install or tool cache, and gitleaks' default config already skips .git/ and
+# node_modules/. A nested .venv/ is scanned (app/tests/test_secret_scan_config.py).
+paths = ['''^\.venv/''']
