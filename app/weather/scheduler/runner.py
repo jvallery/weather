@@ -31,12 +31,37 @@ ALIVE = Gauge(
     "weather_scheduler_database_ready",
     "Scheduler's most recent database operation worked",
 )
+LOOP_BEAT = Gauge(
+    "weather_scheduler_loop_heartbeat_timestamp_seconds",
+    "Unix time of the scheduler main loop's most recent heartbeat (#225)",
+)
+# Process-local liveness signal (#225): the main loop, and the per-job lease heartbeat while a
+# bounded job runs inline, touch this file; the exec liveness probe restarts the pod when it goes
+# stale. An HTTP check of the metrics port is not enough, because its thread keeps answering while
+# the event loop is stuck. Empty disables the file (tests, CLI tools).
+HEARTBEAT_FILE = os.environ.get("SCHEDULER_HEARTBEAT_FILE", "")
+
+
+def beat() -> None:
+    """Record that the event loop made progress; a write failure lets the probe fail closed."""
+    LOOP_BEAT.set_to_current_time()
+    if not HEARTBEAT_FILE:
+        return
+    try:
+        with open(HEARTBEAT_FILE, "a"):
+            pass
+        os.utime(HEARTBEAT_FILE, None)
+    except OSError:
+        LOG.error("Scheduler heartbeat file write failed")
 
 
 async def _heartbeat(engine: AsyncEngine, job: jobs.Job, owner_task: asyncio.Task[None]) -> None:
     try:
         while True:
             await asyncio.sleep(15)
+            # A running job holds the main loop until its deadline (asyncio.timeout bounds it),
+            # so the lease heartbeat keeps the liveness file fresh meanwhile.
+            beat()
             async with engine.begin() as connection:
                 if not await jobs.heartbeat(connection, job):
                     owner_task.cancel()
@@ -101,6 +126,7 @@ async def serve(engine: AsyncEngine, registry: Registry, stop: asyncio.Event) ->
     kinds = registry.kinds()
     next_tick = next_outbox = 0.0
     while not stop.is_set():
+        beat()
         try:
             if time.monotonic() >= next_tick:
                 try:
@@ -155,6 +181,7 @@ async def run() -> None:
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stop.set)
     try:
+        beat()
         await wait_for_database(engine)
         await serve(engine, installed_registry(), stop)
     finally:
