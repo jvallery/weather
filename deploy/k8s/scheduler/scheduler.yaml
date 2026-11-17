@@ -53,6 +53,9 @@ spec:
         # scheduler starts without it; schedule jobs then fail visibly (see pipeline.md).
         - name: WEATHER_SITE_FILE
           value: /var/run/weather-site/site.json
+        # #225: main-loop heartbeat file for the exec liveness probe (writable /tmp emptyDir).
+        - name: SCHEDULER_HEARTBEAT_FILE
+          value: /tmp/weather-scheduler-heartbeat
         resources:
           requests:
             cpu: 100m

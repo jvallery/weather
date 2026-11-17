@@ -59,3 +59,30 @@ def test_heartbeat_loss_cancels_handler_without_completing_and_counts_once(
     monkeypatch.setattr(jobs, "heartbeat", expired)
     monkeypatch.setattr(runner.asyncio, "sleep", no_delay)
     asyncio.run(check())
+
+
+def test_beat_touches_heartbeat_file_and_sets_gauge(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
+    import os
+    import time
+
+    target = tmp_path / "heartbeat"
+    monkeypatch.setattr(runner, "HEARTBEAT_FILE", str(target))
+    runner.beat()
+    assert target.exists()
+    os.utime(target, (1, 1))
+    runner.beat()
+    assert time.time() - target.stat().st_mtime < 60
+    stamp = next(
+        sample.value
+        for metric in runner.LOOP_BEAT.collect()
+        for sample in metric.samples
+        if sample.name == "weather_scheduler_loop_heartbeat_timestamp_seconds"
+    )
+    assert time.time() - stamp < 60
+
+
+def test_beat_without_file_only_sets_gauge(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(runner, "HEARTBEAT_FILE", "")
+    runner.beat()
