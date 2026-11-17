@@ -3,6 +3,7 @@
 
 import importlib.util
 import json
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -404,6 +405,83 @@ class DatabaseManifestTests(unittest.TestCase):
             {"uid": "original", "resourceVersion": "42"},
         )
         self.assertEqual(evidence["cleanup"]["remainingPvcCount"], 0)
+
+    def _plan_with_restored_volume(self, pv_claim_uid, pv_name="pv-drill"):
+        labels = {drill.LABEL: "proof", "estate.vallery.net/disposable": "true"}
+        cluster = {
+            "metadata": {"name": "weather-drill-pg-proof", "uid": "cluster-a", "labels": labels}
+        }
+        pvc = {
+            "metadata": {
+                "name": "weather-drill-pg-proof-1",
+                "uid": "pvc-a",
+                "labels": labels,
+                "ownerReferences": [{"uid": "cluster-a"}],
+            },
+            "spec": {"volumeName": pv_name},
+        }
+        pv = {
+            "metadata": {"name": pv_name, "uid": "pv-uid"},
+            "spec": {
+                "claimRef": {
+                    "namespace": "weather",
+                    "name": "weather-drill-pg-proof-1",
+                    "uid": pv_claim_uid,
+                },
+                "csi": {"driver": "driver.longhorn.io", "volumeHandle": pv_name},
+            },
+        }
+        volume = {
+            "metadata": {"name": pv_name, "uid": "lh-uid"},
+            "status": {"kubernetesStatus": {"pvName": pv_name}},
+        }
+        store = {
+            "metadata": {"name": "weather-drill-pg-proof-reader", "uid": "os-a", "labels": labels}
+        }
+        policy = {
+            "metadata": {
+                "name": "weather-drill-pg-proof-isolation",
+                "uid": "np-a",
+                "labels": labels,
+            }
+        }
+
+        def fake_kubectl(*args, stdin=None):
+            if args[:2] == ("get", "pvc"):
+                return json.dumps({"items": [pvc]})
+            if args[:3] == ("get", "pv", pv_name):
+                return json.dumps(pv)
+            if args[:3] == ("get", "volumes.longhorn.io", pv_name):
+                return json.dumps(volume)
+            raise RuntimeError("stop after planning")
+
+        reads = {"cluster": cluster, "objectstore": store, "networkpolicy": policy}
+        return fake_kubectl, (lambda kind, name: reads[kind])
+
+    def test_cleanup_plan_binds_the_released_pv_and_longhorn_volume(self):
+        fake_kubectl, fake_read = self._plan_with_restored_volume("pvc-a")
+        evidence = {"operation": "proof", "verified": True, "clusterUid": "cluster-a"}
+        with (
+            patch.object(drill, "read", side_effect=fake_read),
+            patch.object(drill, "kubectl", side_effect=fake_kubectl),
+            tempfile.TemporaryDirectory() as directory,
+        ):
+            with self.assertRaises(RuntimeError):
+                drill.cleanup("proof", evidence, Path(directory) / "evidence.json")
+        kinds = [(item["kind"], item["uid"]) for item in evidence["cleanupPlan"]]
+        self.assertEqual(kinds[-2:], [("pv", "pv-uid"), ("volumes.longhorn.io", "lh-uid")])
+        self.assertLess(kinds.index(("pvc", "pvc-a")), kinds.index(("pv", "pv-uid")))
+
+    def test_cleanup_refuses_a_pv_bound_to_another_claim(self):
+        fake_kubectl, fake_read = self._plan_with_restored_volume("someone-else")
+        evidence = {"operation": "proof", "verified": True, "clusterUid": "cluster-a"}
+        with (
+            patch.object(drill, "read", side_effect=fake_read),
+            patch.object(drill, "kubectl", side_effect=fake_kubectl),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "claimRef"):
+                drill.cleanup("proof", evidence, Path("unused.json"))
+        self.assertNotIn("cleanupPlan", evidence)
 
 
 if __name__ == "__main__":

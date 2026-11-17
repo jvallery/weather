@@ -654,7 +654,7 @@ be collected later). An upload registered after the delete sees the key gone and
 so byte-identical content may be published again (the asset revives after readback) and is a
 GC candidate again from its next tombstone; purged bytes never revive. It **refuses** (exit 3)
 unless
-`WEATHER_RECOVERY_PITR_WINDOW_DAYS` (30, ConfigMap `weather-database-policy`) and
+`WEATHER_RECOVERY_PITR_WINDOW_DAYS` (7, ConfigMap `weather-database-policy`) and
 `WEATHER_RECOVERY_B2_VERSION_RETENTION_DAYS` (storage-infra's custody version retention) are
 set and grace ≥ max(both) + 7 days. Originals need `WEATHER_HOURLY_ARCHIVE_DELETION_ENABLED`.
 With `WEATHER_GC_ENABLED` false (the default) it only counts candidates. The scheduler runs it
