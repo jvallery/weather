@@ -82,3 +82,7 @@ Secret `zot-origin-cluster-pull` is reflected from `agent-fleet-runners` for ima
 | Authentik application and provider `weather-editor` (Jason-only, MFA) | agents#5366 (planned: estate-platform) | live |
 | Scrape, probes, alert rules, dashboards | monitoring-stack#1072 | live (slice 1) |
 | Cameras (sentinel), Tempest hub (homeassistant), Cortex routes (cortex-ai-compute), vallery.net homepage (VerdifyConsultancy/wordpress) | — | — |
+
+## Whole-host loss posture (proxmox-infrastructure#465)
+
+**Whole-host loss: operator-bound RTO.** These single-replica workloads write to RWO volumes: `weather/Deployment/tempest-receiver`. If the Proxmox host under their node is lost, nothing releases the volume until a person confirms at the chassis that the host is powered off. The stated RTO is operator response plus about 10 min: a 75 min target when attended, unbounded when not. The decision record, the power-off runbook and what does not count as power-off proof are in [jvallery/proxmox-infrastructure `docs/host-loss-fencing-decision.md`](https://github.com/jvallery/proxmox-infrastructure/blob/main/docs/host-loss-fencing-decision.md). The page is `K3sNodeNotReadyHostUnreachable` (jvallery/monitoring-stack#2008). This list was regenerated from live state on 2026-11-17 (Deployments and StatefulSets at 1 replica that mount an RWO PVC).
