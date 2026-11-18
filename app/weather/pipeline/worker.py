@@ -144,6 +144,7 @@ class Worker:
         stages: Sequence[ChunkStage] = (),
         archive_hours: bool = False,
         housekeeping: Housekeeping | None = None,
+        background_finalize: bool = False,
     ) -> None:
         self.config, self.engine, self.publisher, self.weather = config, engine, publisher, weather
         self.housekeeping = housekeeping
@@ -168,6 +169,10 @@ class Worker:
         self.durable: set[UUID] = set()
         # Per-segment retry backoff: (consecutive failures, wall time of the next attempt).
         self.backoff: dict[UUID, tuple[int, datetime]] = {}
+        # #146: finalize complete segments off the loop (production); tests can run it inline.
+        self.background_finalize = background_finalize
+        self.finalizing: dict[UUID, asyncio.Task[None]] = {}
+        self.finalize_lock = asyncio.Lock()
         # #78: operator poster choices for this camera, published after the videos.
         self.posters: Posters | None = None
         # #147: one line when the first loop after start has indexed the staged chunks.
@@ -240,6 +245,113 @@ class Worker:
             )
             raise ReleaseAhead("On-disk mezzanine is behind segment.mezzanine_through")
 
+    async def _finalize(
+        self,
+        row: schedule.SegmentRow,
+        renderer: SegmentRenderer,
+        now: datetime,
+        progress: list[str],
+    ) -> None:
+        """Prepare, publish and catalog a complete segment; progress[0] names the stage."""
+        camera = self.config.camera
+        if row.id not in self.durable:
+            await schedule.mark_durable(self.engine, row.id)
+            self.durable.add(row.id)
+        progress[0] = "prepare"
+        await schedule.mark_processing(self.engine, row.id)
+        weather = None
+        revision = 0
+        if not (renderer.directory / RESULT).exists():
+            revision = (await schedule.current_video(self.engine, row.job)).revision
+            progress[0] = "weather"
+            try:
+                weather = await self.weather.summary(row.job.starts_at, row.job.ends_at)
+            except SourceUnavailable:
+                # Retry a transient failure; never freeze it into result.json while
+                # there is time. Past the patience window the sidecar records none.
+                if now < row.job.ends_at + WEATHER_PATIENCE:
+                    raise
+            progress[0] = "prepare"
+        prepared = await asyncio.to_thread(
+            prepare, renderer, weather=weather, expected_revision=revision
+        )
+        progress[0] = "publish"
+        outcome = await self._publish(row, renderer, prepared)
+        progress[0] = "catalog"
+        result = prepared.result.model_dump(mode="json")
+        await schedule.finish(self.engine, row.id, result, outcome=outcome)
+        metrics.SEGMENTS.labels(camera, outcome[0] if outcome else result["state"]).inc()
+        event(
+            LOG,
+            "segment_finished",
+            camera=camera,
+            segment_id=str(row.id),
+            cycle_date=row.job.cycle_date.isoformat(),
+            segment=row.job.kind,
+            state=str(outcome[0] if outcome else result["state"]),
+            reason=result.get("reason"),
+            slot_coverage=round(prepared.result.slots.fraction, 4),
+            gap_frames=sum(b - a for a, b in prepared.result.exposure.gaps),
+            frames=prepared.result.frames,
+            late_seconds=round((now - row.job.ends_at).total_seconds()),
+        )
+        metrics.COVERAGE.labels(camera).set(prepared.result.slots.fraction)
+        metrics.LATENCY.labels(camera).observe((now - row.job.ends_at).total_seconds())
+        self.renderers.pop(row.id, None)
+        if self.keograms is not None and self.keograms.stage is not None:
+            self.keograms.stage.forget(row.job)
+        self.durable.discard(row.id)
+        self.backoff.pop(row.id, None)
+
+    def _failed(
+        self, row: schedule.SegmentRow, now: datetime, stage: str, error: Exception
+    ) -> None:
+        camera = self.config.camera
+        metrics.FAILURES.labels(camera, stage).inc()
+        # Back off so a deterministic failure never re-reads gigabytes every loop or
+        # starves the camera's live segment: 10 s doubling to 30 min.
+        failures = self.backoff.get(row.id, (0, now))[0] + 1
+        delay = min(MAX_BACKOFF, LOOP_SECONDS * 2 ** min(failures - 1, 10))
+        self.backoff[row.id] = (failures, now + timedelta(seconds=delay))
+        # Never log paths, payloads or driver errors; the type and stage suffice. A
+        # segment at the maximum backoff is stuck (#147).
+        event(
+            LOG,
+            "segment_stuck" if delay >= MAX_BACKOFF else "segment_retry",
+            logging.ERROR if delay >= MAX_BACKOFF else logging.WARNING,
+            camera=camera,
+            segment_id=str(row.id),
+            stage=stage,
+            error=type(error).__name__,
+            # FFmpegError.stage and ValidationError.reason are fixed names (never
+            # paths or driver text), so a stuck segment says which step fails.
+            detail=getattr(error, "stage", None) or getattr(error, "reason", None),
+            failures=failures,
+            retry_seconds=round(delay),
+        )
+
+    def _start_finalize(self, row: schedule.SegmentRow, renderer: SegmentRenderer) -> None:
+        """#146: finalize a complete segment in a task so the loop keeps indexing and rendering
+        the camera's other segments. Single writer: this process is the camera's only writer
+        (one replica, Recreate); a segment in self.finalizing is skipped by the render loop,
+        a segment only gets here once its renderer is complete (render never advances it
+        again), and finalize_lock runs one finalize at a time. A crash mid-finalize leaves the
+        segment processing with its durable render, so the next start finalizes it again."""
+        if row.id in self.finalizing:
+            return
+
+        async def finalize() -> None:
+            progress = ["prepare"]
+            try:
+                async with self.finalize_lock:
+                    await self._finalize(row, renderer, datetime.now(UTC), progress)
+            except Exception as error:
+                self._failed(row, datetime.now(UTC), progress[0], error)
+            finally:
+                self.finalizing.pop(row.id, None)
+
+        self.finalizing[row.id] = asyncio.create_task(finalize())
+
     async def step(self, now: datetime) -> None:
         camera = self.config.camera
         keograms = self.config.region is not None or self.config.region_error
@@ -257,6 +369,8 @@ class Worker:
         self.backoff = {k: v for k, v in self.backoff.items() if k in live}
         current = epoch_seconds(now)
         for row in rows:
+            if row.id in self.finalizing:
+                continue  # #146: its finalize task is the one writer of this segment
             if row.id in self.backoff and now < self.backoff[row.id][1]:
                 continue
             stage = "render"
@@ -306,79 +420,18 @@ class Worker:
                 mark = self._phase("render", mark)
                 if not renderer.complete:
                     continue
-                if row.id not in self.durable:
-                    await schedule.mark_durable(self.engine, row.id)
-                    self.durable.add(row.id)
-                stage = "prepare"
-                await schedule.mark_processing(self.engine, row.id)
-                weather = None
-                revision = 0
-                if not (renderer.directory / RESULT).exists():
-                    revision = (await schedule.current_video(self.engine, row.job)).revision
-                    stage = "weather"
-                    try:
-                        weather = await self.weather.summary(row.job.starts_at, row.job.ends_at)
-                    except SourceUnavailable:
-                        # Retry a transient failure; never freeze it into result.json while
-                        # there is time. Past the patience window the sidecar records none.
-                        if now < row.job.ends_at + WEATHER_PATIENCE:
-                            raise
-                    stage = "prepare"
-                prepared = await asyncio.to_thread(
-                    prepare, renderer, weather=weather, expected_revision=revision
-                )
-                stage = "publish"
-                outcome = await self._publish(row, renderer, prepared)
-                stage = "catalog"
-                result = prepared.result.model_dump(mode="json")
-                await schedule.finish(self.engine, row.id, result, outcome=outcome)
-                metrics.SEGMENTS.labels(camera, outcome[0] if outcome else result["state"]).inc()
+                if self.background_finalize:
+                    self._start_finalize(row, renderer)
+                    continue
+                progress = [stage]
+                try:
+                    await self._finalize(row, renderer, now, progress)
+                finally:
+                    stage = progress[0]
                 mark = self._phase("finalize", mark)
-                event(
-                    LOG,
-                    "segment_finished",
-                    camera=camera,
-                    segment_id=str(row.id),
-                    cycle_date=row.job.cycle_date.isoformat(),
-                    segment=row.job.kind,
-                    state=str(outcome[0] if outcome else result["state"]),
-                    reason=result.get("reason"),
-                    slot_coverage=round(prepared.result.slots.fraction, 4),
-                    gap_frames=sum(b - a for a, b in prepared.result.exposure.gaps),
-                    frames=prepared.result.frames,
-                    late_seconds=round((now - row.job.ends_at).total_seconds()),
-                )
-                metrics.COVERAGE.labels(camera).set(prepared.result.slots.fraction)
-                metrics.LATENCY.labels(camera).observe((now - row.job.ends_at).total_seconds())
-                del self.renderers[row.id]
-                if self.keograms is not None and self.keograms.stage is not None:
-                    self.keograms.stage.forget(row.job)
-                self.durable.discard(row.id)
-                self.backoff.pop(row.id, None)
             except Exception as error:
                 mark = self._phase("failed", mark)
-                metrics.FAILURES.labels(camera, stage).inc()
-                # Back off so a deterministic failure never re-reads gigabytes every loop or
-                # starves the camera's live segment: 10 s doubling to 30 min.
-                failures = self.backoff.get(row.id, (0, now))[0] + 1
-                delay = min(MAX_BACKOFF, LOOP_SECONDS * 2 ** min(failures - 1, 10))
-                self.backoff[row.id] = (failures, now + timedelta(seconds=delay))
-                # Never log paths, payloads or driver errors; the type and stage suffice. A
-                # segment at the maximum backoff is stuck (#147).
-                event(
-                    LOG,
-                    "segment_stuck" if delay >= MAX_BACKOFF else "segment_retry",
-                    logging.ERROR if delay >= MAX_BACKOFF else logging.WARNING,
-                    camera=camera,
-                    segment_id=str(row.id),
-                    stage=stage,
-                    error=type(error).__name__,
-                    # FFmpegError.stage and ValidationError.reason are fixed names (never
-                    # paths or driver text), so a stuck segment says which step fails.
-                    detail=getattr(error, "stage", None) or getattr(error, "reason", None),
-                    failures=failures,
-                    retry_seconds=round(delay),
-                )
+                self._failed(row, now, stage, error)
         if not self.indexed and rows:
             self.indexed = True
             phases = self.first_phases or {}
@@ -491,6 +544,9 @@ class Worker:
                 await asyncio.wait_for(stop.wait(), 0 if self.catching_up else LOOP_SECONDS)
             except TimeoutError:
                 pass
+        # A finalize in flight completes as it did inline (the pod's grace period bounds it);
+        # a kill instead leaves it for the next start.
+        await asyncio.gather(*self.finalizing.values(), return_exceptions=True)
 
 
 async def main_async(config: PipelineConfig) -> None:
@@ -531,6 +587,7 @@ async def main_async(config: PipelineConfig) -> None:
             AggregateWeather(engine),
             archive_hours=True,
             housekeeping=housekeeping,
+            background_finalize=True,
         )
         # Previews (#39) and staging cleanup with the pressure level (#19) run beside the
         # renderer, so a long finalize never stalls them.
