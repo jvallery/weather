@@ -232,7 +232,10 @@ def validate_block(path: Path, expected_frames: int) -> None:
         result = subprocess.run(command, capture_output=True, timeout=BLOCK_SECONDS, check=False)
     except subprocess.TimeoutExpired:
         raise FFmpegError("block_decode") from None
-    progress = dict(line.split(b"=", 1) for line in result.stdout.splitlines() if b"=" in line)
+    progress: dict[bytes, bytes] = {}
+    for line in result.stdout.splitlines():
+        key, _, value = line.partition(b"=")
+        progress[key] = value
     if (
         result.returncode
         or result.stderr.strip()

@@ -9,8 +9,8 @@ FFmpeg (a frame FFmpeg cannot decode is a per-slot reject that never aborts the 
 integrates them in linear light. Only a few frames and accumulators are in memory at once.
 
 A block is durable after its Matroska file passes a strict decode and the file and its metadata
-are both fsynced into `blocks/`; a crash leaves a `.tmp-*` file that the next run removes. Because the
-mezzanine is intra-only, a resumed or differently-sized block produces the same decoded frames.
+are both fsynced into `blocks/`; a crash leaves a `.tmp-*` file that the next run removes.
+Because the mezzanine is intra-only, a resumed block produces the same decoded frames.
 """
 
 import hashlib
