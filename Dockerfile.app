@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MIT
-FROM registry.vallery.net/jvallery/weather-python-base@sha256:3fe1a0b6c2d6b2ebb572906cdabeca75aeb558c0c17db5ffefbcf8094871c32b AS ffmpeg
+FROM registry.vallery.net/jvallery/weather-python-base@sha256:9aaa474097d094040649f2162a627c0049b408f52138d980916788d80f04802f AS ffmpeg
 # The fixed Debian snapshot pins the entire compiler/libx264 dependency closure.
 # Include the matching security/updates suites: the pinned base already contains security fixes.
-RUN printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20261023T000000Z bookworm main\ndeb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20261023T000000Z bookworm-updates main\ndeb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/20261023T000000Z bookworm-security main\n' > /etc/apt/sources.list \
+RUN printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20261117T000000Z trixie main\ndeb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20261117T000000Z trixie-updates main\ndeb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/20261117T000000Z trixie-security main\n' > /etc/apt/sources.list \
  && rm -f /etc/apt/sources.list.d/debian.sources \
  && apt-get update && apt-get install -y --no-install-recommends build-essential nasm pkg-config libx264-dev curl xz-utils ca-certificates
 WORKDIR /src
@@ -17,12 +17,12 @@ RUN curl --fail --location https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz -o ff
  && cp COPYING.GPLv2 COPYING.GPLv3 LICENSE.md /opt/ffmpeg/share/licenses/ \
  && cp /usr/share/doc/libx264-164/copyright /opt/ffmpeg/share/licenses/libx264-copyright
 
-FROM registry.vallery.net/jvallery/weather-python-base@sha256:3fe1a0b6c2d6b2ebb572906cdabeca75aeb558c0c17db5ffefbcf8094871c32b AS dependencies
+FROM registry.vallery.net/jvallery/weather-python-base@sha256:9aaa474097d094040649f2162a627c0049b408f52138d980916788d80f04802f AS dependencies
 WORKDIR /app
 COPY requirements.lock ./
 RUN pip install --no-cache-dir --require-hashes --only-binary=:all: --target=/opt/python -r requirements.lock
 
-FROM registry.vallery.net/jvallery/weather-python-base@sha256:3fe1a0b6c2d6b2ebb572906cdabeca75aeb558c0c17db5ffefbcf8094871c32b
+FROM registry.vallery.net/jvallery/weather-python-base@sha256:9aaa474097d094040649f2162a627c0049b408f52138d980916788d80f04802f
 ENV PYTHONPATH=/opt/python:/app/app PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
     PATH=/opt/ffmpeg/bin:$PATH LD_LIBRARY_PATH=/opt/ffmpeg/lib PORT=8000 METRICS_PORT=9000
 COPY --from=dependencies /opt/python /opt/python
