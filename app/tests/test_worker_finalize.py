@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 """#146: a complete segment is finalized in a task, off the loop, with one writer per segment."""
 
 from __future__ import annotations
