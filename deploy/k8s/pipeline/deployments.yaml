@@ -45,6 +45,18 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       terminationGracePeriodSeconds: 60
+      # weather#285: keep the three camera pipelines on different Proxmox hosts when there is room.
+      # Soft, so a single-replica Recreate pod is never left Pending by the spread alone.
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              topologyKey: topology.vallery.net/proxmox-host
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/part-of: weather
+                  app.kubernetes.io/component: pipeline
       containers:
       - name: pipeline
         image: weather-app
@@ -79,8 +91,10 @@ spec:
         - name: TMPDIR
           value: /tmp
         resources:
+          # weather#285: p95 is 3.8-4.0 CPU at the 4-CPU limit; the request reflects real use so the
+          # scheduler and the N-1 survivor budget (STD-HA-14) count it.
           requests:
-            cpu: '1'
+            cpu: 2500m
             memory: 2Gi
           limits:
             cpu: '4'
@@ -204,6 +218,18 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       terminationGracePeriodSeconds: 60
+      # weather#285: keep the three camera pipelines on different Proxmox hosts when there is room.
+      # Soft, so a single-replica Recreate pod is never left Pending by the spread alone.
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              topologyKey: topology.vallery.net/proxmox-host
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/part-of: weather
+                  app.kubernetes.io/component: pipeline
       containers:
       - name: pipeline
         image: weather-app
@@ -238,8 +264,10 @@ spec:
         - name: TMPDIR
           value: /tmp
         resources:
+          # weather#285: p95 is 3.8-4.0 CPU at the 4-CPU limit; the request reflects real use so the
+          # scheduler and the N-1 survivor budget (STD-HA-14) count it.
           requests:
-            cpu: '1'
+            cpu: 2500m
             memory: 2Gi
           limits:
             cpu: '4'
@@ -363,6 +391,18 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       terminationGracePeriodSeconds: 60
+      # weather#285: keep the three camera pipelines on different Proxmox hosts when there is room.
+      # Soft, so a single-replica Recreate pod is never left Pending by the spread alone.
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              topologyKey: topology.vallery.net/proxmox-host
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/part-of: weather
+                  app.kubernetes.io/component: pipeline
       containers:
       - name: pipeline
         image: weather-app
@@ -397,8 +437,10 @@ spec:
         - name: TMPDIR
           value: /tmp
         resources:
+          # weather#285: p95 is 3.8-4.0 CPU at the 4-CPU limit; the request reflects real use so the
+          # scheduler and the N-1 survivor budget (STD-HA-14) count it.
           requests:
-            cpu: '1'
+            cpu: 2500m
             memory: 2Gi
           limits:
             cpu: '4'

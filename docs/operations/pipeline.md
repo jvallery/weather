@@ -249,8 +249,8 @@ are mounted files. The pipeline holds the only originals key; it does not start 
 
 `deploy/k8s/pipeline/deployments.yaml` runs `pipeline-skycam-east`,
 `pipeline-skycam-west` and `pipeline-frontyard-1` at one replica each (live since #124):
-non-root, read-only root, tokenless, 1 CPU/2 GiB requested and 4 CPU/8 GiB limits each, sync
-wave 2, with the staging PVC, the worker DB role and the media writer key. Their
+non-root, read-only root, tokenless, 2.5 CPU/2 GiB requested (#285: p95 sits at the limit) and
+4 CPU/8 GiB limits each, preferring separate Proxmox hosts, sync wave 2, with the staging PVC, the worker DB role and the media writer key. Their
 NetworkPolicy (`network-policy.yaml`) allows DNS, CNPG and Garage only. To pause a camera's
 pipeline, set its replicas to 0 in Git (an unpublished segment goes `unavailable` after its
 deadline). Each pod mounts only its camera's
