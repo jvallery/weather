@@ -6,6 +6,13 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: '-6'
     argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    # storage-infra#2089: retired history store. No Cluster archives here since 2026-10-31 (last base
+    # 2026-10-31T09:15:49Z, recoverable from 2026-10-24T17:50:19Z). It stays declared only so that
+    # history can still be restored until its provider lifecycle expires it. The live offsite route
+    # is the central B2 mirror of garage-k3s bucket weather-pg (storage-infra#2265).
+    storage.vallery.net/lifecycle: retired-history
+    storage.vallery.net/retired-since: "2026-10-31"
+    storage.vallery.net/issue: jvallery/storage-infra#2089
 spec:
   configuration:
     destinationPath: s3://weather-db-vallery/cnpg
