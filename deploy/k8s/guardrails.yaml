@@ -9,7 +9,10 @@ metadata:
     agent-fleet.vallery.net/project: weather
 spec:
   hard:
-    requests.cpu: '16'  # weather#285: pipelines 3 x 1 -> 2.5 CPU (+4.5)
+    # weather#285: pipelines +4.5 CPU, weather-pg -3.0 (capacity ledger S5/S10), steady state
+    # about 11.6. 15 covers the window where Argo has rolled the pipelines but CNPG has not yet
+    # rolled every weather-pg instance, so a Recreate pipeline pod is never refused by quota.
+    requests.cpu: '15'
     requests.memory: 20Gi
     limits.cpu: '40'
     limits.memory: 64Gi

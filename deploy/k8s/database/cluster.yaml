@@ -96,15 +96,15 @@ spec:
     nodeSelector:
       agentfleet.vallery.net/control-plane: 'false'
       storage.vallery.net/longhorn: 'true'
-  # Four concurrent API aggregate reads saturate a one-CPU primary and delay ordinary reads.
-  # The CPU request is sized to the primary's measured p95 (7d p95 1.94 cores, 24h p95
-  # 2.20, max 2.54 on 2026-11-05; the weather-history metrics read is the busiest query),
-  # so the scheduler reserves what the primary actually uses. CNPG applies one resource
-  # spec to every instance, so a standby (p95 ~0.1) can take over without re-sizing.
-  # The 4-core limit and the memory bound are unchanged.
+  # The CPU request is sized to the busiest instance's measured use. On 2026-11-05 the primary
+  # ran at 7d p95 1.94 cores (max 2.54), so the request was 2. By 2026-11-18 (weather#285,
+  # capacity ledger S5) the 7d p95 was 0.67 cores, p99 0.91, max 1.90 on the busiest
+  # instance, so the request is 1. CNPG applies one resource spec to every instance. The
+  # 4-core limit still covers bursts from concurrent aggregate reads, and the memory bound is
+  # unchanged. This trim funds the pipeline raise in deploy/k8s/pipeline/deployments.yaml.
   resources:
     requests:
-      cpu: '2'
+      cpu: '1'
       memory: 1Gi
     limits:
       cpu: '4'
