@@ -21,6 +21,10 @@ spec:
   # updated replica instead of restarting it in place (smart shutdown held auth-pg writes ~3-4 min). Not part of
   # the pod spec, so it rolls no instance.
   primaryUpdateMethod: switchover
+  # STD-HA-06 (weather#224 PR 2): the database serving the public site runs at estate-production.
+  # Changing this rolls all 3 instances (replicas first, then one switchover). The app auto-syncs
+  # main, so this PR merges only under the maintenance Lease and NS-weather, after a pre-roll backup.
+  priorityClassName: estate-production
   minSyncReplicas: 1
   maxSyncReplicas: 1
   # Estate CNPG default for quorum-sync clusters (jvallery/agents#6087; see
