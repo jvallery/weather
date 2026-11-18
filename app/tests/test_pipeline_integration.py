@@ -354,7 +354,7 @@ def test_stopped_camera_is_unavailable_and_others_publish_exactly_once(
         admin, worker_db, api = engine(), engine("weather_worker"), engine("weather_api")
         buckets = stores()
 
-        def worker(camera: str, publisher: Publisher) -> Worker:
+        def worker(camera: str, publisher: Publisher, *, background: bool = False) -> Worker:
             # A fresh Worker each time: nothing in memory survives a restart.
             config = PipelineConfig(
                 camera=camera,
@@ -362,7 +362,13 @@ def test_stopped_camera_is_unavailable_and_others_publish_exactly_once(
                 expected=Expected(camera, cadence[camera], 0, W, H),
                 recipe=Recipe(),
             )
-            return Worker(config, worker_db, publisher, AggregateWeather(worker_db))
+            return Worker(
+                config,
+                worker_db,
+                publisher,
+                AggregateWeather(worker_db),
+                background_finalize=background,
+            )
 
         try:
             async with worker_db.begin() as connection:
@@ -439,9 +445,29 @@ def test_stopped_camera_is_unavailable_and_others_publish_exactly_once(
             ).step(now)
             monkeypatch.setattr(schedule, "finish", original_finish)
             assert not kill_finish.armed
-            await worker(
-                "frontyard_1", HookedPublisher(worker_db, buckets, kill_commit=KillOnce(False))
-            ).step(now)
+            # #146: the restart after the kill mid-finalize runs the production path, the
+            # finalize off the loop: each pending segment gets exactly one finalize task, and
+            # loops while it runs never start a second writer on that segment.
+            resumed = worker(
+                "frontyard_1",
+                HookedPublisher(worker_db, buckets, kill_commit=KillOnce(False)),
+                background=True,
+            )
+            finalized: list[Any] = []
+            original = resumed._finalize
+
+            async def counted(row: Any, *args: Any) -> None:
+                finalized.append(row.id)
+                await original(row, *args)
+
+            monkeypatch.setattr(resumed, "_finalize", counted)
+            await resumed.step(now)
+            assert resumed.finalizing  # the loop returned with the finalize in flight
+            await resumed.step(now)
+            while resumed.finalizing:
+                await asyncio.gather(*resumed.finalizing.values())
+                await resumed.step(now)
+            assert finalized and len(finalized) == len(set(finalized))
 
             final = {
                 (r.camera_id, r.kind): r
