@@ -396,6 +396,14 @@ def test_stopped_camera_is_unavailable_and_others_publish_exactly_once(
                     )
                     is not None
                 ), phase
+            # The finalize phase is reported apart from index_ready (#146).
+            first_loop = REGISTRY.get_sample_value(
+                "weather_pipeline_first_loop_seconds", {"camera": "skycam_east"}
+            )
+            ready = REGISTRY.get_sample_value(
+                "weather_pipeline_index_ready_seconds", {"camera": "skycam_east"}
+            )
+            assert first_loop is not None and ready is not None and ready <= first_loop
             for part in ("listing", "headers"):
                 assert (
                     REGISTRY.get_sample_value(

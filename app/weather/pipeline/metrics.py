@@ -83,7 +83,14 @@ def zero_scheduler() -> None:
 
 INDEX_READY = Gauge(
     "weather_pipeline_index_ready_seconds",
-    "Seconds from pipeline start until the first loop had indexed the staged chunks (#146)",
+    "Seconds from pipeline start until the first loop had indexed the staged chunks and"
+    " rendered, excluding that loop's finalize of segments completed while down (#146)",
+    ["camera"],
+)
+FIRST_LOOP = Gauge(
+    "weather_pipeline_first_loop_seconds",
+    "Seconds from pipeline start until the end of the first loop, including its finalize"
+    " phase (weather_pipeline_first_loop_phase_seconds{phase=\"finalize\"}) (#146)",
     ["camera"],
 )
 FIRST_LOOP_PHASE = Gauge(

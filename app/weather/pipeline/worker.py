@@ -381,8 +381,14 @@ class Worker:
                 )
         if not self.indexed and rows:
             self.indexed = True
-            metrics.INDEX_READY.labels(camera).set(time.monotonic() - self.started)
             phases = self.first_phases or {}
+            # #146: a segment that completed while the pod was down is finalized (prepare,
+            # publish, catalog) in this first loop; that work is reported on its own, so
+            # index_ready is the start-to-indexed-and-rendering time without it.
+            first_loop = time.monotonic() - self.started
+            finalize = phases.get("finalize", 0.0)
+            metrics.INDEX_READY.labels(camera).set(first_loop - finalize)
+            metrics.FIRST_LOOP.labels(camera).set(first_loop)
             for name, seconds in phases.items():
                 metrics.FIRST_LOOP_PHASE.labels(camera, name).set(seconds)
             metrics.FIRST_REFRESH.labels(camera, "listing").set(self.index.listing_seconds)
@@ -397,7 +403,8 @@ class Worker:
                 LOG,
                 "index_ready",
                 camera=camera,
-                seconds=round(time.monotonic() - self.started, 1),
+                seconds=round(first_loop - finalize, 1),
+                first_loop_seconds=round(first_loop, 1),
                 chunks=len(self.index.chunks),
                 segments=len(rows),
                 refresh_listing=round(self.index.listing_seconds, 1),
