@@ -549,6 +549,39 @@ def test_corrupt_frames_are_per_slot_rejects_and_never_abort(tmp_path: Path) -> 
 
 
 @needs_ffmpeg
+def test_invalid_mezzanine_does_not_advance_release_point(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from weather.pipeline import render as render_module
+
+    _corpus(tmp_path, 24)
+    renderer = _renderer(tmp_path, _job(24, 12), block=6)
+    assert renderer.advance(FAR_FUTURE, limit=1) == 1
+    through = renderer.released_through()
+    first_block = renderer.block_paths()[0].read_bytes()
+
+    def validate_truncated(path: Path, count: int) -> None:
+        path.write_bytes(path.read_bytes()[:100])
+        ffmpeg.validate_block(path, count)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(render_module, "validate_block", validate_truncated)
+        with pytest.raises(ffmpeg.FFmpegError, match="block_decode"):
+            renderer.advance(FAR_FUTURE, limit=1)
+
+    assert renderer.released_through() == through
+    assert renderer.rendered == 6
+    assert renderer.block_paths()[0].read_bytes() == first_block
+    assert not (renderer.blocks_dir / "00006.json").exists()
+    assert not (renderer.blocks_dir / "00006.mkv").exists()
+    assert not list(renderer.blocks_dir.glob(".tmp-*"))
+    assert renderer.advance(FAR_FUTURE, limit=1) == 1
+    assert renderer.complete
+    with pytest.raises(ffmpeg.FFmpegError, match="block_decode"):
+        ffmpeg.validate_block(renderer.block_paths()[-1], 7)
+
+
+@needs_ffmpeg
 def test_finalize_validates_renditions_posters_sidecar_and_resumes_identically(
     tmp_path: Path,
 ) -> None:

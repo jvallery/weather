@@ -208,6 +208,40 @@ def concat_list(directory: Path, blocks: Sequence[Path]) -> Path:
     return path
 
 
+def validate_block(path: Path, expected_frames: int) -> None:
+    """Decode every frame before its source chunks become eligible for cleanup."""
+    command = [
+        *_base(),
+        "-xerror",
+        "-nostats",
+        "-progress",
+        "pipe:1",
+        "-threads",
+        "1",
+        "-i",
+        str(path),
+        "-map",
+        "0:v:0",
+        "-fps_mode",
+        "passthrough",
+        "-f",
+        "null",
+        "-",
+    ]
+    try:
+        result = subprocess.run(command, capture_output=True, timeout=BLOCK_SECONDS, check=False)
+    except subprocess.TimeoutExpired:
+        raise FFmpegError("block_decode") from None
+    progress = dict(line.split(b"=", 1) for line in result.stdout.splitlines() if b"=" in line)
+    if (
+        result.returncode
+        or result.stderr.strip()
+        or progress.get(b"progress") != b"end"
+        or progress.get(b"frame", b"").strip() != str(expected_frames).encode()
+    ):
+        raise FFmpegError("block_decode")
+
+
 @dataclass(frozen=True)
 class Frames:
     width: int

@@ -225,6 +225,12 @@ it relies on:
 - `.tmp-*` files belong to an in-progress write; the pipeline removes its own
   on restart.
 
+Before a new mezzanine block becomes durable, FFmpeg must decode its synced temporary file
+without errors and report the exact expected frame count. A `segment_retry` with stage
+`render` and detail `block_decode` means the block was refused before its release point advanced.
+The worker retries from sealed inputs. If it recurs, inspect the block lineage and staging I/O
+before changing the renderer or removing any previously committed blocks.
+
 ## Configuration
 
 | Variable | Default | Meaning |
