@@ -1,0 +1,147 @@
+{
+  "$schema": "https://github.com/jvallery/estate-ci/blob/main/deploy/foundation/schemas/version-register.schema.json",
+  "schema_version": 1,
+  "owner": "jvallery/weather",
+  "components": [
+    {
+      "component": "weather-app",
+      "kind": "service",
+      "notes": "First-party API, scheduler, pipeline, capture, receiver and intel image; runtime support follows the python row.",
+      "installed": {
+        "digest": "sha256:5d3c026ab09ec3094f92e7dc3e9ad6c9a5bd762db4d23138ae4aa35e776c649a",
+        "image": "registry.vallery.net/jvallery/weather-app",
+        "source": "deploy/k8s/kustomization.yaml images weather-app (built from Dockerfile.app by .github/workflows/build.yml)",
+        "read_at": "2026-11-18"
+      },
+      "upstream": {
+        "project": "https://github.com/jvallery/weather",
+        "latest": "main",
+        "checked": "2026-11-18"
+      },
+      "support": {
+        "policy": "rolling",
+        "source": "https://github.com/jvallery/weather"
+      }
+    },
+    {
+      "component": "weather-web",
+      "kind": "service",
+      "notes": "First-party web front end; runtime support follows the nodejs row.",
+      "installed": {
+        "digest": "sha256:3e374a670e5a3513ebf3fd0dcd0d64eca1a05f3770bb4028bb1cc704b9cb14aa",
+        "image": "registry.vallery.net/jvallery/weather-web",
+        "source": "deploy/k8s/kustomization.yaml images weather-web (built from Dockerfile.web by .github/workflows/build.yml)",
+        "read_at": "2026-11-18"
+      },
+      "upstream": {
+        "project": "https://github.com/jvallery/weather",
+        "latest": "main",
+        "checked": "2026-11-18"
+      },
+      "support": {
+        "policy": "rolling",
+        "source": "https://github.com/jvallery/weather"
+      }
+    },
+    {
+      "component": "weather-ci",
+      "kind": "tool",
+      "notes": "CI job image built here; the digest pin lives in estate-ci runners.yaml.",
+      "installed": {
+        "digest": "sha256:6c10ebd4ddb8326727fb0f7d2bf6bcfea9bf1dec4a356f82a74dd8a7537a3baa",
+        "image": "registry.vallery.net/jvallery/weather-ci",
+        "source": "jvallery/estate-ci runners.yaml (weather job_image); built from Dockerfile.ci by .github/workflows/build.yml",
+        "read_at": "2026-11-18"
+      },
+      "upstream": {
+        "project": "https://github.com/jvallery/weather",
+        "latest": "main",
+        "checked": "2026-11-18"
+      },
+      "support": {
+        "policy": "rolling",
+        "source": "https://github.com/jvallery/weather"
+      }
+    },
+    {
+      "component": "python",
+      "kind": "runtime",
+      "notes": "Digest-preserving mirror of docker.io/library/python (Debian 12 bookworm base, supported until 2028-06-30); also a shared base for jvallery/docs.",
+      "installed": {
+        "version": "3.14.10-slim-bookworm",
+        "digest": "sha256:3fe1a0b6c2d6b2ebb572906cdabeca75aeb558c0c17db5ffefbcf8094871c32b",
+        "image": "registry.vallery.net/jvallery/weather-python-base",
+        "source": "mirrors.txt (weather-python-base); Dockerfile.app; .python-version 3.14.9; pyproject.toml requires-python >=3.14.9,<3.15",
+        "read_at": "2026-11-18"
+      },
+      "upstream": {
+        "project": "https://www.python.org/downloads/",
+        "latest": "3.14.10 on 3.14; 3.15.2 newest",
+        "checked": "2026-11-18"
+      },
+      "support": {
+        "until": "2030-10-31",
+        "source": "https://devguide.python.org/versions/"
+      }
+    },
+    {
+      "component": "nodejs",
+      "kind": "runtime",
+      "notes": "Runtime stage 24.22.3; build stage and Dockerfile.ci use 24.22.1 (sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205), the exact engines pin.",
+      "installed": {
+        "version": "24.22.3-bookworm-slim",
+        "digest": "sha256:dc26ae92c9fb15cf6b1d63e20f0944b2efe0f115b20e00be48fb23fceb061c54",
+        "image": "registry.vallery.net/jvallery/weather-node-base",
+        "source": "mirrors.txt (weather-node-base); Dockerfile.web runtime stage; web/package.json engines 24.22.1 (build stage)",
+        "read_at": "2026-11-18"
+      },
+      "upstream": {
+        "project": "https://nodejs.org/en/about/previous-releases",
+        "latest": "24.22.3 on 24; 26.13.1 newest",
+        "checked": "2026-11-18"
+      },
+      "support": {
+        "until": "2028-04-30",
+        "source": "https://github.com/nodejs/release#release-schedule"
+      }
+    },
+    {
+      "component": "postgresql",
+      "kind": "runtime",
+      "installed": {
+        "version": "16.16-standard-trixie",
+        "digest": "sha256:0848a2f80eb48d9bff76857ce988a6053b4120e7ecbdc4414e24cb1cd2df0754",
+        "image": "registry.vallery.net/jvallery/mirror-ghcr-io-cloudnative-pg-postgresql",
+        "source": "deploy/k8s/database/cluster.yaml (CNPG Cluster imageName)",
+        "read_at": "2026-11-18"
+      },
+      "upstream": {
+        "project": "https://www.postgresql.org/support/versioning/",
+        "latest": "16.16 on 16; 18.7 newest",
+        "checked": "2026-11-18"
+      },
+      "support": {
+        "until": "2028-11-09",
+        "source": "https://www.postgresql.org/support/versioning/"
+      }
+    },
+    {
+      "component": "ffmpeg",
+      "kind": "tool",
+      "installed": {
+        "version": "9.0.2",
+        "source": "Dockerfile.app (ffmpeg stage builds ffmpeg-9.0.2 from the checksummed release tarball)",
+        "read_at": "2026-11-18"
+      },
+      "upstream": {
+        "project": "https://ffmpeg.org/download.html",
+        "latest": "9.0.2",
+        "checked": "2026-11-18"
+      },
+      "support": {
+        "policy": "rolling",
+        "source": "https://endoflife.date/ffmpeg"
+      }
+    }
+  ]
+}
