@@ -276,6 +276,9 @@ def test_strict_intake_rejects_unknown_timing_geometry_and_corrupt_tar(tmp_path:
     # #146: the index reads headers and the manifest only, so a corrupt frame body no longer
     # rejects its whole chunk; read_frame catches it when the frame is used.
     assert index.invalid == set()
+    # #146: the refresh time is split into listing (scandir) and header parsing, per chunk.
+    assert index.headers_parsed == len(index.chunks) > 0
+    assert index.listing_seconds > 0 and index.header_seconds > 0
     corrupt = min(
         (c for chunk in index.chunks.values() for c in chunk.candidates if c.chunk == broken),
         key=lambda c: c.offset or 0,

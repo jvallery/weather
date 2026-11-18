@@ -83,7 +83,14 @@ def zero_scheduler() -> None:
 
 INDEX_READY = Gauge(
     "weather_pipeline_index_ready_seconds",
-    "Seconds from pipeline start until the first loop had indexed the staged chunks (#146)",
+    "Seconds from pipeline start until the first loop had indexed the staged chunks and"
+    " rendered, excluding that loop's finalize of segments completed while down (#146)",
+    ["camera"],
+)
+FIRST_LOOP = Gauge(
+    "weather_pipeline_first_loop_seconds",
+    "Seconds from pipeline start until the end of the first loop, including its finalize"
+    " phase (weather_pipeline_first_loop_phase_seconds{phase=\"finalize\"}) (#146)",
     ["camera"],
 )
 FIRST_LOOP_PHASE = Gauge(
@@ -91,6 +98,17 @@ FIRST_LOOP_PHASE = Gauge(
     "Seconds of the first loop after start (the span weather_pipeline_index_ready_seconds"
     " reports) by phase: schedule, renderer, refresh, render, finalize, failed (#146)",
     ["camera", "phase"],
+)
+FIRST_REFRESH = Gauge(
+    "weather_pipeline_first_refresh_seconds",
+    "Seconds the chunk index spent from pipeline start until index ready, by part: listing"
+    " (sealed-hour scandir, NFS metadata) and headers (chunk header and manifest parsing) (#146)",
+    ["camera", "part"],
+)
+FIRST_REFRESH_CHUNKS = Gauge(
+    "weather_pipeline_first_refresh_chunks",
+    "Chunks whose headers the index parsed from pipeline start until index ready (#146)",
+    ["camera"],
 )
 
 
