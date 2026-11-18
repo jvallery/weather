@@ -92,6 +92,17 @@ FIRST_LOOP_PHASE = Gauge(
     " reports) by phase: schedule, renderer, refresh, render, finalize, failed (#146)",
     ["camera", "phase"],
 )
+FIRST_REFRESH = Gauge(
+    "weather_pipeline_first_refresh_seconds",
+    "Seconds the chunk index spent from pipeline start until index ready, by part: listing"
+    " (sealed-hour scandir, NFS metadata) and headers (chunk header and manifest parsing) (#146)",
+    ["camera", "part"],
+)
+FIRST_REFRESH_CHUNKS = Gauge(
+    "weather_pipeline_first_refresh_chunks",
+    "Chunks whose headers the index parsed from pipeline start until index ready (#146)",
+    ["camera"],
+)
 
 
 HUMAN_POSTERS = Counter(

@@ -385,6 +385,9 @@ class Worker:
             phases = self.first_phases or {}
             for name, seconds in phases.items():
                 metrics.FIRST_LOOP_PHASE.labels(camera, name).set(seconds)
+            metrics.FIRST_REFRESH.labels(camera, "listing").set(self.index.listing_seconds)
+            metrics.FIRST_REFRESH.labels(camera, "headers").set(self.index.header_seconds)
+            metrics.FIRST_REFRESH_CHUNKS.labels(camera).set(self.index.headers_parsed)
             self.first_phases = None
             # #146: the same seconds split by phase (fixed names, scalar fields).
             split: dict[str, Any] = {
@@ -397,6 +400,9 @@ class Worker:
                 seconds=round(time.monotonic() - self.started, 1),
                 chunks=len(self.index.chunks),
                 segments=len(rows),
+                refresh_listing=round(self.index.listing_seconds, 1),
+                refresh_headers=round(self.index.header_seconds, 1),
+                headers_parsed=self.index.headers_parsed,
                 **split,
             )
         if self.hourly is not None:

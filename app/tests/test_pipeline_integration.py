@@ -396,6 +396,14 @@ def test_stopped_camera_is_unavailable_and_others_publish_exactly_once(
                     )
                     is not None
                 ), phase
+            for part in ("listing", "headers"):
+                assert (
+                    REGISTRY.get_sample_value(
+                        "weather_pipeline_first_refresh_seconds",
+                        {"camera": "skycam_east", "part": part},
+                    )
+                    is not None
+                ), part
 
             pending = await rows(
                 admin,

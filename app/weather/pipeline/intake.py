@@ -12,6 +12,7 @@ import hashlib
 import logging
 import os
 import tarfile
+import time
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -225,6 +226,12 @@ class ChunkIndex:
         self.generation = 0
         # Pruned chunk paths -> their window end, so a re-parse is known to be a re-add.
         self.forgotten: dict[Path, Fraction] = {}
+        # #146: cumulative seconds the refreshes spent listing sealed hours (NFS metadata:
+        # scandir) versus parsing chunk headers and manifests, and how many chunks they parsed,
+        # so a slow restart is attributed to one or the other.
+        self.listing_seconds = 0.0
+        self.header_seconds = 0.0
+        self.headers_parsed = 0
 
     def refresh(self, start: Fraction, end: Fraction) -> list[Chunk]:
         """Parse sealed chunks of every UTC hour that can hold frames for [start, end)."""
@@ -238,6 +245,7 @@ class ChunkIndex:
         while hour <= last:
             directory = self.root / hour_name(hour)
             hour += HOUR
+            listed = time.monotonic()
             try:
                 names = sorted(entry.name for entry in os.scandir(directory) if entry.is_file())
             except FileNotFoundError:
@@ -246,10 +254,13 @@ class ChunkIndex:
                 LOG.warning("Sealed hour unreadable; will retry (%s)", self.expected.camera)
                 self.unreadable.add(directory)
                 continue
+            finally:
+                self.listing_seconds += time.monotonic() - listed
             for name in names:
                 path = directory / name
                 if not name.endswith(".tar") or path in self.chunks or path in self.invalid:
                     continue
+                parsing = time.monotonic()
                 try:
                     chunk = parse_chunk(path, self.expected)
                 except OSError:
@@ -262,6 +273,9 @@ class ChunkIndex:
                     LOG.warning("Rejected an invalid sealed chunk (%s)", self.expected.camera)
                     self.invalid.add(path)
                     continue
+                finally:
+                    self.header_seconds += time.monotonic() - parsing
+                    self.headers_parsed += 1
                 chunk.seen = self.generation
                 chunk.readded = self.forgotten.pop(path, None) is not None
                 self.chunks[path] = chunk
