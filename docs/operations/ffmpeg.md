@@ -7,7 +7,7 @@ The release archive was downloaded and hashed before this recipe was committed.
 
 Configure flags: `--prefix=/opt/ffmpeg --enable-gpl --enable-libx264 --disable-debug --disable-doc --disable-ffplay`.
 No nonfree components are enabled. The compiler and x264 dependency closure comes from the fixed
-Debian bookworm snapshot `20261023T000000Z`; its package versions and the configure output must be
+Debian 13 trixie snapshot `20261117T000000Z` (weather#289; bookworm `20261023T000000Z` before); its package versions and the configure output must be
 retained in the in-cluster build log. The amd64 runtime copies libx264 from that same build stage.
 
 Enabling libx264 makes the resulting FFmpeg distribution GPL, separate from Weather's MIT source.
@@ -20,7 +20,7 @@ The source is unmodified. No application source is copied from FFmpeg or x264.
 WX-01 (#2) owns actual in-cluster compilation, executable/capability probes, SBOM generation,
 archive custody and egress-denied startup verification. A committed Dockerfile proves none of those.
 
-The compiler stage uses main, bookworm-updates and bookworm-security from the same fixed
+The compiler stage uses main, trixie-updates and trixie-security from the same fixed
 Debian snapshot date. All three suites are needed because the digest-pinned Python base
 already includes security updates; main alone can require an older exact-version dependency
 (for example perl versus perl-base), causing apt to fail before compilation.
