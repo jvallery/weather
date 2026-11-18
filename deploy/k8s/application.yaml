@@ -52,11 +52,24 @@ spec:
       # estate-platform#113 (STD-HA-08): hard spread across Proxmox hosts. nodeTaintsPolicy Honor
       # keeps the frigate-tainted olivine worker and cordoned servers out of the domain count, so
       # 2 replicas plus one surge pod fit the four general workers.
+      # STD-HA-16 (D-855): also spread across power circuits, keyed only on the node label. An
+      # explicit constraint list switches off the scheduler defaults, so the circuit key is named
+      # here. matchLabelKeys pod-template-hash makes a rolling update count only its own revision.
       topologySpreadConstraints:
       - maxSkew: 1
         topologyKey: topology.vallery.net/proxmox-host
         whenUnsatisfiable: DoNotSchedule
         nodeTaintsPolicy: Honor
+        matchLabelKeys:
+        - pod-template-hash
+        labelSelector:
+          matchLabels: *id001
+      - maxSkew: 1
+        topologyKey: vallery.net/power-circuit
+        whenUnsatisfiable: DoNotSchedule
+        nodeTaintsPolicy: Honor
+        matchLabelKeys:
+        - pod-template-hash
         labelSelector:
           matchLabels: *id001
       containers:
@@ -313,11 +326,24 @@ spec:
       # estate-platform#113 (STD-HA-08): hard spread across Proxmox hosts. nodeTaintsPolicy Honor
       # keeps the frigate-tainted olivine worker and cordoned servers out of the domain count, so
       # 2 replicas plus one surge pod fit the four general workers.
+      # STD-HA-16 (D-855): also spread across power circuits, keyed only on the node label. An
+      # explicit constraint list switches off the scheduler defaults, so the circuit key is named
+      # here. matchLabelKeys pod-template-hash makes a rolling update count only its own revision.
       topologySpreadConstraints:
       - maxSkew: 1
         topologyKey: topology.vallery.net/proxmox-host
         whenUnsatisfiable: DoNotSchedule
         nodeTaintsPolicy: Honor
+        matchLabelKeys:
+        - pod-template-hash
+        labelSelector:
+          matchLabels: *id001
+      - maxSkew: 1
+        topologyKey: vallery.net/power-circuit
+        whenUnsatisfiable: DoNotSchedule
+        nodeTaintsPolicy: Honor
+        matchLabelKeys:
+        - pod-template-hash
         labelSelector:
           matchLabels: *id001
       containers:
