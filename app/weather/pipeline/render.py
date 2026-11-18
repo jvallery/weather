@@ -8,9 +8,9 @@ Each block reads only the frames that can touch its shutters, decodes each once 
 FFmpeg (a frame FFmpeg cannot decode is a per-slot reject that never aborts the block), and
 integrates them in linear light. Only a few frames and accumulators are in memory at once.
 
-A block is durable when its metadata and its Matroska file are both fsynced and renamed into
-`blocks/`; a crash leaves at most a `.tmp-*` file that the next run removes. Because the
-mezzanine is intra-only, a resumed or differently-sized block produces the same decoded frames.
+A block is durable after its Matroska file passes a strict decode and the file and its metadata
+are both fsynced into `blocks/`; a crash leaves a `.tmp-*` file that the next run removes.
+Because the mezzanine is intra-only, a resumed block produces the same decoded frames.
 """
 
 import hashlib
@@ -32,7 +32,7 @@ from weather.timemodel import FrameMap
 
 from . import metrics
 from .exposure import Geometry, overlap
-from .ffmpeg import BlockEncoder, decode_jpeg
+from .ffmpeg import BlockEncoder, decode_jpeg, validate_block
 from .intake import Candidate, ChunkIndex, Expected, IntakeError, read_frame
 from .light import to_linear, to_srgb
 from .recipe import MAX_BLOCK, SLATE_RGB, Recipe
@@ -364,12 +364,13 @@ class SegmentRenderer:
                         judge(candidate.slot, "ok" if good is not None else "decode")
                     except IntakeError:
                         judge(candidate.slot, "changed")
+            with tmp.open("rb") as handle:
+                os.fsync(handle.fileno())
+            validate_block(tmp, last - first)
         except BaseException:
             encoder.abort()
             tmp.unlink(missing_ok=True)
             raise
-        with tmp.open("rb") as handle:
-            os.fsync(handle.fileno())
         meta = {
             "schema_version": 1,
             "recipe": self.recipe.id,
