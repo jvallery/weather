@@ -98,7 +98,7 @@ export function LinkedPlayback({ video, requested, events, units, registry, side
     const resolved = resolveSeek(map, target);
     if (!resolved) { setNotice("That time is outside this recording's source interval; the seek was rejected."); return false; }
     setNotice(null); setCursor(resolved.at);
-    serial.current += 1; setSeek({ seconds: frameSeconds(map, resolved.frame), serial: serial.current });
+    serial.current += 1; setSeek({ seconds: frameSeconds(map, resolved.frame), serial: serial.current, tolerance: map.sampleTicks / map.timescale / 2 + 1e-3 });
     if (bookmark) {
       const url = new URL(window.location.href); url.searchParams.set("t", iso(resolved.at));
       window.history.replaceState(window.history.state, "", url);
