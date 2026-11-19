@@ -1,8 +1,9 @@
 # Media recovery
 
 This page covers restoring weather media from its offsite custody copy, and the
-recovery times measured when it was done (#77). Recovering the database itself
-(the CNPG catalog) is covered in [database.md](database.md) and weather#6.
+recovery times measured when it was done (#77). The current database recovery
+contract is in [database.md](database.md). [Weather#33](https://github.com/jvallery/weather/issues/33)
+tracks the isolated offsite-only database restore.
 
 ## What can be restored, and from where
 
@@ -10,7 +11,7 @@ recovery times measured when it was done (#77). Recovering the database itself
 |---|---|---|---|
 | `weather-media` objects (video, poster, keogram, still, sidecar) | Garage bucket `weather-media` | B2 `object-custody-vallery`, prefix `object-custody/weather-media/` | Secret `weather-custody-restore-reader` (storage-infra; readFiles only, no listFiles) |
 | `weather-originals` hourly originals | Garage bucket `weather-originals` | B2 `object-custody-vallery`, prefix `object-custody/weather-originals/` | same |
-| Catalog rows (`weather.media_asset`) | CNPG `weather-pg` | B2 `s3://weather-db-vallery/cnpg` (barman base + WAL) | Secret `weather-pg-backup-b2-reader` |
+| Catalog rows used in the recorded media drill (`weather.media_asset`) | CNPG `weather-pg` | Historical B2 `s3://weather-db-vallery/cnpg` (Barman base + WAL) | Secret `weather-pg-backup-b2-reader` |
 
 The custody reader is used where it already lives, in namespace `weather`. It is
 never copied. Because it cannot list, B2 answers a HEAD for a key it does not
@@ -80,11 +81,11 @@ every hour for 21 days, read from a `weather-pg` replica. A positive control
 | Cleanup | `kubectl get all,pvc,pv,secret,networkpolicy,configmap -l weather.vallery.net/restore-drill=20261117k` in `weather` returns nothing. The drill Garage was pod-local and is gone |
 
 No RTO or RPO target has been set for weather media. The values above are
-measured results, not guarantees; a target is a proposal for weather#6. The
-catalog's offsite base is older than the objects: the newest `weather-pg` B2 base
-is from 2026-10-31, because WAL archiving now goes to `weather-pg-local`. A full
-loss restored from B2 alone would recover objects up to about 15 h old, but
-catalog rows only to 2026-10-31. That gap is tracked in weather#6.
+measured results, and a future media target remains a proposal. At the time
+of this drill, the catalog base from the historical B2 store was older
+than the copied media. The recorded catalog recovery point was October 31, 2026,
+and the measured media RPO was 14.8 hours. Weather#33 tracks the separate
+offsite-only database proof against the current recovery contract.
 
 Earlier attempts that day (operations `a` to `j`) failed closed and were torn
 down by UID. Each found a drill-harness defect, fixed in the commits on this

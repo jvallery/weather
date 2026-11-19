@@ -43,7 +43,7 @@ The current frequent-WAL profile has a 256 MiB per-run transfer cap on a 15-minu
 
 Admission must measure daily/new object bytes and counts by class, total retained/listing footprint, base/WAL growth, preview hide churn, per-version verification costs and catch-up after outages. Full first-copy and first-restore workloads run only on the approved bounded cluster path. Never download/hash the retained archive on the Mac as a shortcut.
 
-Provisional targets from requirements remain database offsite age under 30 minutes and media/joint age under 36 hours. They are not accepted SLOs. A usable base, contiguous WAL, exact object versions and verification must all fit those targets. RTO remains unqualified until an isolated B2-only drill measures configuration bootstrap, transfer, database replay and product validation.
+D-460 supersedes this ADR’s original database planning target. The declared local PITR window is 7 days, and the database offsite age target is 26 hours. A media/joint age under 36 hours remains provisional. A usable base, contiguous WAL and exact object versions have to exist at the independent recovery target. [Weather#33](https://github.com/jvallery/weather/issues/33) tracks measured offsite RPO and RTO from an isolated restore.
 
 ## Open research that prevents closure
 
