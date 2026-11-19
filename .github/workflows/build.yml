@@ -20,7 +20,7 @@
 name: build
 
 on:
-  # Keep the two path lists identical.
+  # Keep both path lists aligned with ci/images.tsv. App tests run in ci.yml.
   pull_request:
     paths:
       - '.dockerignore'
@@ -31,7 +31,9 @@ on:
       - 'Dockerfile.web'
       - 'LICENSE'
       - 'THIRD_PARTY_NOTICES.md'
-      - 'app/**'
+      - 'alembic.ini'
+      - 'app/migrations/**'
+      - 'app/weather/**'
       - 'ci/browser/**'
       - 'ci/images.tsv'
       - 'docs/operations/ffmpeg.md'
@@ -53,7 +55,9 @@ on:
       - 'Dockerfile.web'
       - 'LICENSE'
       - 'THIRD_PARTY_NOTICES.md'
-      - 'app/**'
+      - 'alembic.ini'
+      - 'app/migrations/**'
+      - 'app/weather/**'
       - 'ci/browser/**'
       - 'ci/images.tsv'
       - 'docs/operations/ffmpeg.md'
