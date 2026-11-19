@@ -22,3 +22,8 @@ values="$(grep -A1 -- '- name: WEATHER_IMAGE_DIGEST' <<<"$rendered" | awk '/valu
 [[ "$(wc -l <<<"$values" | tr -d ' ')" == 3 && "$(sort -u <<<"$values")" == "$pin" ]] \
   || { echo "WEATHER_IMAGE_DIGEST differs from the weather-app pin ${pin}: ${values//$'\n'/ }" >&2; exit 1; }
 echo "pipeline WEATHER_IMAGE_DIGEST x3 == weather-app pin ${pin:0:19}"
+
+# Finite owner proof for estate-ci#261. Keep ordinary manifest checks unchanged.
+if [[ ${GITHUB_EVENT_NAME:-} == pull_request ]]; then
+  bash ci/check-renovate.sh
+fi
