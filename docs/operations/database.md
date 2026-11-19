@@ -70,10 +70,12 @@ source CPU cap if the change causes harm; do not bypass admission or alert rules
   standby) to ObjectStore `weather-pg-local` (bucket `weather-pg` on the
   in-cluster garage-k3s, `retentionPolicy: 7d`; see "Local WAL archive" below).
   The declared PITR window is **7 days** (`recovery.pitr_window_days` in
-  `ConfigMap/weather-database-policy`). The off-site copy is a daily copy of that
-  archive owned by storage-infra (storage-infra#1567), so the declared off-site
-  age target is **26 h** (`recovery.db_offsite_age_target_hours`; about 24 h RPO
-  off-site). No sub-30-minute off-site age is claimed.
+  `ConfigMap/weather-database-policy`). The declared offsite age target is
+  **26 h** (`recovery.db_offsite_age_target_hours`). The central B2 mirror has
+  verified WAL, and base-plus-WAL proof is tracked in storage-infra#2265.
+  D-460's Garage-volume Longhorn B2 copy is tracked separately in
+  storage-infra#1567. Offsite RPO and RTO are measured by the isolated
+  restore tracked in weather#33.
 - **Historical B2 store.** `weather-pg-b2` (`s3://weather-db-vallery/cnpg/weather-pg`,
   writer `weather-pg-backup-b2-writer`, which cannot permanently erase versions,
   storage-infra#1112) has received nothing since 2026-10-31. It has no
@@ -94,11 +96,11 @@ source CPU cap if the change causes harm; do not bypass admission or alert rules
 
 The WAL archiver and the daily base backup write to ObjectStore `weather-pg-local`
 (bucket `weather-pg` on the in-cluster availability Garage, retention 7 days), so
-archiving keeps working with both WANs down and pg_wal never fills. The offsite copy is
-storage-infra's daily copy of this archive (storage-infra#1567; D-460 a names the Longhorn
-B2 backup of the garage-k3s volume, and a bucket-level custody copy is the alternative). The
-B2 store `weather-pg-b2` stays declared for its pre-2026-10-31 history; the restore drill
-reads `weather-pg-local` with the reader key.
+archiving can continue during a WAN outage while local Garage is available.
+Local restore drills read `weather-pg-local` with its reader key. The
+historical direct-B2 store `weather-pg-b2` stays declared for its archive
+through October 31, 2026. Weather#33 requires a separate offsite-only
+restore with production Garage unreachable.
 The writer and reader Secrets (`weather-pg-backup-s3-{writer,reader}-k3s`) are created
 create-only in the cluster by the change-gate and carry only `AWS_ACCESS_KEY_ID` and
 `AWS_SECRET_ACCESS_KEY`; the Garage region `garage` comes from the sidecar env in
@@ -116,8 +118,8 @@ Read archiving state with
    `kubectl -n weather get objectstores.barmancloud.cnpg.io weather-pg-local -o jsonpath='{.status}'`
    (`lastSuccessfulBackupTime`, `firstRecoverabilityPoint`).
 2. `kubectl -n weather get backups.postgresql.cnpg.io` shows a failed Backup and its message. The
-   usual causes are B2 reachability or an expired or revoked writer key; a standby that is not ready
-   also skips the run.
+   usual causes are local Garage reachability or a writer authentication failure.
+   A standby that is not ready also skips the run.
 3. Re-run once with a one-off `Backup` (`method: plugin`, plugin `barman-cloud.cloudnative-pg.io`)
    after fixing the cause. Never mint a replacement key; recover the existing identity from KSOPS
    custody. If bases fail for more than 7 days, ask storage-infra to suspend the `cnpg/` lifecycle
