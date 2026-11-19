@@ -229,7 +229,9 @@ def run(args):
         receipt["result"] == "pass"
         and p["day_page_status"] == 200
         and p["day_page_has_media"]
+        and p["day_page_mentions_unavailable"]
         and p.get("media_restored_still_status") == 200
+        and p.get("media_withheld_status") == 404
         and p.get("media_original_status") == 404
     )
     args.evidence.write_text(json.dumps(evidence, indent=2) + "\n")
