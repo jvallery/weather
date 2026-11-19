@@ -2,8 +2,11 @@
 """weather#77 media drill manifest invariants; no cluster is contacted."""
 
 import importlib.util
+import json
 import unittest
+from argparse import Namespace
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 import yaml
@@ -75,6 +78,43 @@ class MediaDrillManifestTests(unittest.TestCase):
             self.assertIn("@sha256:", c["image"])
             self.assertFalse(c["securityContext"]["allowPrivilegeEscalation"])
             self.assertTrue(c["securityContext"]["readOnlyRootFilesystem"])
+
+
+class MediaDrillVerdictTests(unittest.TestCase):
+    def test_requires_unavailable_page_state_and_withheld_404(self):
+        good = {
+            "day_page_status": 200,
+            "day_page_has_media": True,
+            "day_page_mentions_unavailable": True,
+            "media_restored_still_status": 200,
+            "media_withheld_status": 404,
+            "media_original_status": 404,
+        }
+        for changes, expected in (
+            ({}, True),
+            ({"day_page_mentions_unavailable": False}, False),
+            ({"media_withheld_status": 200}, False),
+            ({"media_withheld_status": 503}, False),
+        ):
+            with self.subTest(changes=changes), TemporaryDirectory() as tmp:
+                evidence = Path(tmp) / "receipt.json"
+                args = Namespace(
+                    operation="test01", day="2026-10-29", plan=False, evidence=evidence
+                )
+                pod = '{"metadata": {"uid": "synthetic"}, "spec": {"containers": []}}'
+                with (
+                    patch.object(drill, "render", return_value=("synthetic", "")),
+                    patch.object(drill, "rpo_candidates", return_value=[]),
+                    patch.object(drill, "configmap", return_value=""),
+                    patch.object(drill, "kubectl", return_value=pod),
+                    patch.object(
+                        drill, "wait_receipt", return_value={"result": "pass", "start_epoch": 1}
+                    ),
+                    patch.object(drill, "probes", return_value={**good, **changes}),
+                    patch("builtins.print"),
+                ):
+                    drill.run(args)
+                self.assertIs(json.loads(evidence.read_text())["verified"], expected)
 
 
 if __name__ == "__main__":

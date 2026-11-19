@@ -226,6 +226,7 @@ async def main() -> int:
     ok = (
         exact
         and not mismatches
+        and not custody_missing
         and withheld is not None
         and all(v["rc"] == 0 for v in reconcile.values())
         and all(t["copied"] > 0 for t in tally.values())
