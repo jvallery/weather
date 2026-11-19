@@ -1,0 +1,24 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Estate version detector (estate-ci#261). Policy: jvallery/estate-ci renovate/global.json.",
+  "enabledManagers": [
+    "npm"
+  ],
+  "includePaths": [
+    "web/package.json",
+    "web/pnpm-lock.yaml"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "npm"
+      ],
+      "matchDepTypes": [
+        "devDependencies",
+        "engines",
+        "packageManager"
+      ],
+      "enabled": false
+    }
+  ]
+}
