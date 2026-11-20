@@ -208,8 +208,9 @@ def concat_list(directory: Path, blocks: Sequence[Path]) -> Path:
     return path
 
 
-def validate_block(path: Path, expected_frames: int) -> None:
-    """Decode every frame before its source chunks become eligible for cleanup."""
+def _decode_block(path: Path, expected_frames: int) -> int | None:
+    """Decode every frame of one block; None when clean, else frames decoded before the
+    first error (so the index of the first damaged frame) or the short count."""
     command = [
         *_base(),
         "-xerror",
@@ -236,13 +237,29 @@ def validate_block(path: Path, expected_frames: int) -> None:
     for line in result.stdout.splitlines():
         key, _, value = line.partition(b"=")
         progress[key] = value
+    frames = progress.get(b"frame", b"").strip()
     if (
         result.returncode
         or result.stderr.strip()
         or progress.get(b"progress") != b"end"
-        or progress.get(b"frame", b"").strip() != str(expected_frames).encode()
+        or frames != str(expected_frames).encode()
     ):
+        return int(frames) if frames.isdigit() else 0
+    return None
+
+
+def validate_block(path: Path, expected_frames: int) -> None:
+    """Decode every frame before its source chunks become eligible for cleanup."""
+    if _decode_block(path, expected_frames) is not None:
         raise FFmpegError("block_decode")
+
+
+def damaged_frame(path: Path, expected_frames: int) -> int | None:
+    """Index within the block of the first frame that does not decode, or None (#297 follow-up).
+
+    Used only after a mezzanine decode failed, to name the damaged block and frame instead of
+    reporting the whole segment as undecodable."""
+    return _decode_block(path, expected_frames)
 
 
 @dataclass(frozen=True)

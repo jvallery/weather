@@ -1160,3 +1160,54 @@ def test_header_only_chunk_reads_skip_frame_hashes_but_keep_the_binding(tmp_path
     path.write_bytes(wrong + text[end:])
     with pytest.raises(ValueError):
         read_chunk(path, hash_frames=False)
+
+
+def _small_block(path: Path, frames: int) -> None:
+    encoder = ffmpeg.BlockEncoder(path, 64, 32)
+    for k in range(frames):
+        encoder.write(bytes([(k * 37) % 256, 90, 160]) * (64 * 32))
+    encoder.close()
+
+
+@needs_ffmpeg
+def test_damaged_frame_names_the_first_frame_that_does_not_decode(tmp_path: Path) -> None:
+    block = tmp_path / "00000.mkv"
+    _small_block(block, 10)
+    assert ffmpeg.damaged_frame(block, 10) is None
+    ffmpeg.validate_block(block, 10)
+    # A short block reports the frames it still has; validate_block keeps rejecting it.
+    assert ffmpeg.damaged_frame(block, 11) == 10
+    truncated = tmp_path / "00010.mkv"
+    data = block.read_bytes()
+    truncated.write_bytes(data[: len(data) // 2])
+    index = ffmpeg.damaged_frame(truncated, 10)
+    assert index is not None and 0 <= index < 10
+    with pytest.raises(ffmpeg.FFmpegError, match="block_decode"):
+        ffmpeg.validate_block(truncated, 10)
+
+
+@needs_ffmpeg
+def test_damaged_blocks_reports_segment_frames_once_per_block(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from weather.pipeline import finalize as finalize_module
+
+    good, bad = tmp_path / "00000.mkv", tmp_path / "00010.mkv"
+    _small_block(good, 10)
+    _small_block(bad, 10)
+    bad.write_bytes(bad.read_bytes()[: bad.stat().st_size // 2])
+    metas = [
+        {"first": 0, "last": 10, "mkv_sha256": "a"},
+        {"first": 10, "last": 20, "mkv_sha256": "b"},
+    ]
+    damaged = finalize_module.damaged_blocks(metas, [good, bad])
+    assert len(damaged) == 1 and damaged[0][0] == 10 and 10 <= damaged[0][1] < 20
+    calls: list[tuple[Path, int]] = []
+
+    def counting(path: Path, frames: int) -> int | None:
+        calls.append((path, frames))
+        return None
+
+    monkeypatch.setattr(finalize_module, "damaged_frame", counting)
+    assert finalize_module.damaged_blocks(metas, [good, bad]) == damaged
+    assert calls == []  # cached per (block, recorded sha256)
