@@ -52,7 +52,7 @@ ENV PATH=/usr/lib/postgresql/16/bin:/opt/ffmpeg/bin:$PATH \
     UV_PYTHON=/usr/local/bin/python3 UV_PYTHON_DOWNLOADS=never
 USER 1001:1001
 RUN sha256sum -c /usr/share/doc/weather-ci/production-denver.sha256 \
- && postgres --version | grep -F 'PostgreSQL) 16.15' \
+ && postgres --version | grep -F 'PostgreSQL) 16.16' \
  && ffmpeg -version | grep -E '^ffmpeg version 9[.]0[.]2 ' \
  && ffmpeg -hide_banner -encoders | grep -E '[[:space:]]libx264[[:space:]]' \
  && node -e "const fs=require('node:fs'); const p=require('/opt/weather-browser-tools/node_modules/@playwright/test'); for(const b of [p.chromium,p.webkit,p.firefox]) fs.accessSync(b.executablePath(),fs.constants.X_OK)"
