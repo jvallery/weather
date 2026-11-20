@@ -38,7 +38,7 @@ from weather.scheduler.pressure import Pressure
 from weather.timemodel._instant import epoch_seconds
 
 from . import ffmpeg, metrics, schedule
-from .finalize import RESULT, Prepared, prepare, publish, rebase
+from .finalize import RESULT, BlocksChanged, Prepared, prepare, publish, rebase
 from .hourly import HourlyArchive
 from .intake import ChunkIndex, Expected, utc
 from .keogram import Region, load_regions
@@ -308,6 +308,10 @@ class Worker:
     ) -> None:
         camera = self.config.camera
         metrics.FAILURES.labels(camera, stage).inc()
+        if isinstance(error, BlocksChanged):
+            # The renderer caches block metadata across attempts; reload it from the durable
+            # json next time (an operator block repair otherwise needs a pod restart).
+            self.renderers.pop(row.id, None)
         # Back off so a deterministic failure never re-reads gigabytes every loop or
         # starves the camera's live segment: 10 s doubling to 30 min.
         failures = self.backoff.get(row.id, (0, now))[0] + 1

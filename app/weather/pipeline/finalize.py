@@ -22,6 +22,7 @@ from typing import Any
 import numpy as np
 from PIL import Image
 
+from weather.logs import event
 from weather.publish.model import Product, ProductFile
 from weather.publish.publisher import Publisher
 from weather.timemodel import Segment
@@ -29,10 +30,12 @@ from weather.timemodel import Segment
 from . import gapfill, metrics
 from .ffmpeg import (
     Expect,
+    FFmpegError,
     MezzanineReader,
     RenditionSpec,
     ValidationError,
     concat_list,
+    damaged_frame,
     encode_renditions,
     extract_frame,
     validate_rendition,
@@ -52,6 +55,14 @@ from .result import (
 )
 
 LOG = logging.getLogger("weather.pipeline")
+
+
+class BlocksChanged(RuntimeError):
+    """A durable block no longer matches the metadata this renderer loaded. Either the file
+    changed (damage) or an operator repaired the block and its json (AMC-APPS-10): the worker
+    drops its cached renderer so the next attempt reloads the durable metadata."""
+
+
 RESULT = "result.json"
 # (width, JPEG role, WebP role); `poster` is the role the public catalog view exposes.
 POSTERS = (
@@ -170,6 +181,26 @@ def write_posters(image: Image.Image, out: Path, frame: int) -> list[Poster]:
     return posters
 
 
+# (block path, recorded sha256) -> first damaged frame index or None. A stuck segment retries
+# every 30 min; each block (about a minute of decoding at 4K) is checked once per process.
+_BLOCK_DAMAGE: dict[tuple[str, str], int | None] = {}
+
+
+def damaged_blocks(metas: list[dict[str, Any]], blocks: list[Path]) -> list[tuple[int, int]]:
+    """(block first frame, segment frame) of every block whose decode fails, first damaged
+    frame per block. Only called after a mezzanine decode failed."""
+    damaged: list[tuple[int, int]] = []
+    for meta, block in zip(metas, blocks, strict=True):
+        first = int(meta["first"])
+        key = (str(block), str(meta["mkv_sha256"]))
+        if key not in _BLOCK_DAMAGE:
+            _BLOCK_DAMAGE[key] = damaged_frame(block, int(meta["last"]) - first)
+        index = _BLOCK_DAMAGE[key]
+        if index is not None:
+            damaged.append((first, first + index))
+    return damaged
+
+
 def prepare(
     renderer: SegmentRenderer,
     *,
@@ -235,39 +266,58 @@ def prepare(
         blocks = renderer.block_paths()
         for meta, block in zip(metas, blocks, strict=True):
             if file_sha256(block) != meta["mkv_sha256"]:
-                raise RuntimeError("Mezzanine block changed on the staging share")
+                raise BlocksChanged("Mezzanine block changed on the staging share")
         concat = concat_list(renderer.blocks_dir, blocks)
         specs = rendition_specs(expected.width, expected.height)
         temporary = [(spec, out / f".tmp-{spec.role}.mp4") for spec in specs]
-        if gaps:
-            # #144: renditions never show a slate; the mezzanine and `gaps` keep them.
-            fill_runs = gapfill.plan(slates)
-            stats = gapfill.Stats()
-            step = job.frame_map.source_step
+        try:
+            if gaps:
+                # #144: renditions never show a slate; the mezzanine and `gaps` keep them.
+                fill_runs = gapfill.plan(slates)
+                stats = gapfill.Stats()
+                step = job.frame_map.source_step
 
-            def span(first: int, last: int) -> tuple[datetime, datetime]:
-                return (
-                    job.starts_at + timedelta(seconds=float(first * step)),
-                    job.starts_at + timedelta(seconds=float(last * step)),
-                )
+                def span(first: int, last: int) -> tuple[datetime, datetime]:
+                    return (
+                        job.starts_at + timedelta(seconds=float(first * step)),
+                        job.starts_at + timedelta(seconds=float(last * step)),
+                    )
 
-            reader = MezzanineReader(concat, expected.width, expected.height)
-            try:
-                encode_renditions(
-                    concat,
-                    job.frames,
-                    temporary,
-                    raw=(expected.width, expected.height),
-                    feed=gapfill.fill(
-                        reader, slates, (expected.height, expected.width), span, stats
-                    ),
+                reader = MezzanineReader(concat, expected.width, expected.height)
+                try:
+                    encode_renditions(
+                        concat,
+                        job.frames,
+                        temporary,
+                        raw=(expected.width, expected.height),
+                        feed=gapfill.fill(
+                            reader, slates, (expected.height, expected.width), span, stats
+                        ),
+                    )
+                finally:
+                    reader.close()
+                for mode, count in (("interpolated", stats.interpolated), ("held", stats.held)):
+                    metrics.FRAMES.labels(job.camera, mode).inc(count)
+            else:
+                encode_renditions(concat, job.frames, temporary)
+        except FFmpegError as error:
+            # Name the damaged block and frame instead of only "the segment does not decode"
+            # (AMC-APPS-10: one frame of one block stalled a whole night). Fixed names and frame
+            # numbers only, never paths or ffmpeg text.
+            damaged = damaged_blocks(metas, blocks)
+            for first, frame in damaged:
+                event(
+                    LOG,
+                    "mezzanine_block_damaged",
+                    logging.ERROR,
+                    camera=job.camera,
+                    block_first_frame=first,
+                    frame=frame,
+                    failed_stage=error.stage,
                 )
-            finally:
-                reader.close()
-            for mode, count in (("interpolated", stats.interpolated), ("held", stats.held)):
-                metrics.FRAMES.labels(job.camera, mode).inc(count)
-        else:
-            encode_renditions(concat, job.frames, temporary)
+            if damaged:
+                raise FFmpegError("mezzanine_block_damaged") from error
+            raise
         timing = None
         for spec, tmp in temporary:
             decoded = validate_rendition(tmp, Expect(job.frames, spec.width, spec.height))
