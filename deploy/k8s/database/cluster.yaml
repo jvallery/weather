@@ -150,3 +150,6 @@ spec:
         # storage-infra#1253: archive to the in-cluster Garage (works with no WAN).
         barmanObjectName: weather-pg-local
         serverName: weather-pg
+        # AMC-SEC-A1 A1-13 step d (D-899): canary of the upstream barman-cloud v0.16.0 sidecar on weather-pg
+        # only (zot mirror of c669259e). Redundant after step e flips the plugin default; removed then (no roll).
+        sidecarImage: registry.vallery.net/jvallery/mirror-ghcr-io-cloudnative-pg-plugin-barman-cloud-sidecar:v0.16.0-c669259e20ed@sha256:c669259e20ed1e11fad821f735c396c19d929985aa05b9544b13ecc8b5a386d0
