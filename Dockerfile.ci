@@ -55,8 +55,16 @@ RUN curl --fail --location https://files.pythonhosted.org/packages/3a/ad/3c2a81d
  && find /tmp/uv-wheel -type f \( -iname 'LICENSE*' -o -iname 'NOTICE*' \) -exec cp {} /usr/share/doc/weather-ci/uv/ \; \
  && rm -rf /tmp/uv.whl /tmp/uv-wheel
 ENV UV_PYTHON_INSTALL_DIR=/opt/weather-python
+# The standalone CPython 3.14.9 seeds pip 26.2.2 into site-packages, and pip's _vendor tree carries setuptools 70.3.0
+# (pkg_resources), msgpack 1.1.2 and urllib3 2.7.0 (fixable HIGH findings; pip 26.3 still vendors setuptools 70.3.0).
+# CI installs only through uv, so pip is removed from the interpreter; the build fails if it is still importable.
 RUN uv python install 3.14.9 \
- && ln -s /opt/weather-python/cpython-3.14.9-linux-x86_64-gnu/bin/python3.14 /usr/local/bin/python3
+ && ln -s /opt/weather-python/cpython-3.14.9-linux-x86_64-gnu/bin/python3.14 /usr/local/bin/python3 \
+ && rm -rf /opt/weather-python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/site-packages/pip \
+           /opt/weather-python/cpython-3.14.9-linux-x86_64-gnu/lib/python3.14/site-packages/pip-*.dist-info \
+ && rm -f /opt/weather-python/cpython-3.14.9-linux-x86_64-gnu/bin/pip /opt/weather-python/cpython-3.14.9-linux-x86_64-gnu/bin/pip3 \
+          /opt/weather-python/cpython-3.14.9-linux-x86_64-gnu/bin/pip3.14 \
+ && ! python3 -c 'import pip' 2>/dev/null
 ENV PATH=/usr/lib/postgresql/16/bin:/opt/ffmpeg/bin:$PATH \
     LD_LIBRARY_PATH=/opt/ffmpeg/lib HOME=/home/weatherci \
     UV_PYTHON=/usr/local/bin/python3 UV_PYTHON_DOWNLOADS=never
