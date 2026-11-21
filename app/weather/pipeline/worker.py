@@ -326,6 +326,9 @@ class Worker:
             # FFmpegError.stage and ValidationError.reason are fixed names (never
             # paths or driver text), so a stuck segment says which step fails.
             detail=getattr(error, "stage", None) or getattr(error, "reason", None),
+            # FFmpegError.cause is a fixed token and .frame a count, never driver text.
+            cause=getattr(error, "cause", None),
+            frame=getattr(error, "frame", None),
             failures=failures,
             retry_seconds=round(delay),
         )
