@@ -24,11 +24,21 @@ RUN mkdir -p /usr/share/doc/weather-ci \
  && groupadd --gid 1001 weatherci \
  && useradd --uid 1001 --gid 1001 --create-home --shell /bin/bash weatherci
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
-COPY --from=node /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
 COPY --from=node /usr/local/LICENSE /usr/share/doc/weather-ci/node-LICENSE
 COPY --from=media_tools /opt/ffmpeg /opt/ffmpeg
-RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+# node 24.22.1 (and every 24.x through 24.22.3) bundles npm 11.19.1, whose own node_modules carry undici 6.28.0 and
+# brace-expansion 5.0.9 (fixable HIGH findings). Replace the bundled npm with npm 11.21.3 (same major; it bundles
+# undici 6.29.1 and brace-expansion 5.0.12), fetched by exact tarball and verified by sha256 (registry sha512 integrity
+# re-checked when the pin was set, 2026-11-21). node itself stays at the engine-strict 24.22.1.
+RUN curl --fail --location https://registry.npmjs.org/npm/-/npm-11.21.3.tgz -o /tmp/npm.tgz \
+ && echo 'ee5fc68e724c4bdba38db9d96d9c661d4e736e4be7001ae44d2fbbaa52159514  /tmp/npm.tgz' | sha256sum -c - \
+ && rm -rf /usr/local/lib/node_modules/npm \
+ && mkdir -p /usr/local/lib/node_modules/npm \
+ && tar -xzf /tmp/npm.tgz -C /usr/local/lib/node_modules/npm --strip-components=1 --no-same-owner \
+ && rm -f /tmp/npm.tgz \
+ && ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
  && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
+ && npm --version | grep -Fx 11.21.3 \
  && npm install --global pnpm@12.15.0 --ignore-scripts --no-audit --no-fund
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 COPY ci/browser/package.json ci/browser/pnpm-lock.yaml ci/browser/.npmrc /opt/weather-browser-tools/
