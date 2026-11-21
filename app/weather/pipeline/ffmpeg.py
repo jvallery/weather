@@ -30,11 +30,42 @@ THREADS = "4"
 
 
 class FFmpegError(RuntimeError):
-    """FFmpeg failed or reported an error; carries a fixed stage name only."""
+    """FFmpeg failed or reported an error; carries a fixed stage name only.
 
-    def __init__(self, stage: str) -> None:
+    `cause` is one fixed token (never a path or driver text) and `frame` the number of
+    frames decoded before the failure, so a stuck segment says why and where it fails."""
+
+    def __init__(self, stage: str, cause: str | None = None, frame: int | None = None) -> None:
         super().__init__(f"FFmpeg {stage} failed")
         self.stage = stage
+        self.cause = cause
+        self.frame = frame
+
+
+# FFmpeg stderr is never logged; a failure is reduced to the first of these fixed tokens.
+_STDERR_CAUSES = (
+    ("input/output error", "io_error"),
+    ("i/o error", "io_error"),
+    ("timed out", "io_timeout"),
+    ("no such file", "missing_file"),
+    ("permission denied", "permission"),
+    ("invalid data found", "invalid_data"),
+    ("corrupt", "corrupt"),
+    ("error while decoding", "decode_error"),
+    ("non-monotonic", "timestamps"),
+    ("impossible to open", "concat_open"),
+)
+
+
+def stderr_cause(text: bytes) -> str:
+    """The fixed token for FFmpeg's stderr: empty, one of _STDERR_CAUSES, or `other`."""
+    lowered = text.decode("utf-8", "replace").lower()
+    if not lowered.strip():
+        return "empty"
+    for needle, token in _STDERR_CAUSES:
+        if needle in lowered:
+            return token
+    return "other"
 
 
 class ValidationError(ValueError):
@@ -412,18 +443,24 @@ class MezzanineReader:
 
     def __iter__(self) -> Iterator[bytes]:
         assert self._process.stdout is not None
+        frames = 0
         try:
             while True:
                 data = self._process.stdout.read(self.frame_bytes)
                 if not data:
                     break
                 if len(data) != self.frame_bytes:
-                    raise FFmpegError("mezzanine_decode")
+                    raise FFmpegError("mezzanine_decode", "short_frame", frames)
+                frames += 1
                 yield data
             code = self._process.wait(timeout=60)
             self._errors.seek(0)
-            if code or self._errors.read().strip():
-                raise FFmpegError("mezzanine_decode")
+            errors = self._errors.read()
+            if code or errors.strip():
+                cause = stderr_cause(errors)
+                if code and cause == "empty":
+                    cause = "exit_status"
+                raise FFmpegError("mezzanine_decode", cause, frames)
         finally:
             self.close()
 
