@@ -129,3 +129,49 @@ def test_a_failed_finalize_backs_off_with_its_stage_and_frees_the_segment(tmp_pa
     assert worker.finalizing == {}
     failures, retry_at = worker.backoff[row.id]
     assert failures == 1 and retry_at > NOW
+
+
+def test_a_changed_block_drops_the_cached_renderer_so_a_repair_reloads(tmp_path: Path) -> None:
+    from weather.pipeline.finalize import BlocksChanged
+
+    worker = _worker(tmp_path)
+    row = _row()
+    worker.renderers[row.id] = _complete()
+
+    async def finalize(
+        segment: schedule.SegmentRow, renderer: Any, now: datetime, progress: list[str]
+    ) -> None:
+        progress[0] = "prepare"
+        raise BlocksChanged("Mezzanine block changed on the staging share")
+
+    worker._finalize = finalize  # type: ignore[method-assign]
+
+    async def scenario() -> None:
+        worker._start_finalize(row, worker.renderers[row.id])
+        await asyncio.gather(*worker.finalizing.values())
+
+    asyncio.run(scenario())
+    assert row.id not in worker.renderers
+    assert worker.backoff[row.id][0] == 1
+
+
+def test_another_failure_keeps_the_cached_renderer(tmp_path: Path) -> None:
+    worker = _worker(tmp_path)
+    row = _row()
+    cached = _complete()
+    worker.renderers[row.id] = cached
+
+    async def finalize(
+        segment: schedule.SegmentRow, renderer: Any, now: datetime, progress: list[str]
+    ) -> None:
+        progress[0] = "publish"
+        raise RuntimeError("killed")
+
+    worker._finalize = finalize  # type: ignore[method-assign]
+
+    async def scenario() -> None:
+        worker._start_finalize(row, cached)
+        await asyncio.gather(*worker.finalizing.values())
+
+    asyncio.run(scenario())
+    assert worker.renderers[row.id] is cached
