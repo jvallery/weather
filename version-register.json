@@ -110,10 +110,10 @@
       "kind": "runtime",
       "installed": {
         "version": "16.16-standard-trixie",
-        "digest": "sha256:0848a2f80eb48d9bff76857ce988a6053b4120e7ecbdc4414e24cb1cd2df0754",
+        "digest": "sha256:c1d2ebeaf7b254264bdb63997270cc9d5e007ba5be4efe6112ae801d1ad68118",
         "image": "registry.vallery.net/jvallery/mirror-ghcr-io-cloudnative-pg-postgresql",
         "source": "deploy/k8s/database/cluster.yaml (CNPG Cluster imageName)",
-        "read_at": "2026-11-18"
+        "read_at": "2026-11-26"
       },
       "upstream": {
         "project": "https://www.postgresql.org/support/versioning/",
