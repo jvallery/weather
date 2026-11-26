@@ -1,10 +1,10 @@
 # Contributing
 
-Agents and maintainers start with [AGENTS.md](AGENTS.md). It covers the definition of done, how to pick ready work and the hazards. Design context is in [docs/architecture.md](docs/architecture.md) and the [simplification record](docs/decisions/2026-10-24-simplification.md). Work items are the GitHub issues; an issue is ready when all of its native "blocked by" issues are closed.
+Agents and maintainers start with [AGENTS.md](AGENTS.md). It covers how to build, deploy and verify a change, and the hazards. Design context is in [docs/architecture.md](docs/architecture.md) and the [simplification record](docs/decisions/2026-10-24-simplification.md). Work items are the GitHub issues; an issue is ready when all of its native "blocked by" issues are closed.
 
 Every change should:
 
-- name its WX issue key and requirement IDs;
+- name its issue number;
 - preserve the fixed contracts: time model, raw telemetry, privacy and embargo, immutable publication, and recovery;
 - be the smallest complete change, validated with the cheapest reliable check.
 
