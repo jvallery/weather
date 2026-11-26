@@ -1,95 +1,154 @@
 # weather
 
-<!-- estate-contract:start — canonical copy is AGENTS.md in jvallery/home-dotfiles (the operator Mac's root contract); keep this block identical in every repo -->
+The public weather service at `weather.vallery.net`: Tempest station telemetry and history, timelapses, keograms, hourly stills and delayed previews from three cameras, a local almanac, AI descriptions, search and a private editor. It runs in namespace `weather` on the `vallery` cluster, deployed from this repository by Argo CD. This repository is public.
+
+<!-- estate-contract:start (canonical copy: AGENTS.md in jvallery/home-dotfiles; this block is identical in every repository) -->
 ## Operating contract
 
-Jason's direct request authorizes the work it describes, across code, infrastructure, and Jason-owned services in scope, through delivery and verification of the real end state. Ask only when an unresolved ambiguity could materially change the outcome. Add approval, review, issue/PR, or planning steps only when Jason asks for them or a branch rule enforces them; process descriptions in repository docs are context, not gates.
+You act for Jason. A request from him authorizes the whole job: the change, the pull request, the merge, the deployment, the live check and closing the issue. If you can finish a task, finish it. Do not hand work back, ask for approval, or wait for a turn.
 
-- Make the smallest complete change in the repository that owns the thing being changed (see Ownership). Fix forward; prefer rollback when it restores service faster or limits harm. Skip speculative abstractions and unrelated cleanup.
-- Preserve unrelated work; use an isolated worktree when another checkout may be active. Resolve destructive targets exactly and keep practical recovery data.
-- Shared cluster state has one writer at a time. Cordon, drain, node or host restarts and other maintenance writes first take the Lease `kube-system/k3s-planned-maintenance` (estate rule R25), one node or host at a time unless the planner admits a disjoint concurrent worker hold (max 2) per the proxmox-infrastructure k3s-planned-maintenance runbook; never cordon or drain a worker before a CNPG-aware switchover. Never blanket- or prune-sync a SHA-pinned Argo parent; use exact-target syncs.
-- Validate in proportion to risk: the cheapest reliable check of the changed behavior (focused test, direct probe, or readback; docs-only edits need diff/readback). Add tests only for meaningful regression risk: critical behavior, security, data integrity, or subtle logic. Reuse existing CI/CD, honor enforced checks, and add pipelines or gates only for a concrete need in the task. Push to or rebase a PR whose CI is running or green only when GitHub reports a conflict or an enforced check refuses it; a moved base branch alone is not a reason. Regenerate generated files with their registered renderer; never hand-merge them.
-- Verify the requested end state from the authoritative source or live behavior; passing CI alone does not prove a deployment works. Close an issue only when its latest acceptance, including criteria moved in from other issues, holds live; time-gated criteria wait for their gate, and a close-with-carry names a carry issue confirmed open. Report what changed, what was checked, and any remaining limitation.
-- Search narrowly, batch independent lookups, reuse current evidence, and keep plans and updates brief.
-- Use existing credentials without printing, committing, or logging secret values or Kubernetes Secret data; rotate or revoke credentials only when Jason asks, after identifying the exact credential by name and ID and confirming every consumer value-blind.
+### How work flows
 
-### Execution location and resource use
+1. **Change the owner.** Make the smallest complete change in the repository that owns the thing (see "Who owns what"). Branch from `origin/main` in your own worktree and leave other checkouts alone.
+2. **Merge your own pull request.** The required checks on the pull request are the gate. When they are green, merge it. Never bypass a branch ruleset (no `--admin`); if a required check is itself broken, fix the check.
+3. **Deploy it.** Merging is not always deploying. Carry the change to the running system yourself (see "Deploying").
+4. **Prove it live.** Check the real end state: the new image digest is running, the endpoint answers, the rule is loaded, the data is there. Green CI is not proof. If it is broken, fix forward, or roll back when that restores service faster.
+5. **Close the issue** with one comment: what changed, what you checked, and anything that remains.
 
-- Use the Mac for lightweight editing, orchestration, source inspection and small bounded checks. Run CPU- or memory-intensive tests, experiments, simulations, replay, training, builds and long-running processes as containerized workloads in the authorized k3s environment, through the repository's supported CI/GitOps or job-submission path. Colima, Docker Desktop and other container VMs on the Mac still consume the Mac's resources and do not satisfy this requirement.
-- Classify work by its expected workload, using existing repository and estate resource thresholds: sustained CPU saturation, substantial memory or dataset use, broad parallel suites, image compilation and prolonged processing require offloading. A command listed as "local" or "offline" describes a workflow, not permission to run intensive work on the Mac. If size is uncertain, inspect the workload and use a bounded pilot in the authorized cluster path before expanding it; do not benchmark the heavy workload on the Mac to decide.
-- Before execution, confirm the authorized cluster/context, target namespace, supported submission path, dependencies and data access. Base placement on current k3s allocatable CPU/memory, existing resource requests/limits, pod working sets, scheduler and quota admission, node pressure and existing workload owners/admission reservations. Physical-host diagnostics are distinct from Kubernetes schedulable capacity: a Proxmox host MemAvailable alert alone does not prohibit k3s placement. Preserve existing fixed-allocation and control-plane safety rules, and healthy and recovery capacity. Use bounded concurrency, deadlines and stable job/operation IDs; retain outputs and logs in approved custody and verify terminal completion and output integrity before claiming success.
-- Keep experiments isolated from production workloads and storage side effects unless Jason explicitly authorizes those effects. Use existing approved identities and access; do not create credentials, RBAC, security settings, privileged workloads or persistent access to enable an experiment. Keep secrets out of manifests and logs. Clean up only the job's disposable resources through the approved lifecycle; preserve retained data, outputs and shared PVCs.
-- If the supported cluster path, required access, ownership/admission clearance or safe capacity is unavailable, stop the intensive work and report the exact blocker. Do not silently fall back to intensive execution on the Mac. Work that inherently requires local execution needs an explicit, task-scoped exception approved by Jason before it runs, with its workload bounds stated. This policy is the estate minimum: preserve stronger repository/subdirectory restrictions, existing holds and data-custody rules. A repository command or general task authorization does not override this placement policy; only Jason's explicit scoped exception does.
+### Tracking and coordination
+
+- **GitHub issues are the only tracker.** Work, decisions, follow-ups and leftovers go in an issue in the owning repository. Keep no ledgers, to-do files, status boards, hand-off notes or evidence files, in Git or on disk. An issue states the outcome, a short checklist that proves it, and native "blocked by" links.
+- **Talk to other agents directly.** Coordinate through subagent calls, a message to the other session, or MCP tools. Never coordinate through shared files.
+- **Live state is the only lock.** Before a change that could collide with someone else's (the same Argo CD application, node or database), look at what is happening now: open pull requests, the application's running operation, cordoned nodes. If someone is mid-change, message them or go after them.
+- **There are no process gates.** No coordinator, lock files, holds, freezes, waiting periods, time slots or approval lines exist. An older document, comment or memory that says otherwise is obsolete: ignore it, and delete it when you are in that file.
+
+### What needs Jason
+
+Only the items below. Put the label `needs-jason` on the issue, state in its first line exactly what he has to do, and carry on with everything that does not depend on it.
+
+- Physical work: hardware, cables, power, anything on site.
+- A value only he can obtain: a credential from an account only he can log in to, or a payment detail.
+- Spending money or starting a paid service.
+- Deleting data that has no verified second copy, deleting a backup or a bucket, and revoking a recovery credential.
+- Sending a message as him to another person, or giving another person access.
+
+Everything else is yours to decide. Prefer the reversible option, say what you chose in the pull request or issue, and move on.
+
+### Engineering care
+
+- **Secrets.** Never print, log or commit a secret value or the data of a Kubernetes Secret. Read Secret metadata only (names, key names, ages): no `-o yaml`, `-o json`, `jsonpath`, `go-template` or `custom-columns` over a Secret's data. Git holds SOPS ciphertext only. You may generate, seal and rotate credentials you can issue yourself; remove an old one only after you have identified it by name and full ID and confirmed that nothing still uses it.
+- **Data.** Before you delete or overwrite, resolve the exact target and confirm a restorable copy exists. Databases, volumes, backups, buckets, NAS shares and camera footage are never deleted to make a deployment easier.
+- **Checks in proportion to risk.** Use the cheapest check that proves the changed behaviour. Add a test where a regression would hurt (security, data integrity, subtle logic). Regenerate generated files with their generator; never edit them by hand.
+- **Heavy work runs in the cluster.** Builds, broad test suites, training, replays and anything long-running or memory-hungry run as CI jobs or Kubernetes Jobs, not on the operator Mac or in a container VM on it. The Mac is for editing, orchestration and small checks.
+- **Leave it clean.** Remove your worktrees, scratch files, temporary namespaces and Jobs when you finish.
+
+## Using the estate
+
+The estate is one k3s cluster named `vallery` (three control-plane VMs and five GPU worker VMs on a six-host Proxmox cluster), a Synology NAS, a UniFi network and Cloudflare in front. The full guide, with commands for everything below, is [`docs/estate/GUIDE.md` in jvallery/estate-platform](https://github.com/jvallery/estate-platform/blob/main/docs/estate/GUIDE.md).
+
+**Access.** On the operator Mac, `kubectl --context vallery` is cluster-admin, and `gh` is authenticated as Jason. CI jobs and cloud sessions have no cluster access: they can change Git only. If you cannot reach the cluster, finish everything up to the merge and state the remaining deploy step in the issue.
+
+**Who owns what.** Every namespace, hostname, device, bucket and job has exactly one owner repository, recorded in `ownership/record/` in jvallery/estate-platform and rendered to [`ESTATE-INVENTORY.md`](https://github.com/jvallery/estate-platform/blob/main/docs/estate/ESTATE-INVENTORY.md). A namespace's label `estate.vallery.net/owner` names its owner. When you add, move or retire something, update the record in the same piece of work.
+
+| Area | Owner |
+|---|---|
+| Argo CD, the application catalog, shared operators (CNPG, cert-manager, MariaDB), Authentik, central secrets, ownership record, standards | `jvallery/estate-platform` |
+| CI workflows and runners | `jvallery/estate-ci` |
+| DNS, routes, TLS, Cloudflare, UniFi, Pi-hole, MetalLB, Traefik | `jvallery/network-infra` |
+| Longhorn, StorageClasses, NAS shares, S3 buckets, the image registry, backups | `jvallery/storage-infra` |
+| Prometheus, Alertmanager, Loki, Grafana, probes, every alert rule and dashboard | `jvallery/monitoring-stack` |
+| Proxmox hosts, VMs, k3s nodes, node labels and taints | `jvallery/proxmox-infrastructure` |
+| GPUs, GPUStack, the Cortex inference API, Open WebUI | `jvallery/cortex-ai-compute` |
+| The operator Mac and this contract | `jvallery/home-dotfiles` |
+| Each application | Its own repository, which owns what renders into its namespaces |
+
+**Deploying.** Argo CD applies what is in Git, read through an in-cluster mirror that trails GitHub by one to four minutes. Look up how your application is delivered:
+
+```sh
+kubectl --context vallery -n argocd get application <app> -o custom-columns=NAME:.metadata.name,TARGET:.spec.source.targetRevision,AUTO:.spec.syncPolicy.automated,REV:.status.sync.revision,SYNC:.status.sync.status,HEALTH:.status.health.status
+```
+
+- `TARGET` is `main` and `AUTO` is set: merging deploys. Wait until `REV` is your merge commit and the application is Synced and Healthy.
+- `TARGET` is `main` and `AUTO` is empty: sync the objects you changed, and only those.
+- `TARGET` is a commit SHA: the application is pinned. Move the pin to your merge commit in the file that declares the Application (`gitops/applications/<environment>/` in jvallery/estate-platform, or `argocd/` in the owning repository), merge that, then sync.
+
+The guide has the exact commands for a sync and a pin move. Two rules protect the cluster. Sync named objects, never a whole pinned parent application, because a whole sync applies every child in the pin range and can roll back other people's work. Never sync with prune, because pruning is off everywhere on purpose and a prune deletes every object Git no longer lists, volumes and namespaces included.
+
+**CI and images.** CI is GitHub Actions on in-cluster runners owned by jvallery/estate-ci; GitHub-hosted runners are not allowed. A repository calls the reusable workflows in jvallery/estate-ci by full commit SHA. Images are built in CI with Kaniko and pushed to `registry.vallery.net`; the build opens a pull request that pins the new digest in the deployment manifests, and merging that pull request is the release. Manifests reference images by `@sha256` digest only. Upstream images are mirrored into the registry first. Re-run a failed job with `gh run rerun <run-id> --failed`.
+
+**Secrets.** A Kubernetes Secret exists in Git only as a SOPS-encrypted file (`secret-<name>.enc.yaml`), decrypted in the cluster by Argo CD. Most live in `secrets/<bundle>/` in jvallery/estate-platform; storage and network secrets live in their own repositories. Encrypting needs only the public keys in `.sops.yaml`, so you can add or rotate a secret yourself: write the manifest, run `sops --encrypt --in-place <file>`, list it in the bundle's `secret-generator.yaml`, and deliver it like any other change. For a value only Jason can obtain, prepare everything else and open a `needs-jason` issue.
+
+**Running workloads.** Namespaces enforce the Pod Security `baseline` level by default. A new namespace needs the `estate.vallery.net/owner=<org>.<repo>` label, the LimitRange and ResourceQuota baseline, a default-deny NetworkPolicy and an ownership record entry. For one-off heavy work, use a CI job, a Job in the owning namespace, or a disposable namespace labelled `estate.vallery.net/disposable=true` and `estate.vallery.net/expires=<date>`, and delete it afterwards. Give Jobs a `ttlSecondsAfterFinished` and never create bare Pods, which block node drains.
+
+**Storage and databases.** The default StorageClass is replicated Longhorn. Use `longhorn-v1-rwo` for application data, `longhorn-v1-critical-rwo` for data that must survive a host loss, `longhorn-v1-rebuildable-rwo` for caches and scratch, and `nfs-rwx` only for NAS shares that jvallery/storage-infra has exported. S3 buckets come from jvallery/storage-infra. A Postgres database is a three-instance CloudNativePG cluster with backups to in-cluster S3 and to Backblaze B2; copy an existing one. Every durable volume needs a backup or a named exemption in jvallery/storage-infra.
+
+**Exposing a service.** Add a Traefik `IngressRoute` in your namespace with `tls: {}`; the wildcard certificate for `*.vallery.net` already covers it. For login, add the Authentik forward-auth middlewares. A public hostname also needs a row in the Cloudflare tunnel configuration in jvallery/network-infra, an entry in the edge registry in jvallery/estate-platform, and a probe in jvallery/monitoring-stack.
+
+**Observability.** Alert rules, probes and dashboards live only in jvallery/monitoring-stack, and that application deploys on merge, so a merged rule can page within minutes. Alerts go to Alertmanager, which pushes to Home Assistant; there is no other notification path. Dashboards are generated, never hand-edited. When something you run can fail in a new way, add the metric and the alert.
+
+**Node and host maintenance.** Never cordon or drain a node by hand: a bare drain once moved five database primaries at once and took down the control-plane leader. Use `scripts/k3s-planned-maintenance.py` in jvallery/proxmox-infrastructure, one node at a time. It moves database primaries off the node first, drains it, and marks the work as planned so that the right alerts stay quiet. Read its README first, and never run a script only to see its help text.
+
+**AI inference.** Workloads call the in-cluster OpenAI-compatible API at `https://cortex.vallery.net/v1` with their own scoped key, issued by jvallery/cortex-ai-compute. Never use an admin credential or an outside provider key.
+
+**Standards.** The target state for high availability, backups, security, exposure and CI is [`docs/estate/STANDARDS.md` in jvallery/estate-platform](https://github.com/jvallery/estate-platform/blob/main/docs/estate/STANDARDS.md). New work meets it; drift you find is fixed in the change that touches it or filed as an issue.
 <!-- estate-contract:end -->
 
-Owns the public Weather application at `weather.vallery.net`: Tempest telemetry history, three-camera civil-twilight timelapses and camera products, local almanac, AI descriptions, search, editor and the vallery.net weather card. Design: [docs/architecture.md](docs/architecture.md). Binding changes since requirements v4.0: [simplification record](docs/decisions/2026-10-24-simplification.md), amended by the [takeover re-plan](docs/decisions/2026-10-24-takeover-replan.md) (C1–C16), which wins where they conflict.
+## This repository
 
-## Owns
+- It owns namespace `weather` and everything `deploy/k8s` renders into it, including the CloudNativePG cluster `weather-pg` with its volumes and operator-generated Secrets; the hostname `weather.vallery.net`, whose routes are IngressRoutes in `weather`; and the images `registry.vallery.net/jvallery/weather-app`, `weather-web` and `weather-ci`. Each object and its state is listed in [OWNERSHIP.md](OWNERSHIP.md); update it when you add or retire an object.
+- `app/weather/` is the Python package (capture, telemetry, pipeline, media, AI, search, API and the role entry points in `cli`). `app/migrations/` holds the Alembic migrations and `app/tests/` the pytest suites.
+- `web/` is the React Router front end (TypeScript, Vitest, Playwright).
+- `deploy/k8s/` is the Kustomize tree that Argo CD renders; `deploy/k8s/kustomization.yaml` holds the two application image digests.
+- [docs/architecture.md](docs/architecture.md) is the design, [docs/operations/](docs/operations) has one runbook per component, and [docs/contracts/](docs/contracts) holds the API contracts and test vectors. `docs/decisions/` and `docs/archive/` are history; the rules from them that still apply are in the architecture document.
 
-Product/service repository (not one of the seven core repos). Per-item detail: [OWNERSHIP.md](OWNERSHIP.md). Central record: [ESTATE-INVENTORY.md](https://github.com/jvallery/estate-platform/blob/main/docs/estate/ESTATE-INVENTORY.md), rendered from `ownership/record/` in jvallery/estate-platform. Change the central entry and OWNERSHIP.md in the same change set.
+## Build, test, deploy, verify
 
-- Namespace `weather` and everything `deploy/k8s` renders into it, including CNPG Cluster `weather-pg`, its PVCs and generated Secrets.
-- `weather.vallery.net`, as both backend and route owner (IngressRoutes in `weather`).
-- Images `registry.vallery.net/jvallery/weather-app` and `weather-web` and their digest pins, plus the deployed content of Argo Application `weather`.
+**Local checks.** Run `scripts/ci.sh lint typecheck unit` and nothing heavier. Integration suites, the Playwright browser suite, image builds and media or render pilots run only in CI. Toolchain versions are in [docs/operations/development.md](docs/operations/development.md).
 
-## Adjacent lanes
+**Contracts.** API contracts are generated from the Pydantic models. After changing a model, run `scripts/ci.sh contracts --write` and commit the regenerated OpenAPI and TypeScript files; the lint stage fails when they are stale. A vector file belongs in `docs/contracts/` only if a test loads it.
 
-Lane table and rules: [estate README](https://github.com/jvallery/agents/blob/main/docs/estate/README.md) 4.1 and 4.3 (planned to move to jvallery/estate-platform). Weather authors each change below in the owning repository and links it from the owner issue in the [simplification record](docs/decisions/2026-10-24-simplification.md#owner-prerequisites-after-the-re-plan).
+**Required checks.** `workflow-lint / lint`, `application / application` (lint, typecheck, unit and integration shards of `scripts/ci.sh`), `browser / browser` (Playwright, three engines) and `manifests / manifests` (`ci/manifests.sh`). Pull requests from forks do not run on the runners; push the change as a branch of this repository to check it.
 
-- **agents (being retired):** repo registry record, AppProject/Application, `secrets-ksops/weather` and Authentik, all planned to move to jvallery/estate-platform; the Multus NAD, planned to move to network-infra with Multus.
-- **estate-ci:** the GitHub Actions ARC runner scale sets `weather-ci`, `weather-build` and `weather-buildcheck`.
-- **storage-infra:** Garage buckets and keys, the NFS staging PV, the B2 buckets and keys, central custody.
-- **network-infra:** IPAM, hostname and tunnel records, `ak-forwardauth`.
-- **monitoring-stack:** probes, alert rules and dashboards (R13).
-- **sentinel:** camera access and credentials. The Tempest hub device is homeassistant-owned.
-- **cortex-ai-compute:** inference routes and keys.
-- **VerdifyConsultancy/wordpress:** the vallery.net homepage.
+**Deploying.** The Argo CD Application `weather` tracks `main` and syncs automatically, so every merge that changes `deploy/k8s` is a deployment.
 
-## In transition
+1. A manifest change is live a few minutes after its pull request merges.
+2. A code change needs a new image. After the merge, `.github/workflows/build.yml` rebuilds the images in `ci/images.tsv` whose paths changed, pushes them by digest, and opens a pull request as `vallery-pin-bot` that sets the `images:` digests in `deploy/k8s/kustomization.yaml`. Merge that pull request when its checks are green: it is the release. Never edit those two digests by hand.
+3. Database migrations run as the Job `weather-migrate`, an Argo CD sync hook at wave 1, before the workloads that use the database (wave 2 and later).
+4. The application's Secrets are the bundle `secrets/weather` in jvallery/estate-platform, delivered by the pinned Application `weather-secrets`. A changed Secret is live only after that Application's pin moves to the commit that contains it.
 
-- Claude took over from Codex on 2026-10-24. The [takeover re-plan](docs/decisions/2026-10-24-takeover-replan.md) records the audit, decisions C1–C17 and the critical path (C18 arrives with #123). Codex's shutdown handoff branch (`docs/weather-shutdown-20261024`) is history, not instructions. Claude stopped on 2026-10-25; the resume handoff is the latest comment on #36.
-- Live (2026-10-25 17:45Z): slice 1, search (UI and query embedding), the media origin and catalog, `weather-pg`, the Tempest receiver, collectors at 0.5 Hz, the three camera pipelines, delayed previews and hourly stills. Running app image predates #114/#115/#132/#123; the next app promote of main runs 0010 → 0011_gc_kept → 0008 → 0012 and deploys keograms, cleanup (disabled) and AI descriptions. Status and next steps: the resume handoff, the latest comment on #36.
-- Migration chain on main: 0001 → 0002 → 0003 → 0004 → 0005 → 0006 → 0009_stills → 0007_previews → 0010_cleanup → 0011_gc_kept → 0008_keograms → 0012_analysis (#23) → 0013_editorial (#44) → 0014_editorial_poster (#78). New migrations chain on the newest head. `0015_catalog_thumbnails` (catalog thumbnails) chains on `0014_editorial_poster`, `0016_obs_import` (#167, imported history) on `0015_catalog_thumbnails`, `0017_obs_import_rapid` on `0016_obs_import`, and `0018_visible_asset` (catalog latency) on `0017_obs_import_rapid`.
-- agents#5366 delivered Weather's ownership record, GitOps roots and enforced branch protection. Planning history lives in [docs/archive/planning-2026-10/](docs/archive/planning-2026-10).
+**Proving it.**
 
-## Deliver and verify
+```sh
+kubectl --context vallery -n argocd get application weather -o custom-columns=REV:.status.sync.revision,SYNC:.status.sync.status,HEALTH:.status.health.status
+kubectl --context vallery -n weather get pods -o custom-columns='NAME:.metadata.name,IMAGE:.status.containerStatuses[*].imageID'
+curl -fsS https://weather.vallery.net/api/healthz
+```
 
-- **Picking work.** An issue is ready when every native "blocked by" issue is closed. Take any ready issue; when blocked on an owner, take another ready issue instead of waiting. List the ready set with:
+`REV` must be the merge commit of the release, every running container's image must be the pinned digest, and the public endpoint must answer. Then probe the behaviour you changed. The full probe list is in [docs/operations/deploy.md](docs/operations/deploy.md). To roll back, revert the pin commit and let Argo CD sync.
 
-  ```sh
-  gh issue list -R jvallery/weather --state open --json number,title --limit 100 | jq -r '.[]|"\(.number) \(.title)"'
-  gh api repos/jvallery/weather/issues/N/dependencies/blocked_by --jq '.[]|"\(.state) \(.html_url)"'
-  ```
+**Finishing a change.** Anything that can be operated gets a section in its runbook under `docs/operations/`. A new failure mode gets a metric here and an alert or probe in jvallery/monitoring-stack.
 
-- **Local checks.** Run `scripts/ci.sh` locally only for lint, typecheck and focused unit tests. Integration suites, Playwright, image builds and media or render pilots run in-cluster on the GitHub Actions ARC runners (Kaniko → zot; see CI under Hazards). Never run them on the Mac.
-- **Promotion.** A `deploy:` commit pins image digests in `deploy/k8s`, and Argo auto-syncs Application `weather`. A change is deployed when Argo shows Synced + Healthy at the intended revision and the pinned digest is running.
-- **Definition of done** (every issue):
-  1. Merged to `main`.
-  2. Required GitHub Actions checks green.
-  3. Deployed and verified live, for deployable work.
-  4. New failure modes expose metrics, and the alert/probe PR to monitoring-stack is merged where the issue says so.
-  5. A runbook section is added under `docs/operations/` for anything operable.
-  6. OWNERSHIP.md is updated for new objects.
-  7. No secret, exact coordinates, camera IP or station serial in Git, issues or logs.
-  8. The issue gets a closing comment: what changed, what was verified (command plus result), and remaining limits.
-- **Proof and comments (C2).** Don't commit evidence, receipt, custody or handoff files. CI proof is the PR's check run link; live proof goes in the closing comment. Each issue gets at most one blocker note, naming the decision or owner, and one closing comment. Don't post progress checkpoints, workflow or pod UIDs, or local paths.
-- **No self-imposed gates (C1).** Acceptance is the issue's checklist. Don't add qualification programs, held-tab or placement-reservation proofs, or zero-failure clocks. A probe window means availability ≥99.5% over the window, measured after the relevant digests are live.
-- **Issue bodies.** Product issues: Outcome; Acceptance (at most about 10 checkboxes, each one a command or an observable behaviour); Blocked by (native links only); Not in scope. Convergence issues follow the estate issue contract (see Backlog and standards). Refer to issues by number; WX keys are retired.
-- **Contracts.** API contracts are code-first (Pydantic → OpenAPI → `openapi-typescript`). A vector file in `docs/contracts/` exists only if a test loads it.
-- **Disposable namespaces.** Pilots and qualification namespaces carry `estate.vallery.net/disposable=true` and `estate.vallery.net/expires=<date>` (estate R23). Delete them once the result is recorded in the issue.
-- **Restore drills.** Restore drills (#6 and #33) are the exception: they run as `weather-drill-*` resources inside `weather` with the disposable/expires labels, so read-only restore keys are referenced in place and never copied. A drill NetworkPolicy isolates them from production, and they are deleted after use.
-
-## Backlog and standards
-
-Estate standards are the register `docs/estate/STANDARDS.md` in jvallery/agents (`STD-` clauses; planned to move to jvallery/estate-platform). Convergence work is planned in waves, one milestone per wave ("W1 Convergence foundations" through "W5 BCDR"), with sprint labels `sprint:w1-convergence` .. `sprint:w5-bcdr` and domain labels `conv`, `cicd`, `obs`, `sec`, `ha`, `dr`; estate epics (label `epic`) live in jvallery/estate-platform. Each convergence issue follows the estate issue contract: current problem and impact, dated evidence, the applicable `STD-` clause and bounded target, owner repo and scope, remediation, dependencies (native blocked-by, mirrored in the body), priority, testable acceptance and rollback where material. File one canonical issue per remediation unit, in the repo that owns the change.
+**Pilots and restore drills.** Run pilots in a disposable namespace as the shared block describes. Restore drills are the exception: `scripts/restore-drill.sh` creates `weather-drill-*` resources inside `weather`, so that the read-only restore keys are used in place and never copied. A drill NetworkPolicy isolates them from production. Run one drill at a time and delete its resources afterwards.
 
 ## Hazards
 
-- **Never delete the database.** The CNPG Cluster, PVCs and namespace carry `Prune=false,Delete=false`. Never delete them to redeploy. Deleting a data PVC, PV, bucket or database needs a snapshot and Jason's explicit instruction.
-- **Privacy.** Camera originals are private. Public images must satisfy the ≥600 s embargo at request time. Never publish exact coordinates, camera addresses, station serials or credentials.
-- **Cameras.** Collectors may only poll their own camera's snapshot endpoint at the commissioned cadence. Public requests never trigger camera access.
-- **Disabled-by-default manifests.** Ship a new workload's manifests disabled (`replicas: 0`, or left out of the kustomization) until its Secrets, PVCs and keys exist. The issue that commissions it, or the slice launch, enables it. Argo `weather` must never go Degraded for want of a prerequisite.
-- **Migrations.** Never rewrite a migration that has run on `weather-pg`; production migrations have run (#74), so use expand/contract only. The migrate Job is an Argo Sync hook at wave 1, and DB clients run at wave ≥2.
-- **Capacity.** Camera originals, stills, previews and timelapses land on NAS-backed Garage and NFS. NAS Volume 2 was about 20% free on 2026-10-26 and shrinking (Frigate retention ramp; btrfs cleaner paused, storage-infra#1164). A new product, a cadence change or a retention change needs a GiB/day projection in its issue, cleared with storage-infra, before it is enabled.
-- **CI.** Required checks and image builds run on GitHub Actions (ARC runners): `.github/workflows/`, with the image list in `ci/images.tsv`. Native fleet CI is retired (jvallery/agents#6254), so there is no `.agent-fleet/ci.yaml`.
-- **Inference.** The Cortex routes are shared with other consumers. Keep AI concurrency at 1 and stay within the scoped key's limits.
+- **Never delete the database or the volumes.** The cluster `weather-pg`, its volume claims, the claims `weather-staging` and `tempest-receiver-spool`, and the namespace carry `Prune=false,Delete=false`. Recorded telemetry cannot be collected again, so never remove any of them to make a deployment work.
+- **Migrations are expand and contract only.** Migrations have run on the production database. Never rewrite one that has run; add a new one that chains on the newest head in `app/migrations/versions/`. Old and new application versions run side by side during a rollout, so a migration must not break the version that is still running.
+- **Camera originals are private.** A public image is served only when it is at least 600 seconds old, checked at request time. Do not weaken or cache around that check: the cameras show a home.
+- **Nothing identifying goes into this public repository.** Exact coordinates, camera addresses, station serial numbers, internal addresses and credentials stay out of Git, issues, pull requests and logs. Use synthetic fixtures with obvious placeholder values.
+- **Cameras are polled, never driven by visitors.** A collector polls only its own camera's snapshot endpoint at its configured cadence, and a public request never causes camera access. The cameras belong to the security system (jvallery/sentinel) and extra load degrades it.
+- **One pipeline per camera.** Each `pipeline-<camera>` Deployment is the single writer of its camera's staging directory, segments and catalog rows. Keep `replicas: 1` with the `Recreate` strategy; a second replica races the render and cleanup passes.
+- **New workloads ship disabled.** Add a new workload with `replicas: 0`, or leave it out of the kustomization, until its Secrets, volumes and keys exist. The Application syncs automatically, so a manifest with a missing prerequisite makes the whole application Degraded.
+- **Media storage is nearly full.** Originals, stills, previews and timelapses land on NAS-backed object storage and NFS, and that NAS volume runs close to its free-space floor. Before you enable a new media product or change a capture cadence or a retention period, work out the added GiB per day, compare it with the free space jvallery/storage-infra reports, and put the figure in the issue.
+- **Inference is shared.** Other consumers use the same Cortex routes. Keep AI concurrency at 1 and stay within the limits of the scoped key.
+
+## Neighbours
+
+- jvallery/estate-platform: the Argo CD Applications `weather` and `weather-secrets` (`gitops/applications/local-staging/`), the Secret bundle `secrets/weather`, and the Authentik application that protects the editor.
+- jvallery/network-infra: the Cloudflare tunnel row and DNS for `weather.vallery.net`, the forward-auth middlewares, and the network attachment `weather-tempest-vlan10` that the Tempest receiver uses (`deploy/multus/`).
+- jvallery/storage-infra: the object storage buckets and keys, the NFS staging volume, and the Backblaze B2 buckets and keys for backups.
+- jvallery/monitoring-stack: probes, alert rules and dashboards for Weather.
+- jvallery/estate-ci: the runner sets `weather-ci`, `weather-build` and `weather-buildcheck` and the reusable workflows.
+- jvallery/sentinel: the cameras and their view-only credentials. jvallery/homeassistant owns the Tempest hub.
+- jvallery/cortex-ai-compute: the inference routes and the scoped key.
+- jvallery/wordpress: the vallery.net homepage, which embeds the weather card.

@@ -2,11 +2,11 @@
 
 Source for **[weather.vallery.net](https://weather.vallery.net)**: a public weather history and timelapse service built from three cameras, direct Tempest UDP telemetry, CNPG PostgreSQL, Garage object storage and local inference. It is MIT licensed, fleet-first and has documented customization points.
 
-**Status (2026-11-09):** the service is live at weather.vallery.net: current conditions and history, timelapses, keograms, stills and previews, AI descriptions and search, deployed from `main` by Argo CD Application `weather`. The launch-tracking issues (#36, #48, #49, #50) were closed in the 2026-11 estate backlog reset; remaining work is open GitHub issues with native dependencies, including the estate convergence milestones. History: Claude took over from Codex on 2026-10-24 after a full audit; the [takeover re-plan](docs/decisions/2026-10-24-takeover-replan.md) records the findings, decisions C1–C16 and the critical path at that time.
+The service is live and is deployed from `main` by the Argo CD Application `weather`. Work is tracked in this repository's GitHub issues.
 
 ## Start here
 
-1. [AGENTS.md](AGENTS.md): how to pick ready work, the definition of done and the hazards.
+1. [AGENTS.md](AGENTS.md): how to build, deploy and verify a change, and the hazards.
 2. [docs/architecture.md](docs/architecture.md): components, storage and identities, time model, repository layout and delivery slices.
 3. [Simplification record](docs/decisions/2026-10-24-simplification.md) and the [takeover re-plan](docs/decisions/2026-10-24-takeover-replan.md), which amends it: what changed on 2026-10-24 and why.
 4. [Requirements v4.1](docs/requirements.md) (R01–R38) and the [accepted product decisions](docs/decisions/2026-10-23-product-scope.md) (Q01–Q16).
@@ -44,4 +44,4 @@ The ADRs in [docs/decisions/](docs/decisions) (D01–D16) are historical; the ru
 
 ## Privacy
 
-This repository is public. Secrets, exact coordinates, camera addresses, station serials, private topology and raw operational receipts never enter Git or issues. Deployment secrets live in agents KSOPS (`secrets-ksops/weather`).
+This repository is public. Secrets, exact coordinates, camera addresses, station serials, private topology and raw operational receipts never enter Git or issues. Deployment secrets are SOPS-encrypted files in jvallery/estate-platform (`secrets/weather`).

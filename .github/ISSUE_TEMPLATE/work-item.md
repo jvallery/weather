@@ -1,25 +1,14 @@
 ---
 name: Work item
-about: An implementation task with verifiable acceptance
-title: "WX-XX: "
+about: A piece of work with a checkable outcome
 ---
-
-> **WX-XX** · slice label · [architecture](https://github.com/jvallery/weather/blob/main/docs/architecture.md)
 
 ## Outcome
 
-## Scope
-
-## Not in scope
-
 ## Acceptance
 - [ ] ...
-- [ ] Common definition of done in AGENTS.md
 
-## Dependencies
-Blocked by (native): ...  Unblocks: ...
+## Blocked by
+Native "blocked by" links only.
 
-## References
-Requirement IDs, docs, related issues.
-
-## Estate standards
+## Notes
