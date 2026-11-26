@@ -114,7 +114,7 @@ The guide has the exact commands for a sync and a pin move. Two rules protect th
 1. A manifest change is live a few minutes after its pull request merges.
 2. A code change needs a new image. After the merge, `.github/workflows/build.yml` rebuilds the images in `ci/images.tsv` whose paths changed, pushes them by digest, and opens a pull request as `vallery-pin-bot` that sets the `images:` digests in `deploy/k8s/kustomization.yaml`. Merge that pull request when its checks are green: it is the release. Never edit those two digests by hand.
 3. Database migrations run as the Job `weather-migrate`, an Argo CD sync hook at wave 1, before the workloads that use the database (wave 2 and later).
-4. The application's Secrets are the bundle `secrets/weather` in jvallery/estate-platform, delivered by the pinned Application `weather-secrets`. A changed Secret is live only after that Application's pin moves to the commit that contains it.
+4. The application's Secrets are the bundle `secrets/weather` in jvallery/estate-platform, delivered by the Application `weather-secrets`, which tracks `main` and syncs automatically. A changed Secret is live a few minutes after its pull request merges there.
 
 **Proving it.**
 
