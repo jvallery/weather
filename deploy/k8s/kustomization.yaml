@@ -22,7 +22,7 @@ components:
 images:
 - name: weather-app
   newName: registry.vallery.net/jvallery/weather-app
-  digest: sha256:d2bf5bf2e30f05005a8d669d2f8fee905c0dddaa41fa9ba413b0512e23c46d94
+  digest: sha256:f38cebf314ce720c6e3e35a859c4fb69f991d6ff0c23f9f959a89e1000ad38d2
 - name: weather-web
   newName: registry.vallery.net/jvallery/weather-web
   digest: sha256:9f65a88b651fdae719cca804ffe376a271819e503c45e8d93006eb3379e1098f
