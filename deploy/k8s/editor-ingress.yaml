@@ -1,4 +1,4 @@
-# The private editor (#44, P11): /editor (web) and /api/v1/operator/* (the api's operator
+# The private editor (#44): /editor (web) and /api/v1/operator/* (the api's operator
 # listener) need an Authentik session with MFA for the Jason-only weather-editor application
 # (agents#5366). apps-strip-auth-headers blanks client-forged X-authentik-* first; then
 # ak-forwardauth redirects or re-injects the authenticated identity. Higher priority than the

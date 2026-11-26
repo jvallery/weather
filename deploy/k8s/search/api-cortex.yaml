@@ -1,4 +1,4 @@
-# The scoped Weather Cortex key (agents KSOPS), read-only and only in the api.
+# The scoped Weather Cortex key (weather-secrets bundle), read-only and only in the api.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

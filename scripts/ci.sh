@@ -19,7 +19,7 @@ while (( $# )); do
       uv run --frozen python scripts/lint_repository.py
       uv run --frozen python scripts/check_web_assets.py
       (cd web && pnpm install --frozen-lockfile --ignore-scripts && pnpm lint)
-      # Fails when a Pydantic change lacks regenerated OpenAPI/TypeScript (P12).
+      # Fails when a Pydantic change lacks regenerated OpenAPI/TypeScript.
       pnpm --dir web/contract-tools install --frozen-lockfile --ignore-scripts
       uv run --frozen python scripts/generate_api_contracts.py
       ;;

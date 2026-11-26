@@ -22,7 +22,7 @@ spec:
     metadata:
       labels: *id001
     spec:
-      # STD-HA-06 PriorityClass ladder (weather#224).
+      # Estate PriorityClass ladder (weather#224).
       priorityClassName: estate-app
       enableServiceLinks: false
       automountServiceAccountToken: false

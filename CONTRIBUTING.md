@@ -1,6 +1,6 @@
 # Contributing
 
-Agents and maintainers start with [AGENTS.md](AGENTS.md). It covers how to build, deploy and verify a change, and the hazards. Design context is in [docs/architecture.md](docs/architecture.md) and the [simplification record](docs/decisions/2026-10-24-simplification.md). Work items are the GitHub issues; an issue is ready when all of its native "blocked by" issues are closed.
+Agents and maintainers start with [AGENTS.md](AGENTS.md). It covers how to build, deploy and verify a change, and the hazards. Design context is in [docs/architecture.md](docs/architecture.md). Work items are the GitHub issues; an issue is ready when all of its native "blocked by" issues are closed.
 
 Every change should:
 

@@ -53,7 +53,7 @@ python3 scripts/media_restore_drill.py --operation <id> --day <YYYY-MM-DD> --evi
 python3 scripts/media_restore_drill.py --operation <id> --evidence <file> --cleanup
 ```
 
-Run it under the `NS-weather` lock. A drill reserves about 36 GiB of ephemeral
+Run one drill at a time. A drill reserves about 36 GiB of ephemeral
 storage and takes about 15 minutes in total.
 
 **RTO** runs from the start of the copy to the first rendered day page.

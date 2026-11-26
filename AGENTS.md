@@ -99,7 +99,7 @@ The guide has the exact commands for a sync and a pin move. Two rules protect th
 - `app/weather/` is the Python package (capture, telemetry, pipeline, media, AI, search, API and the role entry points in `cli`). `app/migrations/` holds the Alembic migrations and `app/tests/` the pytest suites.
 - `web/` is the React Router front end (TypeScript, Vitest, Playwright).
 - `deploy/k8s/` is the Kustomize tree that Argo CD renders; `deploy/k8s/kustomization.yaml` holds the two application image digests.
-- [docs/architecture.md](docs/architecture.md) is the design, [docs/operations/](docs/operations) has one runbook per component, and [docs/contracts/](docs/contracts) holds the API contracts and test vectors. `docs/decisions/` and `docs/archive/` are history; the rules from them that still apply are in the architecture document.
+- [docs/architecture.md](docs/architecture.md) is the design, [docs/operations/](docs/operations) has one runbook per component, and [docs/contracts/](docs/contracts) holds the API contracts and test vectors. `docs/requirements.md` and `docs/decisions/` are background; where they differ from the architecture document, the architecture document is right.
 
 ## Build, test, deploy, verify
 

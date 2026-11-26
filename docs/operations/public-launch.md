@@ -7,12 +7,10 @@ at most 2 MiB per response, and writes only status, byte counts, header presence
 labels. It never writes response bodies, matched private text or credentials into its receipt.
 
 Exit 1 means an acceptance condition failed; it does not weaken the check for an undeployed route.
-The initial skeleton is expected to fail for missing history and CSP until WX-20 is delivered.
 Fix the responsible implementation and rerun against the intended deployed revision. Privacy
 pattern inspection complements the typed public API allowlist and cannot prove arbitrary prose
 contains no private information.
 
 This smoke does not establish fresh Tempest data, accessibility, image/revision equality,
-24-hour probe continuity or recovery. WX-47 also requires the real in-cluster browser/axe checks,
-three current-source-age checks a minute apart, retained Prometheus series, the CNPG/PITR receipt,
-and authoritative Argo/pod/source-pin readback. Keep those receipts separate.
+24-hour probe continuity or recovery. Those are covered by the browser suite in CI, the probes
+and rules in jvallery/monitoring-stack and the checks in [deploy](deploy.md).

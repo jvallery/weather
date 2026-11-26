@@ -276,7 +276,7 @@ the next request; pointer and bytes answer `no_preview` and 404.
 The embargo depends on two clocks: the collector's (capture bounds) and the database's
 (`first_published_at`, request-time eligibility). Node clocks are owned by
 proxmox-infrastructure and alerted by `WeatherNodeClockOffset` (monitoring-stack#1072); there is
-no clock adapter (P14).
+no clock adapter.
 
 - `skew_margin` is 30 s by default (`WEATHER_PREVIEW_SKEW_SECONDS` on the pipelines, ≥ 30). The
   database floor is fixed at 630 s; raising the margin only delays publication.
@@ -419,7 +419,7 @@ curl -s 'https://weather.vallery.net/api/v1/stills?date=2026-11-01&camera=skycam
 `app/weather/scheduler/cleanup.py` (#19) runs inside each `pipeline-<camera>` pod, the only
 role besides the collectors that mounts staging (as UID 1025 / GID 100, the share owner), and
 each pod mounts only its own camera's `sealed/`, `tmp/`, `render/` and `previews/` subPaths. The
-scheduler and the api never mount NFS (C17). Each pass works on its own camera only, holds a
+scheduler and the api never mount NFS. Each pass works on its own camera only, holds a
 per-camera advisory lock, and takes every age from the database clock.
 
 ### Capacity projection
@@ -455,7 +455,7 @@ Measured 2026-10-26 on the 300 GiB `weather-staging` share (NAS Volume 2), three
   once that hour's still is archived, at about 3,700-4,200 s. The next pass (at most 5 minutes
   later) deletes it, inside the rule's 15-minute `for`. A firing alert means passes stopped.
 
-**What may go.** Catalog rows decide (P3). A sealed chunk is deleted only when every
+**What may go.** Catalog rows decide. A sealed chunk is deleted only when every
 condition holds; a kept chunk reports the first unmet one:
 
 | Condition | Holds when | Wired by |
@@ -541,7 +541,7 @@ the next pass retries.
 | `WEATHER_CLEANUP_KEOGRAM`, `_HOURLY` | `required` | `vacuous` waives an unwired feature's condition; both queries are registered, so `vacuous` fails start-up |
 | `WEATHER_CLEANUP_BATCH` | 2000 | New chunks inventoried per pass |
 
-**Watermarks** (D16, `scheduler/pressure.py`): `statvfs` on `/staging/sealed/<camera>` (the
+**Watermarks** (`scheduler/pressure.py`): `statvfs` on `/staging/sealed/<camera>` (the
 share's quota), the same ratio the collectors compute.
 
 | Level | At | Effect |
@@ -610,7 +610,7 @@ complete pass; target under 600 s).
 weather reconcile-objects --bucket weather-media [--rate 20] [--max-missing-ratio 0.05]
 ```
 
-Run it after any restore (P7), from a pod holding that bucket's key (a pipeline pod for
+Run it after any restore, from a pod holding that bucket's key (a pipeline pod for
 `weather-media`; `weather-originals` needs the originals key, pipeline role only). It HEADs
 every `available` asset of the bucket in keyset pages, at most `--rate` per second, and marks
 a missing or wrong-size object `unavailable`. Circuit breaker: the bucket must exist, every
@@ -668,7 +668,7 @@ for `weather-media` only once #36 enables it and mounts a key; metrics `weather_
 
 ### Hard purge
 
-Third-party privacy (P20) can override grace, **only on Jason's explicit instruction**:
+Third-party privacy can override grace, **only on Jason's explicit instruction**:
 
 1. Withdraw the video or asset first (above), so it already answers 404.
 2. From a pod holding the bucket's key:

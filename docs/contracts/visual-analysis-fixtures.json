@@ -1,5 +1,5 @@
 {
-  "description": "Synthetic shape fixtures for the structured Stage A schema (v2, C18): enums and evidence IDs only, no free text. Evidence membership and per-category rules are semantic checks in validate.py.",
+  "description": "Synthetic shape fixtures for the structured Stage A schema (v2): enums and evidence IDs only, no free text. Evidence membership and per-category rules are semantic checks in validate.py.",
   "cases": [
     {
       "name": "bounded structured analysis",

@@ -100,14 +100,14 @@
       "name": "shadow-correction-race",
       "given": "Document correction lands during shadow generation backfill/activation",
       "expected": "Catch up to watermark and serialize final activation; old text remains withdrawn",
-      "obsolete": "P10: no shadow generations or query-vector cache"
+      "obsolete": "no shadow generations or query-vector cache"
     },
     {
       "id": "SI-16",
       "name": "rollback-withdrawal",
       "given": "Prior retained generation contains a now-invalid document",
       "expected": "Rollback never restores eligibility; use current lexical fallback where vectors are absent",
-      "obsolete": "P10: no shadow generations or query-vector cache"
+      "obsolete": "no shadow generations or query-vector cache"
     },
     {
       "id": "SI-17",
@@ -150,7 +150,7 @@
       "name": "query-cache-pressure",
       "given": "Cache exceeds entry/byte cap or reaches absolute expiry while requests remain frequent",
       "expected": "Enforce deployment-wide 256-entry/8-MiB bound and 15-minute non-sliding TTL; reuse only exact transformed hash/profile and rerun current filters",
-      "obsolete": "P10: no shadow generations or query-vector cache"
+      "obsolete": "no shadow generations or query-vector cache"
     },
     {
       "id": "SI-24",

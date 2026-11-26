@@ -1,6 +1,6 @@
 # Exact font reuse review
 
-Decision: use the two **unmodified** Fontsource 5.3.0 WOFF2 members below as locally hosted assets when implementing the Weather frontend. This separate font-license review resolves D13's provenance question; it does not import assets now, grant rights in a wordmark, or change Weather's MIT code license.
+Decision: use the two **unmodified** Fontsource 5.3.0 WOFF2 members below as locally hosted assets when implementing the Weather frontend. This separate font-license review resolves the web design's font provenance question; it does not import assets now, grant rights in a wordmark, or change Weather's MIT code license.
 
 ## Evidence chain
 
@@ -21,6 +21,6 @@ Keep the fonts under OFL-1.1, with the complete corresponding copyright notice a
 
 The Sans and Mono package copyright headers differ. Retain each package's actual LICENSE separately or preserve both complete notices when composing a distribution notice. Verify each notice against the recorded license hash. Do not replace either with a guessed common header, copy another version's notice, or rely on the current main-site theme to supply Weather's distribution obligations.
 
-WX-20/26 acceptance: the reproducible build obtains the exact integrity-verified packages or an equivalently verified approved cache, ships only the selected needed font members and their complete notices, serves them locally with cacheable hashed URLs, and confirms fallback/layout behavior without any public font-host dependency. Inventory package and file hashes in release provenance. No npm install, image build, font modification or application asset copy occurred in this planning review.
+Acceptance: the reproducible build obtains the exact integrity-verified packages or an equivalently verified approved cache, ships only the selected needed font members and their complete notices, serves them locally with cacheable hashed URLs, and confirms fallback/layout behavior without any public font-host dependency. Inventory package and file hashes in release provenance. No npm install, image build, font modification or application asset copy occurred in this planning review.
 
 This closes the exact-font provenance and selected unmodified-use decision. Actual distribution compliance and rendered accessibility remain implementation checks. Other dependencies, FFmpeg/model licenses and any copied wordmark remain separate reviews.

@@ -6,7 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: '-6'
 data:
-  # D-460 (a), Jason 2026-11-09: weather-pg recovers from the 7-day local WAL
+  # Jason's decision of 2026-11-09: weather-pg recovers from the 7-day local WAL
   # archive (ObjectStore weather-pg-local, retentionPolicy 7d) plus a daily
   # off-site copy of it (storage-infra#1567), so the off-site RPO is about 24 h
   # (26 h with schedule jitter). weather#33.

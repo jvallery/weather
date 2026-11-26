@@ -20,7 +20,7 @@ Source: `deploy/k8s/capture/`, rendered by Argo Application `weather`.
 - ConfigMap `collector-capture-<hash>` (from `capture/capture.json`) plus the Downward API
   `POD_UID` are projected read-only at `/etc/weather/capture`. The hash suffix rolls the
   three collectors on any change. `phase_ms` defaults per camera: 0, 333, 667 ms.
-- Secret `weather-camera-<camera>` (agents KSOPS overlay) is mounted as files at
+- Secret `weather-camera-<camera>` (bundle `secrets/weather` in jvallery/estate-platform) is mounted as files at
   `/run/secrets/camera`, mode 0440.
 - Network: namespace `default-deny`, NetworkPolicy `collector` (metrics ingress on 9000 from
   `observability` only, no egress), and the agents-owned `collector-<camera>-egress`, which
@@ -39,7 +39,7 @@ Source: `deploy/k8s/capture/`, rendered by Argo Application `weather`.
 1 Hz (`cadence_ms: 1000`) is the target once #19 cleanup runs in production: edit
 `capture.json` and, in the same commit, `WEATHER_PIPELINE_CADENCE_MS` in
 `deploy/k8s/pipeline/deployments.yaml` (the renderer rejects frames on any other grid as
-`settings`), merge, and record the new epoch in this table and in D02. The change
+`settings`), merge, and record the new epoch in this table. The change
 alters `config_hash`, so chunks before and after are distinguishable.
 
 ## Staging occupancy plan
@@ -48,7 +48,6 @@ Only the pipeline pods' staging cleanup (#19,
 [media operations](media.md#staging-cleanup-and-pressure)) removes sealed chunks, and only
 once their segments have rendered them; until the pipelines run (#49) the share only fills:
 about 200 GB/day at 0.5 Hz (day/night mix), so 70% of the 300 GiB share in roughly 26 h.
-Measured figures are in [D02](../decisions/D02-camera-sources-and-time.md#commissioned-measurements).
 Alert `WeatherStagingOccupancyHigh` (monitoring-stack, thresholds 70/85/90%) fires on
 `weather_capture_staging_ratio`.
 Watch `weather_capture_staging_ratio` (or `df` on `/staging` inside a collector). If it
@@ -65,9 +64,9 @@ the collector itself stops writing JPEG payloads (below).
   its current chunk within the grace period. Never `kubectl scale` against Argo except as an
   emergency stop, then follow with the Git change.
 - **Cadence change:** edit `capture.json` and the pipelines' `WEATHER_PIPELINE_CADENCE_MS`
-  together, record the epoch above and in D02, merge.
+  together, record the epoch above, merge.
 - **Credential rotation (with Sentinel):** the camera credential is the Sentinel/Frigate
-  default; rotate it with the sentinel owner, then update the agents `secrets-ksops/weather`
+  default; rotate it with the sentinel owner, then update the `secrets/weather` bundle
   Secret. Restart each collector after the new Secret is live (projected files update, but the
   collector reads them once at start). Expect `authentication` results until both sides match.
 - **NAS outage:** the soft mount returns errors; the collector abandons its own chunk, backs

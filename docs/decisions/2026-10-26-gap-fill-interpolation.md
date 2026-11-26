@@ -2,7 +2,7 @@
 
 **Status:** accepted under Jason's rule of 2026-10-26: adopt motion-compensated interpolation
 only if it is visibly better on clouds and costs at most 2× the CPU of `observed-exposure/v2`'s
-fill; otherwise keep the cross-fade. It amends [D10](D10-media-recipe-and-qualification.md):
+fill; otherwise keep the cross-fade. It settles the rendering rules in [architecture.md](../architecture.md#design-rules):
 observed exposure with `gap-fill/v1` (#144) is the production profile, and no high-interpolation
 profile is built.
 
@@ -50,7 +50,7 @@ across three cameras); #145 lowers that miss rate, which shrinks both costs.
 
 Keep `gap-fill/v1`'s cross-fade. B fails the CPU bound by a factor of about 30 and is not
 visibly better. No follow-up implementation issue is filed. RIFE, GPU and 4×/8× reconstruction
-profiles stay out of scope (O2).
+profiles stay out of scope.
 
 The pilot outputs (`result.json` and the clip per hour) and the corpus stay in private staging
 custody under `corpus/16/`. They are deleted with #4's corpus after #49 closes.

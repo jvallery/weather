@@ -1,4 +1,4 @@
-# weather-preview (#39, C17): serves eligible delayed previews only. The only public-path pod
+# weather-preview (#39): serves eligible delayed previews only. The only public-path pod
 # that mounts staging, and only `previews/`, read-only. Health never touches the database or
 # the share, so a NAS or database outage makes previews unavailable without unreadying or
 # restarting the pod. Runbook: docs/operations/media.md#previews.

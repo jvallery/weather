@@ -1,10 +1,9 @@
 # Capture and single-USTAR manifest v2
 
-The accepted [simplification P2](../decisions/2026-10-24-simplification.md) and
-[WX-10 (#11)](https://github.com/jvallery/weather/issues/11) supersede the former
-writer-epoch/fencing, three-file chunk directory, binding-file and promotion
-working-set design. The collector has no coordinator, database, Kubernetes or
-internet access. Camera commissioning and actual NFS behavior belong to WX-03.
+This contract implements the staging rules in [architecture.md](../architecture.md#design-rules)
+([#11](https://github.com/jvallery/weather/issues/11)). There are no writer epochs, fence
+receipts or promotion working set. The collector has no coordinator, database, Kubernetes or
+internet access.
 
 The private record union lives in `app/weather/capture/records.py`; the writer and
 the reader share those Pydantic models, so there is no generated schema. Unit tests

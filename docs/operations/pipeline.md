@@ -50,12 +50,12 @@ scheduler still starts, but every `schedule:` job fails visibly:
 `weather_schedule_failures_total{reason="site"}` grows, the log says
 "Private site configuration unavailable" and the job ends `failed`. No cycle
 is invented. Dawn and dusk offsets beyond ±3600 s are rejected. Create or
-rotate the Secret through agents KSOPS, then restart `deploy/scheduler`; the
+rotate the Secret in the bundle `secrets/weather` (jvallery/estate-platform), then restart `deploy/scheduler`; the
 next tick freezes the missing days.
 
 ## Rendering
 
-Recipe v1 (D10, `recipe.py`): synthetic shutter 180° by default (270°/360°
+Recipe v1 (`recipe.py`): synthetic shutter 180° by default (270°/360°
 selectable with `WEATHER_PIPELINE_SHUTTER_DEGREES`; a non-default angle or
 threshold is a new recipe id and a new render directory), minimum exposure
 coverage 0.90 inclusive, slot thresholds 99/90/50.
@@ -172,7 +172,7 @@ Keograms (#37, `keogram.py`, `keogram_publish.py`) come from the same decode as 
   `"keogram": {"state": "pending"}` in its sidecar, and the final status follows as a
   sidecar-only video revision once the keogram's embargo has lapsed. Withdrawing any keogram
   file withdraws the keogram: `public_api.assets` then serves none of its files. Keograms
-  follow the stills lifecycle, not the video expiry (C13).
+  follow the stills lifecycle, not the video expiry.
 
 ### Keogram regions
 

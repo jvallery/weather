@@ -9,7 +9,7 @@ metadata:
     agent-fleet.vallery.net/project: weather
 spec:
   # Every request arrives through the Cloudflare tunnel, so the TCP peer is a
-  # cloudflared pod. Key on the visitor's address instead (C7). LAN clients
+  # cloudflared pod. Key on the visitor's address instead. LAN clients
   # that reach traefik-apps directly could spoof the header; that only lets
   # them evade their own limit.
   rateLimit:

@@ -1,7 +1,7 @@
 # weather#77: B2-sourced media/originals restore drill. Rendered and applied by
 # scripts/media_restore_drill.py; never part of deploy/k8s or Argo. Lives in namespace
-# weather only because the two B2 readers are referenced in place there (COORD-W2
-# 2026-11-17T06:00:17Z). Torn down by the restore-drill label. No Service, route or API
+# weather only because the two B2 readers are referenced in place there, never copied to
+# another namespace. Torn down by the restore-drill label. No Service, route or API
 # token; egress is DNS plus TCP 443 to public addresses; the app's database name
 # weather-pg-rw is pinned to the pod's own catalog copy by hostAliases.
 apiVersion: networking.k8s.io/v1
