@@ -1,6 +1,6 @@
 # Weather — requirements and implementation research brief
 
-**Version:** 4.2 (amended by the [2026-10-24 simplification record](decisions/2026-10-24-simplification.md) and the [takeover re-plan](decisions/2026-10-24-takeover-replan.md#requirement-amendments-v42); where this text conflicts with them, they win)  
+**Version:** 4.2. This is the original requirements brief, kept as history. R01–R38 in §1 are still the required outcomes; everything else here is superseded by [architecture.md](architecture.md) wherever the two differ.  
 **Updated:** 2026-10-24  
 **Owner:** jvallery  
 **Target repository:** `jvallery/weather` — new, public, open source  
@@ -33,7 +33,7 @@
 
 ## 1. Purpose, authority, and fixed requirements
 
-> **v4.1 amendment (2026-10-24).** Jason accepted the [simplification record](decisions/2026-10-24-simplification.md) (O1–O4) after an adversarial audit against live estate evidence. It **overrides** this document wherever they conflict: R09, R10, R17, R18 and R23 below are amended; §§2, 19 (planning assignment, candidate catalog) are historical; and the mechanisms in §§3–18 are implementation guidance unless restated in [architecture.md](architecture.md) or an issue's acceptance. The product scope (Q01–Q16) is unchanged.
+> **How to read this document.** The design was simplified on 2026-10-24 and again as the service was built. R09, R10, R17, R18 and R23 below carry the amended text; §§2 and 19 (planning assignment, candidate issue catalog) describe work that is finished; and the mechanisms in §§3–18 are background unless [architecture.md](architecture.md) restates them. The labels D01–D16, O1–O4, P1–P20, C1–C18 and WX-nn in this text name research records, decisions and backlog keys from the planning period. Those records are no longer in the repository (Git history has them); the rules from them that still apply are in the architecture document. The product scope (Q01–Q16) is unchanged.
 
 This is the requirements document for an independent weather observation and timelapse service. Codex's **first assignment is to research the existing estate, resolve the implementation decisions identified here, complete configuration of the public `jvallery/weather` repository, and file a complete set of actionable GitHub implementation issues with a verified dependency graph**. Application implementation follows that research and issue-filing pass.
 
@@ -996,7 +996,7 @@ If native video fails qualification, extract ordered frames **from that complete
 
 **Stage B — deterministic measured summary.** The application calculates §10.5 aggregates, coverage, and stable metric evidence IDs. No LLM computes totals, maxima, unit conversions, or precipitation boundary allocation.
 
-> **Amended by C18 (2026-10-25):** no model-written prose is published. Stage A returns structured enums only; Stage C is deterministic server-side template rendering from validated observations and station aggregates, with no model call. The §13.6 prompt is retired. See the [takeover re-plan](decisions/2026-10-24-takeover-replan.md).
+> **Amended 2026-10-25:** no model-written prose is published. Stage A returns structured enums only; Stage C is deterministic server-side template rendering from validated observations and station aggregates, with no model call. The §13.6 prompt is retired. See [architecture.md](architecture.md#design-rules).
 
 **Stage C — grounded synthesis.** Supply validated visual observations plus deterministic weather evidence to a bounded text synthesis request on the same qualified route. Produce a concise weather narrative and event list with explicit evidence/basis. Keep measured values and visual claims separate when they disagree. Do not turn an absence of visual evidence into an absence of weather.
 
@@ -1076,7 +1076,7 @@ Require an explicit precipitation and visibility assessment when assessable; all
 
 ### 13.6 Exact synthesis system prompt template
 
-> Retired by C18: there is no synthesis call; public text comes from fixed templates.
+> Retired: there is no synthesis call; public text comes from fixed templates.
 
 ```text
 Create a weather summary from two supplied evidence sets: validated visual
@@ -1597,7 +1597,7 @@ flowchart TD
 
 The first pass is complete when planning repository configuration is in place, accepted scope and component/owner boundaries are coherent, R01–R38 and D01–D16 map to filed issues with infrastructure constraints and acceptance criteria, the native DAG/coverage check passes, and the execution-wave handoff identifies ready work, discovery responsibilities and release gates. Existing live/source evidence anchors fleet alignment; it is not runtime qualification or a current resource grant.
 
-The [execution handoff](archive/planning-2026-10/implementation/execution-handoff.md) must distinguish selected decisions, execution discovery and implementation pending, including GPU/CPU, UDP, database/search, shared-bucket access/durability, frontend/Tunnel, recovery objectives, critical path, original/preview lifecycle and WordPress ownership. Preserve Q01–Q16 and subsequent owner decisions. Do not imply any application, cluster resource, pipeline or recovery path is deployed merely because planning is complete.
+The execution handoff must distinguish selected decisions, execution discovery and implementation pending, including GPU/CPU, UDP, database/search, shared-bucket access/durability, frontend/Tunnel, recovery objectives, critical path, original/preview lifecycle and WordPress ownership. Preserve Q01–Q16 and subsequent owner decisions. Do not imply any application, cluster resource, pipeline or recovery path is deployed merely because planning is complete.
 
 ## 20. Research sources and evidence handling
 

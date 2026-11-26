@@ -1,6 +1,6 @@
 # Intelligence: AI weather descriptions
 
-The `intel` worker (#23, P9) writes a labelled "AI-generated · sampled-frame analysis" description for every published video from its own web-rendition frames, the segment keogram when one exists (#37), and #14's on-read aggregates. The model only classifies frames into enums; every public sentence is rendered by fixed server templates, and no model-written prose is ever published ([C18](../decisions/2026-10-24-takeover-replan.md)). Code: `app/weather/ai/`. Schema: `app/migrations/versions/0012_analysis.py`. Templates: [public description text](../contracts/description-text-contract.md). Manifests: `deploy/k8s/intel/` (disabled; #50 enables them).
+The `intel` worker (#23) writes a labelled "AI-generated · sampled-frame analysis" description for every published video from its own web-rendition frames, the segment keogram when one exists (#37), and #14's on-read aggregates. The model only classifies frames into enums; every public sentence is rendered by fixed server templates, and no model-written prose is ever published ([design rules](../architecture.md#design-rules)). Code: `app/weather/ai/`. Schema: `app/migrations/versions/0012_analysis.py`. Templates: [public description text](../contracts/description-text-contract.md). Manifests: `deploy/k8s/intel/` (disabled; #50 enables them).
 
 ## How it works
 
@@ -61,4 +61,4 @@ A non-200 result prints only its class (`unavailable`, `busy`, `auth`, `media`).
 - **Why was a reply rejected?** For 24 h, `SELECT stage,window_start,call,outcome,finish_reason FROM weather.ai_raw_response WHERE video_id='<id>' ORDER BY created_at` (as the worker or migrator role). Read `body` only when debugging, and never copy it into issues or logs.
 - **Re-analysing on purpose** (new prompt or model) is a decision, not a routine: a new prompt revision applies to new publications only. Backfills are bounded runs (#50).
 - **Withdrawal.** `weather media withdraw` withdraws the video. The `media.withdrawn` hook then withdraws its search documents and visual events, and the public view hides the analysis.
-- **Key renewal.** The scoped `weather-cortex` identity expires 2027-01-22; renew it before 2027-01-08 through cortex-ai-compute and agents KSOPS, then rerun the live smoke.
+- **Key renewal.** The scoped `weather-cortex` identity expires 2027-01-22; renew it before 2027-01-08 through jvallery/cortex-ai-compute and the `secrets/weather` bundle, then rerun the live smoke.

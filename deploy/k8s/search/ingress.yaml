@@ -1,4 +1,4 @@
-# Search has its own per-client budget on top of the api's in-process semaphore (P10, C7):
+# Search has its own per-client budget on top of the api's in-process semaphore:
 # requests per minute and concurrent requests, both keyed on the visitor's address.
 apiVersion: traefik.io/v1alpha1
 kind: Middleware

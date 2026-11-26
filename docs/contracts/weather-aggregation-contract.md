@@ -1,6 +1,6 @@
 # Deterministic weather summaries and wind roses
 
-Requirements §§10.5–10.6; D05/D12/D16; producers WX-13/41/42, consumers WX-22/39/40. This specifies calculations over already validated, deduplicated metric support. Raw parsing/support calibration remains D05 qualification; no observed fixture is invented from a packet receipt timestamp.
+Requirements §§10.5–10.6. This specifies calculations over already validated, deduplicated metric support. No observed fixture is invented from a packet receipt timestamp.
 
 ## Implementation (#14)
 
@@ -8,13 +8,13 @@ Requirements §§10.5–10.6; D05/D12/D16; producers WX-13/41/42, consumers WX-2
 
 ## Common support rules
 
-Intersect each metric's qualified half-open support with the requested UTC interval. Resolve conflicts before aggregation; overlapping competing values cannot be averaged as independent time. Coverage is the union of eligible support duration divided by elapsed window duration. Missing intervals stay visible as lost coverage; each result carries its evidence count and hash (C5). Count-based receipt coverage is a different diagnostic.
+Intersect each metric's qualified half-open support with the requested UTC interval. Resolve conflicts before aggregation; overlapping competing values cannot be averaged as independent time. Coverage is the union of eligible support duration divided by elapsed window duration. Missing intervals stay visible as lost coverage; each result carries its evidence count and hash. Count-based receipt coverage is a different diagnostic.
 
 Temperature/humidity means are sum(value × supported seconds) / supported seconds, with null and reason when duration is zero; min/max are observed eligible values, not interpolated extrema. Apply the effective per-metric hold cap, never a universal unlimited hold. Preserve exact source precision internally and round only display output. Calendar-day aggregates use real UTC day bounds, including DST duration; video summaries use their own solar interval.
 
 Precipitation sums unique amounts over protocol support: each obs_st amount covers the 60 s ending at its source time (#73), trimmed at the previous report so supports never overlap. An amount belongs whole to the window that contains the end of its support, which conserves totals exactly across adjacent windows without splitting. Unknown support is excluded from qualified totals with a reason. Missing time is never extrapolated to full-period rain. Lightning uses one configured event/count authority, keeps integer counts and exposes boundary-uncertain counts separately; do not add events and interval counts or split a strike fractionally. Instrument precipitation classification remains distinct from visual claims and is not snow depth.
 
-Solar energy is sum(irradiance W/m² × valid seconds) / 3600, in Wh/m². Pressure remains station pressure. Pressure trend uses duration-weighted endpoint-window averages with coverage and their actual midpoint separation; window width/minimum support is versioned and still requires commissioning. No implicit sea-level conversion. Per C5, aggregates are computed on read with SQL `date_bin` (or `weather_day` bounds for local days) and carry an evidence count and hash, not evidence IDs or a revision; a late correction simply changes the next read.
+Solar energy is sum(irradiance W/m² × valid seconds) / 3600, in Wh/m². Pressure remains station pressure. Pressure trend uses duration-weighted endpoint-window averages with coverage and their actual midpoint separation; window width/minimum support is versioned and still requires commissioning. No implicit sea-level conversion. Aggregates are computed on read with SQL `date_bin` (or `weather_day` bounds for local days) and carry an evidence count and hash, not evidence IDs or a revision; a late correction simply changes the next read.
 
 ## Wind recipe v1
 
@@ -38,8 +38,8 @@ Comparisons show each window's actual dates, duration, coverage and missing days
 
 ## Acceptance and limits
 
-WX-13/41/42 test 359/1-degree wrap, opposing directions, unequal speed/duration, calm and missing direction, exact bin boundaries, overlapping support, repeated packets, zero support, DST days, rain conservation, integer lightning and late rows. Check speed and direction coverage independently and prove wind-rose categories conserve the whole window. Every consumer reads the same on-read SQL; a late row changes the next read, and the evidence count/hash shows that the inputs changed. The API fixtures prove structured-bin shape only; no parser, aggregation, query, chart or station calibration is qualified here.
+The tests cover 359/1-degree wrap, opposing directions, unequal speed/duration, calm and missing direction, exact bin boundaries, overlapping support, repeated packets, zero support, DST days, rain conservation, integer lightning and late rows. Check speed and direction coverage independently and prove wind-rose categories conserve the whole window. Every consumer reads the same on-read SQL; a late row changes the next read, and the evidence count/hash shows that the inputs changed. The API fixtures prove structured-bin shape only; no parser, aggregation, query, chart or station calibration is qualified here.
 
 ## Public computation identity
 
-Superseded by C5: there is no stored computation identity. `evidence_count` and `evidence_hash` identify the inputs of each read; formula changes ship with updated golden vectors.
+There is no stored computation identity. `evidence_count` and `evidence_hash` identify the inputs of each read; formula changes ship with updated golden vectors.

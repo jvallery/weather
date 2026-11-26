@@ -2,7 +2,7 @@
 
 The private editor (#44) lets Jason correct video descriptions and events, tag, favorite and
 keep private notes at `https://weather.vallery.net/editor`, and read raw Tempest receipts.
-Design: P11 in the [simplification record](../decisions/2026-10-24-simplification.md) and
+Design: the editor rules in [architecture.md](../architecture.md#design-rules) and
 the operator section of the [API contract](../contracts/api-contract.md#private-editor-implemented-44).
 Code: `app/weather/editorial/` (API, CAS writes, projection, receipts) and
 `web/app/routes/editor.tsx`.

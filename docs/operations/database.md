@@ -55,24 +55,24 @@ them 34.5/40 without changing reservations. The commissioning/drill envelope in
 the deployment runbook is historical sizing, not permission to exceed quota;
 recalculate it before admitting a drill alongside these caps.
 
-Deliver a Cluster resource change in a coordinated maintenance window: CNPG can
-roll its instances, including a brief primary restart under the configured
-`primaryUpdateMethod`. Keep the maintenance Lease, healthy standbys, synchronous
-replication and WAL archiving; never delete a Cluster or PVC. After the intended
-source is live, verify actual pod limits, replication/archive health, ordinary
-and aggregate HTTP requests, then complete the stateful-change soak. Revert the
-source CPU cap if the change causes harm; do not bypass admission or alert rules.
+A Cluster resource change makes CNPG roll its instances, ending with a switchover
+of the primary under the configured `primaryUpdateMethod`. Before merging one, take
+a fresh on-demand Backup and check that both standbys are healthy, replication is
+synchronous and WAL is archiving; never delete a Cluster or PVC. After the change
+is live, verify actual pod limits, replication and archive health, and ordinary
+and aggregate HTTP requests. Revert the source CPU cap if the change causes harm;
+do not bypass admission or alert rules.
 
 ## Backups and WAL
 
-- **One current backup path (D-460 a, weather#33).** The Barman Cloud plugin
+- **One current backup path (weather#33).** The Barman Cloud plugin
   writes WAL (`archive_timeout=300s`) and the daily base backup (09:15 UTC, on a
   standby) to ObjectStore `weather-pg-local` (bucket `weather-pg` on the
   in-cluster garage-k3s, `retentionPolicy: 7d`; see "Local WAL archive" below).
   The declared PITR window is **7 days** (`recovery.pitr_window_days` in
   `ConfigMap/weather-database-policy`). The declared offsite age target is
   **26 h** (`recovery.db_offsite_age_target_hours`).
-- **Offsite route of record (D-903, 2026-11-20, amends D-460).** The offsite
+- **Offsite route of record (since 2026-11-20).** The offsite
   copy of the database is storage-infra's `object-custody-b2` mirror of bucket
   `weather-pg` (base daily at 06:15 UTC, WAL every 15 min, verified per object
   on B2). `WeatherOffsiteStale` reads the oldest of the last verified base

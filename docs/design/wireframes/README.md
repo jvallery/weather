@@ -2,7 +2,7 @@
 
 These are static design collateral for the owner-approved React/TypeScript frontend, not application source or a running product. All measurements, dates, evidence and imagery are synthetic. Controls illustrate layout; they do not call APIs or perform actions. The source is self-contained [HTML](index.html), with no JavaScript, external assets or camera data. System fonts stand in for the approved locally hosted IBM Plex fonts.
 
-The design follows [D13](../../decisions/D13-ui-and-editor-boundaries.md): current conditions first, explicit source age, separate camera/video/analysis states, native panorama, linked evidence, calendar-day versus solar-cycle distinctions, private editor CAS and a compact public embed. The selection of React changes implementation ownership, not those product requirements.
+The design follows the web rules in [architecture.md](../../architecture.md#design-rules): current conditions first, explicit source age, separate camera/video/analysis states, native panorama, linked evidence, calendar-day versus solar-cycle distinctions, private editor CAS and a compact public embed. The selection of React changes implementation ownership, not those product requirements.
 
 ## Route and artifact map
 
@@ -32,8 +32,8 @@ Desktop/mobile contact sheets were visually inspected, with full-size Today and 
 
 ## Acceptance still owned by implementation
 
-WX-20 owns the shell/data lifecycle, archive/day/player basics and current polling. WX-26 owns search interactions; WX-39/40 own linked player/events; WX-41 owns almanac; WX-43 owns private editorial controls; WX-44 owns parent embed integration. Image/still/preview producers retain their privacy and publication contracts. WX-33 integrates all required routes and failure states.
+Image/still/preview producers retain their privacy and publication contracts.
 
-These wireframes do not prove React hydration, API behavior, real plotting, play/seek synchronization, typography distribution, authentication, cache withdrawal, 200% zoom, keyboard/screen-reader behavior, browser/mobile compatibility or production performance. The mock wind rose, charts and image areas specify placement and labeling, not scientific visual correctness. The page skeleton and static text do not waive the substantive behavior in D13, the UI clause audit or requirements §12.2. Native video geometry, valid evidence seeks and complete graph/record semantics remain implementation obligations.
+These wireframes do not prove React hydration, API behavior, real plotting, play/seek synchronization, typography distribution, authentication, cache withdrawal, 200% zoom, keyboard/screen-reader behavior, browser/mobile compatibility or production performance. The mock wind rose, charts and image areas specify placement and labeling, not scientific visual correctness. The page skeleton and static text do not waive the web rules in the architecture document or requirements §12.2. Native video geometry, valid evidence seeks and complete graph/record semantics remain implementation obligations.
 
 Long mobile pages intentionally preserve all camera/segment content in reading order. Implementation may add accessible jump links or progressive disclosure while keeping the same information reachable, labeled and usable without JavaScript where required. The embed's surrounding banner/title are design annotations; only the compact card is embedded in the parent site.

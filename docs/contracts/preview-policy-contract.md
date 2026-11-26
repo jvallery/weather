@@ -1,6 +1,6 @@
 # Preview eligibility, current display and retention
 
-Requirements §6.11, as amended by P14 (eligibility), P8 (request-time authorization) and C17 (`weather-preview` serves previews). Implementation and tests: #39. The planning-era policy schema, shape fixtures and clock-uncertainty vectors are in the [archive](../archive/planning-2026-10/contracts/); the qualified clock adapter they assumed was removed by P14.
+Requirements §6.11, with the eligibility rule, request-time authorization and the `weather-preview` Deployment described in [architecture.md](../architecture.md#design-rules). Implementation and tests: #39. There is no clock adapter: eligibility uses the database clock plus a fixed skew margin.
 
 ## Three separate decisions
 
@@ -12,9 +12,9 @@ At exactly 1,200 s classify fresh, at exactly 1,800 s stale, and at `expires_at`
 
 ## Serving
 
-Every GET, HEAD and Range request for a pointer or its bytes is authorized at request time against the pointer row: embargo, expiry and withdrawal are evaluated before any header, validator or byte. Byte responses reuse the #20 media origin code and its [range policy](api-contract.md#range-policy). There are no authorization leases (P8). Pointer and byte responses are `Cache-Control: no-store`, including errors.
+Every GET, HEAD and Range request for a pointer or its bytes is authorized at request time against the pointer row: embargo, expiry and withdrawal are evaluated before any header, validator or byte. Byte responses reuse the #20 media origin code and its [range policy](api-contract.md#range-policy). There are no authorization leases. Pointer and byte responses are `Cache-Control: no-store`, including errors.
 
-Only the `weather-preview` Deployment mounts staging `previews/` (read-only); the api has no NFS volume (C17). A pointer to a missing or hash-mismatched file reports unavailable, and its byte path returns the same 404 as an unknown ID. Public requests never reach a camera.
+Only the `weather-preview` Deployment mounts staging `previews/` (read-only); the api has no NFS volume. A pointer to a missing or hash-mismatched file reports unavailable, and its byte path returns the same 404 as an unknown ID. Public requests never reach a camera.
 
 ## Queue, handoff and loss
 

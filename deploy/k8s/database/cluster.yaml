@@ -17,18 +17,18 @@ spec:
   enableSuperuserAccess: false
   enablePDB: true
   primaryUpdateStrategy: unsupervised
-  # estate-platform#294 (COORD-W2 2026-11-15T06:42:25Z): a rollout that reaches the primary switches over to an
+  # estate-platform#294: a rollout that reaches the primary switches over to an
   # updated replica instead of restarting it in place (smart shutdown held auth-pg writes ~3-4 min). Not part of
   # the pod spec, so it rolls no instance.
   primaryUpdateMethod: switchover
-  # STD-HA-06 (weather#224 PR 2): the database serving the public site runs at estate-production.
+  # The database serving the public site runs at estate-production (weather#224).
   # Changing this rolls all 3 instances (replicas first, then one switchover). The app auto-syncs
-  # main, so this PR merges only under the maintenance Lease and NS-weather, after a pre-roll backup.
+  # main, so take a fresh on-demand Backup before merging a change to it.
   priorityClassName: estate-production
   minSyncReplicas: 1
   maxSyncReplicas: 1
-  # Estate CNPG default for quorum-sync clusters (jvallery/agents#6087; see
-  # jvallery/agents platform/kubernetes/cnpg-operator/README.md): the primary
+  # Estate CNPG default for quorum-sync clusters (the operator is owned by
+  # jvallery/estate-platform): the primary
   # isolation check is off. In CNPG 1.30 it kills a primary when one API GET
   # misses a hard-coded 500 ms AND any member is unreachable, so a planned
   # worker stop plus API latency failed over cortex-rag on 2026-11-05. With
@@ -150,6 +150,6 @@ spec:
         # storage-infra#1253: archive to the in-cluster Garage (works with no WAN).
         barmanObjectName: weather-pg-local
         serverName: weather-pg
-        # AMC-SEC-A1 A1-13 step d (D-899): canary of the upstream barman-cloud v0.16.0 sidecar on weather-pg
-        # only (zot mirror of c669259e). Redundant after step e flips the plugin default; removed then (no roll).
+        # Canary of the upstream barman-cloud v0.16.0 sidecar on weather-pg only (zot mirror of
+        # c669259e). Redundant once the plugin default is that version; removing it then rolls nothing.
         sidecarImage: registry.vallery.net/jvallery/mirror-ghcr-io-cloudnative-pg-plugin-barman-cloud-sidecar:v0.16.0-c669259e20ed@sha256:c669259e20ed1e11fad821f735c396c19d929985aa05b9544b13ecc8b5a386d0

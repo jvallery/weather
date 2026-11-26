@@ -1,7 +1,6 @@
 {
   "contract_version": 3,
   "kind": "telemetry_acceptance_vectors",
-  "decision": "../decisions/2026-10-24-takeover-replan.md",
   "identity_policy": "All station and receiver identifiers in these fixtures are synthetic.",
   "suites": {
     "unit": "app/tests/telemetry/test_vectors.py (parser, admission, spool)",

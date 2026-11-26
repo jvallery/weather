@@ -1,6 +1,6 @@
 # HTTP and schema contract
 
-Status: the semantic HTTP contract (P12). Implemented routes are code-first: the Pydantic models generate [weather.openapi.json](weather.openapi.json), which is the shape authority. Sections for routes not yet built describe the intended semantics; the issue that builds a route owns its tests. The hand-written planning [OpenAPI](../archive/planning-2026-10/contracts/openapi.json) and [JSON Schema](../archive/planning-2026-10/contracts/api.schema.json) are reference input only. Schemas describe allowed shapes, not authorization.
+Status: the semantic HTTP contract. Implemented routes are code-first: the Pydantic models generate [weather.openapi.json](weather.openapi.json), which is the shape authority. Sections for routes not yet built describe the intended semantics; the issue that builds a route owns its tests. Schemas describe allowed shapes, not authorization.
 
 The private [capture contract](capture-contract.md) is separate from public serializers. The private candidate [visual-model schema](../../app/weather/ai/contracts/visual-analysis.schema.json) implements §13.5's shape; its semantic checks are specified below.
 
@@ -26,7 +26,7 @@ Cursors are HMAC-SHA256 tokens bound to the filters (start, end, metrics, limit)
 
 Freshness: `obs_st` metrics expect 60 s and stay fresh for 150 s; `rapid_wind` expects 3 s and stays fresh for 15 s (configurable defaults). Freshness is recomputed from source time on every response; a replayed old packet is never newer than the current row, so it freshens nothing. While the database is down the API serves its last reading as `cached` with the original times until no metric is fresh, then 503; with no reading it returns 503.
 
-Aggregates follow the [aggregation contract](weather-aggregation-contract.md). Per C5 they carry an evidence count and a SHA-256 over the contributing row IDs, not ID lists, and no revision binding: they are recomputed on every read.
+Aggregates follow the [aggregation contract](weather-aggregation-contract.md). They carry an evidence count and a SHA-256 over the contributing row IDs, not ID lists, and no revision binding: they are recomputed on every read.
 
 ## Search (implemented, #25)
 
@@ -42,7 +42,7 @@ The response has `mode` (`hybrid_exact`, `lexical`, `numeric`), `degraded_reason
 
 ## Private visual-model candidate boundary
 
-[visual-analysis.schema.json](../../app/weather/ai/contracts/visual-analysis.schema.json) (v2, C18) is enums and evidence IDs only: category, assessment, confidence, an optional intensity (rain, snowfall, fog) and sky cover (cloud cover), and limitation codes. There is no free-text field and unknown fields are rejected, so no model-written prose can be published. Evidence lists are nonempty, unique and bounded at 16 opaque IDs, each one supplied in that request. Each category appears at most once per window, and precipitation and visibility are always assessed (`not_assessable` at night or behind an obstruction). Observation IDs are assigned by the application. The schema is private input; it is not the public Analysis representation and is never returned to browsers.
+[visual-analysis.schema.json](../../app/weather/ai/contracts/visual-analysis.schema.json) (v2) is enums and evidence IDs only: category, assessment, confidence, an optional intensity (rain, snowfall, fog) and sky cover (cloud cover), and limitation codes. There is no free-text field and unknown fields are rejected, so no model-written prose can be published. Evidence lists are nonempty, unique and bounded at 16 opaque IDs, each one supplied in that request. Each category appears at most once per window, and precipitation and visibility are always assessed (`not_assessable` at night or behind an obstruction). Observation IDs are assigned by the application. The schema is private input; it is not the public Analysis representation and is never returned to browsers.
 
 The [visual fixtures](visual-analysis-fixtures.json) exercise the schema's shape; `app/tests/test_ai.py` and `test_ai_guards.py` cover the semantic rules on recorded-format replies.
 
@@ -54,7 +54,7 @@ Weather data responses may gain additive fields within v1; clients parse lenient
 
 A public ID is not a capability. The media resolver checks class, committed publication, trusted exposure eligibility, expiry and tombstone before returning headers or bytes. It cannot accept arbitrary upstream URLs/keys. IDs in operator routes similarly require subject-specific authorization.
 
-Operator routes (`/editor`, `/api/v1/operator/*`) sit behind Authentik forward-auth (P11). The API trusts the identity header only from Traefik (enforced by NetworkPolicy) and admits a request only when that subject is on the one-user allowlist; there are no capability roles, local passwords or public accounts. Mutations additionally require a matching `Origin` and a JSON body; the app sets no cookies of its own (the Authentik session cookie is the edge's). All private responses, including private raw receipts, use no-store and are excluded from public service-worker/CDN caches.
+Operator routes (`/editor`, `/api/v1/operator/*`) sit behind Authentik forward-auth. The API trusts the identity header only from Traefik (enforced by NetworkPolicy) and admits a request only when that subject is on the one-user allowlist; there are no capability roles, local passwords or public accounts. Mutations additionally require a matching `Origin` and a JSON body; the app sets no cookies of its own (the Authentik session cookie is the edge's). All private responses, including private raw receipts, use no-store and are excluded from public service-worker/CDN caches.
 
 ## Private editor (implemented, #44)
 
@@ -84,7 +84,7 @@ Each public `Timelapse` carries `editorial`: `revision` (the public revision: it
 | Measured predicates | Whitelisted precipitation/gust/temperature statistics, units and bounded operators/coverage | Unit conversion; aggregate window equality and evidence count/hash; unknown/low coverage never satisfies numeric comparison; filters applied before ranking |
 | Search | Bounded query/top-k, active profile fields and explicit mode; no arbitrary SQL/formula | Count equals result length; current visibility/revision; every seek inside cited media/source interval; profile-compatible vectors; exact predicates preserved under fallback |
 | Editorial | Expected revision, bounded allowed changes; no actor or raw measured fields | Server actor from the allowlisted identity, Origin check, CAS, evidence rebase, immediate stale-search withdrawal and transactional audit/outbox. Poster choice is #78: frames from the published rendition, embargoed and EXIF-stripped, never overwritten by a pipeline or AI rerun |
-| History/almanac | Bounded pages, units, coverage and evidence count/hash | Stable cursor snapshot, exact supported statistic/formula, coverage interval arithmetic and source-support semantics; aggregates are recomputed on read (C5) |
+| History/almanac | Bounded pages, units, coverage and evidence count/hash | Stable cursor snapshot, exact supported statistic/formula, coverage interval arithmetic and source-support semantics; aggregates are recomputed on read |
 | Private receipts | Bounded exact-byte base64 representation and hash | Allowlisted operator only, canonical decode/hash, complete retained payload and parser lineage, no public cache or logging |
 
 Schema validation alone does not establish any of these temporal, privacy or relational invariants; the database CHECKs, views and server checks do.
@@ -97,7 +97,7 @@ Current metrics have individual expiry; generated_at is response construction ti
 
 Public metric discovery is /api/v1/weather/metrics. Registry revisions pin canonical units, display conversions and allowable statistics; private diagnostics do not enter this registry. Unknown public metric/statistic requests fail clearly instead of selecting SQL identifiers from raw strings.
 
-Initial measured search admits precipitation observed accumulation (mm/in), maximum wind gust (m/s, km/h, mph), and temperature minimum/maximum/duration-weighted mean (degC/degF). Formula and precision policy match the on-read aggregates and their golden vectors (C5). Scope is the full exact video segment in v1. A semantic clip hit cannot imply the measured event occurred at that clip time. Further metrics or window scopes are a versioned extension.
+Initial measured search admits precipitation observed accumulation (mm/in), maximum wind gust (m/s, km/h, mph), and temperature minimum/maximum/duration-weighted mean (degC/degF). Formula and precision policy match the on-read aggregates and their golden vectors. Scope is the full exact video segment in v1. A semantic clip hit cannot imply the measured event occurred at that clip time. Further metrics or window scopes are a versioned extension.
 
 ## Bounded queries and exports
 
@@ -109,7 +109,7 @@ Cursors are opaque, bounded, authenticated against tampering, and bind query fil
 
 Almanac comparison requests require comparison_start and comparison_end as well as the primary interval; both must form a valid half-open interval. Other products reject those extra bounds. Comparisons retain each interval's actual coverage and duration rather than silently normalizing unequal periods.
 
-Search uses explicit English plain-text matching, no-terms handling and finite request/SQL/model-wait budgets, with no query-vector cache (P10) and the [request ceilings carried from D12](../architecture.md#rules-carried-from-adrs). Search responses/errors use no-store. Nonempty no-terms text never silently becomes numeric browsing; without semantic availability return lexical mode with reason `lexical_no_terms`. SQL timeout or failed current-revision hydration is unavailable (503), admission/rate rejection is 429, and invalid input is 400.
+Search uses explicit English plain-text matching, no-terms handling and finite request/SQL/model-wait budgets, with no query-vector cache and the [request ceilings](../architecture.md#design-rules). Search responses/errors use no-store. Nonempty no-terms text never silently becomes numeric browsing; without semantic availability return lexical mode with reason `lexical_no_terms`. SQL timeout or failed current-revision hydration is unavailable (503), admission/rate rejection is 429, and invalid input is 400.
 
 ## HTTP transport and caches
 
@@ -117,7 +117,7 @@ Search uses explicit English plain-text matching, no-terms handling and finite r
 
 The `api` serves `/media/{asset_id}` and `/downloads/{video_id}/native`; #39's `weather-preview` reuses the same origin code for previews. Each path admits exactly one canonical lowercase UUID; any other spelling under those prefixes (escapes, dot segments, extra segments, object keys) is a denial. The one fixed exception is the probe target `/media/latest/{kind}` (#49), `kind` one of `video` (web rendition), `poster`, `keogram`, `still`: the newest such asset, from a source that ended within 14 days (2 days for stills), that `public_api.videos` or `public_api.stills` lists, re-resolved on every request with the same headers and rules as `/media/{asset_id}`, and 404 when none qualifies. No caller-supplied key, path or URL is ever used, and there are no redirects, presigned URLs or listings.
 
-Authorization runs at request time for every GET, HEAD and range against the committed catalog on the primary, with the database clock (P8). A media ID serves only a row of `public_api.assets`: a public class (video rendition, poster, keogram, still, sidecar) that is available, not withdrawn and has `published_at` and `public_not_before` at or before now. A download serves only the native rendition of a video `public_api.videos` lists with media. Nothing about the decision is cached, so a withdrawal takes effect on the next request. There are no mid-stream authorization leases: a response that started may finish.
+Authorization runs at request time for every GET, HEAD and range against the committed catalog on the primary, with the database clock. A media ID serves only a row of `public_api.assets`: a public class (video rendition, poster, keogram, still, sidecar) that is available, not withdrawn and has `published_at` and `public_not_before` at or before now. A download serves only the native rendition of a video `public_api.videos` lists with media. Nothing about the decision is cached, so a withdrawal takes effect on the next request. There are no mid-stream authorization leases: a response that started may finish.
 
 Every denial (unknown, embargoed, unpublished, withdrawn, original, wrong class, malformed path) is the same 404 problem document, with the same headers and no ETag, over GET, HEAD and Range. A catalog or store failure before the headers is 503 with `Retry-After`, no media headers and no body. After the headers, a failure aborts the connection; nothing is appended to media bytes.
 
@@ -145,11 +145,11 @@ Integer parsing is bounded and nothing is allocated from a supplied offset. Head
 
 ### Caches
 
-Media bytes, downloads, previews and preview pointers are `no-store`, and shared edge caching is bypassed (D14's initial cache policy), including errors. Cloudflare caching is not pursued (R25); a later cache would need its own exposure and invalidation design. Current/catalog responses may use short, qualified caching; private editor and raw routes never do. Already downloaded bytes cannot be recalled.
+Media bytes, downloads, previews and preview pointers are `no-store`, and shared edge caching is bypassed, including errors. Cloudflare caching is not pursued (R25); a later cache would need its own exposure and invalidation design. Current/catalog responses may use short, qualified caching; private editor and raw routes never do. Already downloaded bytes cannot be recalled.
 
 ## Acceptance ownership
 
-Each route's issue owns its tests in its acceptance list (P16): #14 weather data, #20 media origin, #25 search, #39 previews, #42 almanac, #44 and #78 editor.
+Each route's issue owns its tests in its acceptance list: #14 weather data, #20 media origin, #25 search, #39 previews, #42 almanac, #44 and #78 editor.
 
 ## Editorial description write/public parity
 
@@ -157,19 +157,19 @@ Each route's issue owns its tests in its acceptance list (P16): #14 weather data
 
 ## Synthesis attribution
 
-Public text is rendered by server templates (C18; [description text contract](description-text-contract.md)); there is no model-written candidate and no synthesis call. `Analysis.author` is `ai` for template text from validated observations, `station` when no hour passed visual review, and `editor` for a human (#44) revision; each carries its own label. Analysis claims have basis `visual` or `instrument` only, and a stored claim of any other basis is never served. Public events keep evidence `basis` separately from `origin` (#41). Measured/visual origins require matching instrument/visual basis. Human/manual origins retain explicit evidence basis and attribution. Application-assigned interval/precision and seeks come from validated evidence, never model timestamps. Every consumer, sidecar and search projection must preserve that distinction.
+Public text is rendered by server templates ([description text contract](description-text-contract.md)); there is no model-written candidate and no synthesis call. `Analysis.author` is `ai` for template text from validated observations, `station` when no hour passed visual review, and `editor` for a human (#44) revision; each carries its own label. Analysis claims have basis `visual` or `instrument` only, and a stored claim of any other basis is never served. Public events keep evidence `basis` separately from `origin` (#41). Measured/visual origins require matching instrument/visual basis. Human/manual origins retain explicit evidence basis and attribution. Application-assigned interval/precision and seeks come from validated evidence, never model timestamps. Every consumer, sidecar and search projection must preserve that distinction.
 
 ## Analysis execution versus available data (implemented, #23)
 
-Each `Timelapse` carries `analysis`: `author` (`ai`, or `editor` for a #44 human revision) with its `label` ("AI-generated · sampled-frame analysis" or "Editor-written description"), `state` (`pending`, `complete`, `degraded`, `failed`, or `unavailable` without playable media), a sanitized `reason` code, `stale`, `revision`, `generated_at`, the effective `description` and `claims` (text plus `basis` only), all template-rendered from validated enums and station values (C18), `limitations`, `coverage` (reviewed seconds and hour windows, gaps, algorithm) and, for `ai` only, `provenance` (model route and echoed model, prompt and schema revisions, refresh kind, evidence count, frames sampled, keogram used). Content appears only for a validated revision of the video's current media; a new rendition shows `pending` with no text. Evidence IDs, observations and raw replies are never served. Analysis uses sampled frames plus the keogram when present (P9) and is pinned to the model and prompt version at publication. Runbook: [intelligence](../operations/intelligence.md).
+Each `Timelapse` carries `analysis`: `author` (`ai`, or `editor` for a #44 human revision) with its `label` ("AI-generated · sampled-frame analysis" or "Editor-written description"), `state` (`pending`, `complete`, `degraded`, `failed`, or `unavailable` without playable media), a sanitized `reason` code, `stale`, `revision`, `generated_at`, the effective `description` and `claims` (text plus `basis` only), all template-rendered from validated enums and station values, `limitations`, `coverage` (reviewed seconds and hour windows, gaps, algorithm) and, for `ai` only, `provenance` (model route and echoed model, prompt and schema revisions, refresh kind, evidence count, frames sampled, keogram used). Content appears only for a validated revision of the video's current media; a new rendition shows `pending` with no text. Evidence IDs, observations and raw replies are never served. Analysis uses sampled frames plus the keogram when present and is pinned to the model and prompt version at publication. Runbook: [intelligence](../operations/intelligence.md).
 
 ## Preview expiry clarification
 
-`Image.expires_at` is logical derivative expiry, not current-preview freshness or permission to delete storage. The [preview policy contract](preview-policy-contract.md) distinguishes earliest publication (P14), current-display age and retention. A latest-preview response above its current-age cutoff is unavailable with no assets even while a historical direct asset is still eligible. Clients must age already-received current previews during failed polling. Origin authorization checks logical expiry/withdrawal before every GET, HEAD and range response.
+`Image.expires_at` is logical derivative expiry, not current-preview freshness or permission to delete storage. The [preview policy contract](preview-policy-contract.md) distinguishes earliest publication, current-display age and retention. A latest-preview response above its current-age cutoff is unavailable with no assets even while a historical direct asset is still eligible. Clients must age already-received current previews during failed polling. Origin authorization checks logical expiry/withdrawal before every GET, HEAD and range response.
 
 ## Exact time ownership
 
-The [section 5 audit](../archive/planning-2026-10/implementation/time-clause-audit.md) binds civil schedules, calendar/hour identities and frame ownership. Interval ordering and membership are semantic, not JSON Schema guarantees. Derive seeks from validated rational source/frame maps; decimal browser seek values never define capture/clip ownership. Exclusive endpoints and explicit UI clamping must not introduce an adjacent-segment sample.
+The [time model](../operations/time-model.md) binds civil schedules, calendar/hour identities and frame ownership. Interval ordering and membership are semantic, not JSON Schema guarantees. Derive seeks from validated rational source/frame maps; decimal browser seek values never define capture/clip ownership. Exclusive endpoints and explicit UI clamping must not introduce an adjacent-segment sample.
 
 ## Wind-rose structure
 
@@ -187,4 +187,4 @@ The draft v1 shape was corrected before implementation; consumers and generated 
 
 ## Aggregate computation provenance
 
-Superseded by C5 (#14). Aggregates are computed on read, so there is no stored computation or evidence revision to bind. Each `Aggregate` carries `evidence_count` and `evidence_hash` (SHA-256 over the contributing row IDs in source order), which change whenever the inputs change. A formula change is a code change reviewed in the PR that makes it, with the golden vectors updated alongside.
+Aggregates are computed on read (#14), so there is no stored computation or evidence revision to bind. Each `Aggregate` carries `evidence_count` and `evidence_hash` (SHA-256 over the contributing row IDs in source order), which change whenever the inputs change. A formula change is a code change reviewed in the PR that makes it, with the golden vectors updated alongside.

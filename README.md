@@ -7,19 +7,13 @@ The service is live and is deployed from `main` by the Argo CD Application `weat
 ## Start here
 
 1. [AGENTS.md](AGENTS.md): how to build, deploy and verify a change, and the hazards.
-2. [docs/architecture.md](docs/architecture.md): components, storage and identities, time model, repository layout and delivery slices.
-3. [Simplification record](docs/decisions/2026-10-24-simplification.md) and the [takeover re-plan](docs/decisions/2026-10-24-takeover-replan.md), which amends it: what changed on 2026-10-24 and why.
-4. [Requirements v4.1](docs/requirements.md) (R01–R38) and the [accepted product decisions](docs/decisions/2026-10-23-product-scope.md) (Q01–Q16).
+2. [docs/architecture.md](docs/architecture.md): components, storage and identities, time model, design rules and repository layout.
+3. [docs/operations/](docs/operations): one runbook per component.
+4. [docs/contracts/](docs/contracts): the API contracts and the golden vectors the tests load.
 
-The authoritative set is the files above, plus:
+Background: [requirements](docs/requirements.md) (R01–R38, the original brief) and the [product scope decisions](docs/decisions/2026-10-23-product-scope.md) (Q01–Q16) record what the service is for; the other files in [docs/decisions/](docs/decisions) are design records for single choices. Wireframes are in [docs/design/wireframes/](docs/design/wireframes) and research references in [docs/research/](docs/research). Where any of these differs from the architecture document, the architecture document is right.
 
-- **Contracts and golden vectors:** [docs/contracts/](docs/contracts).
-- **Wireframes:** [docs/design/wireframes/](docs/design/wireframes).
-- **Research references:** [docs/research/](docs/research).
-
-The ADRs in [docs/decisions/](docs/decisions) (D01–D16) are historical; the rules that still bind are copied into [architecture.md](docs/architecture.md#rules-carried-from-adrs). Planning-era audits, receipts and superseded contracts live in [docs/archive/planning-2026-10/](docs/archive/planning-2026-10). They are history, not instructions.
-
-## Product (initial release)
+## Product
 
 - **Timelapses.** Daytime and overnight timelapses for `skycam_east`, `skycam_west` and `frontyard_1`, split at civil twilight with half-open, non-overlapping intervals. The two segments of a cycle share exactly 7,200 frames at 60 fps (≤120 s per camera per cycle). Each video has a native download, web and mobile renditions, and real-frame posters.
 - **Keograms.** Daytime and overnight keograms for all three cameras.
@@ -30,17 +24,7 @@ The ADRs in [docs/decisions/](docs/decisions) (D01–D16) are historical; the ru
 - **AI and search.** Labeled AI descriptions, hybrid semantic and typed-measured search, and a private editor (corrections, tags, favorites, poster choice).
 - **Embed and site.** A current-weather card embedded on the vallery.net homepage. The site is responsive and accessible, matching the vallery.net design.
 
-**Follow-on:** an east/west composite skycam video (WX-45, #46). **Deferred:** visual-index research (WX-46, #47). **Out of scope:** external forecasts, radar and alerts; notifications; kiosk and PWA modes; multi-tenancy; identifying people.
-
-## Delivery slices
-
-| Slice | Goes public at | Contents |
-|---|---|---|
-| 0 Foundation | skeleton | scaffold, CI/CD, namespace, schema, time model, database and backups |
-| 1 Live weather | [#48](https://github.com/jvallery/weather/issues/48) | Tempest ingest, current conditions, history, almanac, embed card |
-| 2 Timelapse | [#49](https://github.com/jvallery/weather/issues/49) | capture, streaming render, publication, media origin, keograms, hourly stills, previews, linked plots |
-| 3 Intelligence | [#50](https://github.com/jvallery/weather/issues/50) | AI descriptions, search, events, editor |
-| Closeout | [#36](https://github.com/jvallery/weather/issues/36) | B2-only restore drill, homepage card, SLO evidence, open owner decisions |
+**Follow-on:** an east/west composite skycam video (#46). **Deferred:** visual-index research (#47). **Out of scope:** external forecasts, radar and alerts; notifications; kiosk and PWA modes; multi-tenancy; identifying people.
 
 ## Privacy
 

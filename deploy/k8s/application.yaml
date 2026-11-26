@@ -27,7 +27,7 @@ spec:
         # Admits egress to weather-pg (weather-database-clients NetworkPolicy).
         weather.vallery.net/database-role: api
     spec:
-      # STD-HA-06 PriorityClass ladder (weather#224).
+      # Estate PriorityClass ladder (weather#224).
       priorityClassName: estate-production
       serviceAccountName: api
       enableServiceLinks: false
@@ -49,10 +49,10 @@ spec:
               topologyKey: topology.vallery.net/proxmox-host
               labelSelector:
                 matchLabels: *id001
-      # estate-platform#113 (STD-HA-08): hard spread across Proxmox hosts. nodeTaintsPolicy Honor
+      # estate-platform#113: hard spread across Proxmox hosts. nodeTaintsPolicy Honor
       # keeps the frigate-tainted olivine worker and cordoned servers out of the domain count, so
       # 2 replicas plus one surge pod fit the four general workers.
-      # STD-HA-16 (D-855): also spread across power circuits, keyed only on the node label. An
+      # Also spread across power circuits, keyed only on the node label. An
       # explicit constraint list switches off the scheduler defaults, so the circuit key is named
       # here. matchLabelKeys pod-template-hash makes a rolling update count only its own revision.
       topologySpreadConstraints:
@@ -149,7 +149,7 @@ spec:
           mountPath: /var/run/weather-api-cursor
           readOnly: true
         # Private site position for derived almanac astronomy (#42); optional, so the API
-        # starts and reports astronomy unavailable until agents KSOPS provides it.
+        # starts and reports astronomy unavailable until the weather-secrets bundle provides it.
         - name: site
           mountPath: /var/run/weather-site
           readOnly: true
@@ -301,7 +301,7 @@ spec:
     metadata:
       labels: *id001
     spec:
-      # STD-HA-06 PriorityClass ladder (weather#224).
+      # Estate PriorityClass ladder (weather#224).
       priorityClassName: estate-production
       serviceAccountName: web
       enableServiceLinks: false
@@ -323,10 +323,10 @@ spec:
               topologyKey: topology.vallery.net/proxmox-host
               labelSelector:
                 matchLabels: *id001
-      # estate-platform#113 (STD-HA-08): hard spread across Proxmox hosts. nodeTaintsPolicy Honor
+      # estate-platform#113: hard spread across Proxmox hosts. nodeTaintsPolicy Honor
       # keeps the frigate-tainted olivine worker and cordoned servers out of the domain count, so
       # 2 replicas plus one surge pod fit the four general workers.
-      # STD-HA-16 (D-855): also spread across power circuits, keyed only on the node label. An
+      # Also spread across power circuits, keyed only on the node label. An
       # explicit constraint list switches off the scheduler defaults, so the circuit key is named
       # here. matchLabelKeys pod-template-hash makes a rolling update count only its own revision.
       topologySpreadConstraints:

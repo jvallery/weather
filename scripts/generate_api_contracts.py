@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Generate or check Pydantic -> OpenAPI -> TypeScript (P12). No service or network access."""
+"""Generate or check Pydantic -> OpenAPI -> TypeScript. No service or network access."""
 
 import argparse
 import json

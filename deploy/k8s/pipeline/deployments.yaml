@@ -92,7 +92,7 @@ spec:
           value: /tmp
         resources:
           # weather#285: p95 is 3.8-4.0 CPU at the 4-CPU limit; the request reflects real use so the
-          # scheduler and the N-1 survivor budget (STD-HA-14) count it.
+          # scheduler and the N-1 survivor budget count it.
           requests:
             cpu: 2500m
             memory: 2Gi
@@ -265,7 +265,7 @@ spec:
           value: /tmp
         resources:
           # weather#285: p95 is 3.8-4.0 CPU at the 4-CPU limit; the request reflects real use so the
-          # scheduler and the N-1 survivor budget (STD-HA-14) count it.
+          # scheduler and the N-1 survivor budget count it.
           requests:
             cpu: 2500m
             memory: 2Gi
@@ -438,7 +438,7 @@ spec:
           value: /tmp
         resources:
           # weather#285: p95 is 3.8-4.0 CPU at the 4-CPU limit; the request reflects real use so the
-          # scheduler and the N-1 survivor budget (STD-HA-14) count it.
+          # scheduler and the N-1 survivor budget count it.
           requests:
             cpu: 2500m
             memory: 2Gi

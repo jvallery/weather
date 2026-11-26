@@ -1,7 +1,7 @@
 # Search
 
 `POST /api/v1/search` ranks published videos by exact cosine over `embed.main` vectors, English
-full text and typed whole-video measurements (#25, P10). Code: `app/weather/api/search.py`
+full text and typed whole-video measurements (#25). Code: `app/weather/api/search.py`
 (query path), `app/weather/search/` (Cortex client and document builder). Schema:
 `app/migrations/versions/0004_search.py`. Contract: [api-contract.md](../contracts/api-contract.md#search-implemented-25).
 
@@ -86,7 +86,7 @@ Search wiring lives in the kustomize component `deploy/k8s/search`: the `weather
 mounted read-only at `/var/run/weather-cortex` in `api` only, `WEATHER_CORTEX_BASE_URL`
 (`https://cortex.vallery.net/v1`), NetworkPolicy `api-cortex-egress`, and IngressRoute
 `weather-search` with Middlewares `weather-search-rate-limit` (30/min, burst 10) and
-`weather-search-in-flight` (2), both keyed on `Cf-Connecting-Ip` (C7). It stays disabled until
+`weather-search-in-flight` (2), both keyed on `Cf-Connecting-Ip`. It stays disabled until
 the `deploy:` commit that pins an app digest containing this code uncomments `components: -
 search` in `deploy/k8s/kustomization.yaml`, because older images reject the new setting.
 The migrate hook applies `0004_search` with that pin. Without the key or URL the API still

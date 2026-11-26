@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Weather CI on estate-ci (jvallery/estate-ci): ARC runners in the vallery
 # cluster only. Logic lives in scripts/ and ci/; this file only calls them.
-# Native fleet CI is retired (jvallery/agents#6254); these are the only required checks.
+# These are the only required checks.
 name: ci
 
 on:
@@ -23,7 +23,7 @@ jobs:
     uses: jvallery/estate-ci/.github/workflows/lint.yml@f2d40e7df657822465b091e52c0ca31eab0f3194 # estate-ci main 2026-11-06 (#38)
     with: {strict: true}
 
-  # D-55 (CI-SHARD-ALL): the former single `application` (~26 min) and `browser`
+  # The former single `application` (~26 min) and `browser`
   # (~16-22 min) jobs run as parallel shards. The required contexts "application /
   # application" and "browser / browser" are aggregate jobs that fail unless every
   # shard succeeded; the shards together run exactly the former commands. Browser

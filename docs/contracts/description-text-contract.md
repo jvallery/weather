@@ -1,11 +1,11 @@
-# Description text contract (C18)
+# Description text contract
 
-Status: implemented by `app/weather/ai/render.py` (#23). Supersedes the WeatherNarrative synthesis candidate: no model-written prose is ever published, and there is no Stage C model call ([C18](../decisions/2026-10-24-takeover-replan.md)).
+Status: implemented by `app/weather/ai/render.py` (#23). Supersedes the WeatherNarrative synthesis candidate: no model-written prose is ever published, and there is no Stage C model call ([design rules](../architecture.md#design-rules)).
 
 ## Inputs
 
 - **Accepted Stage A observations**, one structured reply per hour window ([visual-analysis.schema.json](../../app/weather/ai/contracts/visual-analysis.schema.json), v2): category, assessment (`visible`, `possible`, `not_observed`, `not_assessable`), confidence, optional intensity and sky cover, and limitation codes. Observation IDs are application IDs bound to the run.
-- **The Stage B packet**: whole-segment station aggregates with packet-local IDs, values rendered in the canonical unit and the registry's fixed conversions by `evidence.py`, coverage, and the evidence hash (C5).
+- **The Stage B packet**: whole-segment station aggregates with packet-local IDs, values rendered in the canonical unit and the registry's fixed conversions by `evidence.py`, coverage, and the evidence hash.
 
 ## Rendering
 

@@ -1,6 +1,6 @@
 # Project license and selective reuse
 
-Accepted by Jason on 2026-10-23: **MIT with permissive reuse**. This resolves the owner choice reserved by Q15 and D01. [LICENSE](../../LICENSE) applies to Weather's original source and documentation; it does not relicense third-party material.
+Accepted by Jason on 2026-10-23: **MIT with permissive reuse**. This resolves the licence choice left open in the product scope decisions (Q15). [LICENSE](../../LICENSE) applies to Weather's original source and documentation; it does not relicense third-party material.
 
 Use reviewed compatible permissive components selectively. Before importing code or assets, record the upstream repository, exact revision, imported paths, actual license file and relevant notices, modifications and transitive dependencies. Preserve required notices in distributions. A public repository or README badge does not establish permission to copy.
 

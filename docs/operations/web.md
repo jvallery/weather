@@ -98,7 +98,7 @@ Mapping (`lib/time-map.ts`) is exact integer-microsecond arithmetic: frame k own
 middle of the target frame's display window. A sidecar whose interval, frame count, step or tick
 total disagrees with the catalog entry is refused, and the page plays without linking. Playback
 moves the cursor only when the frame changes, so a seek never echoes back as another seek. Plot,
-keogram (1,440 equal UTC bins, D10; once the browser has read the segment's `/api/v1/keograms`
+keogram (1,440 equal UTC bins; once the browser has read the segment's `/api/v1/keograms`
 entry, its state, image, exact bin map and gap runs, otherwise the catalog's), event and time-input selections all seek through the same map;
 an instant outside `[a, b)` is rejected with a notice, and an event interval is clamped to its
 overlap. Slate frames are shaded and labelled at their true length; telemetry gaps are line breaks
@@ -121,7 +121,7 @@ The URL is the whole query: `q`, `from`/`to` (America/Denver calendar days, last
 sent as the half-open UTC interval between local midnights), repeated `camera` and `segment`,
 repeated `p=<metric>.<statistic>:<op>:<value>:<unit>:<min_coverage>` (ops `lt le eq ge gt`; units
 `mm in`, `m/s km/h mph`, `degC degF`, always explicit), `top_k` (omitted when 10) and `units`
-(always present). D12 ceilings are checked before sending (≤512 Unicode scalars and no control
+(always present). The search request ceilings are checked before sending (≤512 Unicode scalars and no control
 characters, ≤8 filters over ≤31 days of UTC duration, `top_k` 1–20); any invalid parameter is
 listed and nothing is sent, and the form keeps the raw value for correction.
 
@@ -157,7 +157,7 @@ browsers and system libraries, and qualified FFmpeg 9.0.2; `bootstrap-browser.sh
 readable `/opt/ms-playwright` closure and generates synthetic fixtures as UID1001. It never runs apt
 or installs system libraries at validation runtime. The browser check also scans every compiled client
 asset, including lazy routes, for private endpoints/configuration, fixture identifiers and source maps
-without printing asset contents. WX-20 is not complete until the three-engine responsive/axe/JS-off/chunk-reload checks
+without printing asset contents. A web change is not complete until the three-engine responsive/axe/JS-off/chunk-reload checks
 and live pinned web image have passed. Source tests alone do not establish those outcomes.
 
 Metrics `weather_web_api_requests_total{route,result}`, `weather_web_api_inflight` and
