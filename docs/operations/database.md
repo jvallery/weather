@@ -71,11 +71,18 @@ source CPU cap if the change causes harm; do not bypass admission or alert rules
   in-cluster garage-k3s, `retentionPolicy: 7d`; see "Local WAL archive" below).
   The declared PITR window is **7 days** (`recovery.pitr_window_days` in
   `ConfigMap/weather-database-policy`). The declared offsite age target is
-  **26 h** (`recovery.db_offsite_age_target_hours`). The central B2 mirror has
-  verified WAL, and base-plus-WAL proof is tracked in storage-infra#2265.
-  D-460's Garage-volume Longhorn B2 copy is tracked separately in
-  storage-infra#1567. Offsite RPO and RTO are measured by the isolated
-  restore tracked in weather#33.
+  **26 h** (`recovery.db_offsite_age_target_hours`).
+- **Offsite route of record (D-903, 2026-11-20, amends D-460).** The offsite
+  copy of the database is storage-infra's `object-custody-b2` mirror of bucket
+  `weather-pg` (base daily at 06:15 UTC, WAL every 15 min, verified per object
+  on B2). `WeatherOffsiteStale` reads the oldest of the last verified base
+  custody, the last verified WAL custody and the newest base at the source,
+  with a 36 h threshold. The newest base on B2 is normally about 43 h old (base
+  at 09:15 UTC, copied by the next day's 06:15 UTC run); WAL keeps PITR current.
+  That age is verification age, not restore proof: offsite RPO and RTO are
+  measured by the isolated restore from B2 tracked in weather#33. Longhorn B2
+  backups of the Garage volumes (storage-infra#1567) are no longer the
+  database's offsite route.
 - **Historical B2 store.** `weather-pg-b2` (`s3://weather-db-vallery/cnpg/weather-pg`,
   writer `weather-pg-backup-b2-writer`, which cannot permanently erase versions,
   storage-infra#1112) has received nothing since 2026-10-31. It has no
