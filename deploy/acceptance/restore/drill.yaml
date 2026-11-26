@@ -59,7 +59,7 @@ metadata:
     weather.vallery.net/restore-drill: '__OPERATION__'
 spec:
   instances: 1
-  imageName: registry.vallery.net/jvallery/mirror-ghcr-io-cloudnative-pg-postgresql:16.16-standard-trixie-c1d2ebeaf7b2@sha256:c1d2ebeaf7b254264bdb63997270cc9d5e007ba5be4efe6112ae801d1ad68118
+  imageName: registry.vallery.net/jvallery/mirror-ghcr-io-cloudnative-pg-postgresql:16.16-standard-trixie-29d173bc84f5@sha256:29d173bc84f5522171f6254b41b8c11d33e218ac073daec7c0d93694b01bbb02
   imagePullSecrets:
     - name: zot-origin-cluster-pull
   enableSuperuserAccess: false
