@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: logins
-          image: registry.vallery.net/jvallery/mirror-ghcr-io-cloudnative-pg-postgresql:16.16-standard-trixie-0848a2f80eb4@sha256:0848a2f80eb48d9bff76857ce988a6053b4120e7ecbdc4414e24cb1cd2df0754
+          image: registry.vallery.net/jvallery/mirror-ghcr-io-cloudnative-pg-postgresql:16.16-standard-trixie-29d173bc84f5@sha256:29d173bc84f5522171f6254b41b8c11d33e218ac073daec7c0d93694b01bbb02
           command: [sh, -eu, -c]
           args:
             - |
