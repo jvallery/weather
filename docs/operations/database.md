@@ -72,6 +72,11 @@ do not bypass admission or alert rules.
   The declared PITR window is **7 days** (`recovery.pitr_window_days` in
   `ConfigMap/weather-database-policy`). The declared offsite age target is
   **26 h** (`recovery.db_offsite_age_target_hours`).
+- **Where the archive is going.** `garage-k3s` runs on Longhorn. The estate's
+  rule is two backup copies, one on the NAS and one in Backblaze B2, and no
+  backup on a Longhorn volume or on `garage-k3s`. The move of this archive to
+  that shape is jvallery/storage-infra#2674; until it is delivered, everything
+  below describes what runs. Add no new backup target on `garage-k3s`.
 - **Offsite route of record (since 2026-11-20).** The offsite
   copy of the database is storage-infra's `object-custody-b2` mirror of bucket
   `weather-pg` (base daily at 06:15 UTC, WAL every 15 min, verified per object
