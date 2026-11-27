@@ -1,10 +1,11 @@
-# Public launch verification
+# Public edge smoke
 
-Run `python scripts/verify_public_launch.py --output /path/to/receipt.json` for the bounded,
-read-only header/private-route smoke against the public Tunnel. It checks Today, history, a real
+Run `python scripts/verify_public_launch.py --output <result.json>` for the bounded,
+read-only header/private-route smoke against the public site. It checks Today, history, a real
 404, and closed editor/operator/metrics paths. It uses an explicit verifier User-Agent, inspects
 at most 2 MiB per response, and writes only status, byte counts, header presence and fixed failure
-labels. It never writes response bodies, matched private text or credentials into its receipt.
+labels. It never writes response bodies, matched private text or credentials into its result file,
+which is scratch output: do not commit it.
 
 Exit 1 means an acceptance condition failed; it does not weaken the check for an undeployed route.
 Fix the responsible implementation and rerun against the intended deployed revision. Privacy

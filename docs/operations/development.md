@@ -1,13 +1,13 @@
 # Development and checks
 
 Toolchains: CPython 3.14.9, uv 0.13.5, Node 24.22.1, pnpm 12.15.0, gitleaks 8.30.1, Syft 1.55.0 (image SBOMs only).
-Install these through the existing operator/toolbox paths. Run `uv sync --frozen`, then
+Install these versions. Run `uv sync --frozen`, then
 `cd web && pnpm install --frozen-lockfile --ignore-scripts`.
 
-On the Mac, only `scripts/ci.sh lint typecheck unit` and the image-free supply-chain scan are allowed.
+Locally, run only `scripts/ci.sh lint typecheck unit` and the image-free supply-chain scan.
 `integration`, `all`, image builds, SBOM generation and browser suites run only on the estate-ci
-ARC runners through `.github/workflows/`, which set `WEATHER_CI_IN_CLUSTER=1`. No integration cases exist yet.
-The approved runner entrypoint is `WEATHER_CI_IN_CLUSTER=1 bash scripts/bootstrap-ci.sh bash scripts/ci.sh all`;
+ARC runners through `.github/workflows/`, which set `WEATHER_CI_IN_CLUSTER=1`.
+The CI entrypoint is `WEATHER_CI_IN_CLUSTER=1 bash scripts/bootstrap-ci.sh bash scripts/ci.sh all`;
 it installs checksum-verified tools and the uv-managed pinned interpreter into disposable `/tmp` storage.
 
 The Python production requirements are generated from the lock with
@@ -21,7 +21,7 @@ Weather. CC-BY-4.0 metadata remains attributed in the inventory. Binary OS/media
 by image SBOMs and the FFmpeg distribution notes.
 
 The API runs with `python -m weather.cli api`, HTTP on 8000 and metrics on 9000.
-`PORT` and `METRICS_PORT` override these. `/healthz`, `/api/healthz` and `/readyz` are scaffold health
+`PORT` and `METRICS_PORT` override these. `/healthz`, `/api/healthz` and `/readyz` are the health
 checks. Metrics are isolated on their own listener and are never routed publicly.
 The web image starts `node server.mjs`, HTTP on 3000 and metrics on 9000.
 Both images run UID/GID 10001, need no service-account token, and support a read-only root filesystem.
