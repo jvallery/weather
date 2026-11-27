@@ -25,12 +25,21 @@ class MediaDrillManifestTests(unittest.TestCase):
     def rendered(self):
         with patch.object(drill, "live_image", side_effect=lambda d, c: APP if d == "api" else WEB):
             name, text = drill.render("test01", "2026-10-29")
-        policy, pod = yaml.safe_load_all(text)
-        return name, policy, pod
+        policy, job = yaml.safe_load_all(text)
+        # A Job, never a bare Pod (weather#328): one attempt, a deadline and a TTL.
+        self.assertEqual((job["apiVersion"], job["kind"]), ("batch/v1", "Job"))
+        self.assertEqual(job["spec"]["backoffLimit"], 0)
+        self.assertEqual(job["spec"]["activeDeadlineSeconds"], 10800)
+        self.assertGreater(job["spec"]["ttlSecondsAfterFinished"], 0)
+        # The NetworkPolicy selects the pod by the drill label on the pod template.
+        self.assertEqual(
+            job["spec"]["template"]["metadata"]["labels"][drill.LABEL], "test01"
+        )
+        return name, policy, job, job["spec"]["template"]
 
     def test_labels_and_no_api_access(self):
-        name, policy, pod = self.rendered()
-        for obj in (policy, pod):
+        name, policy, job, pod = self.rendered()
+        for obj in (policy, job):
             self.assertEqual(obj["metadata"]["namespace"], "weather")
             self.assertEqual(obj["metadata"]["labels"][drill.LABEL], "test01")
             self.assertEqual(obj["metadata"]["labels"]["estate.vallery.net/disposable"], "true")
@@ -43,7 +52,7 @@ class MediaDrillManifestTests(unittest.TestCase):
         self.assertEqual(spec["hostAliases"], [{"ip": "127.0.0.1", "hostnames": ["weather-pg-rw"]}])
 
     def test_egress_is_dns_and_public_https_only(self):
-        _, policy, _ = self.rendered()
+        _, policy, _, _ = self.rendered()
         self.assertEqual(policy["spec"]["policyTypes"], ["Ingress", "Egress"])
         self.assertNotIn("ingress", policy["spec"])
         dns, https = policy["spec"]["egress"]
@@ -54,7 +63,7 @@ class MediaDrillManifestTests(unittest.TestCase):
         self.assertTrue({"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"} <= set(block["except"]))
 
     def test_readers_by_name_only_and_api_never_holds_originals(self):
-        _, _, pod = self.rendered()
+        _, _, _, pod = self.rendered()
         containers = pod["spec"]["initContainers"] + pod["spec"]["containers"]
         secrets = {
             (c["name"], e["valueFrom"]["secretKeyRef"]["name"])
@@ -107,6 +116,7 @@ class MediaDrillVerdictTests(unittest.TestCase):
                     patch.object(drill, "rpo_candidates", return_value=[]),
                     patch.object(drill, "configmap", return_value=""),
                     patch.object(drill, "kubectl", return_value=pod),
+                    patch.object(drill, "job_pod", return_value="synthetic-pod"),
                     patch.object(
                         drill, "wait_receipt", return_value={"result": "pass", "start_epoch": 1}
                     ),
