@@ -6,7 +6,7 @@ The service is live and is deployed from `main` by the Argo CD Application `weat
 
 ## Start here
 
-1. [AGENTS.md](AGENTS.md): how to build, deploy and verify a change, and the hazards.
+1. [AGENTS.md](AGENTS.md): how to build, test, contribute and release a change, and the hazards.
 2. [docs/architecture.md](docs/architecture.md): components, storage and identities, time model, design rules and repository layout.
 3. [docs/operations/](docs/operations): one runbook per component.
 4. [docs/contracts/](docs/contracts): the API contracts and the golden vectors the tests load.
@@ -28,4 +28,4 @@ Background: [requirements](docs/requirements.md) (R01–R38, the original brief)
 
 ## Privacy
 
-This repository is public. Secrets, exact coordinates, camera addresses, station serials, private topology and raw operational receipts never enter Git or issues. Deployment secrets are SOPS-encrypted files in jvallery/estate-platform (`secrets/weather`).
+This repository is public. Secrets, exact coordinates, camera addresses, station serials, private topology and raw operational logs never enter Git or issues. Deployment secrets are kept encrypted outside this repository.

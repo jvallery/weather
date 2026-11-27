@@ -1,15 +1,11 @@
 # Contributing
 
-Agents and maintainers start with [AGENTS.md](AGENTS.md). It covers how to build, deploy and verify a change, and the hazards. Design context is in [docs/architecture.md](docs/architecture.md). Work items are the GitHub issues; an issue is ready when all of its native "blocked by" issues are closed.
+Start with [AGENTS.md](AGENTS.md): how to build, test, contribute and release a change, and the hazards. Design context is in [docs/architecture.md](docs/architecture.md). Work items are the GitHub issues; an issue is ready when all of its native "blocked by" issues are closed.
 
-Every change should:
+Every change should name its issue number, preserve the fixed contracts (time model, raw telemetry, privacy and embargo, immutable publication, and recovery), and be the smallest complete change, validated with the cheapest reliable check.
 
-- name its issue number;
-- preserve the fixed contracts: time model, raw telemetry, privacy and embargo, immutable publication, and recovery;
-- be the smallest complete change, validated with the cheapest reliable check.
+Use synthetic fixtures. Never publish camera credentials, station serials, precise coordinates, private network information, household imagery or raw operational logs; examples use unmistakable placeholders. Report security issues through [SECURITY.md](SECURITY.md).
 
-Use synthetic fixtures in public contributions. Never publish camera credentials, station serials, precise coordinates, private network information, household imagery or raw operational receipts. Examples must use unmistakable placeholders. Report security issues through [SECURITY.md](SECURITY.md).
+Pull requests from forks do not run on the self-hosted CI runners: a maintainer reviews the change and pushes it as a branch of this repository to run the checks.
 
 Original contributions use the [MIT license](LICENSE). Third-party source and assets follow the [reuse policy](docs/decisions/license-and-reuse.md), with provenance and notices recorded before import.
-
-Checks run through `scripts/ci.sh` in GitHub Actions on the estate-ci ARC runners (`weather-ci`, `weather-build`) inside the cluster; `.github/workflows/ci.yml` and `build.yml` call the shared estate-ci workflows. Builds, integration suites and media pilots never run on a workstation. **Pull requests from forks are not executed on the ARC runners.** A maintainer reviews the change and re-pushes it as a same-repository branch to run checks.
