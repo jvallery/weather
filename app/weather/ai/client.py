@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MIT
 """Cortex chat client for `llm.primary.longctx.mm`: the proven image path, nothing else.
 
-The base URL is fixed to the Cortex route and the model to the pinned multimodal route (R21,
-C9); there is no external model and no text-only fallback. Each request carries at most a few
+The base URL is fixed to the Cortex route and the model to the pinned multimodal route;
+there is no external model and no text-only fallback. Each request carries at most a few
 MB of images (checked here, before any byte leaves), temperature 0.1 and a 120 s client
 timeout. Errors are classified without retaining provider text: auth and media errors stop
 retries, unavailability and 429 are retryable (honouring a bounded Retry-After). The key and

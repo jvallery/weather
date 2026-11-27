@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: MIT
 """Stage B: the measured evidence packet over a segment's exact [a, b), from #14's aggregates.
 
-Under C5 an aggregate carries an evidence count and hash, never per-record IDs, so each metric
+An aggregate carries an evidence count and hash, never per-record IDs, so each metric
 gets a packet-local ID bound to this run's nonce. The application renders every value in its
 canonical unit and its fixed display conversions, which only `render.py`'s templates print;
-the model never sees the packet (C18). The packet hash covers values, coverage and evidence
+the model never sees the packet. The packet hash covers values, coverage and evidence
 hashes, not the nonce, so an unchanged measurement set hashes the same on every read.
 """
 

@@ -586,7 +586,7 @@ class WeatherService:
     # Almanac (#42) -----------------------------------------------------------------------
 
     async def almanac(self, query: AlmanacQuery) -> Almanac:
-        """Local almanac products computed on read from the same aggregates (C5)."""
+        """Local almanac products computed on read from the same aggregates."""
         days = almanac_days(query.start, query.end)
         comparison_days = almanac_days(*query.comparison) if query.comparison else []
         entry: Entry | None = None

@@ -22,7 +22,7 @@ export default function Root() {
   // Each SSR render/request owns its cache. No process-global public or private query state.
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false, refetchOnReconnect: false } } }));
   const embed = isEmbedPath(useLocation().pathname);
-  // The framed card has no site chrome; its only link leaves the frame (D13).
+  // The framed card has no site chrome; its only link leaves the frame.
   if (embed) return <html lang="en"><head><meta charSet="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><Meta /><Links /></head><body><QueryClientProvider client={client}><Outlet /></QueryClientProvider><Scripts nonce={nonce} /></body></html>;
   return <html lang="en"><head><meta charSet="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><Meta /><Links /></head><body><a href="#main-content" className="skip-link">Skip to content</a>
     <SiteHeader />

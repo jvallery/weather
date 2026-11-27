@@ -592,7 +592,7 @@ PREDICATES: dict[str, tuple[str, ...]] = {
 
 
 def _plain_text(value: str) -> str:
-    """Reject malformed Unicode and control characters; never normalize or trim (D12)."""
+    """Reject malformed Unicode and control characters; never normalize or trim."""
     for character in value:
         if 0xD800 <= ord(character) <= 0xDFFF or unicodedata.category(character) == "Cc":
             raise ValueError("Query contains prohibited characters")

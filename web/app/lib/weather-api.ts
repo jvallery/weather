@@ -112,7 +112,7 @@ const almanac = z.object({
   coverage: coverage.nullable().default(null), missing_reasons: reasons, next_cursor: text.nullable().default(null),
   items: z.array(almanacItem).transform((items) => items.filter((item) => item !== null)),
 });
-// The description (#23): server-rendered template text (C18). Only known fields are read; anything
+// The description (#23): server-rendered template text. Only known fields are read; anything
 // else is dropped, and an unparseable analysis degrades to "unavailable" without sinking its
 // recording. An editor's revision (#44) and a station-only summary (no hour passed visual review)
 // carry their own labels and are never shown as AI output. A claim of unknown basis is dropped.
@@ -277,7 +277,7 @@ export const parseEvents: Parser<Events> = parser(events);
 export const parseTimelapses: Parser<TimelapsePage> = parser(timelapses);
 export const parseKeograms: Parser<KeogramPage> = parser(keograms);
 
-/** A playable entry: published or partial with the full media set (partial plays with a label, C6). */
+/** A playable entry: published or partial with the full media set (partial plays with a label). */
 export function playable(video: Timelapse): boolean {
   const roles = new Set(video.renditions.map((item) => item.role));
   return (video.state === "published" || video.state === "partial") && !video.withdrawn && roles.size === 3 && video.poster !== null && video.native_download_url !== null;

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 """Real PostgreSQL constraints, privacy grants and concurrent transaction behavior.
 
-Run only through scripts/ci_integration.sh in the approved fleet validation image.
+Run only through scripts/ci_integration.sh in the CI validation image.
 """
 
 import asyncio
@@ -54,7 +54,7 @@ TELEMETRY = (
 
 def engine(role: str = "postgres") -> AsyncEngine:
     if os.environ.get("WEATHER_CI_IN_CLUSTER") != "1":
-        pytest.fail("Integration requires fleet CI")
+        pytest.fail("Integration requires in-cluster CI")
     url = make_url(os.environ["WEATHER_CI_ADMIN_DATABASE_URL"]).set(username=role)
     socket = Path(str(url.query.get("host", "")))
     if (
@@ -336,7 +336,7 @@ def test_baseline_head_roles_and_least_privilege() -> None:
 
                 for name in ANALYSIS:
                     relation = f"weather.{name}"
-                    # Revisions: column-level INSERT that excludes author_kind (C18, #44).
+                    # Revisions: column-level INSERT that excludes author_kind (#44).
                     assert await table("weather_worker", relation, "INSERT") is (
                         name != "analysis_revision"
                     )

@@ -1,5 +1,5 @@
-# Image builds on the estate-ci ARC runners (BUILD-APPS, Jason D-22; jvallery/agents#6092;
-# weather#223 for the PR build check, base mirrors and pin PRs).
+# Image builds on the estate-ci ARC runners (weather#223 for the PR build check, base
+# mirrors and pin PRs).
 # The estate-ci build-plan.yml planner picks the images in ci/images.tsv whose paths
 # changed (the pushed range, the whole pull request, or the dispatched names).
 # - Pull requests: each picked image builds in-cluster (Kaniko) with push: false on the
@@ -9,7 +9,7 @@
 #   then each picked image builds on weather-build and is pushed to
 #   registry.vallery.net/jvallery/<name> by digest (tag gha-<sha12>). When weather-app
 #   or weather-web was rebuilt, pin-bump.yml opens one pin PR for
-#   deploy/k8s/kustomization.yaml as vallery-pin-bot (D-52), so required checks attach.
+#   deploy/k8s/kustomization.yaml as vallery-pin-bot, so required checks attach.
 #   The pin job is the only writer of those two digests; the pipeline
 #   WEATHER_IMAGE_DIGEST env follows the weather-app pin through a kustomize replacement.
 #   Build-input pins (Dockerfile.web previous assets, Dockerfile.ci media tools) stay

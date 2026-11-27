@@ -29,7 +29,7 @@ def ffmpeg_available() -> bool:
 
 needs_ffmpeg = pytest.mark.skipif(
     not ffmpeg_available() and os.environ.get("WEATHER_CI_IN_CLUSTER") != "1",
-    reason="FFmpeg runs in fleet CI (set WEATHER_FFMPEG to run locally)",
+    reason="FFmpeg runs in CI (set WEATHER_FFMPEG to run locally)",
 )
 
 

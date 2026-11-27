@@ -56,7 +56,7 @@ test("a bare page sends nothing; the form starts on the last seven local days in
   expect([draft.from, draft.to, draft.units]).toEqual(["2026-10-26", "2026-11-01", "metric"]);
 });
 
-test("D12 ceilings and invalid parameters are visible errors, never dropped or truncated", () => {
+test("Search ceilings and invalid parameters are visible errors, never dropped or truncated", () => {
   const base = "from=2026-10-25&to=2026-10-31&units=us";
   const errors = (extra: string) => parse(`${base}&${extra}`).errors;
   expect(errors(`q=${"a".repeat(512)}`)).toEqual([]);

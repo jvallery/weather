@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Hourly selection policy (Q03): one native original per camera and UTC hour slot.
+"""Hourly selection policy: one native original per camera and UTC hour slot.
 
 Among the hour's eligible captures (known timing, native geometry and commissioned settings,
 then a clean JPEG decode whose bytes still match the sealed manifest), the one whose source

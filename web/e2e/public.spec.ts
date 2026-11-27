@@ -204,7 +204,7 @@ test("safe interpretation text, lifecycle states and quality preservation", asyn
   await expect.poll(playing).not.toBe(webSource);
   await expect.poll(playing).toMatch(/^\/media\/[0-9a-f-]{36}$/);
   await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime)).toBeCloseTo(12, 0);
-  // A partial-coverage recording stays playable and says so (C6).
+  // A partial-coverage recording stays playable and says so.
   await request.post("http://localhost:4174/__control", { data: { productState: "partial" } });
   await page.reload(); await expect(page.locator("video")).toHaveCount(1);
   await expect(page.getByText(/^Partial coverage · 95\.0% of the source interval was captured/)).toBeVisible();

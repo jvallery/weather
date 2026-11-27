@@ -4,7 +4,7 @@
  * (types generated from #25), the lenient response parser, and the evidence a result may claim.
  * The URL carries local calendar days (America/Denver, last day inclusive), explicit units on
  * every measured filter, and the display units. Each URL maps to exactly one request; an invalid
- * parameter is reported, never dropped, and nothing is truncated or widened (D12).
+ * parameter is reported, never dropped, and nothing is truncated or widened.
  */
 import { z } from "zod";
 import type { components } from "../generated/weather-api";

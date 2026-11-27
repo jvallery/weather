@@ -115,7 +115,7 @@ class AnalysisProvenance(Model):
 
 
 class Analysis(Model):
-    """The labelled description of the current media; never model-written text (C18).
+    """The labelled description of the current media; never model-written text.
 
     `author` is `ai` for template text rendered from the model's validated observations,
     `station` when no hour passed visual review (the text is station data only, with no AI

@@ -3,7 +3,7 @@
 
 `MediaOrigin` is a plain ASGI app. The api mounts it for `/media/` and `/downloads/` with the
 catalog resolver and the Garage body; #39's `weather-preview` reuses it with its own resolver
-and a file body (C17). It never takes a key, path or URL from the caller: a route's pattern
+and a file body. It never takes a key, path or URL from the caller: a route's pattern
 admits exactly one canonical UUID, and the resolver turns that into a private locator.
 
 Every GET and HEAD resolves its target before any validator, length or byte is chosen, and

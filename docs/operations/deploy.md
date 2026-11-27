@@ -1,8 +1,7 @@
 # Deploying Weather
 
 Weather runs in context `vallery`, namespace `weather`. Argo Application
-`weather` renders `deploy/k8s` from this repository. The fleet registry in
-`jvallery/estate-ci` owns the shared build workflows and the ARC runner scale sets
+`weather` renders `deploy/k8s` from this repository. `jvallery/estate-ci` owns the shared build workflows and the ARC runner scale sets
 (`weather-ci`, `weather-build`, `weather-buildcheck`); this repository's
 `.github/workflows/` call them.
 
@@ -80,7 +79,7 @@ The `WEATHER_CI_` prefix is reserved for the check runner and its pinned tools.
 Quota is an admission ceiling, not a reservation or permission to consume
 unused resources. Before each commissioning or drill, inspect current node
 allocatable resources, effective scheduled requests and limits, working sets,
-quotas, pressure and fleet reservations. Keep control-plane nodes cordoned and
+quotas, pressure and other workloads' reservations. Keep control-plane nodes cordoned and
 exclude the Frigate-dedicated worker. Do not alter node labels or tolerations
 to force placement.
 

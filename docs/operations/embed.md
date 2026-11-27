@@ -1,7 +1,7 @@
 # Current-weather embed
 
 Weather #45 owns the child at `https://weather.vallery.net/embed/weather/`;
-VerdifyConsultancy/wordpress#242 owns the parent CSP `frame-src` and the homepage
+jvallery/wordpress#242 owns the parent CSP `frame-src` and the homepage
 block. The combined live check on vallery.net is #36.
 
 The SSR card (`web/app/routes/embed.weather.tsx`) reads `/api/v1/weather/current`

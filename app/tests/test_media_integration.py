@@ -2,7 +2,7 @@
 """The media origin against real PostgreSQL, Garage and uvicorn (#20): eligibility, ranges,
 downloads, a 1 GiB slow client, disconnects, mid-stream and dependency failures.
 
-Run only through scripts/ci_integration.sh in the approved fleet validation image.
+Run only through scripts/ci_integration.sh in the CI validation image.
 """
 
 import asyncio
@@ -53,7 +53,7 @@ GIB = 1024 * MIB
 
 def engine(role: str = "postgres", *, host: str | None = None) -> AsyncEngine:
     if os.environ.get("WEATHER_CI_IN_CLUSTER") != "1":
-        pytest.fail("Integration requires fleet CI")
+        pytest.fail("Integration requires in-cluster CI")
     url = make_url(os.environ["WEATHER_CI_ADMIN_DATABASE_URL"]).set(username=role)
     socket_dir = Path(str(url.query.get("host", "")))
     if url.database != "weather_ci" or not socket_dir.parent.name.startswith("weather-schema-ci."):

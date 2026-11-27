@@ -36,7 +36,7 @@ RUN chmod 0755 /usr/local/bin/weather
 COPY LICENSE THIRD_PARTY_NOTICES.md ./
 COPY docs/operations/ffmpeg.md ./FFMPEG.md
 # The pinned base still ships zlib1g 1:1.3.dfsg+really1.3.1-1+b1 (CVE-2026-85091, HIGH, fixed in +deb13u1).
-# Upgrade only that package and fail the build unless the fixed version is installed (#213, AMC D-880).
+# Upgrade only that package and fail the build unless the fixed version is installed (#213).
 RUN apt-get update \
  && apt-get install -y --no-install-recommends --only-upgrade zlib1g libzstd1 \
  && rm -rf /var/lib/apt/lists/* \

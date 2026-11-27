@@ -3,7 +3,7 @@
 byte identity, assembly from stored bins alone, failure isolation and region validation.
 
 The renderer-driven checks decode tiny synthetic JPEGs with FFmpeg, so like the renderer's
-own tests they run in fleet CI (or locally with WEATHER_FFMPEG); the rest are pure."""
+own tests they run in CI (or locally with WEATHER_FFMPEG); the rest are pure."""
 
 import json
 import os
@@ -57,7 +57,7 @@ def ffmpeg_available() -> bool:
 
 needs_ffmpeg = pytest.mark.skipif(
     not ffmpeg_available() and os.environ.get("WEATHER_CI_IN_CLUSTER") != "1",
-    reason="FFmpeg runs in fleet CI (set WEATHER_FFMPEG to run locally)",
+    reason="FFmpeg runs in CI (set WEATHER_FFMPEG to run locally)",
 )
 
 

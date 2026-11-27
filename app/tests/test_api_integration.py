@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
-"""API reads against the ephemeral PostgreSQL in fleet CI, as the weather_api role.
+"""API reads against the ephemeral PostgreSQL in CI, as the weather_api role.
 
-Run only through scripts/ci_integration.sh in the approved fleet validation image.
+Run only through scripts/ci_integration.sh in the CI validation image.
 """
 
 import asyncio
@@ -28,7 +28,7 @@ from weather.db.models import metadata
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
-        os.environ.get("WEATHER_CI_IN_CLUSTER") != "1", reason="Approved fleet CI image required"
+        os.environ.get("WEATHER_CI_IN_CLUSTER") != "1", reason="CI validation image required"
     ),
 ]
 ROOT = Path(__file__).resolve().parents[2]

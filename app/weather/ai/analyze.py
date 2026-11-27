@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 """The `intel` analysis jobs (#23): sampled frames + keogram -> structured visual observations
 (Stage A), on-read aggregates -> measured packet (Stage B), both -> public text from fixed
-templates (`render.py`, Stage C). No model-written prose is ever published (C18), and there is
+templates (`render.py`, Stage C). No model-written prose is ever published, and there is
 no synthesis call: the only Cortex calls are one image request per hour window.
 
 Budgets: one Cortex call in flight across processes (advisory lock), at most four calls per
@@ -495,7 +495,7 @@ class Analyzer:
         *,
         refresh: str,
     ) -> Result:
-        """Render the public claims and limitations (C18) and choose the state."""
+        """Render the public claims and limitations and choose the state."""
         reviewed = int(coverage.get("windows_reviewed", 0))
         available = int(inputs.get("windows", 0))
         claims = render.claims(

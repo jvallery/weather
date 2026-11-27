@@ -108,12 +108,12 @@ Local restore drills read `weather-pg-local` with its reader key. The
 historical direct-B2 store `weather-pg-b2` stays declared for its archive
 through October 31, 2026. Weather#33 requires a separate offsite-only
 restore with production Garage unreachable.
-The writer and reader Secrets (`weather-pg-backup-s3-{writer,reader}-k3s`) are created
-create-only in the cluster by the change-gate and carry only `AWS_ACCESS_KEY_ID` and
+The writer and reader Secrets (`weather-pg-backup-s3-{writer,reader}-k3s`) are delivered
+from the `secrets/weather` bundle in jvallery/estate-platform and carry only `AWS_ACCESS_KEY_ID` and
 `AWS_SECRET_ACCESS_KEY`; the Garage region `garage` comes from the sidecar env in
 `object-store-local.yaml`, not from the Secret. The dated key-name attestation is
 `deploy/k8s/database/weather-pg-backup-credential-contract.yaml`; refresh it with its
-range-only probe after any credential change.
+metadata-only probe after any credential change.
 Read archiving state with
 `kubectl -n weather get objectstores.barmancloud.cnpg.io weather-pg-local -o jsonpath='{.status}'`.
 
@@ -435,7 +435,7 @@ they never run apt or install browsers in an unprivileged validation container.
 The recipe copies `/opt/ffmpeg` from the qualified digest-pinned application
 image, retaining its licenses. Its final UID 1001 build step verifies FFmpeg
 9.0.2 and libx264 on Debian 13, PostgreSQL 16.15, and all browser executable
-paths. Browser launch and fixture qualification remain in fleet browser tests.
+paths. Browser launch and fixture qualification remain in the CI browser tests.
 Before apt changes, the recipe retains the production base's tzdata package
 version and Denver TZif checksum. Both the final image build and integration
 runner verify that exact file remains unchanged. Integration reports base and
@@ -447,7 +447,7 @@ its returned digest as the `weather-ci` runner set's `job_image` in jvallery/est
 `runners.yaml`, and run the normal bootstrap plus `scripts/ci.sh all` in that image.
 
 `ci.sh integration` delegates `scripts/ci_integration.sh`. The script refuses
-non-Linux, root or non-fleet execution; it creates an isolated temporary
+non-Linux, root or out-of-cluster execution; it creates an isolated temporary
 socket-only PostgreSQL, creates test roles/extension, upgrades an empty
 database (holding only a stand-in drill sentinel schema, which must survive)
 and the test database to head, re-runs the upgrade, checks both Alembic diffs,

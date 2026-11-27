@@ -22,7 +22,7 @@ from weather.capture.config import CaptureConfig
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
-        os.environ.get("WEATHER_CI_IN_CLUSTER") != "1", reason="requires fleet cluster execution"
+        os.environ.get("WEATHER_CI_IN_CLUSTER") != "1", reason="requires in-cluster CI"
     ),
 ]
 LOOPBACK = str(ipaddress.IPv4Address(0x7F000001))

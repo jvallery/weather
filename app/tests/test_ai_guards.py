@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""#23 guards without a database: the structured Stage A schema, the public templates (C18: no
+"""#23 guards without a database: the structured Stage A schema, the public templates (no
 model-written prose is ever published), the inference slot's lock release, call deferral and
 budgets, the Cortex breaker, the nightly slot, the published model name and author, and the
 optional keogram."""

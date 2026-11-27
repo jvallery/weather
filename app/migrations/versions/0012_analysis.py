@@ -4,8 +4,8 @@
 Expand-only and inline DDL; never import application modules here. `analysis` is one head row
 per video (state machine and CAS base); `analysis_revision` is append-only and pinned to its
 media SHA-256, model, prompt/template/schema hashes and evidence hash. Its summary, claims and
-limitations are rendered by server-side templates; no model-written prose is stored there
-(C18). `author_kind` says who wrote it, so model output never replaces a human (#44) revision;
+limitations are rendered by server-side templates; no model-written prose is stored there.
+`author_kind` says who wrote it, so model output never replaces a human (#44) revision;
 the worker cannot set it (its INSERT grant excludes the column, so every worker row is
 `model`). `ai_raw_response` keeps private model replies for at most 24 h (a CHECK, not just
 the purge) and no public role can read it. The API reads one security-barrier view that shows

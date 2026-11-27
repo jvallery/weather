@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 """Untrusted Stage A output -> validated structured observations, or a fixed rejection code.
 
-No model-written prose is ever published (C18). A reply must match the shipped VisualAnalysis
+No model-written prose is ever published. A reply must match the shipped VisualAnalysis
 v2 schema exactly: enums and supplied evidence IDs, no free-text field and no unknown field
 (a small, strict subset validator: no remote refs, formats or coercion). Semantic checks then
 reject evidence IDs that were not supplied, a category reported twice, a window that does not

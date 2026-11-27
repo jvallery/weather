@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-/** Response security headers. Only the embed card may be framed, and only by the vallery.net homepage (D13). */
+/** Response security headers. Only the embed card may be framed, and only by the vallery.net homepage. */
 export const EMBED_PARENT = "https://vallery.net";
 /** The embed route and everything below it, so its 404s and errors keep the same framing policy. */
 export function isEmbedPath(path) {

@@ -6,9 +6,9 @@ package/version/license inventory, including build/check and optional platform d
 `supply-chain/licenses.json`. Metadata URLs identify the upstream package release.
 
 The Python and Node runtime images include their upstream language and Debian notices.
-The image SBOM is generated in fleet CI at build qualification (WX-01).
+The image SBOM is generated in CI when the image is built (#2).
 
-The fleet-only weather-ci image retains Playwright 1.64.1 and its Apache-2.0
+The CI-only weather-ci image retains Playwright 1.64.1 and its Apache-2.0
 notices in `/opt/weather-browser-tools/node_modules`, plus the downloaded
 Chromium, Firefox and WebKit distributions and their notices in
 `/opt/ms-playwright`. The exact JavaScript closure is locked separately in

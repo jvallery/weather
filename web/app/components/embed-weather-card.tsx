@@ -14,7 +14,7 @@ const shownMetrics = [
 ] as const;
 
 function Heading() {
-  // The only link leaves the frame for the full site (D13 parent contract).
+  // The only link leaves the frame for the full site (the parent page's framing contract).
   return <header><h1 id="embed-weather-title">Current weather in Longmont</h1>
     <a href="https://weather.vallery.net/" target="_top">Open Weather</a></header>;
 }

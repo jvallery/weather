@@ -3,7 +3,7 @@
 catalog's four-condition rule across dusk, crash reruns, render directories after publish
 readback, reconcile, expiry dry-runs on fixtures and orphan/tombstone GC with the grace guard.
 
-Run only through scripts/ci_integration.sh in the approved fleet validation image.
+Run only through scripts/ci_integration.sh in the CI validation image.
 """
 
 import asyncio
@@ -60,7 +60,7 @@ GUARDED = LifecycleSettings(pitr_window_days=30, b2_version_retention_days=40)
 
 def engine(role: str = "postgres") -> AsyncEngine:
     if os.environ.get("WEATHER_CI_IN_CLUSTER") != "1":
-        pytest.fail("Integration requires fleet CI")
+        pytest.fail("Integration requires in-cluster CI")
     url = make_url(os.environ["WEATHER_CI_ADMIN_DATABASE_URL"]).set(username=role)
     socket = Path(str(url.query.get("host", "")))
     if url.database != "weather_ci" or not socket.parent.name.startswith("weather-schema-ci."):

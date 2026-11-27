@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: MIT
-"""Search against the ephemeral PostgreSQL 16.15 / pgvector 0.8.6 in fleet CI.
+"""Search against the ephemeral PostgreSQL 16.15 / pgvector 0.8.6 in CI.
 
 Documents are written by the builder as weather_worker and read by the API as weather_api.
 Vectors are the recorded embed.main outputs; Cortex is never called.
-Run only through scripts/ci_integration.sh in the approved fleet validation image.
+Run only through scripts/ci_integration.sh in the CI validation image.
 """
 
 import asyncio
@@ -48,7 +48,7 @@ from weather.search.documents import (
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
-        os.environ.get("WEATHER_CI_IN_CLUSTER") != "1", reason="Approved fleet CI image required"
+        os.environ.get("WEATHER_CI_IN_CLUSTER") != "1", reason="CI validation image required"
     ),
 ]
 FIXTURE = json.loads((Path(__file__).parent / "fixtures/search-recorded.json").read_text())

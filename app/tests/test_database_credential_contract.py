@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""The local WAL store selects only gate-created Secret keys the contract attests (si#1253)."""
+"""The local WAL store selects only Secret keys the contract attests (storage-infra#1253)."""
 
 import re
 import unittest
@@ -87,7 +87,7 @@ class CredentialContract(unittest.TestCase):
         self.assertEqual(selected, {rows["reader"]["secret"]})
 
     def test_region_comes_from_sidecar_env_not_a_secret(self):
-        # The gate writes no region key; selecting one would break WAL archiving at runtime.
+        # The Secret has no region key; selecting one would break WAL archiving at runtime.
         self.assertNotIn("region", self.store["spec"]["configuration"]["s3Credentials"])
         env = {
             e["name"]: e.get("value")
@@ -105,8 +105,11 @@ class CredentialContract(unittest.TestCase):
         # Garage key ids are GK + 24 hex; secrets are 64 hex. Neither may appear.
         self.assertIsNone(re.search(r"\bGK[0-9a-f]{24}\b", text))
         self.assertIsNone(re.search(r"\b[0-9a-f]{64}\b", text))
-        self.assertNotIn("{{index", text.replace(" ", ""))
-        self.assertNotIn("{{len", text.replace(" ", ""))
+        # The refresh probe reads metadata only: no template or JSONPath over a Secret.
+        self.assertNotIn("go-template=", text)
+        self.assertNotIn("{{", text)
+        self.assertNotRegex(text, r"get secret[^\n]*-o (yaml|json|jsonpath)")
+        self.assertIn('describe secret "$s"', text)
 
 
 class InterlockActuallyFails(unittest.TestCase):
@@ -114,7 +117,7 @@ class InterlockActuallyFails(unittest.TestCase):
         self.contract = load(CONTRACT_PATH)
         self.store = load(STORE_PATH)
 
-    def test_a_region_key_the_gate_never_wrote_is_blocked(self):
+    def test_a_region_key_the_secret_does_not_carry_is_blocked(self):
         store = load(STORE_PATH)
         store["spec"]["configuration"]["s3Credentials"]["region"] = {
             "name": "weather-pg-backup-s3-writer-k3s",

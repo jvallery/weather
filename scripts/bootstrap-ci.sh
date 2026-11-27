@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
 set -euo pipefail
-[[ "${WEATHER_CI_IN_CLUSTER:-}" == "1" ]] || { echo 'Bootstrap requires approved fleet CI' >&2; exit 2; }
+[[ "${WEATHER_CI_IN_CLUSTER:-}" == "1" ]] || { echo 'Bootstrap requires in-cluster CI' >&2; exit 2; }
 cd "$(dirname "$0")/.."
 python3 scripts/bootstrap_ci.py
 export WEATHER_CI_TOOLS="${WEATHER_CI_TOOLS:-/tmp/weather-ci-tools}"

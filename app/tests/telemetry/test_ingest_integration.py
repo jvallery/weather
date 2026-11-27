@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Postgres, outage and abrupt-process tests; the approved fleet CI image only."""
+"""Postgres, outage and abrupt-process tests; the CI validation image only."""
 
 import asyncio
 import json
@@ -23,7 +23,7 @@ from weather.telemetry.spool import Receipt, Spool
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
-        os.environ.get("WEATHER_CI_IN_CLUSTER") != "1", reason="Approved fleet CI image required"
+        os.environ.get("WEATHER_CI_IN_CLUSTER") != "1", reason="CI validation image required"
     ),
 ]
 

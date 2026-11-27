@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: MIT
-"""The private editor (#44) against the ephemeral PostgreSQL 16.15 in fleet CI.
+"""The private editor (#44) against the ephemeral PostgreSQL 16.15 in CI.
 
 Editorial writes run as weather_editor, the analyzer and the outbox as weather_worker and the
 public reads as weather_api, so every grant is exercised. Cortex and media are #23's fakes.
-Run only through scripts/ci_integration.sh in the approved fleet validation image.
+Run only through scripts/ci_integration.sh in the CI validation image.
 """
 
 import asyncio
@@ -44,7 +44,7 @@ from weather.scheduler.runner import installed_registry
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
-        os.environ.get("WEATHER_CI_IN_CLUSTER") != "1", reason="Approved fleet CI image required"
+        os.environ.get("WEATHER_CI_IN_CLUSTER") != "1", reason="CI validation image required"
     ),
 ]
 OPERATOR = "jason"

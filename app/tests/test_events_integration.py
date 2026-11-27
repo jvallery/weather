@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MIT
-"""Weather events against the ephemeral PostgreSQL in fleet CI (#41).
+"""Weather events against the ephemeral PostgreSQL in CI (#41).
 
 The rules run as weather_worker and the feed reads as weather_api, so the grants are exercised.
-Run only through scripts/ci_integration.sh in the approved fleet validation image.
+Run only through scripts/ci_integration.sh in the CI validation image.
 """
 
 import asyncio
@@ -32,7 +32,7 @@ from weather.timemodel import weather_day
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
-        os.environ.get("WEATHER_CI_IN_CLUSTER") != "1", reason="Approved fleet CI image required"
+        os.environ.get("WEATHER_CI_IN_CLUSTER") != "1", reason="CI validation image required"
     ),
 ]
 VALID = {"valid": True, "reason": "valid", "invalid": []}

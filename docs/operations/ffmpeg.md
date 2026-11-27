@@ -1,6 +1,6 @@
 # FFmpeg distribution and build recipe
 
-WX-02 pins FFmpeg **9.0.2** from <https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz>.
+This recipe pins FFmpeg **9.0.2** from <https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz>.
 SHA-256: `8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e`.
 The release archive was downloaded and hashed before this recipe was committed.
 `Dockerfile.app` verifies this hash before extraction. It never compiles on the Mac.
@@ -17,7 +17,7 @@ source archive and the Debian libx264 source package from the pinned snapshot, i
 configuration and build instructions; preserve GPL notices. Do not represent the image as MIT-only.
 The source is unmodified. No application source is copied from FFmpeg or x264.
 
-WX-01 (#2) owns actual in-cluster compilation, executable/capability probes, SBOM generation,
+Issue #2 owns actual in-cluster compilation, executable/capability probes, SBOM generation,
 archive custody and egress-denied startup verification. A committed Dockerfile proves none of those.
 
 The compiler stage uses main, trixie-updates and trixie-security from the same fixed

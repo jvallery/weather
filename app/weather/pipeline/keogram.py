@@ -66,7 +66,7 @@ class Region(BaseModel):
 
     `vertical` keeps image rows (y) as the keogram's spatial axis and averages across x;
     `horizontal` keeps columns (x) and averages across y. The only mask is `none` (all three
-    cameras publish full views, D02); a different mask is a new region version and code."""
+    cameras publish full views); a different mask is a new region version and code."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
