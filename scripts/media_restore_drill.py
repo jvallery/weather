@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: MIT
 """weather#77 media/originals restore drill from B2 custody. Operator orchestration only.
 
-The copy, checksum verification, catalog copy and reconcile run in one disposable pod in the
-vallery cluster (deploy/acceptance/restore/media-drill.yaml); this script renders and applies
-it, probes the drill api and web through kubectl port-forward, records the receipt and tears
+The copy, checksum verification, catalog copy and reconcile run in the one pod of a disposable
+Job in the vallery cluster (deploy/acceptance/restore/media-drill.yaml); this script renders and
+applies it, probes the drill api and web through kubectl port-forward, records the receipt and tears
 everything down by its exact UIDs. Metadata only: never read, copy or print Secret data.
 
   media_restore_drill.py --operation 20261117a --day 2026-10-29 --evidence E.json --plan
@@ -122,6 +122,18 @@ def configmap(name, operation, candidates):
     return json.dumps(cm)
 
 
+def job_pod(name, deadline):
+    """The drill Job's one pod, found by the job-name label the Job controller sets."""
+    while time.time() < deadline:
+        pods = json.loads(kubectl("get", "pods", "-l", "job-name=" + name, "-o", "json"))["items"]
+        if len(pods) > 1:
+            raise RuntimeError(f"drill job {name} has {len(pods)} pods")
+        if pods:
+            return pods[0]["metadata"]["name"]
+        time.sleep(5)
+    raise RuntimeError("drill job created no pod before the deadline")
+
+
 def wait_receipt(name, deadline):
     while time.time() < deadline:
         status = json.loads(kubectl("get", "pod", name, "-o", "json"))["status"]
@@ -203,27 +215,29 @@ def run(args):
             "name": name,
             "uid": json.loads(kubectl("get", kind, name, "-o", "json"))["metadata"]["uid"],
         }
-        for kind in ("pod", "networkpolicy", "configmap")
+        for kind in ("job", "networkpolicy", "configmap")
     ]
     args.evidence.write_text(json.dumps(evidence, indent=2) + "\n")
-    receipt = wait_receipt(name, time.time() + 10200)
+    pod = job_pod(name, time.time() + 600)
+    evidence["pod"] = pod
+    receipt = wait_receipt(pod, time.time() + 10200)
     evidence["receipt"] = receipt
     evidence["catalog"] = next(
         (
             json.loads(line)
-            for line in kubectl("logs", name, "-c", "catalog-init").splitlines()
+            for line in kubectl("logs", pod, "-c", "catalog-init").splitlines()
             if '"weather_drill_catalog"' in line
         ),
         None,
     )
-    evidence["probes"] = probes(name, receipt, args.day)
+    evidence["probes"] = probes(pod, receipt, args.day)
     evidence["rendered_epoch"] = round(time.time())
     evidence["rto_seconds"] = evidence["rendered_epoch"] - receipt["start_epoch"]
     evidence["images"] = {
         c["name"]: c["image"]
-        for c in json.loads(kubectl("get", "pod", name, "-o", "json"))["spec"]["containers"]
+        for c in json.loads(kubectl("get", "pod", pod, "-o", "json"))["spec"]["containers"]
     }
-    kubectl("exec", name, "-c", "driver", "--", "touch", "/work/probes-done")
+    kubectl("exec", pod, "-c", "driver", "--", "touch", "/work/probes-done")
     p = evidence["probes"]
     evidence["verified"] = (
         receipt["result"] == "pass"
@@ -260,7 +274,16 @@ def cleanup(args):
         meta = current[0]["metadata"]
         if meta["uid"] != item["uid"] or meta.get("labels", {}).get(LABEL) != args.operation:
             raise SystemExit(f"{item['kind']}/{item['name']} was replaced; refuse deletion")
-        kubectl("delete", item["kind"], item["name"], "--wait=true", "--timeout=180s")
+        # Foreground: a Job's pod is gone before the delete returns, so the label check
+        # below does not see it terminating.
+        kubectl(
+            "delete",
+            item["kind"],
+            item["name"],
+            "--cascade=foreground",
+            "--wait=true",
+            "--timeout=180s",
+        )
     left = kubectl(
         "get",
         "all,pvc,secret,configmap,networkpolicy",

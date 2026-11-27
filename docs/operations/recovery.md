@@ -20,10 +20,11 @@ than the newest key custody does hold. Any other 403 fails the drill.
 
 ## Drill procedure
 
-`scripts/media_restore_drill.py` runs the whole drill as one disposable Pod
+`scripts/media_restore_drill.py` runs the whole drill as one disposable Job
 (`deploy/acceptance/restore/media-drill.yaml`, scripts in
-`deploy/acceptance/restore/media-drill/`), with a deny-by-default
-NetworkPolicy. Egress is DNS plus 443 to non-RFC1918 addresses only. The Pod has
+`deploy/acceptance/restore/media-drill/`) with one attempt, a three-hour deadline
+and a one-hour TTL, behind a deny-by-default NetworkPolicy. Egress is DNS plus
+443 to non-RFC1918 addresses only. The pod has
 no Service account token, no Service and no route. It writes nothing to
 production databases, PVCs or buckets.
 
