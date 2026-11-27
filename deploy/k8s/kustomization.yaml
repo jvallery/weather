@@ -22,10 +22,10 @@ components:
 images:
 - name: weather-app
   newName: registry.vallery.net/jvallery/weather-app
-  digest: sha256:7437172d597dd727130439c62d78abda1b0d3a10f24d5fe357680e7ad96f612b
+  digest: sha256:78c17c151c47c375b85e061c0b42645a2b69b06f4f2e89c758cf39882c4c99c3
 - name: weather-web
   newName: registry.vallery.net/jvallery/weather-web
-  digest: sha256:d48191f51b33111f6a8531e1e787cb8137b01d3565041350bfb862fa25a1bc90
+  digest: sha256:9b0a7820fa3a866e3dfe07486319b88cdce4c03c9b9cc9699f0604872e6924a7
 # weather#223: one digest source. Each pipeline Deployment's WEATHER_IMAGE_DIGEST is
 # copied from its own container image after the images transformer above resolves
 # weather-app, so a pin PR that moves the weather-app digest cannot leave the env
