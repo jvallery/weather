@@ -124,7 +124,7 @@ spec:
       synchronous_commit: 'on'
       wal_keep_size: 1GB
       max_wal_size: 4GB
-      # Bound WAL kept by replication slots (jvallery/agents#5375): 5GB = min(25% of the
+      # Bound WAL kept by replication slots: 5GB = min(25% of the
       # 20Gi PVC, 50% of the smallest member's free 19.3GB on 2026-10-30). Reload only.
       max_slot_wal_keep_size: 5GB
       max_connections: '120'

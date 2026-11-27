@@ -2,7 +2,7 @@
 /** Inspect every compiled client asset, including lazy routes, without emitting its contents. */
 import { lstatSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-if (process.platform !== "linux" || process.env.WEATHER_CI_IN_CLUSTER !== "1") throw new Error("Inspect compiled web output in approved fleet CI");
+if (process.platform !== "linux" || process.env.WEATHER_CI_IN_CLUSTER !== "1") throw new Error("Inspect compiled web output in in-cluster CI");
 let files = 0, bytes = 0;
 const root = "web/build/client";
 function visit(path) {

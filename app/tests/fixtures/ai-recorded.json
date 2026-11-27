@@ -1,5 +1,5 @@
 {
- "description": "Recorded-format Cortex chat completions (synthetic content; no model was called). Stage A replies are structured enums only (C18). '$FRAME0' is a placeholder the test fake fills with the request's first frame ID.",
+ "description": "Recorded-format Cortex chat completions (synthetic content; no model was called). Stage A replies are structured enums only. '$FRAME0' is a placeholder the test fake fills with the request's first frame ID.",
  "model": "llm.qwen38u-5080",
  "visual": {
   "valid": {

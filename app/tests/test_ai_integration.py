@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: MIT
-"""AI descriptions (#23) against the ephemeral PostgreSQL 16.15 in fleet CI.
+"""AI descriptions (#23) against the ephemeral PostgreSQL 16.15 in CI.
 
 The analyzer runs as weather_worker and the API reads as weather_api, so grants are exercised.
 Cortex, Garage and FFmpeg are fakes (ai_support); replies are recorded-format fixtures.
-Run only through scripts/ci_integration.sh in the approved fleet validation image.
+Run only through scripts/ci_integration.sh in the CI validation image.
 """
 
 import asyncio
@@ -30,7 +30,7 @@ from weather.scheduler.registry import JobContext
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
-        os.environ.get("WEATHER_CI_IN_CLUSTER") != "1", reason="Approved fleet CI image required"
+        os.environ.get("WEATHER_CI_IN_CLUSTER") != "1", reason="CI validation image required"
     ),
 ]
 PROFILE = "embed-main-2560-v1"
@@ -241,7 +241,7 @@ def test_describe_publishes_a_pinned_revision_search_documents_and_visual_events
         await make(worker, script).describe(await claim(worker, store.DESCRIBE_KIND, admin))
         current = await head(admin, video)
         assert current["state"] == "complete" and current["revision"] == 1
-        assert len(script.bodies) == 3  # three hour windows; no synthesis call (C18)
+        assert len(script.bodies) == 3  # three hour windows; no synthesis call
         async with admin.connect() as c:
             revision = (
                 (await c.execute(text("SELECT * FROM weather.analysis_revision"))).mappings().one()
@@ -251,7 +251,7 @@ def test_describe_publishes_a_pinned_revision_search_documents_and_visual_events
         assert revision["media_sha256"] == sha("web-1") and revision["refresh"] == "full"
         assert revision["inputs"]["keogram"] is True and revision["inputs"]["frames"] == 6
         assert revision["coverage"]["windows_reviewed"] == 3
-        # Template text only (C18): rendered from the enums and the station's values.
+        # Template text only: rendered from the enums and the station's values.
         assert revision["summary"].startswith(
             "The sampled east-sky frames show broken clouds in all 3 reviewed hour windows. "
             "The sampled east-sky frames show light rain in all 3 reviewed hour windows."

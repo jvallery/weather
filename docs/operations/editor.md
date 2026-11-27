@@ -16,7 +16,7 @@ browser ──> Cloudflare tunnel ──> traefik-apps
      /api/v1/operator*   apps-strip-auth-headers → ak-forwardauth → api-operator:8001
 ```
 
-- Authentik application `weather-editor` (agents#5366, `forward_single`, Jason-only binding,
+- Authentik application `weather-editor` (`forward_single`, Jason-only binding,
   MFA, 24 h) issues the session. The app sets no cookies and has no login of its own.
 - The api pod runs two listeners: the public one on 8000 (role `weather_api`, read-only) and
   the operator one on 8001 (role `weather_editor`). NetworkPolicy `api-ingress` admits 8001

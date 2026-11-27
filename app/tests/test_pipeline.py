@@ -2,7 +2,7 @@
 """Renderer unit tests: exact exposure math, linear light, intake, coverage states, results.
 
 FFmpeg-backed tests use tiny synthetic frames (tens of pixels, a few hundred frames at most).
-They run in fleet CI, which has the pinned FFmpeg; elsewhere they skip unless WEATHER_FFMPEG
+They run in CI, which has the pinned FFmpeg; elsewhere they skip unless WEATHER_FFMPEG
 points at a working binary.
 """
 
@@ -60,7 +60,7 @@ def ffmpeg_available() -> bool:
 HAVE_FFMPEG = ffmpeg_available()
 needs_ffmpeg = pytest.mark.skipif(
     not HAVE_FFMPEG and os.environ.get("WEATHER_CI_IN_CLUSTER") != "1",
-    reason="FFmpeg runs in fleet CI (set WEATHER_FFMPEG to run locally)",
+    reason="FFmpeg runs in CI (set WEATHER_FFMPEG to run locally)",
 )
 
 

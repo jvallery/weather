@@ -23,7 +23,7 @@ def _scan(tree: Path) -> subprocess.CompletedProcess[str]:
     gitleaks = shutil.which("gitleaks")
     if gitleaks is None:
         if os.environ.get("WEATHER_CI_IN_CLUSTER") == "1":
-            pytest.fail("gitleaks must be on PATH in fleet CI")
+            pytest.fail("gitleaks must be on PATH in CI")
         pytest.skip("gitleaks is not installed")
     shutil.copy(ROOT / ".gitleaks.toml", tree / ".gitleaks.toml")
     return subprocess.run(

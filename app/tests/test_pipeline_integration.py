@@ -2,7 +2,7 @@
 """Renderer against real PostgreSQL and Garage: frozen schedule, boundary jobs, a stopped
 camera, exactly-once publication through #18 under kills, and keograms (#37).
 
-Run only through scripts/ci_integration.sh in the approved fleet validation image.
+Run only through scripts/ci_integration.sh in the CI validation image.
 """
 
 import asyncio
@@ -52,7 +52,7 @@ W, H = 32, 16
 
 def engine(role: str = "postgres") -> AsyncEngine:
     if os.environ.get("WEATHER_CI_IN_CLUSTER") != "1":
-        pytest.fail("Integration requires fleet CI")
+        pytest.fail("Integration requires in-cluster CI")
     url = make_url(os.environ["WEATHER_CI_ADMIN_DATABASE_URL"]).set(username=role)
     socket = Path(str(url.query.get("host", "")))
     if url.database != "weather_ci" or not socket.parent.name.startswith("weather-schema-ci."):
@@ -506,7 +506,7 @@ def test_stopped_camera_is_unavailable_and_others_publish_exactly_once(
                     "skycam_west": (1, 1, "unavailable"),
                 }[camera]
                 assert (n, revision, history) == expected, camera
-            # The public catalog shows the stopped camera honestly (R03).
+            # The public catalog shows the stopped camera honestly.
             async with api.connect() as connection:
                 public = list(
                     await connection.execute(

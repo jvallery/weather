@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 """Staging cleanup (#19): catalog rows decide which sealed chunks, stale tmp files and render
 directories may go. Runs in each camera's pipeline pod, the only role that mounts staging
-besides the collectors (the scheduler and the api never mount NFS, C17).
+besides the collectors (the scheduler and the api never mount NFS).
 
 A sealed chunk is deletable only when its capture settings match the pipeline's (`config`: a
 cadence, phase or geometry mismatch makes every frame a `settings` reject, so the slates the

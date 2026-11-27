@@ -3,7 +3,7 @@
 schema rejections, exact archived bytes, dusk binding, crash safety, corrections, the embargo,
 metadata-free derivatives and a video expiry that leaves stills intact.
 
-Run only through scripts/ci_integration.sh in the approved fleet validation image.
+Run only through scripts/ci_integration.sh in the CI validation image.
 """
 
 import asyncio
@@ -51,7 +51,7 @@ PRIVATE = ("sha256", "chunk", "member", "attempt_id", "original_asset_id", "orig
 
 def engine(role: str = "postgres") -> AsyncEngine:
     if os.environ.get("WEATHER_CI_IN_CLUSTER") != "1":
-        pytest.fail("Integration requires fleet CI")
+        pytest.fail("Integration requires in-cluster CI")
     url = make_url(os.environ["WEATHER_CI_ADMIN_DATABASE_URL"]).set(username=role)
     socket = Path(str(url.query.get("host", "")))
     if url.database != "weather_ci" or not socket.parent.name.startswith("weather-schema-ci."):

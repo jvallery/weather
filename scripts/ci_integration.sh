@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
-# The fleet validation container owns this entire disposable PostgreSQL instance.
+# The CI validation container owns this entire disposable PostgreSQL instance.
 set -euo pipefail
 [[ "${WEATHER_CI_IN_CLUSTER:-}" == "1" && "$(uname -s)" == Linux && "$(id -u)" != 0 ]] || {
   echo 'Database integration requires approved non-root in-cluster CI' >&2

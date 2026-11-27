@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { ANALYSIS_LABEL, EDITOR_LABEL, STATION_LABEL, type Analysis, type Editorial } from "../lib/weather-api";
 
-/** The labelled description (#23): server-rendered template text (C18), as escaped text nodes. A
+/** The labelled description (#23): server-rendered template text, as escaped text nodes. A
  * station-only summary and an editor's revision (#44) carry their own labels and no model
  * provenance. */
 const STATES: Record<Analysis["state"], string> = {

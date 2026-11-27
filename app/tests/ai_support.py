@@ -91,7 +91,7 @@ class Script:
 
 
 def by_task(visual: str = "valid") -> Callable[[dict[str, Any]], Step]:
-    """Every request is a Stage A window request (there is no synthesis call, C18)."""
+    """Every request is a Stage A window request (there is no synthesis call)."""
 
     def choose(body: dict[str, Any]) -> Step:
         assert context_of(body)["task"] == "visual_analysis"

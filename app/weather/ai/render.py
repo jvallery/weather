@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Public text from accepted observations and station aggregates: fixed templates only (C18).
+"""Public text from accepted observations and station aggregates: fixed templates only.
 
 No model-written prose is ever published. Every public sentence, limitation and search text is
 rendered here from validated enums (category, assessment, confidence, intensity, sky cover,

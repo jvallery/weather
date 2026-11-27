@@ -2,7 +2,7 @@
 /** Retain compact fixture outcomes in the existing repo-validate report parameter. */
 import { createHash } from "node:crypto";
 import { existsSync, lstatSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-if (process.platform !== "linux" || process.env.WEATHER_CI_IN_CLUSTER !== "1") throw new Error("Browser evidence requires approved fleet CI");
+if (process.platform !== "linux" || process.env.WEATHER_CI_IN_CLUSTER !== "1") throw new Error("Browser evidence requires in-cluster CI");
 const input = "artifacts/playwright-results.json";
 if (!lstatSync(input).isFile() || lstatSync(input).size > 16 * 1024 * 1024) throw new Error("Invalid browser report size/type");
 const value = JSON.parse(readFileSync(input, "utf8"));

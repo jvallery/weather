@@ -342,7 +342,7 @@ def is_placeholder(current: catalog.Current) -> bool:
 
 async def publish_missed(engine: AsyncEngine, hour: datetime) -> int:
     """Commit a database-only `unavailable` video for each missed segment that has no video,
-    through #18's fenced commit, so the public catalog shows it (R03). No object is uploaded,
+    through #18's fenced commit, so the public catalog shows it. No object is uploaded,
     so no bucket key is needed. A pipeline that publishes later supersedes it."""
     async with engine.connect() as connection:
         missed = list(

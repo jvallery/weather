@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""`weather preview`: the `weather-preview` Deployment (C17).
+"""`weather preview`: the `weather-preview` Deployment.
 
 The only public-path process that reads the staging share, and only its read-only `previews/`
 mount. It serves two things, each authorized on every request against `public_api.previews`

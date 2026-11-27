@@ -12,7 +12,7 @@ import zipfile
 from pathlib import Path
 
 if platform.system() != "Linux" or platform.machine() not in {"x86_64", "amd64"}:
-    raise SystemExit("CI bootstrap requires the approved Linux amd64 fleet runner")
+    raise SystemExit("CI bootstrap requires the Linux amd64 in-cluster CI runner")
 root = Path(os.environ.get("WEATHER_CI_TOOLS", "/tmp/weather-ci-tools"))
 root.mkdir(parents=True, exist_ok=True)
 

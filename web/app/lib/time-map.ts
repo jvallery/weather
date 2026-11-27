@@ -128,5 +128,5 @@ export function resolveSeek(map: TimeMap, target: Instant | Span): { at: Instant
   return frame === null ? null : { at, frame };
 }
 
-/** Keograms (D10): 1,440 equal elapsed-UTC bins over the segment's [a, b). */
+/** Keograms: 1,440 equal elapsed-UTC bins over the segment's [a, b). */
 export const KEOGRAM_BINS = 1440;

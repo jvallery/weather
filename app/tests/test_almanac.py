@@ -191,7 +191,7 @@ def test_records_rank_only_qualifying_days_and_follow_corrections() -> None:
     assert "normal" not in result.label.lower()
     assert result.formula_revision == FORMULA_REVISION and result.library_revision
     first_hash = result.evidence_hash
-    # A corrected row changes the next read: nothing is stored between reads (C5).
+    # A corrected row changes the next read: nothing is stored between reads.
     corrected = reader.rows[day("2026-01-03")[0]]
     corrected.update(maximum=31.0, evidence_hash="b" * 64)
     again = read(reader, **query)

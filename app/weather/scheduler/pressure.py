@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Staging watermarks (D16): 70 % alert, 85 % urgent, 90 % stop, resume below 75 %.
+"""Staging watermarks: 70 % alert, 85 % urgent, 90 % stop, resume below 75 %.
 
 Occupancy is `statvfs` on the staging mount, which reports the share's hard quota
 (storage-infra#1106), exactly as the collectors compute it. The levels only change what runs

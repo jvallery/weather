@@ -3,7 +3,7 @@
 when no human revision is active.
 
 Today the effective description is the current analysis summary (template-rendered from
-validated observations and station data, C18), bound to the current media revision. A
+validated observations and station data), bound to the current media revision. A
 human-edited revision (#44) supersedes it while bound to the current media and evidence;
 `weather.video_editorial_state` is that rule's single definition. The API then reports the
 description's author as `editor`, never as AI output.

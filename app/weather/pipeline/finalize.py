@@ -59,7 +59,7 @@ LOG = logging.getLogger("weather.pipeline")
 
 class BlocksChanged(RuntimeError):
     """A durable block no longer matches the metadata this renderer loaded. Either the file
-    changed (damage) or an operator repaired the block and its json (AMC-APPS-10): the worker
+    changed (damage) or an operator repaired the block and its json: the worker
     drops its cached renderer so the next attempt reloads the durable metadata."""
 
 
@@ -302,7 +302,7 @@ def prepare(
                 encode_renditions(concat, job.frames, temporary)
         except FFmpegError as error:
             # Name the damaged block and frame instead of only "the segment does not decode"
-            # (AMC-APPS-10: one frame of one block stalled a whole night). Fixed names and frame
+            # (one frame of one block once stalled a whole night). Fixed names and frame
             # numbers only, never paths or ffmpeg text.
             damaged = damaged_blocks(metas, blocks)
             for first, frame in damaged:

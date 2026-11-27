@@ -13,7 +13,7 @@ import catalog from "../fixtures/catalog.json";
 import eventsFixture from "../fixtures/events.json";
 import registryFixture from "../fixtures/metric-registry.json";
 
-// uPlot needs a real canvas; the panels are covered in fleet CI's browsers.
+// uPlot needs a real canvas; the panels are covered in CI's browsers.
 vi.mock("uplot", () => ({ default: class { over = document.createElement("div"); destroy() {} setSize() {} valToPos() { return 0; } posToVal() { return 0; } } }));
 const media = parseTimelapses(catalog)!.items;
 const video = media.find((item) => item.camera === "skycam_east" && item.cycle_date === "2026-10-31" && item.segment === "daytime")!;

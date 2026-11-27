@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Exact observed-exposure geometry (D10 v1): rational time, half-open intervals, no rounding.
+"""Exact observed-exposure geometry (recipe v1): rational time, half-open intervals, no rounding.
 
 Output frame k of a segment [a, b) with N frames has source centre a + (k + 1/2)(b - a)/N and a
 synthetic shutter of width step * theta / 360 centred there. A real capture at t supports

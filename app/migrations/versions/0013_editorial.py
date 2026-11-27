@@ -30,7 +30,7 @@ depends_on = None
 SHA = "~ '^[0-9a-f]{64}$'"
 TAG = "[a-z0-9][a-z0-9 _-]{0,47}"
 # The single allowlisted operator: the Authentik username, admitted only through the
-# weather-editor application (agents#5366). Change it with a new revision, never by hand.
+# weather-editor application. Change it with a new revision, never by hand.
 OPERATOR = ("jason", "weather-editor")
 
 

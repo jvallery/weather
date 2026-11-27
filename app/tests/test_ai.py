@@ -105,7 +105,7 @@ def test_windows_follow_utc_hours_from_an_off_hour_dawn() -> None:
 
 def test_the_prompt_is_hashed_and_the_schema_matches_its_fixtures() -> None:
     contracts = ROOT / "app/weather/ai/contracts"
-    # Only the Stage A prompt and schema ship (C18): there is no synthesis prompt.
+    # Only the Stage A prompt and schema ship: there is no synthesis prompt.
     assert sorted(p.name for p in contracts.iterdir()) == [
         "visual-analysis.schema.json",
         "visual-system.txt",
@@ -460,7 +460,7 @@ def test_the_search_projection_is_a_valid_document_set() -> None:
     assert rows[1]["media_start_seconds"] == 5.0 and rows[1]["media_end_seconds"] == 10.0
     assert "AI-generated · sampled-frame analysis" in rows[0]["text"]
     assert text.analysis_mode == "sampled_frames" and text.description_revision == 1
-    # Window search text is template output, never model text (C18).
+    # Window search text is template output, never model text.
     assert text.windows[0].observed_conditions == "Broken clouds."
 
 
@@ -500,7 +500,7 @@ HAVE_FFMPEG = bool(os.environ.get("WEATHER_FFMPEG"))
 
 @pytest.mark.skipif(
     not HAVE_FFMPEG and os.environ.get("WEATHER_CI_IN_CLUSTER") != "1",
-    reason="FFmpeg runs in fleet CI (set WEATHER_FFMPEG to run locally)",
+    reason="FFmpeg runs in CI (set WEATHER_FFMPEG to run locally)",
 )
 def test_one_ffmpeg_pass_returns_exactly_the_selected_frames(tmp_path: Path) -> None:
     clip = tmp_path / "clip.mp4"

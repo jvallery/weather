@@ -2,7 +2,7 @@
 """The sidecar `weather` block: #14's on-read aggregates over the segment's [a, b).
 
 `WeatherSummaryProvider` is the seam; the production binding reuses the API's SQL source and
-summarizer (the one aggregate engine, C5) with one whole-interval bin, so a segment's weather
+summarizer (the one aggregate engine) with one whole-interval bin, so a segment's weather
 equals what `/api/v1/aggregates` returns for the same interval. It reads only the public
 telemetry views and never returns evidence IDs, only counts and hashes.
 """

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 """The observed-exposure recipe: every value that changes output math is part of its identity.
 
-D10 v1 defaults: synthetic shutter 180 degrees (270 and 360 are selectable comparison recipes),
+v1 defaults: synthetic shutter 180 degrees (270 and 360 are selectable comparison recipes),
 minimum exposure coverage 0.90 inclusive, slot coverage 99/90/50. v2 (#144) lowers the
 exposure threshold to 0.25: the accumulator already normalizes by weight, so a frame with
 partial coverage is a correct exposure, not a slate. Changing any value makes a new recipe id

@@ -109,7 +109,7 @@ spec:
         - {port: 53, protocol: UDP}
         - {port: 53, protocol: TCP}
 ---
-# storage-infra#1253: the fleet change-gate Garage target (operation
+# storage-infra#1253: the Garage provisioning tool (operation
 # create-private-bucket-and-scoped-keys) runs a put/get probe Job in this
 # namespace before it hands newly minted scoped keys to their consumer. Its
 # pods carry app.kubernetes.io/managed-by=garage-change-gate and one

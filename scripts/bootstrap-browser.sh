@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
 set -euo pipefail
-[[ "${WEATHER_CI_IN_CLUSTER:-}" == 1 && "$(uname -s)" == Linux ]] || { echo 'Browser/media checks require approved in-cluster fleet CI' >&2; exit 2; }
+[[ "${WEATHER_CI_IN_CLUSTER:-}" == 1 && "$(uname -s)" == Linux ]] || { echo 'Browser/media checks require in-cluster CI' >&2; exit 2; }
 cd "$(dirname "$0")/.."
 # The shared Weather CI image bakes the exact locked browser closure and OS libraries.
 # repo-validate runs as UID1001; it never installs system packages or elevates privileges.

@@ -42,11 +42,11 @@ while (( $# )); do
       (cd web && pnpm test)
       ;;
     integration)
-      [[ "${WEATHER_CI_IN_CLUSTER:-}" == "1" ]] || { echo 'Integration requires fleet CI in-cluster' >&2; exit 2; }
+      [[ "${WEATHER_CI_IN_CLUSTER:-}" == "1" ]] || { echo 'Integration requires in-cluster CI' >&2; exit 2; }
       bash scripts/ci_integration.sh
       ;;
     browser)
-      [[ "${WEATHER_CI_IN_CLUSTER:-}" == "1" ]] || { echo 'Browser checks require fleet CI in-cluster' >&2; exit 2; }
+      [[ "${WEATHER_CI_IN_CLUSTER:-}" == "1" ]] || { echo 'Browser checks require in-cluster CI' >&2; exit 2; }
       bash scripts/web-browser.sh
       ;;
     supply-chain)
@@ -58,7 +58,7 @@ while (( $# )); do
         uv run --frozen python scripts/license_inventory.py
       fi
       if [[ "${1:-}" == "--image" ]]; then
-        [[ "${WEATHER_CI_IN_CLUSTER:-}" == "1" ]] || { echo 'Image SBOM requires fleet CI in-cluster' >&2; exit 2; }
+        [[ "${WEATHER_CI_IN_CLUSTER:-}" == "1" ]] || { echo 'Image SBOM requires in-cluster CI' >&2; exit 2; }
         shift; image="$1"; shift
         mkdir -p artifacts
         image_name="${image##*/}"

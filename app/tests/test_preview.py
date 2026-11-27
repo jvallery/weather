@@ -767,7 +767,7 @@ def test_weather_preview_is_the_only_public_pod_on_staging_and_reads_previews_on
     assert volume["persistentVolumeClaim"] == {"claimName": "weather-staging", "readOnly": True}
     labels = deployment["spec"]["template"]["metadata"]["labels"]
     assert labels["weather.vallery.net/database-role"] == "api"
-    # The api has no NFS volume (C17).
+    # The api has no NFS volume.
     api = next(d for d in _documents("deploy/k8s/application.yaml") if d["kind"] == "Deployment")
     assert all("persistentVolumeClaim" not in v for v in api["spec"]["template"]["spec"]["volumes"])
     policy_doc = _documents("deploy/k8s/preview/network-policy.yaml")[0]

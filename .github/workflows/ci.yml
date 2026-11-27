@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # R1-R3 lint: ARC labels only, checkout + estate-ci only. Context "workflow-lint / lint".
+  # Workflow lint: in-cluster runner labels only, checkout and estate-ci actions only. Context "workflow-lint / lint".
   workflow-lint:
     uses: jvallery/estate-ci/.github/workflows/lint.yml@f2d40e7df657822465b091e52c0ca31eab0f3194 # estate-ci main 2026-11-06 (#38)
     with: {strict: true}

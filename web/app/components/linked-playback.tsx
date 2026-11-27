@@ -45,7 +45,7 @@ function Keogram({ video, keogram, span: segment, cursor, onSelect }: { video: T
     if (next === undefined) return;
     event.preventDefault(); choose(next);
   };
-  // The image's x axis is the bin axis: 1,440 equal elapsed-UTC bins (D10).
+  // The image's x axis is the bin axis: 1,440 equal elapsed-UTC bins.
   const click = (event: MouseEvent<HTMLDivElement>) => { const box = event.currentTarget.getBoundingClientRect(); choose(Math.floor(((event.clientX - box.left) / box.width) * KEOGRAM_BINS)); };
   const text = bin === null ? "No bin selected" : `Bin ${bin + 1} of ${KEOGRAM_BINS}, centred ${localTime(iso(binCenter(span, KEOGRAM_BINS, bin)))}${gap ? ", no capture" : ""}, ±${half.toFixed(1)} s`;
   return <figure className="keogram"><figcaption id="keogram-caption">Keogram · the whole recording as one strip; select a point to jump there ({KEOGRAM_BINS.toLocaleString("en-US")} bins of ±{half.toFixed(1)} s){state === "partial" ? " · partial: missing bins stay visible" : ""}</figcaption>
@@ -56,7 +56,7 @@ function Keogram({ video, keogram, span: segment, cursor, onSelect }: { video: T
 }
 
 /**
- * The route-local controller (D13): it owns the media revision's sidecar time map and the source
+ * The route-local controller: it owns the media revision's sidecar time map and the source
  * UTC cursor. Playback moves the cursor; plot, keogram, event and time-input selections seek
  * through the same map. A playback report only moves the cursor when the frame changes, so a
  * seek never echoes back as a second seek.
