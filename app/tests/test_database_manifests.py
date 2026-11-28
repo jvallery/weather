@@ -211,19 +211,18 @@ class DatabaseManifestTests(unittest.TestCase):
             {"kubernetes.io/metadata.name": "garage-hdd"},
         )
 
-    def _preflight_reads(self, archiver_store="weather-pg-archive", window=True):
+    def _preflight_reads(
+        self, archiver_store="weather-pg-archive", window=True, server="weather-pg"
+    ):
+        # The archiver's parameters as cluster.yaml declares them, with the store and server
+        # name under test (cluster.yaml also sets the sidecarImage canary).
+        cluster_spec = yaml.safe_load((ROOT / "deploy/k8s/database/cluster.yaml").read_text())
+        parameters = dict(
+            next(p for p in cluster_spec["spec"]["plugins"] if p.get("isWALArchiver"))["parameters"]
+        )
+        parameters.update(barmanObjectName=archiver_store, serverName=server)
         cluster = {
-            "spec": {
-                "plugins": [
-                    {
-                        "isWALArchiver": True,
-                        "parameters": {
-                            "barmanObjectName": archiver_store,
-                            "serverName": "weather-pg",
-                        },
-                    }
-                ]
-            },
+            "spec": {"plugins": [{"isWALArchiver": True, "parameters": parameters}]},
             "status": {
                 "readyInstances": 3,
                 "conditions": [{"type": "ContinuousArchiving", "status": "True"}],
@@ -265,6 +264,7 @@ class DatabaseManifestTests(unittest.TestCase):
         for reads in (
             self._preflight_reads("weather-pg-b2"),
             self._preflight_reads("weather-pg-local"),
+            self._preflight_reads(server="weather-pg-restored"),
             self._preflight_reads(window=False),
         ):
             read, kubectl = reads
