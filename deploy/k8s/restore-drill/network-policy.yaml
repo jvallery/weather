@@ -1,0 +1,91 @@
+# weather#33: isolation for the restore drill. The copy's pods (instance and full-recovery job)
+# reach only DNS, TLS to public addresses (B2) and the API endpoint port, and accept only the
+# CNPG operator and the drill runner. The runner reaches only DNS, the API endpoint port and the copy on 5432; its
+# database-role label adds the standby read through weather-database-clients.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: weather-pg-restore-drill-instance
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  podSelector:
+    matchExpressions:
+    - {key: weather.vallery.net/restore-drill, operator: Exists}
+    - {key: cnpg.io/cluster, operator: Exists}
+  policyTypes: [Ingress, Egress]
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: cnpg-system
+    ports:
+    - {port: 5432, protocol: TCP}
+    - {port: 8000, protocol: TCP}
+  - from:
+    - podSelector:
+        matchLabels:
+          weather.vallery.net/restore-drill-runner: weather-pg
+    ports:
+    - {port: 5432, protocol: TCP}
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - {port: 53, protocol: UDP}
+    - {port: 53, protocol: TCP}
+  # B2 has dynamic public addresses: TLS to public addresses only.
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10]
+    ports:
+    - {port: 443, protocol: TCP}
+  # The instance manager and plugin sidecar read the API: the endpoint port after service
+  # translation, port-only as in the production policy, so no private address is published.
+  - ports:
+    - {port: 6443, protocol: TCP}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: weather-pg-restore-drill-runner
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  podSelector:
+    matchLabels:
+      weather.vallery.net/restore-drill-runner: weather-pg
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - {port: 53, protocol: UDP}
+    - {port: 53, protocol: TCP}
+  - to:
+    - podSelector:
+        matchExpressions:
+        - {key: weather.vallery.net/restore-drill, operator: Exists}
+        - {key: cnpg.io/cluster, operator: Exists}
+    ports:
+    - {port: 5432, protocol: TCP}
+  - ports:
+    - {port: 6443, protocol: TCP}

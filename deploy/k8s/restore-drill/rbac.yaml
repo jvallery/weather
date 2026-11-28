@@ -1,0 +1,59 @@
+# weather#33: the drill's own identity, namespaced only. It creates one Cluster per run and gets
+# and deletes it by its one fixed name, weather-pg-restore-drill-copy. RBAC cannot limit create by
+# name: the cluster-scoped ValidatingAdmissionPolicy weather-restore-drill-boundary (kept by the
+# estate platform) admits a Cluster from this ServiceAccount only with that name, no plugins, no
+# backup section and the reader store weather-pg-restore-drill-reader as its only source. No
+# ObjectStore and no Secret access: the reader store is Argo CD's (drill.yaml), and the operator
+# and the barman-cloud plugin read the Secrets the Cluster references.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: weather-pg-restore-drill
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: weather-pg-restore-drill
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+rules:
+- apiGroups: [postgresql.cnpg.io]
+  resources: [clusters]
+  verbs: [create]
+- apiGroups: [postgresql.cnpg.io]
+  resources: [clusters]
+  resourceNames: [weather-pg-restore-drill-copy]
+  verbs: [get, delete]
+- apiGroups: ['']
+  resources: [pods, persistentvolumeclaims]
+  verbs: [get, list]
+- apiGroups: ['']
+  resources: [pods/log]
+  verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: weather-pg-restore-drill
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: weather-pg-restore-drill
+subjects:
+- kind: ServiceAccount
+  name: weather-pg-restore-drill
+  namespace: weather

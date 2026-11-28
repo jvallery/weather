@@ -1,0 +1,47 @@
+# weather#33: the read-only ObjectStore the restore drill recovers from (deploy/acceptance/
+# restore/drill.yaml links here). Source tier B2: the storage owner's object-custody copy of the
+# archive bucket weather-pg-archive, read with the custody key weather-custody-restore-reader
+# (listFiles and readFiles on its weather- prefix only), referenced in place and never copied.
+# A site-loss restore relies on nothing in the cluster's own object stores. Argo CD keeps it;
+# the drill's ServiceAccount cannot create, change or delete any ObjectStore. The source is
+# this destinationPath and SOURCE_PATH in restore_drill.py (the test keeps them equal).
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: weather-pg-restore-drill-reader
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+spec:
+  configuration:
+    destinationPath: s3://object-custody-vallery/object-custody/weather-pg-archive/cnpg
+    endpointURL: https://s3.us-west-000.backblazeb2.com
+    s3Credentials:
+      accessKeyId:
+        name: weather-custody-restore-reader
+        key: AWS_ACCESS_KEY_ID
+      secretAccessKey:
+        name: weather-custody-restore-reader
+        key: AWS_SECRET_ACCESS_KEY
+      region:
+        name: weather-custody-restore-reader
+        key: AWS_REGION
+    data:
+      compression: gzip
+      jobs: 1
+    wal:
+      compression: gzip
+      maxParallel: 2
+  # No retentionPolicy: this store is read-only and must never prune.
+  instanceSidecarConfiguration:
+    env:
+      # B2 rejects the newer default request checksums.
+      - name: AWS_REQUEST_CHECKSUM_CALCULATION
+        value: when_required
+      - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+        value: when_required
+    resources:
+      requests: {cpu: 100m, memory: 128Mi}
+      limits: {cpu: '1', memory: 512Mi}

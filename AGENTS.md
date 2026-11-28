@@ -34,7 +34,7 @@ This repository is public. Everything in it, and in its issues and pull requests
 
 **Finishing a change.** Anything that can be operated gets a section in its runbook under `docs/operations/`. A new failure mode gets a metric here, so that an alert can be written against it.
 
-**Restore drills.** `scripts/restore-drill.sh` creates `weather-drill-*` resources inside namespace `weather`, so that the read-only restore keys are used in place and never copied. A drill NetworkPolicy isolates them from production. Run one drill at a time and delete its resources afterwards. The database runbook is [docs/operations/database.md](docs/operations/database.md); media recovery is [docs/operations/recovery.md](docs/operations/recovery.md).
+**Restore drills.** The weekly CronJob `weather-pg-restore-drill` (`deploy/k8s/restore-drill/`, one run on demand with `scripts/restore-drill.sh run <id>`) and `scripts/media_restore_drill.py` create their drill resources inside namespace `weather`, so that the read-only restore keys are used in place and never copied. A drill NetworkPolicy isolates them from production. Run one drill at a time and delete its resources afterwards. The database runbook is [docs/operations/database.md](docs/operations/database.md); media recovery is [docs/operations/recovery.md](docs/operations/recovery.md).
 
 ## Hazards
 

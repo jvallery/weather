@@ -1,17 +1,18 @@
 # SPDX-License-Identifier: MIT
 """Security and data-custody invariants; no database or cluster is started here."""
 
+import datetime as dt
 import importlib.util
-import json
-import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
-spec = importlib.util.spec_from_file_location("restore_drill", ROOT / "scripts/restore_drill.py")
+spec = importlib.util.spec_from_file_location(
+    "restore_drill", ROOT / "deploy/k8s/restore-drill/restore_drill.py"
+)
 drill = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(drill)
 
@@ -136,144 +137,165 @@ class DatabaseManifestTests(unittest.TestCase):
             local["spec"]["instanceSidecarConfiguration"],
         )
 
-    def test_drill_has_only_reader_and_no_archiver_or_password_rewrite(self):
-        objects = list(
-            yaml.safe_load_all(drill.manifest("123", "2026-10-24T03:00:00+00:00", "2026-10-25"))
-        )
-        self.assertEqual({x["kind"] for x in objects}, {"ObjectStore", "Cluster", "NetworkPolicy"})
-        for obj in objects:
-            self.assertEqual(obj["metadata"]["namespace"], "weather")
-            self.assertTrue(obj["metadata"]["name"].startswith("weather-drill-"))
-            self.assertEqual(obj["metadata"]["labels"]["weather.vallery.net/restore-drill"], "123")
-            self.assertEqual(obj["metadata"]["labels"]["estate.vallery.net/disposable"], "true")
-        cluster = next(x for x in objects if x["kind"] == "Cluster")
-        store = next(x for x in objects if x["kind"] == "ObjectStore")
-        self.assertNotIn("plugins", cluster["spec"])
-        self.assertIn(":16.16-standard-trixie-", cluster["spec"]["imageName"])
-        self.assertEqual(cluster["spec"]["imagePullSecrets"], [{"name": "zot-origin-cluster-pull"}])
-        self.assertNotIn("managed", cluster["spec"])
-        self.assertEqual(
-            cluster["spec"]["postgresql"]["parameters"]["log_error_verbosity"], "terse"
-        )
-        self.assertEqual(
-            cluster["spec"]["postgresql"]["parameters"]["log_parameter_max_length_on_error"], "0"
-        )
-        self.assertEqual(
-            cluster["spec"]["externalClusters"][0]["plugin"]["parameters"]["serverName"],
-            "weather-pg",
-        )
-        # weather#334: the drill reads the store production archives to, with the
-        # read-only key only, and takes the Garage region from the sidecar env.
-        production = yaml.safe_load(
-            (ROOT / "deploy/k8s/database/object-store-archive.yaml").read_text()
-        )["spec"]["configuration"]
+    def _copy(self, owner=None):
+        return yaml.safe_load(drill.manifest("proof-1", "2026-11-30", owner))
+
+    def test_drill_restores_from_the_b2_custody_copy_with_the_reader_only(self):
+        store = yaml.safe_load((ROOT / "deploy/acceptance/restore/drill.yaml").read_text())
+        self.assertEqual(store["kind"], "ObjectStore")
+        self.assertEqual(store["metadata"]["name"], drill.READER_STORE)
+        # Argo CD keeps the store; it carries no drill label, so a drill sweep never matches it.
+        self.assertNotIn(drill.LABEL, store["metadata"].get("labels", {}))
         conf = store["spec"]["configuration"]
-        self.assertEqual(conf["destinationPath"], production["destinationPath"])
-        self.assertEqual(conf["endpointURL"], production["endpointURL"])
-        self.assertEqual(
-            (conf["destinationPath"], conf["endpointURL"]),
-            (drill.SOURCE_PATH, drill.SOURCE_ENDPOINT),
+        self.assertEqual(conf["destinationPath"], drill.SOURCE_PATH)
+        self.assertTrue(
+            conf["destinationPath"].startswith("s3://object-custody-vallery/object-custody/")
         )
-        self.assertEqual(
-            {r["name"] for r in conf["s3Credentials"].values()},
-            {"weather-pg-archive-s3-reader"},
-        )
-        self.assertNotIn("region", conf["s3Credentials"])
+        self.assertIn("backblazeb2.com", conf["endpointURL"])
+        self.assertEqual({r["name"] for r in conf["s3Credentials"].values()}, {drill.READER_SECRET})
         self.assertNotIn("retentionPolicy", store["spec"])
-        env = {e["name"]: e["value"] for e in store["spec"]["instanceSidecarConfiguration"]["env"]}
-        self.assertEqual((env["AWS_DEFAULT_REGION"], env["AWS_REGION"]), ("garage", "garage"))
-        policy = next(x for x in objects if x["kind"] == "NetworkPolicy")["spec"]
+        self.assertNotIn("garage", (ROOT / "deploy/acceptance/restore/drill.yaml").read_text())
+        cluster = self._copy()
+        self.assertEqual(cluster["kind"], "Cluster")
+        self.assertEqual(cluster["metadata"]["name"], drill.COPY)
+        self.assertEqual(cluster["metadata"]["ownerReferences"], [])
+        self.assertEqual(cluster["metadata"]["labels"][drill.LABEL], "proof-1")
+        self.assertNotIn("annotations", cluster["metadata"])
+        for absent in ("plugins", "backup", "managed", "env", "envFrom", "projectedVolumeTemplate"):
+            self.assertNotIn(absent, cluster["spec"])
+        self.assertEqual(set(cluster["spec"]["bootstrap"]["recovery"]), {"source"})
+        self.assertIn(":16.16-standard-trixie-", cluster["spec"]["imageName"])
         self.assertEqual(
-            policy["ingress"][0]["from"],
-            [
-                {
-                    "namespaceSelector": {
-                        "matchLabels": {"kubernetes.io/metadata.name": "cnpg-system"}
-                    }
-                }
-            ],
+            cluster["spec"]["storage"]["storageClass"], "longhorn-v1-bulk-disposable-r1"
         )
+        (external,) = cluster["spec"]["externalClusters"]
+        self.assertEqual(external["name"], cluster["spec"]["bootstrap"]["recovery"]["source"])
         self.assertEqual(
-            {p["port"] for rule in policy["egress"] for p in rule["ports"]}, {53, 3900, 6443}
+            external["plugin"]["parameters"],
+            {"barmanObjectName": drill.READER_STORE, "serverName": "weather-pg"},
         )
-        # No internet egress: every rule names its destination, and 6443 reaches only the
-        # API server endpoints and the VIP.
-        for rule in policy["egress"]:
-            self.assertTrue(rule.get("to"), rule)
-        api = next(r for r in policy["egress"] if r["ports"] == [{"port": 6443, "protocol": "TCP"}])
-        self.assertEqual(
-            {peer["ipBlock"]["cidr"] for peer in api["to"]},
-            {"192.168.30.31/32", "192.168.30.32/32", "192.168.30.33/32", "192.168.30.240/32"},
-        )
-        s3 = next(r for r in policy["egress"] if r["ports"] == [{"port": 3900, "protocol": "TCP"}])
-        self.assertEqual(
-            s3["to"][0]["namespaceSelector"]["matchLabels"],
-            {"kubernetes.io/metadata.name": "garage-hdd"},
-        )
+        self.assertEqual(set(cluster["spec"]["inheritedMetadata"]), {"labels"})
+        self.assertEqual(cluster["spec"]["postgresql"]["parameters"]["log_statement"], "none")
 
-    def _preflight_reads(
-        self, archiver_store="weather-pg-archive", window=True, server="weather-pg"
-    ):
-        # The archiver's parameters as cluster.yaml declares them, with the store and server
-        # name under test (cluster.yaml also sets the sidecarImage canary).
-        cluster_spec = yaml.safe_load((ROOT / "deploy/k8s/database/cluster.yaml").read_text())
-        parameters = dict(
-            next(p for p in cluster_spec["spec"]["plugins"] if p.get("isWALArchiver"))["parameters"]
-        )
-        parameters.update(barmanObjectName=archiver_store, serverName=server)
-        cluster = {
-            "spec": {"plugins": [{"isWALArchiver": True, "parameters": parameters}]},
-            "status": {
-                "readyInstances": 3,
-                "conditions": [{"type": "ContinuousArchiving", "status": "True"}],
-            },
-        }
-        store = yaml.safe_load((ROOT / "deploy/k8s/database/object-store-archive.yaml").read_text())
-        if window:
-            store["status"] = {
-                "serverRecoveryWindow": {
-                    "weather-pg": {"firstRecoverabilityPoint": "2026-10-31T11:37:44Z"}
-                }
-            }
-        backups = {
-            "items": [
-                {"spec": {"cluster": {"name": "weather-pg"}}, "status": {"phase": "completed"}}
-            ]
-        }
+    def test_drill_copy_is_owned_by_its_job(self):
+        owner = {"apiVersion": "batch/v1", "kind": "Job", "name": "j", "uid": "u"}
+        self.assertEqual(self._copy(owner)["metadata"]["ownerReferences"], [owner])
 
-        def read(kind, name):
-            return {"cluster": cluster, "objectstore": store}[kind]
+    def test_operation_cannot_inject_names_or_labels(self):
+        for job in ("weather-pg-restore-drill-UPPER", "bad'name", "a" * 25, "x-", ""):
+            with self.assertRaises(ValueError):
+                drill.operation_from(job)
+        self.assertEqual(drill.operation_from("weather-pg-restore-drill-29412345"), "29412345")
+        self.assertEqual(drill.operation_from("weather-pg-restore-drill-proof-1"), "proof-1")
+        with self.assertRaises(ValueError):
+            drill.manifest("../weather-pg", "2026-11-30", None)
 
-        def kubectl(*args, stdin=None):
-            if args[:2] == ("get", "backups.postgresql.cnpg.io"):
-                return json.dumps(backups)
-            self.assertEqual(args[:2], ("get", "secret"))
-            self.assertIn(args[2], {drill.WRITER_SECRET, drill.READER_SECRET})
-            self.assertTrue(args[4].startswith("go-template={{range"))
-            return "AWS_ACCESS_KEY_ID\nAWS_SECRET_ACCESS_KEY"
-
-        return read, kubectl
-
-    def test_preflight_accepts_the_archive_store_and_records_its_recoverability_point(self):
-        read, kubectl = self._preflight_reads()
-        with patch.object(drill, "read", read), patch.object(drill, "kubectl", kubectl):
-            source = drill.preflight()
-        self.assertEqual(source["sourceRecoverabilityPoint"], "2026-10-31T11:37:44Z")
-
-    def test_preflight_refuses_a_retired_archiver_or_a_store_without_a_base(self):
-        for reads in (
-            self._preflight_reads("weather-pg-b2"),
-            self._preflight_reads("weather-pg-local"),
-            self._preflight_reads(server="weather-pg-restored"),
-            self._preflight_reads(window=False),
-        ):
-            read, kubectl = reads
+    def test_drill_creates_only_its_one_fixed_name(self):
+        # A template edited to another (production or look-alike) name is refused before any
+        # request; the admission policy weather-restore-drill-boundary refuses it in the cluster.
+        for name in ("weather-pg", "weather-pg-restore-drill-copy2"):
+            text = drill.TEMPLATE.read_text().replace(
+                "  name: weather-pg-restore-drill-copy\n", f"  name: {name}\n"
+            )
             with (
-                patch.object(drill, "read", read),
-                patch.object(drill, "kubectl", kubectl),
-                self.assertRaises(RuntimeError),
+                patch.object(drill, "TEMPLATE", Mock(read_text=Mock(return_value=text))),
+                self.assertRaises(ValueError),
             ):
-                drill.preflight()
+                drill.manifest("proof-1", "2026-11-30", None)
+
+    def test_recovery_log_and_counts_decide_the_result(self):
+        line = (
+            '{"msg":"last completed transaction was at log time 2026-11-20 09:12:01.5+00"}\n'
+            '{"msg":"last completed transaction was at log time 2026-11-20 09:13:02.25+00"}'
+        )
+        self.assertEqual(
+            drill.last_transaction(line),
+            dt.datetime(2026, 11, 20, 9, 13, 2, 250000, tzinfo=dt.UTC),
+        )
+        self.assertIsNone(drill.last_transaction("redo done"))
+        rows = {"public_api.station": 1, "public_api.obs_st": 1440, "public_api.rapid_wind": 28800}
+        self.assertEqual(drill.compare(rows, dict(rows)), [])
+        self.assertEqual(len(drill.compare(rows, {**rows, "public_api.obs_st": 1439})), 1)
+        self.assertEqual(len(drill.compare({}, rows)), 3)
+
+    def test_cronjob_runs_the_drill_weekly(self):
+        base = ROOT / "deploy/k8s/restore-drill"
+        kustomization = yaml.safe_load((base / "kustomization.yaml").read_text())
+        root = yaml.safe_load((ROOT / "deploy/k8s/kustomization.yaml").read_text())
+        self.assertIn("restore-drill", root["resources"])
+        self.assertIn("drill.yaml", kustomization["resources"])
+        self.assertEqual(
+            kustomization["configMapGenerator"][0]["files"], ["restore_drill.py", "copy.yaml"]
+        )
+        self.assertEqual(
+            (ROOT / "deploy/acceptance/restore/drill.yaml").resolve(),
+            (base / "drill.yaml").resolve(),
+        )
+        cron = yaml.safe_load((base / "cronjob.yaml").read_text())
+        self.assertEqual(cron["metadata"]["name"], "weather-pg-restore-drill")
+        self.assertFalse(cron["spec"]["suspend"])
+        self.assertEqual(cron["spec"]["concurrencyPolicy"], "Forbid")
+        minute, hour, dom, month, dow = cron["spec"]["schedule"].split()
+        self.assertEqual((dom, month), ("*", "*"))
+        self.assertTrue(dow.isdigit() and minute.isdigit() and hour.isdigit())
+        job = cron["spec"]["jobTemplate"]["spec"]
+        self.assertEqual(job["backoffLimit"], 0)
+        self.assertGreater(job["ttlSecondsAfterFinished"], 0)
+        pod = job["template"]["spec"]
+        self.assertEqual(pod["serviceAccountName"], "weather-pg-restore-drill")
+        self.assertEqual(
+            [s["secret"]["name"] for s in pod["volumes"][1]["projected"]["sources"]],
+            ["weather-pg-api", "weather-pg-ca"],
+        )
+
+    def test_role_has_no_unnamed_write_or_read_of_clusters_and_nothing_on_stores(self):
+        rbac = list(yaml.safe_load_all((ROOT / "deploy/k8s/restore-drill/rbac.yaml").read_text()))
+        self.assertEqual({o["kind"] for o in rbac}, {"ServiceAccount", "Role", "RoleBinding"})
+        role = next(o for o in rbac if o["kind"] == "Role")
+        for rule in role["rules"]:
+            self.assertNotIn("*", rule["verbs"])
+            self.assertNotIn("*", rule["resources"])
+            for resource in ("secrets", "objectstores", "persistentvolumes", "rolebindings"):
+                self.assertNotIn(resource, rule["resources"])
+            # Every verb that changes or deletes an object is bound to a name, except create,
+            # which RBAC cannot bind and the admission policy bounds.
+            if set(rule["verbs"]) & {"delete", "deletecollection", "update", "patch"}:
+                self.assertEqual(rule.get("resourceNames"), [drill.COPY], rule)
+                self.assertNotIn("deletecollection", rule["verbs"])
+            if "clusters" in rule["resources"] and rule["verbs"] != ["create"]:
+                self.assertEqual(rule.get("resourceNames"), [drill.COPY], rule)
+        verbs = {(r, v) for rule in role["rules"] for r in rule["resources"] for v in rule["verbs"]}
+        self.assertEqual(
+            {(r, v) for r, v in verbs if v not in ("get", "list")},
+            {("clusters", "create"), ("clusters", "delete")},
+        )
+
+    def test_drill_isolation_admits_only_b2_tls_the_api_port_and_the_runner(self):
+        text = (ROOT / "deploy/k8s/restore-drill/network-policy.yaml").read_text()
+        policies = {p["metadata"]["name"]: p["spec"] for p in yaml.safe_load_all(text)}
+        instance = policies["weather-pg-restore-drill-instance"]
+        self.assertEqual(
+            {p["port"] for rule in instance["egress"] for p in rule["ports"]}, {53, 443, 6443}
+        )
+        public = next(r for r in instance["egress"] if r["ports"][0]["port"] == 443)
+        self.assertIn("192.168.0.0/16", public["to"][0]["ipBlock"]["except"])
+        # The API endpoint port is port-only, as in the production policy: no private address
+        # is published, and every ipBlock in these policies is the public-only one above.
+        for spec in policies.values():
+            for rule in spec["egress"]:
+                for peer in rule.get("to", []):
+                    if "ipBlock" in peer:
+                        self.assertEqual(peer["ipBlock"]["cidr"], "0.0.0.0/0")
+        # The media drill's Job pods carry the drill label but no cnpg.io/cluster label.
+        self.assertIn(
+            {"key": "cnpg.io/cluster", "operator": "Exists"},
+            instance["podSelector"]["matchExpressions"],
+        )
+        runner = policies["weather-pg-restore-drill-runner"]
+        self.assertEqual(runner["ingress"], [])
+        self.assertEqual(
+            {p["port"] for rule in runner["egress"] for p in rule["ports"]}, {53, 5432, 6443}
+        )
 
     def test_instance_api_egress_includes_endpoint_port_without_widening_clients(self):
         policies = list(
@@ -352,164 +374,6 @@ class DatabaseManifestTests(unittest.TestCase):
         self.assertEqual(scheduler["spec"]["replicas"], 1)
         # Two scheduler versions never overlap, so an old one cannot race a new topic.
         self.assertEqual(scheduler["spec"]["strategy"], {"type": "Recreate"})
-
-    def test_operation_cannot_inject_sql_names_or_labels(self):
-        for operation in ("bad'name", "../weather-pg", "UPPER", "", "bad-", "-bad", "a" * 32):
-            with self.assertRaises(ValueError):
-                drill.manifest(operation, "2026-10-24T03:00:00+00:00", "2026-10-25")
-        with self.assertRaises(ValueError):
-            drill.manifest("valid", "2026-10-24T03:00:00", "2026-10-25")
-
-    def test_unverified_restore_cannot_delete_anything(self):
-        with patch.object(drill, "kubectl") as cli, self.assertRaises(RuntimeError):
-            drill.cleanup("proof", {"operation": "proof", "verified": False}, Path("unused.json"))
-        cli.assert_not_called()
-
-    def test_foreign_pvc_owner_prevents_all_cleanup(self):
-        labels = {drill.LABEL: "proof", "estate.vallery.net/disposable": "true"}
-        cluster = {
-            "metadata": {"name": "weather-drill-pg-proof", "uid": "cluster-a", "labels": labels}
-        }
-        pvc = {
-            "metadata": {
-                "name": "weather-drill-pg-proof-1",
-                "uid": "pvc-a",
-                "labels": labels,
-                "ownerReferences": [{"uid": "foreign"}],
-            }
-        }
-        with (
-            patch.object(drill, "read", return_value=cluster),
-            patch.object(drill, "kubectl", return_value=json.dumps({"items": [pvc]})) as cli,
-        ):
-            with self.assertRaises(RuntimeError):
-                drill.cleanup(
-                    "proof",
-                    {"operation": "proof", "verified": True, "clusterUid": "cluster-a"},
-                    Path("unused.json"),
-                )
-            self.assertTrue(all(c.args[0] != "delete" for c in cli.call_args_list))
-
-    def test_cleanup_refuses_replacement_uid(self):
-        evidence = {
-            "operation": "proof",
-            "verified": True,
-            "cleanupPlan": [{"kind": "pvc", "name": "weather-drill-pg-proof-1", "uid": "original"}],
-        }
-        replacement = {
-            "metadata": {
-                "uid": "replacement",
-                "labels": {drill.LABEL: "proof", "estate.vallery.net/disposable": "true"},
-            }
-        }
-        with patch.object(
-            drill, "kubectl", return_value=json.dumps({"items": [replacement]})
-        ) as cli:
-            with self.assertRaises(RuntimeError):
-                drill.cleanup("proof", evidence, Path("unused.json"))
-            self.assertTrue(all(c.args[0] != "delete" for c in cli.call_args_list))
-
-    def test_cleanup_delete_has_exact_uid_and_resource_version(self):
-        evidence = {
-            "operation": "proof",
-            "verified": True,
-            "cleanupPlan": [{"kind": "pvc", "name": "weather-drill-pg-proof-1", "uid": "original"}],
-        }
-        current = {
-            "metadata": {
-                "uid": "original",
-                "resourceVersion": "42",
-                "labels": {drill.LABEL: "proof", "estate.vallery.net/disposable": "true"},
-            }
-        }
-        with patch.object(
-            drill, "kubectl", side_effect=[json.dumps({"items": [current]}), "{}", '{"items":[]}']
-        ) as cli:
-            drill.cleanup("proof", evidence, Path("unused.json"))
-        deletion = cli.call_args_list[1]
-        self.assertEqual(deletion.args[:2], ("delete", "--raw"))
-        self.assertEqual(
-            json.loads(deletion.kwargs["stdin"])["preconditions"],
-            {"uid": "original", "resourceVersion": "42"},
-        )
-        self.assertEqual(evidence["cleanup"]["remainingPvcCount"], 0)
-
-    def _plan_with_restored_volume(self, pv_claim_uid, pv_name="pv-drill"):
-        labels = {drill.LABEL: "proof", "estate.vallery.net/disposable": "true"}
-        cluster = {
-            "metadata": {"name": "weather-drill-pg-proof", "uid": "cluster-a", "labels": labels}
-        }
-        pvc = {
-            "metadata": {
-                "name": "weather-drill-pg-proof-1",
-                "uid": "pvc-a",
-                "labels": labels,
-                "ownerReferences": [{"uid": "cluster-a"}],
-            },
-            "spec": {"volumeName": pv_name},
-        }
-        pv = {
-            "metadata": {"name": pv_name, "uid": "pv-uid"},
-            "spec": {
-                "claimRef": {
-                    "namespace": "weather",
-                    "name": "weather-drill-pg-proof-1",
-                    "uid": pv_claim_uid,
-                },
-                "csi": {"driver": "driver.longhorn.io", "volumeHandle": pv_name},
-            },
-        }
-        volume = {
-            "metadata": {"name": pv_name, "uid": "lh-uid"},
-            "status": {"kubernetesStatus": {"pvName": pv_name}},
-        }
-        store = {
-            "metadata": {"name": "weather-drill-pg-proof-reader", "uid": "os-a", "labels": labels}
-        }
-        policy = {
-            "metadata": {
-                "name": "weather-drill-pg-proof-isolation",
-                "uid": "np-a",
-                "labels": labels,
-            }
-        }
-
-        def fake_kubectl(*args, stdin=None):
-            if args[:2] == ("get", "pvc"):
-                return json.dumps({"items": [pvc]})
-            if args[:3] == ("get", "pv", pv_name):
-                return json.dumps(pv)
-            if args[:3] == ("get", "volumes.longhorn.io", pv_name):
-                return json.dumps(volume)
-            raise RuntimeError("stop after planning")
-
-        reads = {"cluster": cluster, "objectstore": store, "networkpolicy": policy}
-        return fake_kubectl, (lambda kind, name: reads[kind])
-
-    def test_cleanup_plan_binds_the_released_pv_and_longhorn_volume(self):
-        fake_kubectl, fake_read = self._plan_with_restored_volume("pvc-a")
-        evidence = {"operation": "proof", "verified": True, "clusterUid": "cluster-a"}
-        with (
-            patch.object(drill, "read", side_effect=fake_read),
-            patch.object(drill, "kubectl", side_effect=fake_kubectl),
-            tempfile.TemporaryDirectory() as directory,
-        ):
-            with self.assertRaises(RuntimeError):
-                drill.cleanup("proof", evidence, Path(directory) / "evidence.json")
-        kinds = [(item["kind"], item["uid"]) for item in evidence["cleanupPlan"]]
-        self.assertEqual(kinds[-2:], [("pv", "pv-uid"), ("volumes.longhorn.io", "lh-uid")])
-        self.assertLess(kinds.index(("pvc", "pvc-a")), kinds.index(("pv", "pv-uid")))
-
-    def test_cleanup_refuses_a_pv_bound_to_another_claim(self):
-        fake_kubectl, fake_read = self._plan_with_restored_volume("someone-else")
-        evidence = {"operation": "proof", "verified": True, "clusterUid": "cluster-a"}
-        with (
-            patch.object(drill, "read", side_effect=fake_read),
-            patch.object(drill, "kubectl", side_effect=fake_kubectl),
-        ):
-            with self.assertRaisesRegex(RuntimeError, "claimRef"):
-                drill.cleanup("proof", evidence, Path("unused.json"))
-        self.assertNotIn("cleanupPlan", evidence)
 
 
 if __name__ == "__main__":

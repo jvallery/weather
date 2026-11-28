@@ -1,0 +1,129 @@
+# weather#33: the weekly weather-pg restore drill from the B2 custody copy. See
+# restore_drill.py for what one run does and docs/operations/database.md for its record.
+# KubeCronJobSuccessStale (generic, monitoring-stack) fires when no run succeeded for twice
+# the interval plus slack. A one-off run:
+#   kubectl -n weather create job weather-pg-restore-drill-<id> --from=cronjob/weather-pg-restore-drill
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: weather-pg-restore-drill
+  namespace: weather
+  labels:
+    app.kubernetes.io/part-of: weather
+    app.kubernetes.io/component: restore-drill
+    app.kubernetes.io/name: weather-pg-restore-drill
+    agent-fleet.vallery.net/owner: jvallery
+    agent-fleet.vallery.net/project: weather
+  annotations:
+    # A database client: it follows the migrate hook (wave 1).
+    argocd.argoproj.io/sync-wave: '2'
+spec:
+  # Tuesdays 11:40 UTC: after the 06:15 UTC custody copy and the 09:15 UTC base backup.
+  schedule: '40 11 * * 2'
+  timeZone: Etc/UTC
+  suspend: false
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 10800
+      # A failed run keeps its copy for a day for inspection; deleting the Job deletes it.
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/part-of: weather
+            app.kubernetes.io/component: restore-drill
+            app.kubernetes.io/name: weather-pg-restore-drill
+            agent-fleet.vallery.net/owner: jvallery
+            agent-fleet.vallery.net/project: weather
+            # Reads weather-pg (a standby) and the copy as weather_api.
+            weather.vallery.net/database-role: api
+            weather.vallery.net/restore-drill-runner: weather-pg
+        spec:
+          restartPolicy: Never
+          priorityClassName: estate-batch
+          serviceAccountName: weather-pg-restore-drill
+          automountServiceAccountToken: true
+          enableServiceLinks: false
+          imagePullSecrets:
+          - name: zot-origin-cluster-pull
+          nodeSelector:
+            agentfleet.vallery.net/control-plane: 'false'
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+          - name: drill
+            image: weather-app
+            command: [python, /drill/restore_drill.py]
+            env:
+            - name: JOB_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['batch.kubernetes.io/job-name']
+            - name: JOB_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['batch.kubernetes.io/controller-uid']
+            - name: DATABASE_CREDENTIAL_DIRECTORY
+              value: /var/run/weather-db
+            # 26 h: recovery.db_offsite_age_target_hours in weather-database-policy.
+            - name: MAX_RPO_SECONDS
+              value: '93600'
+            - name: RECOVERY_TIMEOUT_SECONDS
+              value: '7200'
+            - name: HOME
+              value: /tmp
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 500m
+                memory: 256Mi
+            securityContext:
+              readOnlyRootFilesystem: true
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                - ALL
+            volumeMounts:
+            - name: drill
+              mountPath: /drill
+              readOnly: true
+            - name: database
+              mountPath: /var/run/weather-db
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+          volumes:
+          - name: drill
+            configMap:
+              name: weather-pg-restore-drill
+          - name: database
+            projected:
+              defaultMode: 288
+              sources:
+              - secret:
+                  name: weather-pg-api
+                  items:
+                  - key: username
+                    path: username
+                  - key: password
+                    path: password
+              - secret:
+                  name: weather-pg-ca
+                  items:
+                  - key: ca.crt
+                    path: ca.crt
+          - name: tmp
+            emptyDir:
+              sizeLimit: 64Mi
