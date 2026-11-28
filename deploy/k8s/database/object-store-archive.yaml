@@ -1,0 +1,62 @@
+# WAL archive and base backups of weather-pg (weather#334). The WAL archiver and the daily base
+# backup go to the NAS-backed Garage bucket weather-pg-archive, which the storage owner provides and
+# mirrors to B2 (custody prefix object-custody/weather-pg-archive/). That is the estate's backup
+# shape: one copy on the NAS, one in B2, none on a Longhorn volume.
+# Credentials: Secret weather-pg-archive-s3-writer (bucket weather-pg-archive, read/write), minted
+# by the storage owner's Garage executor on 2026-11-28. No plaintext value is in Git. The keys this
+# store selects are attested in weather-pg-backup-credential-contract.yaml.
+# The previous stores stay declared and are no longer written: weather-pg-local (to 2026-11-28)
+# and weather-pg-b2 (to 2026-10-31).
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: weather-pg-archive
+  namespace: weather
+  annotations:
+    argocd.argoproj.io/sync-wave: '-6'
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  configuration:
+    destinationPath: s3://weather-pg-archive/cnpg
+    endpointURL: http://garage-hdd.garage-hdd.svc.cluster.local:3900
+    s3Credentials:
+      accessKeyId:
+        name: weather-pg-archive-s3-writer
+        key: AWS_ACCESS_KEY_ID
+      secretAccessKey:
+        name: weather-pg-archive-s3-writer
+        key: AWS_SECRET_ACCESS_KEY
+      # No `region` selector: the Secret carries only the two key fields, and Garage's region
+      # is not a secret. It comes from the sidecar env below instead.
+    data:
+      compression: gzip
+      jobs: 1
+    wal:
+      compression: gzip
+      maxParallel: 2
+  # Garage has no provider lifecycle on this bucket: CNPG's policy is the only pruner
+  # (a provider rule would break the WAL chain). 7 days is the declared PITR window
+  # (recovery.pitr_window_days in recovery-policy.yaml).
+  retentionPolicy: 7d
+  instanceSidecarConfiguration:
+    # Garage validates the SigV4 credential scope against its s3_region (`garage` on this
+    # Garage too), so a wrong or default region is an auth failure. The plugin only takes a
+    # region from a Secret key; boto3 in barman-cloud reads these env vars otherwise. The env
+    # and resources equal the previous store's, so the repoint changes no instance pod spec.
+    env:
+      - name: AWS_DEFAULT_REGION
+        value: garage
+      - name: AWS_REGION
+        value: garage
+      - name: AWS_REQUEST_CHECKSUM_CALCULATION
+        value: when_required
+      - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+        value: when_required
+    logLevel: info
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: '1'
+        memory: 512Mi

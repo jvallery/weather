@@ -5,6 +5,7 @@ resources:
   - cluster.yaml
   - object-store.yaml
   - object-store-local.yaml
+  - object-store-archive.yaml
   - scheduled-backup.yaml
   - network-policies.yaml
   - recovery-policy.yaml

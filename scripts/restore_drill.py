@@ -18,11 +18,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 LABEL = "weather.vallery.net/restore-drill"
 BASE = ["kubectl", "--context", "vallery", "--namespace", "weather"]
-SOURCE_STORE = "weather-pg-local"
-SOURCE_PATH = "s3://weather-pg/cnpg"
-SOURCE_ENDPOINT = "http://garage-k3s.garage-k3s.svc.cluster.local:3900"
-WRITER_SECRET = "weather-pg-backup-s3-writer-k3s"
-READER_SECRET = "weather-pg-backup-s3-reader-k3s"
+SOURCE_STORE = "weather-pg-archive"
+SOURCE_PATH = "s3://weather-pg-archive/cnpg"
+SOURCE_ENDPOINT = "http://garage-hdd.garage-hdd.svc.cluster.local:3900"
+WRITER_SECRET = "weather-pg-archive-s3-writer"
+READER_SECRET = "weather-pg-archive-s3-reader"
 
 
 def kubectl(*args, stdin=None):
@@ -84,8 +84,8 @@ def preflight():
     )
     if archiving.get("status") != "True":
         raise RuntimeError("production ContinuousArchiving must be true")
-    # storage-infra#1253: weather-pg archives to the availability Garage store, so the
-    # drill restores from that store with its read-only key; the B2 store keeps history only.
+    # weather#334: weather-pg archives to the NAS-backed Garage store, so the drill restores
+    # from that store with its read-only key; the retired stores keep history only.
     archiver = [p for p in cluster["spec"].get("plugins", []) if p.get("isWALArchiver")]
     if [p.get("parameters") for p in archiver] != [
         {"barmanObjectName": SOURCE_STORE, "serverName": "weather-pg"}

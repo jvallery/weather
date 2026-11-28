@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""The local WAL store selects only Secret keys the contract attests (storage-infra#1253)."""
+"""The WAL archive store selects only Secret keys the contract attests (weather#334)."""
 
 import re
 import unittest
@@ -10,7 +10,8 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 DATABASE = ROOT / "deploy/k8s/database"
 CONTRACT_PATH = DATABASE / "weather-pg-backup-credential-contract.yaml"
-STORE_PATH = DATABASE / "object-store-local.yaml"
+STORE_PATH = DATABASE / "object-store-archive.yaml"
+RETIRED_STORE_PATH = DATABASE / "object-store-local.yaml"
 DRILL_PATH = ROOT / "deploy/acceptance/restore/drill.yaml"
 UID = r"^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$"
 
@@ -59,20 +60,36 @@ class CredentialContract(unittest.TestCase):
         self.assertEqual(rows["writer"]["permissions"], "read-write")
         self.assertEqual(rows["reader"]["permissions"], "read-only")
         self.assertEqual(
-            rows["writer"]["consumed_by"], "deploy/k8s/database/object-store-local.yaml"
+            rows["writer"]["consumed_by"], "deploy/k8s/database/object-store-archive.yaml"
         )
         selectors = self.store["spec"]["configuration"]["s3Credentials"].values()
         selected = {s["name"] for s in selectors}
         self.assertEqual(selected, {rows["writer"]["secret"]})
         for row in rows.values():
-            self.assertEqual(row["bucket"], "weather-pg")
-            self.assertEqual(row["provisioned"]["change_id"], "weather-pg-availability-garage-1253")
+            self.assertEqual(row["bucket"], "weather-pg-archive")
+            self.assertEqual(row["provisioned"]["change_id"], "r20261128t050315z-a3d914")
             self.assertEqual(row["observed"]["change_id"], row["provisioned"]["change_id"])
             self.assertRegex(row["provisioned"]["uid"], UID)
             self.assertRegex(row["observed"]["at"], r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$")
 
+    def test_the_retired_store_keeps_an_attested_writer_and_is_not_the_archive(self):
+        retired = load(RETIRED_STORE_PATH)
+        rows = {row["secret"]: row for row in self.contract["retired_credentials"]}
+        selected = {s["name"] for s in retired["spec"]["configuration"]["s3Credentials"].values()}
+        self.assertEqual(selected, {"weather-pg-backup-s3-writer-k3s"})
+        for name in selected:
+            self.assertEqual(
+                rows[name]["consumed_by"], "deploy/k8s/database/" + RETIRED_STORE_PATH.name
+            )
+        active = {row["secret"] for row in self.contract["credentials"]}
+        self.assertFalse(active & set(rows))
+        self.assertNotEqual(
+            retired["spec"]["configuration"]["destinationPath"],
+            self.store["spec"]["configuration"]["destinationPath"],
+        )
+
     def test_the_drill_reads_with_the_attested_reader_only(self):
-        # storage-infra#1253 step 7: a drill can never archive into s3://weather-pg/cnpg.
+        # A drill can never archive into s3://weather-pg-archive/cnpg.
         rows = {row["role"]: row for row in self.contract["credentials"]}
         self.assertEqual(rows["reader"]["consumed_by"], "deploy/acceptance/restore/drill.yaml")
         drill_store = next(
@@ -120,7 +137,7 @@ class InterlockActuallyFails(unittest.TestCase):
     def test_a_region_key_the_secret_does_not_carry_is_blocked(self):
         store = load(STORE_PATH)
         store["spec"]["configuration"]["s3Credentials"]["region"] = {
-            "name": "weather-pg-backup-s3-writer-k3s",
+            "name": "weather-pg-archive-s3-writer",
             "key": "AWS_DEFAULT_REGION",
         }
         found = blockers(self.contract, store)

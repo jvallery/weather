@@ -147,8 +147,9 @@ spec:
       enabled: true
       isWALArchiver: true
       parameters:
-        # storage-infra#1253: archive to the in-cluster Garage (works with no WAN).
-        barmanObjectName: weather-pg-local
+        # weather#334: archive to the NAS-backed Garage bucket (works with no WAN). The
+        # retired stores weather-pg-local and weather-pg-b2 keep their history unwritten.
+        barmanObjectName: weather-pg-archive
         serverName: weather-pg
         # Canary of the upstream barman-cloud v0.16.0 sidecar on weather-pg only (zot mirror of
         # c669259e). Redundant once the plugin default is that version; removing it then rolls nothing.
