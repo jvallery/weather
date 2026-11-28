@@ -79,7 +79,12 @@ do not bypass admission or alert rules.
 - **Retired local store.** `weather-pg-local` (bucket `weather-pg` on
   `garage-k3s`) took the archive until 2026-11-28. It stays declared with its
   data, has no `retentionPolicy` (nothing prunes it) and the instances can no
-  longer reach it. Deleting that bucket is a separate, approved step.
+  longer reach it. Deleting that bucket is a separate, approved step; delete
+  nothing in it before then. A restore from it now needs its own path: a drill
+  Cluster whose isolation NetworkPolicy admits `garage-k3s` :3900 (the drill in
+  `deploy/acceptance/restore/` admits only `garage-hdd`) and whose ObjectStore
+  reads `s3://weather-pg/cnpg` with the old reader key, or a revert of the
+  repoint followed by an on-demand Backup.
 - **Offsite route of record.** The offsite copy of the database is
   storage-infra's `object-custody-b2` mirror of bucket `weather-pg-archive`
   (prefix `object-custody/weather-pg-archive/`; until 2026-11-28 the mirror of
