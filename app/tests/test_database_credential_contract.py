@@ -88,20 +88,27 @@ class CredentialContract(unittest.TestCase):
             self.store["spec"]["configuration"]["destinationPath"],
         )
 
-    def test_the_drill_reads_with_the_attested_reader_only(self):
-        # A drill can never archive into s3://weather-pg-archive/cnpg.
+    def test_the_drill_reads_the_custody_copy_with_the_attested_reader_only(self):
+        # weather#33: the drill reads the B2 custody copy with a read-only key and never
+        # selects the archive writer, so it cannot archive into s3://weather-pg-archive/cnpg.
         rows = {row["role"]: row for row in self.contract["credentials"]}
-        self.assertEqual(rows["reader"]["consumed_by"], "deploy/acceptance/restore/drill.yaml")
-        drill_store = next(
-            doc
-            for doc in yaml.safe_load_all(DRILL_PATH.read_text())
-            if doc["kind"] == "ObjectStore"
-        )
-        self.assertEqual(blockers(self.contract, drill_store), [])
+        self.assertEqual(rows["reader"]["consumed_by"], "none")
+        (custody,) = self.contract["custody_credentials"]
+        self.assertEqual(custody["permissions"], "read-only")
+        recorded = custody["capabilities_recorded"]
+        self.assertEqual(recorded["capabilities"], ["listFiles", "readFiles"])
+        prefix = "s3://" + recorded["bucket"] + "/" + recorded["name_prefix"]
+        self.assertEqual(custody["consumed_by"], "deploy/k8s/restore-drill/drill.yaml")
+        self.assertEqual(DRILL_PATH.resolve(), (ROOT / custody["consumed_by"]).resolve())
+        drill_store = yaml.safe_load(DRILL_PATH.read_text())
+        self.assertEqual(drill_store["kind"], "ObjectStore")
+        self.assertEqual(blockers({"credentials": [custody]}, drill_store), [])
+        self.assertTrue(drill_store["spec"]["configuration"]["destinationPath"].startswith(prefix))
         selected = {
             s["name"] for s in drill_store["spec"]["configuration"]["s3Credentials"].values()
         }
-        self.assertEqual(selected, {rows["reader"]["secret"]})
+        self.assertEqual(selected, {custody["secret"]})
+        self.assertNotIn(rows["writer"]["secret"], DRILL_PATH.read_text())
 
     def test_region_comes_from_sidecar_env_not_a_secret(self):
         # The Secret has no region key; selecting one would break WAL archiving at runtime.

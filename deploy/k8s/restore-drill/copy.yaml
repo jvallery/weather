@@ -1,0 +1,67 @@
+# weather#33: the drill's recovery Cluster, rendered by restore_drill.py inside the CronJob
+# weather-pg-restore-drill (or printed with --plan); data in a ConfigMap, never applied by Argo CD.
+# One fixed name: the Role grants get and delete on this name only, and the cluster-scoped
+# admission policy weather-restore-drill-boundary (kept by the estate platform) admits a Cluster
+# from the drill's ServiceAccount only with this name and this shape (no plugins, no backup, the
+# reader store only). Isolation is the NetworkPolicy weather-pg-restore-drill-instance.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: weather-pg-restore-drill-copy
+  namespace: weather
+  labels:
+    estate.vallery.net/disposable: 'true'
+    estate.vallery.net/expires: '__EXPIRES__'
+    weather.vallery.net/restore-drill: '__OPERATION__'
+  ownerReferences: __OWNER_REFERENCES__
+spec:
+  instances: 1
+  imageName: registry.vallery.net/jvallery/mirror-ghcr-io-cloudnative-pg-postgresql:16.16-standard-trixie-29d173bc84f5@sha256:29d173bc84f5522171f6254b41b8c11d33e218ac073daec7c0d93694b01bbb02
+  imagePullSecrets:
+    - name: zot-origin-cluster-pull
+  enableSuperuserAccess: false
+  enablePDB: false
+  priorityClassName: estate-batch
+  bootstrap:
+    # Recovery to the end of the WAL the custody copy holds: the achieved RPO is measured,
+    # not chosen.
+    recovery:
+      source: weather-custody-b2
+  externalClusters:
+    - name: weather-custody-b2
+      plugin:
+        name: barman-cloud.cloudnative-pg.io
+        parameters:
+          barmanObjectName: weather-pg-restore-drill-reader
+          serverName: weather-pg
+  # Deliberately no spec.plugins: recovery reads the archive but enables no WAL archiver.
+  # No managed roles or owner/password rewrite: restored role state is retained, so the
+  # drill reads the copy as weather_api with the production credential.
+  storage:
+    size: 20Gi
+    # Reclaim policy Delete: the volume goes with its claim.
+    storageClass: longhorn-v1-bulk-disposable-r1
+  affinity:
+    enablePodAntiAffinity: false
+    nodeSelector:
+      agentfleet.vallery.net/control-plane: 'false'
+      storage.vallery.net/longhorn: 'true'
+  inheritedMetadata:
+    labels:
+      estate.vallery.net/disposable: 'true'
+      estate.vallery.net/expires: '__EXPIRES__'
+      weather.vallery.net/restore-drill: '__OPERATION__'
+  resources:
+    requests: {cpu: 250m, memory: 1Gi}
+    limits: {cpu: '1', memory: 2Gi}
+  monitoring:
+    enablePodMonitor: false
+  postgresql:
+    parameters:
+      log_error_verbosity: terse
+      log_parameter_max_length: '0'
+      log_parameter_max_length_on_error: '0'
+      log_statement: none
+      log_min_error_statement: panic
+      log_min_duration_statement: '-1'
+      log_duration: 'off'

@@ -16,6 +16,7 @@ resources:
 - receiver
 - preview
 - pipeline
+- restore-drill
 # Search (#25): uncomment in the deploy commit that pins an app digest carrying weather.search.
 components:
 - search

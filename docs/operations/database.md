@@ -81,8 +81,8 @@ do not bypass admission or alert rules.
   data, has no `retentionPolicy` (nothing prunes it) and the instances can no
   longer reach it. Deleting that bucket is a separate, approved step; delete
   nothing in it before then. A restore from it now needs its own path: a drill
-  Cluster whose isolation NetworkPolicy admits `garage-k3s` :3900 (the drill in
-  `deploy/acceptance/restore/` admits only `garage-hdd`) and whose ObjectStore
+  Cluster whose isolation NetworkPolicy admits `garage-k3s` :3900 (the scheduled
+  restore drill admits only B2) and whose ObjectStore
   reads `s3://weather-pg/cnpg` with the old reader key, or a revert of the
   repoint followed by an on-demand Backup.
 - **Offsite route of record.** The offsite copy of the database is
@@ -94,7 +94,7 @@ do not bypass admission or alert rules.
   with a 36 h threshold. The newest base on B2 is normally about 43 h old (base
   at 09:15 UTC, copied by the next day's 06:15 UTC run); WAL keeps PITR current.
   That age is verification age, not restore proof: offsite RPO and RTO are
-  measured by the isolated restore from B2 tracked in weather#33. Longhorn B2
+  measured by the weekly restore drill from B2 (see "Restore drill"). Longhorn B2
   backups of the Garage volumes (storage-infra#1567) are no longer the
   database's offsite route.
 - **Historical B2 store.** `weather-pg-b2` (`s3://weather-db-vallery/cnpg/weather-pg`,
@@ -119,9 +119,9 @@ The WAL archiver and the daily base backup write to ObjectStore `weather-pg-arch
 (bucket `weather-pg-archive` on the NAS-backed Garage in the cluster, retention 7 days), so
 archiving continues during a WAN outage. While the NAS-backed Garage is unreachable, WAL
 archiving fails and `pg_wal` grows until it is back; watch the volume.
-Restore drills read `weather-pg-archive` with its reader key. The retired stores
-`weather-pg-local` (to 2026-11-28) and `weather-pg-b2` (to 2026-10-31) stay declared for
-their history. Weather#33 requires a separate offsite-only restore.
+The restore drill reads the B2 custody copy of `weather-pg-archive`, not the archive itself
+(see "Restore drill"). The retired stores `weather-pg-local` (to 2026-11-28) and
+`weather-pg-b2` (to 2026-10-31) stay declared for their history.
 The writer and reader Secrets (`weather-pg-archive-s3-{writer,reader}`) are provided by the
 storage owner and carry only `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`; the Garage
 region `garage` comes from the sidecar env in `object-store-archive.yaml`, not from the
@@ -171,32 +171,50 @@ Measured on 2026-10-24 (`weather-pg-1` → `weather-pg-2`, writer inserting ever
 0.5 s): **14.7 s** without a successful write. Every prior row was present on
 the new primary, and quorum sync re-formed with the old primary as a replica.
 
-## PITR drill
+## Restore drill
 
-`scripts/restore-drill.sh --operation <id> --evidence <path outside the repo> --run`
-does the following:
+The CronJob `weather-pg-restore-drill` (weather#33, `deploy/k8s/restore-drill/`) restores
+weather-pg from the off-site copy every Tuesday at 11:40 UTC. One run
+(`restore_drill.py`, in the `weather-app` image, as ServiceAccount
+`weather-pg-restore-drill` with a namespaced Role):
 
-1. Inserts three sentinel rows one minute apart in
-   `weather_recovery_drill.sentinel`.
-2. Forces a WAL switch and waits until it is archived.
-3. Restores a `weather-drill-pg-<id>` Cluster from `weather-pg-archive` (the
-   NAS-backed store production archives to), using only the read-only key
-   `weather-pg-archive-s3-reader` and no WAL archiver, to a target between
-   sentinels 1 and 2. The drill NetworkPolicy admits only DNS, garage-hdd :3900 and
-   the API servers :6443, so the restore needs no WAN.
-4. Verifies that sentinels 0 and 1 are present, sentinel 2 is absent and pgvector
-   is 0.8.6.
+1. Refuses to start while the drill Cluster `weather-pg-restore-drill-copy` exists (one
+   fixed name: the Role grants `get` and `delete` on it only).
+2. Renders `copy.yaml` and creates that one-instance Cluster. It recovers to the end of the
+   WAL the B2 custody copy holds through ObjectStore `weather-pg-restore-drill-reader`
+   (`drill.yaml`, also at `deploy/acceptance/restore/drill.yaml`, kept by Argo CD:
+   `s3://object-custody-vallery/object-custody/weather-pg-archive/cnpg`, read-only key
+   `weather-custody-restore-reader`, referenced in place), with no WAL archiver, on a volume
+   whose reclaim policy is Delete, owned by the Job. RBAC cannot limit `create` by name, so
+   the estate's admission policy `weather-restore-drill-boundary` admits a Cluster from the
+   drill's ServiceAccount only with that name, no `plugins`, no `backup` and that reader
+   store as its only source. The NetworkPolicy `weather-pg-restore-drill-instance` admits
+   only DNS, TLS to public addresses (B2) and the API endpoint port.
+3. Measures **RTO** (Cluster created to healthy) and **achieved RPO** (drill start minus
+   the last replayed transaction in the recovery log).
+4. Reads, as `weather_api`, the station view and the `obs_st` and `rapid_wind` rows
+   inserted in the day before the restored point (less 10 minutes) on the copy and on a
+   production standby; every count must match. pgvector must be 0.8.6, the copy out of
+   recovery, and the RPO within 26 h (`recovery.db_offsite_age_target_hours`).
+5. Deletes the copy and waits until its claims are gone. A failed run keeps the copy for
+   inspection until the Job's TTL (one day) deletes the Job and, with it, the copy.
 
-`--cleanup` removes the drill Cluster, PVCs, ObjectStore and policy. A
-failed drill is preserved for inspection; never rerun the same operation ID.
+The log ends with one line `weather_pg_restore_drill_receipt {...}`: `source_tier`,
+`rto_seconds`, `rpo_seconds`, `rows` and `result`. The Job fails on any mismatch, and the
+generic `KubeCronJobSuccessStale` alert fires when no run has succeeded for two intervals.
+Run one now with `scripts/restore-drill.sh run <id>` (a Job created from the CronJob;
+print the manifest with `scripts/restore-drill.sh plan`).
 
-Measured on 2026-10-24 (`pitr20261024a`): the forced WAL was archived before
-the restore. **RTO 74 s** (restore start to verified readback). **RPO 1 s**
-against the target (60 s sentinel resolution). The drill resources were then
-deleted. That drill read the B2 store; since weather#334 the drill reads the NAS-backed
-archive. Its preflight refuses unless the WAL archiver is `weather-pg-archive` and that store
-reports a `firstRecoverabilityPoint`. Production RPO for an unplanned loss is bounded by
-`archive_timeout` (300 s) plus the archive lag.
+| Run | Source tier | RTO | RPO | Rows |
+|---|---|---|---|---|
+| 2026-11-20, storage owner's custody drill 2 (manual) | B2 | 1135 s to healthy, 548 WAL segments replayed | last restored transaction 5 min 46 s before healthy | equal to the standby |
+
+Before weather#33 the drill was a sentinel PITR drill run from the operator Mac. Measured
+on 2026-10-24 (`pitr20261024a`, the then-current B2 store): **RTO 74 s** (restore start to
+verified readback), **RPO 1 s** against the target (60 s sentinel resolution); a NAS-archive
+run of it proved `weather-pg-archive` under weather#334. Production RPO for an unplanned loss
+is bounded by `archive_timeout` (300 s) plus the archive lag; from the off-site copy alone,
+by the custody copy's lag as well.
 
 After a real production recovery, give the recovered cluster a new Barman
 `serverName`. Never point a recovered writer at the source archive prefix.

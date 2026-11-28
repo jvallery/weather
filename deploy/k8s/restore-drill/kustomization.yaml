@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- drill.yaml
+- rbac.yaml
+- network-policy.yaml
+- cronjob.yaml
+configMapGenerator:
+- name: weather-pg-restore-drill
+  files:
+  - restore_drill.py
+  - copy.yaml
+  options:
+    labels:
+      app.kubernetes.io/part-of: weather
+      agent-fleet.vallery.net/owner: jvallery
+      agent-fleet.vallery.net/project: weather
