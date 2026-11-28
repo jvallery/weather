@@ -87,9 +87,13 @@ def preflight():
     # weather#334: weather-pg archives to the NAS-backed Garage store, so the drill restores
     # from that store with its read-only key; the retired stores keep history only.
     archiver = [p for p in cluster["spec"].get("plugins", []) if p.get("isWALArchiver")]
-    if [p.get("parameters") for p in archiver] != [
-        {"barmanObjectName": SOURCE_STORE, "serverName": "weather-pg"}
-    ]:
+    # Compare only the archive binding: other plugin parameters (such as the sidecarImage
+    # canary in cluster.yaml) do not change where WAL goes.
+    binding = [
+        {k: (p.get("parameters") or {}).get(k) for k in ("barmanObjectName", "serverName")}
+        for p in archiver
+    ]
+    if binding != [{"barmanObjectName": SOURCE_STORE, "serverName": "weather-pg"}]:
         raise RuntimeError("production WAL archiver is not " + SOURCE_STORE)
     store = read("objectstore", SOURCE_STORE)
     conf = store["spec"]["configuration"]
