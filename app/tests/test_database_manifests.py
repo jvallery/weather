@@ -89,35 +89,52 @@ class DatabaseManifestTests(unittest.TestCase):
             next(r for r in roles if r["name"] == "weather_api")["connectionLimit"], 40
         )
 
-    def test_wal_archiver_is_the_local_garage_store(self):
-        # storage-infra#1253: archiving must keep working with both WANs down.
+    def test_wal_archiver_is_the_nas_backed_archive_store(self):
+        # weather#334: base backups and WAL go to the NAS-backed Garage bucket, and the
+        # retired stores stay declared, keep their history and are never pruned.
         cluster = yaml.safe_load((ROOT / "deploy/k8s/database/cluster.yaml").read_text())
-        local = yaml.safe_load(
-            (ROOT / "deploy/k8s/database/object-store-local.yaml").read_text()
+        archive = yaml.safe_load(
+            (ROOT / "deploy/k8s/database/object-store-archive.yaml").read_text()
         )
         archiver = [p for p in cluster["spec"]["plugins"] if p.get("isWALArchiver")]
         self.assertEqual(len(archiver), 1)
-        self.assertEqual(archiver[0]["parameters"]["barmanObjectName"], "weather-pg-local")
+        self.assertEqual(archiver[0]["parameters"]["barmanObjectName"], "weather-pg-archive")
         self.assertEqual(archiver[0]["parameters"]["serverName"], "weather-pg")
+        self.assertEqual(archive["metadata"]["name"], "weather-pg-archive")
+        self.assertEqual(
+            archive["metadata"]["annotations"]["argocd.argoproj.io/sync-options"],
+            "Prune=false,Delete=false",
+        )
+        conf = archive["spec"]["configuration"]
+        self.assertEqual(conf["endpointURL"], "http://garage-hdd.garage-hdd.svc.cluster.local:3900")
+        self.assertEqual(conf["destinationPath"], "s3://weather-pg-archive/cnpg")
+        self.assertEqual(
+            {r["name"] for r in conf["s3Credentials"].values()},
+            {"weather-pg-archive-s3-writer"},
+        )
+        self.assertEqual(archive["spec"]["retentionPolicy"], "7d")
+        policy = yaml.safe_load((ROOT / "deploy/k8s/database/recovery-policy.yaml").read_text())
+        self.assertEqual(policy["data"]["recovery.pitr_window_days"], "7")
+        kustomization = yaml.safe_load(
+            (ROOT / "deploy/k8s/database/kustomization.yaml").read_text()
+        )
+        for name in ("object-store-archive.yaml", "object-store-local.yaml", "object-store.yaml"):
+            self.assertIn(name, kustomization["resources"])
+        local = yaml.safe_load((ROOT / "deploy/k8s/database/object-store-local.yaml").read_text())
         self.assertEqual(local["metadata"]["name"], "weather-pg-local")
         self.assertEqual(
             local["metadata"]["annotations"]["argocd.argoproj.io/sync-options"],
             "Prune=false,Delete=false",
         )
-        conf = local["spec"]["configuration"]
         self.assertEqual(
-            conf["endpointURL"], "http://garage-k3s.garage-k3s.svc.cluster.local:3900"
+            local["metadata"]["annotations"]["storage.vallery.net/lifecycle"], "retired-history"
         )
-        self.assertEqual(conf["destinationPath"], "s3://weather-pg/cnpg")
+        self.assertNotIn("retentionPolicy", local["spec"])
+        # The sidecar env and resources match, so the repoint changes no instance pod spec.
         self.assertEqual(
-            {r["name"] for r in conf["s3Credentials"].values()},
-            {"weather-pg-backup-s3-writer-k3s"},
+            archive["spec"]["instanceSidecarConfiguration"],
+            local["spec"]["instanceSidecarConfiguration"],
         )
-        self.assertEqual(local["spec"]["retentionPolicy"], "7d")
-        kustomization = yaml.safe_load(
-            (ROOT / "deploy/k8s/database/kustomization.yaml").read_text()
-        )
-        self.assertIn("object-store-local.yaml", kustomization["resources"])
 
     def test_drill_has_only_reader_and_no_archiver_or_password_rewrite(self):
         objects = list(
@@ -145,10 +162,10 @@ class DatabaseManifestTests(unittest.TestCase):
             cluster["spec"]["externalClusters"][0]["plugin"]["parameters"]["serverName"],
             "weather-pg",
         )
-        # storage-infra#1253: the drill reads the store production archives to, with the
+        # weather#334: the drill reads the store production archives to, with the
         # read-only key only, and takes the Garage region from the sidecar env.
         production = yaml.safe_load(
-            (ROOT / "deploy/k8s/database/object-store-local.yaml").read_text()
+            (ROOT / "deploy/k8s/database/object-store-archive.yaml").read_text()
         )["spec"]["configuration"]
         conf = store["spec"]["configuration"]
         self.assertEqual(conf["destinationPath"], production["destinationPath"])
@@ -159,7 +176,7 @@ class DatabaseManifestTests(unittest.TestCase):
         )
         self.assertEqual(
             {r["name"] for r in conf["s3Credentials"].values()},
-            {"weather-pg-backup-s3-reader-k3s"},
+            {"weather-pg-archive-s3-reader"},
         )
         self.assertNotIn("region", conf["s3Credentials"])
         self.assertNotIn("retentionPolicy", store["spec"])
@@ -191,10 +208,10 @@ class DatabaseManifestTests(unittest.TestCase):
         s3 = next(r for r in policy["egress"] if r["ports"] == [{"port": 3900, "protocol": "TCP"}])
         self.assertEqual(
             s3["to"][0]["namespaceSelector"]["matchLabels"],
-            {"kubernetes.io/metadata.name": "garage-k3s"},
+            {"kubernetes.io/metadata.name": "garage-hdd"},
         )
 
-    def _preflight_reads(self, archiver_store="weather-pg-local", window=True):
+    def _preflight_reads(self, archiver_store="weather-pg-archive", window=True):
         cluster = {
             "spec": {
                 "plugins": [
@@ -212,7 +229,7 @@ class DatabaseManifestTests(unittest.TestCase):
                 "conditions": [{"type": "ContinuousArchiving", "status": "True"}],
             },
         }
-        store = yaml.safe_load((ROOT / "deploy/k8s/database/object-store-local.yaml").read_text())
+        store = yaml.safe_load((ROOT / "deploy/k8s/database/object-store-archive.yaml").read_text())
         if window:
             store["status"] = {
                 "serverRecoveryWindow": {
@@ -238,14 +255,18 @@ class DatabaseManifestTests(unittest.TestCase):
 
         return read, kubectl
 
-    def test_preflight_accepts_the_local_store_and_records_its_recoverability_point(self):
+    def test_preflight_accepts_the_archive_store_and_records_its_recoverability_point(self):
         read, kubectl = self._preflight_reads()
         with patch.object(drill, "read", read), patch.object(drill, "kubectl", kubectl):
             source = drill.preflight()
         self.assertEqual(source["sourceRecoverabilityPoint"], "2026-10-31T11:37:44Z")
 
-    def test_preflight_refuses_a_b2_archiver_or_a_store_without_a_base(self):
-        for reads in (self._preflight_reads("weather-pg-b2"), self._preflight_reads(window=False)):
+    def test_preflight_refuses_a_retired_archiver_or_a_store_without_a_base(self):
+        for reads in (
+            self._preflight_reads("weather-pg-b2"),
+            self._preflight_reads("weather-pg-local"),
+            self._preflight_reads(window=False),
+        ):
             read, kubectl = reads
             with (
                 patch.object(drill, "read", read),
@@ -266,6 +287,13 @@ class DatabaseManifestTests(unittest.TestCase):
         }
         self.assertEqual(ports["weather-pg"], {53, 443, 3900, 5432, 6443, 8000})
         self.assertEqual(ports["weather-database-clients"], {53, 5432})
+        # The instances reach only the NAS-backed Garage for S3, never the retired store.
+        instance = next(p for p in policies if p["metadata"]["name"] == "weather-pg")
+        s3 = next(r for r in instance["spec"]["egress"] if r["ports"][0]["port"] == 3900)
+        self.assertEqual(
+            s3["to"][0]["namespaceSelector"]["matchLabels"],
+            {"kubernetes.io/metadata.name": "garage-hdd"},
+        )
         # storage-infra#1253: only the change-gate probe pods, only DNS and Garage S3.
         probe = next(p for p in policies if p["metadata"]["name"] == "garage-change-gate-probe")
         self.assertEqual(

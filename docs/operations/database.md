@@ -65,23 +65,27 @@ do not bypass admission or alert rules.
 
 ## Backups and WAL
 
-- **One current backup path (weather#33).** The Barman Cloud plugin
+- **One current backup path (weather#33, weather#334).** The Barman Cloud plugin
   writes WAL (`archive_timeout=300s`) and the daily base backup (09:15 UTC, on a
-  standby) to ObjectStore `weather-pg-local` (bucket `weather-pg` on the
-  in-cluster garage-k3s, `retentionPolicy: 7d`; see "Local WAL archive" below).
+  standby) to ObjectStore `weather-pg-archive` (bucket `weather-pg-archive` on the
+  NAS-backed Garage, `retentionPolicy: 7d`; see "WAL archive" below).
   The declared PITR window is **7 days** (`recovery.pitr_window_days` in
   `ConfigMap/weather-database-policy`). The declared offsite age target is
   **26 h** (`recovery.db_offsite_age_target_hours`).
-- **Where the archive is going.** `garage-k3s` runs on Longhorn. The estate's
-  rule is two backup copies, one on the NAS and one in Backblaze B2, and no
-  backup on a Longhorn volume or on `garage-k3s`. The move of this archive to
-  that shape is jvallery/storage-infra#2674; until it is delivered, everything
-  below describes what runs. Add no new backup target on `garage-k3s`.
-- **Offsite route of record (since 2026-11-20).** The offsite
-  copy of the database is storage-infra's `object-custody-b2` mirror of bucket
-  `weather-pg` (base daily at 06:15 UTC, WAL every 15 min, verified per object
-  on B2). `WeatherOffsiteStale` reads the oldest of the last verified base
-  custody, the last verified WAL custody and the newest base at the source,
+- **Two copies.** The estate's rule is two backup copies, one on the NAS and one
+  in Backblaze B2, and no backup on a Longhorn volume or on `garage-k3s` (which
+  runs on Longhorn). The archive bucket is the NAS copy; the B2 copy is the
+  storage owner's custody mirror of it. Add no backup target on `garage-k3s`.
+- **Retired local store.** `weather-pg-local` (bucket `weather-pg` on
+  `garage-k3s`) took the archive until 2026-11-28. It stays declared with its
+  data, has no `retentionPolicy` (nothing prunes it) and the instances can no
+  longer reach it. Deleting that bucket is a separate, approved step.
+- **Offsite route of record.** The offsite copy of the database is
+  storage-infra's `object-custody-b2` mirror of bucket `weather-pg-archive`
+  (prefix `object-custody/weather-pg-archive/`; until 2026-11-28 the mirror of
+  bucket `weather-pg`), verified per object on B2. `WeatherOffsiteStale` reads
+  the oldest of the last verified base custody, the last verified WAL custody
+  and the newest base at the source,
   with a 36 h threshold. The newest base on B2 is normally about 43 h old (base
   at 09:15 UTC, copied by the next day's 06:15 UTC run); WAL keeps PITR current.
   That age is verification age, not restore proof: offsite RPO and RTO are
@@ -104,33 +108,33 @@ do not bypass admission or alert rules.
   `pg_stat_wal.wal_bytes` after Tempest ingest starts, and expand storage
   through source if needed.
 
-### Local WAL archive (storage-infra#1253)
+### WAL archive (weather#334)
 
-The WAL archiver and the daily base backup write to ObjectStore `weather-pg-local`
-(bucket `weather-pg` on the in-cluster availability Garage, retention 7 days), so
-archiving can continue during a WAN outage while local Garage is available.
-Local restore drills read `weather-pg-local` with its reader key. The
-historical direct-B2 store `weather-pg-b2` stays declared for its archive
-through October 31, 2026. Weather#33 requires a separate offsite-only
-restore with production Garage unreachable.
-The writer and reader Secrets (`weather-pg-backup-s3-{writer,reader}-k3s`) are delivered
-from the `secrets/weather` bundle in jvallery/estate-platform and carry only `AWS_ACCESS_KEY_ID` and
-`AWS_SECRET_ACCESS_KEY`; the Garage region `garage` comes from the sidecar env in
-`object-store-local.yaml`, not from the Secret. The dated key-name attestation is
+The WAL archiver and the daily base backup write to ObjectStore `weather-pg-archive`
+(bucket `weather-pg-archive` on the NAS-backed Garage in the cluster, retention 7 days), so
+archiving continues during a WAN outage. While the NAS-backed Garage is unreachable, WAL
+archiving fails and `pg_wal` grows until it is back; watch the volume.
+Restore drills read `weather-pg-archive` with its reader key. The retired stores
+`weather-pg-local` (to 2026-11-28) and `weather-pg-b2` (to 2026-10-31) stay declared for
+their history. Weather#33 requires a separate offsite-only restore.
+The writer and reader Secrets (`weather-pg-archive-s3-{writer,reader}`) are provided by the
+storage owner and carry only `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`; the Garage
+region `garage` comes from the sidecar env in `object-store-archive.yaml`, not from the
+Secret. The dated key-name attestation is
 `deploy/k8s/database/weather-pg-backup-credential-contract.yaml`; refresh it with its
 metadata-only probe after any credential change.
 Read archiving state with
-`kubectl -n weather get objectstores.barmancloud.cnpg.io weather-pg-local -o jsonpath='{.status}'`.
+`kubectl -n weather get objectstores.barmancloud.cnpg.io weather-pg-archive -o jsonpath='{.status}'`.
 
 ### Backup freshness
 
 `WeatherDbBaseBackupStale` fires when the newest available Barman base backup is over 26 h old
 (the daily base runs at 09:15 UTC on a standby), or when the metric is absent.
 1. `kubectl -n weather get scheduledbackups weather-pg-daily` (LAST BACKUP) and
-   `kubectl -n weather get objectstores.barmancloud.cnpg.io weather-pg-local -o jsonpath='{.status}'`
+   `kubectl -n weather get objectstores.barmancloud.cnpg.io weather-pg-archive -o jsonpath='{.status}'`
    (`lastSuccessfulBackupTime`, `firstRecoverabilityPoint`).
 2. `kubectl -n weather get backups.postgresql.cnpg.io` shows a failed Backup and its message. The
-   usual causes are local Garage reachability or a writer authentication failure.
+   usual causes are NAS-backed Garage reachability or a writer authentication failure.
    A standby that is not ready also skips the run.
 3. Re-run once with a one-off `Backup` (`method: plugin`, plugin `barman-cloud.cloudnative-pg.io`)
    after fixing the cause. Never mint a replacement key; recover the existing identity from KSOPS
@@ -145,7 +149,7 @@ Read archiving state with
    `ContinuousArchiving`.
 2. In the primary: `select * from pg_stat_archiver;` (`failed_count`, `last_failed_wal`) and the
    plugin sidecar's logs.
-3. Fix the cause (B2 reachability or the writer key). Never delete WAL by hand or disable archiving;
+3. Fix the cause (NAS-backed Garage reachability or the writer key). Never delete WAL by hand or disable archiving;
    `pg_wal` grows until archiving resumes, so watch the volume.
 
 ## Switchover
@@ -170,10 +174,10 @@ does the following:
 1. Inserts three sentinel rows one minute apart in
    `weather_recovery_drill.sentinel`.
 2. Forces a WAL switch and waits until it is archived.
-3. Restores a `weather-drill-pg-<id>` Cluster from `weather-pg-local` (the Garage
-   store production archives to), using only the read-only key
-   `weather-pg-backup-s3-reader-k3s` and no WAL archiver, to a target between
-   sentinels 1 and 2. The drill NetworkPolicy admits only DNS, garage-k3s :3900 and
+3. Restores a `weather-drill-pg-<id>` Cluster from `weather-pg-archive` (the
+   NAS-backed store production archives to), using only the read-only key
+   `weather-pg-archive-s3-reader` and no WAL archiver, to a target between
+   sentinels 1 and 2. The drill NetworkPolicy admits only DNS, garage-hdd :3900 and
    the API servers :6443, so the restore needs no WAN.
 4. Verifies that sentinels 0 and 1 are present, sentinel 2 is absent and pgvector
    is 0.8.6.
@@ -184,8 +188,8 @@ failed drill is preserved for inspection; never rerun the same operation ID.
 Measured on 2026-10-24 (`pitr20261024a`): the forced WAL was archived before
 the restore. **RTO 74 s** (restore start to verified readback). **RPO 1 s**
 against the target (60 s sentinel resolution). The drill resources were then
-deleted. That drill read the B2 store; since storage-infra#1253 the drill reads the local
-store. Its preflight refuses unless the WAL archiver is `weather-pg-local` and that store
+deleted. That drill read the B2 store; since weather#334 the drill reads the NAS-backed
+archive. Its preflight refuses unless the WAL archiver is `weather-pg-archive` and that store
 reports a `firstRecoverabilityPoint`. Production RPO for an unplanned loss is bounded by
 `archive_timeout` (300 s) plus the archive lag.
 

@@ -58,14 +58,15 @@ spec:
       ports:
         - {port: 53, protocol: UDP}
         - {port: 53, protocol: TCP}
-    # storage-infra#1253: the local WAL archive on the availability Garage.
+    # weather#334: the WAL archive on the NAS-backed Garage. The retired availability Garage
+    # store is no longer reachable from the instances, so nothing can still write to it.
     - to:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: garage-k3s
+              kubernetes.io/metadata.name: garage-hdd
           podSelector:
             matchLabels:
-              app.kubernetes.io/name: garage-k3s
+              app.kubernetes.io/name: garage-hdd
       ports:
         - {port: 3900, protocol: TCP}
     # B2 has dynamic addresses; the instance manager also requires the

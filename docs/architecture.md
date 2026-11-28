@@ -26,7 +26,7 @@ All application workloads run in namespace `weather` and are rendered from `depl
 | `api` | Deployment ×2 | FastAPI public API, media origin (GET/HEAD/range), operator API; mounts no NFS | – | CNPG, Garage `weather-media` (read-only), Cortex embed (query) |
 | `weather-preview` | Deployment, replicas 1 | Serves eligible delayed previews only (same image, shared origin code); the only public-path pod that mounts staging | NFS `previews/` (read-only) | CNPG |
 | `web` | Deployment ×2 | React Router SSR + client navigation | – | `api` only |
-| `weather-pg` | CNPG Cluster, 3 instances | Canonical store; Barman Cloud plugin → in-cluster object store `weather-pg-local` | `longhorn-v1-rwo` | in-cluster object storage |
+| `weather-pg` | CNPG Cluster, 3 instances | Canonical store; Barman Cloud plugin → NAS-backed object store `weather-pg-archive` | `longhorn-v1-rwo` | in-cluster object storage |
 | `migrate` | Argo Sync hook Job, wave 1 (DB clients at wave ≥2) | Alembic migrations (migrator role) | – | CNPG |
 
 There are two images, each built in-cluster by Kaniko, published to `registry.vallery.net/jvallery/weather-*` and pinned by digest:
@@ -55,7 +55,7 @@ flowchart LR
 
 | Store | Contents | Writers | Readers | Recovery |
 |---|---|---|---|---|
-| `weather-pg` | Telemetry raw + normalized, catalog, jobs/outbox, events, editorial revisions, search documents/vectors | migrator, ingest, worker roles; api operator functions | api role (public views), worker roles | WAL (`archive_timeout` 300 s) and a daily base backup to the in-cluster store `weather-pg-local` (7 days); jvallery/storage-infra mirrors that bucket to B2. See the [database runbook](operations/database.md#backups-and-wal) |
+| `weather-pg` | Telemetry raw + normalized, catalog, jobs/outbox, events, editorial revisions, search documents/vectors | migrator, ingest, worker roles; api operator functions | api role (public views), worker roles | WAL (`archive_timeout` 300 s) and a daily base backup to the NAS-backed store `weather-pg-archive` (7 days); jvallery/storage-infra mirrors that bucket to B2. See the [database runbook](operations/database.md#backups-and-wal) |
 | Garage `weather-media` (garage-hdd) | Renditions, posters, keograms, sanitized stills, sidecars; content-addressed and immutable | pipeline, scheduler (GC) | api (read-only key) | custody `mirror` → B2 |
 | Garage `weather-originals` (garage-hdd) | One native JPEG per camera per local hour (5 years) | pipeline only | none online; custody | custody `mirror` → B2 |
 | NFS `weather-staging` | Sealed chunks, per-segment mezzanine, `previews/` (about 1 h of generations; pointer rows in `camera_preview` expire at capture + 3,600 s) | collectors (own dir), pipelines | pipelines; `weather-preview` (previews, read-only) | Disposable; never backed up |

@@ -1,15 +1,11 @@
-# Local WAL archive (storage-infra#1253, Wave 2.5 B2; T1 checklist row 7). The WAL archiver
-# and the daily base backup go to the availability Garage in the cluster, so archiving keeps
-# working with both WANs down and pg_wal never fills. Precedent: auth-pg -> garage-k3s.
-# Offsite copy: the central object-custody B2 mirror of bucket weather-pg (bases daily at 06:15Z,
-# cnpg/weather-pg/wals/ every 15 minutes; storage-infra#2265, enrolled 2026-11-18). The B2 store weather-pg-b2 stays declared, unused by the archiver, so its
-# history remains restorable until its own provider lifecycle expires it.
-# Credentials: Secret weather-pg-backup-s3-writer-k3s (bucket weather-pg, read/write). The
-# Garage provisioning tool minted it on 2026-10-31 (change-id
-# weather-pg-availability-garage-1253); since 2026-11-06 it is a SOPS-encrypted
-# manifest in the bundle secrets/weather (jvallery/estate-platform), delivered by Argo Application
-# weather-secrets with the same UID. No plaintext value is in Git. The keys this store
-# selects are attested in weather-pg-backup-credential-contract.yaml.
+# Retired history store (weather#334). Until 2026-11-28 the WAL archiver and the daily base
+# backup of weather-pg went here, to the in-cluster availability Garage bucket weather-pg, which
+# runs on Longhorn. Since then weather-pg archives to weather-pg-archive (object-store-archive.yaml,
+# NAS-backed) and nothing writes or prunes this store. It stays declared, with its data, so that
+# its history can still be restored until the storage owner deletes the bucket after the new
+# archive is proven; that deletion is separate and needs the maintainer's approval.
+# Credentials: Secret weather-pg-backup-s3-writer-k3s (bucket weather-pg, read/write), minted by
+# the Garage provisioning tool on 2026-10-31 and delivered from the secrets/weather bundle.
 apiVersion: barmancloud.cnpg.io/v1
 kind: ObjectStore
 metadata:
@@ -18,6 +14,8 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: '-6'
     argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    storage.vallery.net/lifecycle: retired-history
+    storage.vallery.net/retired-since: "2026-11-28"
 spec:
   configuration:
     destinationPath: s3://weather-pg/cnpg
@@ -37,9 +35,8 @@ spec:
     wal:
       compression: gzip
       maxParallel: 2
-  # Garage has no provider lifecycle on this bucket: CNPG's policy is the only pruner
-  # (a provider rule would break the WAL chain). 7 days covers the T1 >= 7 d runway.
-  retentionPolicy: 7d
+  # No retentionPolicy: nothing archives here any more, and an empty policy is the only one
+  # under which the plugin never prunes the store, so its history is kept as it is.
   instanceSidecarConfiguration:
     # Garage validates the SigV4 credential scope against its s3_region (`garage` on
     # garage-k3s), so a wrong or default region is an auth failure. The plugin only takes a
